@@ -1,12 +1,16 @@
 package app
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
 )
 
 type App struct {
@@ -16,9 +20,17 @@ type App struct {
 
 func Build(conf *config.Config) *App {
 	psgConf := infra_postgres.NewConfig(conf)
-	_ = psgConf
+	logger := service_logger.NewSlogLogger()
+	compDB, err := infra_postgres.New(psgConf, logger)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	profileHandler := handlers.NewProfileHandler()
+	compRepo := repository.NewCompanyRepository(compDB)
+
+	profileGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
+
+	profileHandler := handlers.NewProfileHandler(profileGetByIDUc)
 
 	routerDeps := &delivery_http.RouterDeps{
 		ProfileHandler: profileHandler,

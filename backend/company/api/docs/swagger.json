@@ -1,0 +1,114 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "company microservice",
+        "title": "Trainee Match: Company Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/api/v1",
+    "paths": {
+        "/companies/{id}": {
+            "get": {
+                "description": "Returns company profile by UUID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Get profile by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.CompanyResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "We make the world a better place"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "logoURL": {
+                    "type": "string",
+                    "example": "http://domain/minio/6icinimmck...mksk"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "ownerId": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "website": {
+                    "type": "string",
+                    "example": "https://www.google.com"
+                }
+            }
+        },
+        "dto.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "order not found: id=550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        }
+    }
+}

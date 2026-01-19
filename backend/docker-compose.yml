@@ -1,0 +1,31 @@
+services:
+  company-db:
+    image: postgres:17
+    env_file:
+      - company/.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - company-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dima_terekhov -d company_db" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  company-db-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./company/internal/infrastructure/db/postgres/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://dima_terekhov:lowkey_tough@company-db:5432/company_db?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      company-db:
+        condition: service_healthy
+
+volumes:
+  company-db-data:

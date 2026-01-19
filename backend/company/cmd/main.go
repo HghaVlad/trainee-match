@@ -7,6 +7,11 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 )
 
+// @title Trainee Match: Company Service API
+// @version 1.0
+// @description company microservice
+// @BasePath /api/v1
+// @schemes http https
 func main() {
 	log.Println("Service is starting...")
 

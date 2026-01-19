@@ -1,0 +1,78 @@
+basePath: /api/v1
+definitions:
+  dto.CompanyResponse:
+    properties:
+      createdAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      description:
+        example: We make the world a better place
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logoURL:
+        example: http://domain/minio/6icinimmck...mksk
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      ownerId:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      updatedAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        example: 'order not found: id=550e8400-e29b-41d4-a716-446655440000'
+        type: string
+    type: object
+info:
+  contact: {}
+  description: company microservice
+  title: 'Trainee Match: Company Service API'
+  version: "1.0"
+paths:
+  /companies/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns company profile by UUID
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get profile by id
+      tags:
+      - profile
+schemes:
+- http
+- https
+swagger: "2.0"
