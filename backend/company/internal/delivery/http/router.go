@@ -9,6 +9,7 @@ import (
 	"github.com/swaggo/http-swagger"
 
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
 )
 
@@ -35,6 +36,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				// TODO: maybe later change to /profile
 				r.Get("/", deps.ProfileHandler.GetById)
 			})
+
+		r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
+			Post("/", deps.ProfileHandler.Create)
 
 	})
 

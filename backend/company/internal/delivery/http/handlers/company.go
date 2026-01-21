@@ -4,32 +4,36 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
 )
 
 type CompanyHandler struct {
 	getByID *get_company.GetByIDUsecase
+	create  *create_company.Usecase
 }
 
 func NewProfileHandler(
 	getByID *get_company.GetByIDUsecase,
-
+	create *create_company.Usecase,
 ) *CompanyHandler {
 
 	return &CompanyHandler{
 		getByID: getByID,
+		create:  create,
 	}
 }
 
 // GetById godoc
 // @Summary Get profile by id
 // @Description Returns company profile by UUID
-// @Tags profile
+// @Tags company
 // @Accept json
 // @Produce json
 // @Param id path string true "Company ID (UUID)"
@@ -55,14 +59,58 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := mapper.GetRespToDto(company)
+	resp := mapper.GetCompRespToDto(company)
 	responds.RespondJSON(w, http.StatusOK, resp)
+}
+
+// Create godoc
+// @Summary Create new company
+// @Description Creates new company, returns id
+// @Tags company
+// @Accept json
+// @Produce json
+// @Param company_request body dto.CompanyCreateRequest true "Request to create a company"
+// @Success 201 {object} dto.CompanyCreatedResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 409 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies [post]
+func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	dtoReq, err := middleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	if dtoReq.Name == "" {
+		responds.RespondError(w, http.StatusBadRequest, errors.New("non empty name is required"))
+		return
+	}
+
+	// TODO: add timeout mb later
+	// TODO: add jwt owner id prolly
+
+	req := mapper.CompanyCreateReqToUC(dtoReq)
+
+	resp, err := h.create.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	dtoResp := mapper.CompanyCreateRespToDto(resp)
+	responds.RespondJSON(w, http.StatusCreated, dtoResp)
 }
 
 func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, domain_errors.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
+
+	case errors.Is(err, domain_errors.ErrCompanyAlreadyExists):
+		responds.RespondError(w, http.StatusConflict, err)
 
 	default:
 		responds.RespondError(w, http.StatusInternalServerError, err)

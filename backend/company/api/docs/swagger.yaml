@@ -1,6 +1,24 @@
 basePath: /api/v1
 definitions:
-  dto.CompanyResponse:
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreateRequest:
+    properties:
+      description:
+        example: We make the world a better place
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreatedResponse:
+    properties:
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse:
     properties:
       createdAt:
         example: "2020-04-08T21:00:00Z"
@@ -27,7 +45,7 @@ definitions:
         example: https://www.google.com
         type: string
     type: object
-  dto.ErrorResponse:
+  responds.ErrorResponse:
     properties:
       error:
         example: 'order not found: id=550e8400-e29b-41d4-a716-446655440000'
@@ -39,6 +57,40 @@ info:
   title: 'Trainee Match: Company Service API'
   version: "1.0"
 paths:
+  /companies:
+    post:
+      consumes:
+      - application/json
+      description: Creates new company, returns id
+      parameters:
+      - description: Request to create a company
+        in: body
+        name: company_request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: Create new company
+      tags:
+      - company
   /companies/{id}:
     get:
       consumes:
@@ -56,22 +108,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.CompanyResponse'
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/responds.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/responds.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/responds.ErrorResponse'
       summary: Get profile by id
       tags:
-      - profile
+      - company
 schemes:
 - http
 - https

@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
 )
 
@@ -28,9 +29,10 @@ func Build(conf *config.Config) *App {
 
 	compRepo := repository.NewCompanyRepository(compDB)
 
-	profileGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
+	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
+	compCreateUc := create_company.NewUsecase(compRepo)
 
-	profileHandler := handlers.NewProfileHandler(profileGetByIDUc)
+	profileHandler := handlers.NewProfileHandler(compGetByIDUc, compCreateUc)
 
 	routerDeps := &delivery_http.RouterDeps{
 		ProfileHandler: profileHandler,
