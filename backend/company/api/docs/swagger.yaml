@@ -45,6 +45,18 @@ definitions:
         example: https://www.google.com
         type: string
     type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateRequest:
+    properties:
+      description:
+        example: New description
+        type: string
+      name:
+        example: Google LLC
+        type: string
+      website:
+        example: https://google.com
+        type: string
+    type: object
   responds.ErrorResponse:
     properties:
       error:
@@ -122,6 +134,46 @@ paths:
           schema:
             $ref: '#/definitions/responds.ErrorResponse'
       summary: Get profile by id
+      tags:
+      - company
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates company fields
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request to update company
+        in: body
+        name: company_request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: Update company
       tags:
       - company
 schemes:

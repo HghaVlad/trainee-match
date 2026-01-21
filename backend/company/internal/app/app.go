@@ -12,6 +12,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
 type App struct {
@@ -31,8 +32,9 @@ func Build(conf *config.Config) *App {
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
 	compCreateUc := create_company.NewUsecase(compRepo)
+	compUpdateUc := update_company.NewUsecase(compRepo)
 
-	profileHandler := handlers.NewProfileHandler(compGetByIDUc, compCreateUc)
+	profileHandler := handlers.NewProfileHandler(compGetByIDUc, compCreateUc, compUpdateUc)
 
 	routerDeps := &delivery_http.RouterDeps{
 		ProfileHandler: profileHandler,

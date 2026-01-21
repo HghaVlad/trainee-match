@@ -35,6 +35,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				// TODO: maybe later change to /profile
 				r.Get("/", deps.ProfileHandler.GetById)
+
+				r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
+					Patch("/", deps.ProfileHandler.Update)
 			})
 
 		r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).

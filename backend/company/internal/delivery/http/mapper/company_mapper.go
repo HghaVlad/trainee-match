@@ -1,9 +1,12 @@
 package mapper
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
 func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
@@ -30,5 +33,17 @@ func CompanyCreateReqToUC(dtoReq *dto.CompanyCreateRequest) *create_company.Requ
 func CompanyCreateRespToDto(resp *create_company.Response) *dto.CompanyCreatedResponse {
 	return &dto.CompanyCreatedResponse{
 		ID: resp.ID,
+	}
+}
+
+func CompanyUpdateReqToUC(
+	id uuid.UUID,
+	dtoReq *dto.CompanyUpdateRequest,
+) *update_company.Request {
+	return &update_company.Request{
+		ID:          id,
+		Name:        dtoReq.Name,
+		Description: dtoReq.Description,
+		Website:     dtoReq.Website,
 	}
 }

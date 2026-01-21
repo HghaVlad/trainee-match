@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
 type CompanyRepository struct {
@@ -50,4 +52,57 @@ func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Com
 	}
 
 	return err
+}
+
+// Update updates only req's non-nil fields
+func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.Request) error {
+	setParts := make([]string, 0)
+	args := make([]any, 0)
+	argID := 1
+
+	if req.Name != nil {
+		setParts = append(setParts, fmt.Sprintf("name = $%d", argID))
+		args = append(args, *req.Name)
+		argID++
+	}
+
+	if req.Description != nil {
+		setParts = append(setParts, fmt.Sprintf("description = $%d", argID))
+		args = append(args, req.Description)
+		argID++
+	}
+
+	if req.Website != nil {
+		setParts = append(setParts, fmt.Sprintf("website = $%d", argID))
+		args = append(args, req.Website)
+		argID++
+	}
+
+	if len(setParts) == 0 {
+		return nil // ничего не обновляем
+	}
+
+	query := fmt.Sprintf(
+		"UPDATE companies SET %s WHERE id = $%d",
+		strings.Join(setParts, ", "),
+		argID,
+	)
+
+	args = append(args, req.ID)
+
+	res, err := repo.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain_errors.ErrCompanyAlreadyExists
+		}
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return domain_errors.ErrCompanyNotFound
+	}
+
+	return nil
 }

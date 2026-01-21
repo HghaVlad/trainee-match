@@ -26,3 +26,10 @@ type CompanyCreateRequest struct {
 type CompanyCreatedResponse struct {
 	ID uuid.UUID `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
+
+// CompanyUpdateRequest if Description or Website not provided - don't change
+type CompanyUpdateRequest struct {
+	Name        *string `json:"name,omitempty" example:"Google LLC"`
+	Description *string `json:"description" example:"New description"`
+	Website     *string `json:"website" example:"https://google.com"`
+}
