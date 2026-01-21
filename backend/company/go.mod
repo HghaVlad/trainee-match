@@ -3,6 +3,7 @@ module github.com/HghaVlad/trainee-match/backend/company
 go 1.25
 
 require (
+	github.com/M0s1ck/g-store/src/pkg v0.2.0
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0

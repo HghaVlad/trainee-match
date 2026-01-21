@@ -3,13 +3,13 @@ package delivery_http
 import (
 	"net/http"
 
+	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/swaggo/http-swagger"
 
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 )
 
 type RouterDeps struct {
@@ -27,7 +27,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 	router.Route("/api/v1/companies", func(r chi.Router) {
 
-		r.With(my_middleware.UUIDMiddleware("id")).
+		extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
+
+		r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
 			Route("/{id}", func(r chi.Router) {
 
 				// TODO: maybe later change to /profile
