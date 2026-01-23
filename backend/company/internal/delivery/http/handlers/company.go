@@ -4,33 +4,36 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
+	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
+	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 )
 
 type CompanyHandler struct {
 	getByID *get_company.GetByIDUsecase
 	create  *create_company.Usecase
 	update  *update_company.Usecase
+	delete  *delete_company.Usecase
 }
 
 func NewProfileHandler(
 	getByID *get_company.GetByIDUsecase,
 	create *create_company.Usecase,
 	update *update_company.Usecase,
+	delete *delete_company.Usecase,
 ) *CompanyHandler {
 
 	return &CompanyHandler{
 		getByID: getByID,
 		create:  create,
 		update:  update,
+		delete:  delete,
 	}
 }
 
@@ -145,6 +148,35 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	req := mapper.CompanyUpdateReqToUC(id, dtoReq)
 
 	err = h.update.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Delete godoc
+// @Summary Delete company
+// @Description Deletes company by id
+// @Tags company
+// @Produce json
+// @Param id path string true "Company ID"
+// @Success 204
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{id} [delete]
+func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := middleware.UUIDFromContext(ctx)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	err = h.delete.Execute(ctx, id)
 	if err != nil {
 		h.handleErr(w, err)
 		return

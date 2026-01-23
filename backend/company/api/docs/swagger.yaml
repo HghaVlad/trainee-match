@@ -104,6 +104,34 @@ paths:
       tags:
       - company
   /companies/{id}:
+    delete:
+      description: Deletes company by id
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: Delete company
+      tags:
+      - company
     get:
       consumes:
       - application/json
@@ -139,7 +167,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Partially updates company fields
+      description: Partially updates company fields, if field not provided or null
+        - it won't be changed
       parameters:
       - description: Company ID
         in: path

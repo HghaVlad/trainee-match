@@ -38,6 +38,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
 					Patch("/", deps.ProfileHandler.Update)
+
+				r.Delete("/", deps.ProfileHandler.Delete)
 			})
 
 		r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).

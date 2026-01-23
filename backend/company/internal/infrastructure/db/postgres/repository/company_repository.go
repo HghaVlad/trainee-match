@@ -106,3 +106,18 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.R
 
 	return nil
 }
+
+func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	res, err := repo.db.ExecContext(ctx,
+		`DELETE FROM companies WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return domain_errors.ErrCompanyNotFound
+	}
+
+	return nil
+}
