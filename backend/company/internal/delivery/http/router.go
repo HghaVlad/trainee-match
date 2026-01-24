@@ -2,6 +2,7 @@ package delivery_http
 
 import (
 	"net/http"
+	"time"
 
 	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/go-chi/chi/v5"
@@ -11,6 +12,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 )
 
 type RouterDeps struct {
@@ -30,10 +32,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 		extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
 
-		r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
+		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			With(gmiddleware.UUIDMiddleware(extractIDFn)).
 			Route("/{id}", func(r chi.Router) {
 
-				// TODO: maybe later change to /profile
 				r.Get("/", deps.ProfileHandler.GetById)
 
 				r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
@@ -42,7 +44,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				r.Delete("/", deps.ProfileHandler.Delete)
 			})
 
-		r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
+		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
 			Post("/", deps.ProfileHandler.Create)
 
 	})

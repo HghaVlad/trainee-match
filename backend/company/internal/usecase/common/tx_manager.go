@@ -1,0 +1,7 @@
+package uc_common
+
+import "context"
+
+type TxManager interface {
+	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
+}

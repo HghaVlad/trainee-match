@@ -4,6 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
+	"github.com/M0s1ck/g-store/src/pkg/http/responds"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
@@ -11,8 +14,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
-	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 )
 
 type CompanyHandler struct {
@@ -54,11 +55,9 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 	id, err := middleware.UUIDFromContext(ctx)
 	if err != nil {
-		h.handleErr(w, err)
+		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	// TODO: add timeout mb later
 
 	company, err := h.getByID.Execute(ctx, id)
 	if err != nil {
@@ -87,7 +86,7 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	dtoReq, err := middleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
 	if err != nil {
-		h.handleErr(w, err)
+		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -96,7 +95,6 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: add timeout mb later
 	// TODO: add jwt owner id prolly
 
 	req := mapper.CompanyCreateReqToUC(dtoReq)
@@ -130,7 +128,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	id, err := middleware.UUIDFromContext(ctx)
 	if err != nil {
-		h.handleErr(w, err)
+		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -172,7 +170,7 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	id, err := middleware.UUIDFromContext(ctx)
 	if err != nil {
-		h.handleErr(w, err)
+		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 

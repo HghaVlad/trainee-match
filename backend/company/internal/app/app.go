@@ -1,8 +1,13 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
@@ -17,24 +22,27 @@ import (
 )
 
 type App struct {
-	httpRouter http.Handler
-	conf       *config.Config
+	conf    *config.Config
+	httpSrv *http.Server
+	compDB  *sqlx.DB
 }
 
-func Build(conf *config.Config) *App {
+func Build(conf *config.Config) (*App, error) {
 	psgConf := infra_postgres.NewConfig(conf)
 	logger := service_logger.NewSlogLogger()
 	compDB, err := infra_postgres.New(psgConf, logger)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	compRepo := repository.NewCompanyRepository(compDB)
 
+	txManager := infra_postgres.NewTxManager(compDB)
+
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
-	compCreateUc := create_company.NewUsecase(compRepo)
-	compUpdateUc := update_company.NewUsecase(compRepo)
-	compDeleteUc := delete_company.NewUsecase(compRepo)
+	compCreateUc := create_company.NewUsecase(compRepo, txManager)
+	compUpdateUc := update_company.NewUsecase(compRepo, txManager)
+	compDeleteUc := delete_company.NewUsecase(compRepo, txManager)
 
 	profileHandler := handlers.NewProfileHandler(compGetByIDUc, compCreateUc, compUpdateUc, compDeleteUc)
 
@@ -44,15 +52,35 @@ func Build(conf *config.Config) *App {
 
 	httpRouter := delivery_http.NewRouter(routerDeps)
 
-	return &App{
-		httpRouter: httpRouter,
-		conf:       conf,
+	httpServer := &http.Server{
+		Addr:         conf.HTTP.Addr,
+		Handler:      httpRouter,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
+
+	return &App{
+		httpSrv: httpServer,
+		compDB:  compDB,
+		conf:    conf,
+	}, nil
 }
 
 func (app *App) Run() {
-	err := http.ListenAndServe(app.conf.HTTP.Addr, app.httpRouter)
+	err := app.httpSrv.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("http listening server err: %s\n", err)
+	}
+}
+
+func (app *App) Shutdown(shutdownCtx context.Context) {
+	err := app.httpSrv.Shutdown(shutdownCtx)
 	if err != nil {
-		panic(err)
+		log.Printf("shutdown error: %v", err)
+	}
+
+	dbErr := app.compDB.Close()
+	if dbErr != nil {
+		log.Printf("db close error: %v", dbErr)
 	}
 }

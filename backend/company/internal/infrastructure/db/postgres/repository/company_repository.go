@@ -13,6 +13,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
@@ -40,8 +41,9 @@ func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*enti
 }
 
 func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Company) error {
+	exec := repo.getExec(ctx)
 
-	_, err := repo.db.ExecContext(ctx, "INSERT INTO companies (id, name, description, website, owner_id) VALUES ($1, $2, $3, $4, $5)",
+	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website, owner_id) VALUES ($1, $2, $3, $4, $5)",
 		company.ID, company.Name, company.Description, company.Website, company.OwnerID)
 
 	var pgErr *pgconn.PgError
@@ -56,6 +58,7 @@ func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Com
 
 // Update updates only req's non-nil fields
 func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.Request) error {
+	exec := repo.getExec(ctx)
 	setParts := make([]string, 0)
 	args := make([]any, 0)
 	argID := 1
@@ -90,7 +93,7 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.R
 
 	args = append(args, req.ID)
 
-	res, err := repo.db.ExecContext(ctx, query, args...)
+	res, err := exec.ExecContext(ctx, query, args...)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -108,7 +111,9 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.R
 }
 
 func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	res, err := repo.db.ExecContext(ctx,
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
 		`DELETE FROM companies WHERE id = $1`, id)
 	if err != nil {
 		return err
@@ -120,4 +125,13 @@ func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// returns sqlx.TX if we're in transaction or r.db if not
+func (repo *CompanyRepository) getExec(ctx context.Context) sqlx.ExtContext {
+	tx, ok := ctx.Value(infra_postgres.TxKey{}).(*sqlx.Tx)
+	if ok {
+		return tx
+	}
+	return repo.db
 }

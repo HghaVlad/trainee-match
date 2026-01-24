@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/app"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
@@ -15,13 +19,29 @@ import (
 func main() {
 	log.Println("Service is starting...")
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	conf, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("config load err: ", err)
 	}
 
-	myApp := app.Build(conf)
-	myApp.Run()
+	myApp, err := app.Build(conf)
+	if err != nil {
+		log.Fatal("app build err: ", err)
+	}
 
-	log.Println("Service has started")
+	go myApp.Run()
+
+	log.Println("http listening on ", conf.HTTP.Addr)
+
+	<-ctx.Done()
+	log.Println("Gracefully shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	myApp.Shutdown(shutdownCtx)
+	log.Println("server stopped")
 }
