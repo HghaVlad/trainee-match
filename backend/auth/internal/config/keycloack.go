@@ -7,4 +7,7 @@ type KeyCloack struct {
 	URL           string `mapstructure:"url"`
 	AdminUsername string `mapstructure:"admin_username"`
 	AdminPassword string `mapstructure:"admin_password"`
+
+	AccessTokenExpires  int `mapstructure:"access_token_expires"`
+	RefreshTokenExpires int `mapstructure:"refresh_token_expires"`
 }

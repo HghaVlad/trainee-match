@@ -17,12 +17,15 @@ func Load() (*Config, error) {
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	v.SetDefault("KC.URL", "http://0.0.0.0:8080")
+	v.SetDefault("KC.URL", "http://0.0.0.0:800")
 	v.SetDefault("KC.REALM", "trainee-match")
 	v.SetDefault("KC.CLIENT_ID", "auth_backend")
 	v.SetDefault("KC.CLIENT_SECRET", "UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8")
 	v.SetDefault("KC.ADMIN_USERNAME", "admin")
 	v.SetDefault("KC.ADMIN_PASSWORD", "admin")
+
+	v.SetDefault("KC.ACCESS_TOKEN_EXPIRES", 5*60)
+	v.SetDefault("KC.REFRESH_TOKEN_EXPIRES", 30*60)
 
 	v.SetDefault("ADDR", "0.0.0.0:8000")
 

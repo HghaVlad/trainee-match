@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/auth"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
@@ -13,22 +12,26 @@ import (
 	"net/http"
 )
 
-type AuthClient interface {
-	CreateUser(ctx context.Context, user domain.User, password string) (string, error)
-	Login(ctx context.Context, request auth.LoginRequest) (*gocloak.JWT, error)
+type AuthService interface {
+	Register(ctx context.Context, user domain.User, password string) (string, error)
+	Login(ctx context.Context, username, password string) (*gocloak.JWT, error)
 	Logout(ctx context.Context, token string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
 }
 
 type AuthHandler struct {
-	authClient AuthClient
-	validate   *validator.Validate
+	authClient          AuthService
+	validate            *validator.Validate
+	AccessTokenExpires  int
+	RefreshTokenExpires int
 }
 
-func NewAuthHandler(authClient AuthClient) *AuthHandler {
+func NewAuthHandler(authClient AuthService, accessTokenExpires, refreshTokenExpires int) *AuthHandler {
 	return &AuthHandler{
-		authClient: authClient,
-		validate:   validator.New(),
+		authClient:          authClient,
+		validate:            validator.New(),
+		AccessTokenExpires:  accessTokenExpires,
+		RefreshTokenExpires: refreshTokenExpires,
 	}
 }
 
@@ -51,7 +54,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:      request.Role,
 	}
 
-	id, err := h.authClient.CreateUser(r.Context(), user, request.Password)
+	id, err := h.authClient.Register(r.Context(), user, request.Password)
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -70,16 +73,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.authClient.Login(r.Context(), auth.LoginRequest{
-		Username: request.Username,
-		Password: request.Password,
-	})
+	token, err := h.authClient.Login(r.Context(), request.Username, request.Password)
 
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	helpers.RespondJSON(w, http.StatusOK, dto.TokenPair{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken})
+	helpers.SetTokenPairToCookies(w, token.AccessToken, token.RefreshToken, h.AccessTokenExpires, h.RefreshTokenExpires)
+
+	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "OK"})
 }
 
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +98,9 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	helpers.RespondJSON(w, http.StatusOK, dto.TokenPair{AccessToken: newToken.AccessToken, RefreshToken: newToken.RefreshToken})
+	helpers.SetTokenPairToCookies(w, newToken.AccessToken, newToken.RefreshToken, h.AccessTokenExpires, h.RefreshTokenExpires)
+
+	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "OK"})
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -115,6 +119,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	helpers.SetTokenPairToCookies(w, "", "", 0, 0)
 
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 }

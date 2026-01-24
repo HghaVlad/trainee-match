@@ -1,14 +1,17 @@
-package auth
+package keycloack
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/Nerzal/gocloak/v13"
 	"log/slog"
 )
 
-type KeycloakClient struct {
+var ErrorInvalidToken = errors.New("invalid access token")
+
+type Client struct {
 	client *gocloak.GoCloak
 	token  *gocloak.JWT
 	realm  string
@@ -19,7 +22,7 @@ type KeycloakClient struct {
 	adminPass    string
 }
 
-func (kc *KeycloakClient) loginAdmin(ctx context.Context) error {
+func (kc *Client) loginAdmin(ctx context.Context) error {
 	newToken, err := kc.client.LoginAdmin(ctx, kc.adminUser, kc.adminPass, kc.realm)
 	if err != nil {
 		return err
@@ -29,7 +32,7 @@ func (kc *KeycloakClient) loginAdmin(ctx context.Context) error {
 
 }
 
-func (kc *KeycloakClient) ensureAdminTokenValid(ctx context.Context) error {
+func (kc *Client) ensureAdminTokenValid(ctx context.Context) error {
 	if kc.token == nil {
 		if err := kc.loginAdmin(ctx); err != nil {
 			return err
@@ -51,7 +54,7 @@ func (kc *KeycloakClient) ensureAdminTokenValid(ctx context.Context) error {
 	return nil
 }
 
-func (kc *KeycloakClient) CreateUser(ctx context.Context, user domain.User, password string) (string, error) {
+func (kc *Client) CreateUser(ctx context.Context, user domain.User, password string) (string, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return "", err
 	}
@@ -82,7 +85,7 @@ func (kc *KeycloakClient) CreateUser(ctx context.Context, user domain.User, pass
 	return userId, err
 }
 
-func (kc *KeycloakClient) addRole(ctx context.Context, userId, roleName string) error {
+func (kc *Client) addRole(ctx context.Context, userId, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
 	if roleName == "Candidate" {
@@ -97,17 +100,17 @@ func (kc *KeycloakClient) addRole(ctx context.Context, userId, roleName string) 
 
 }
 
-func (kc *KeycloakClient) Login(ctx context.Context, request LoginRequest) (*gocloak.JWT, error) {
+func (kc *Client) Login(ctx context.Context, username, password string) (*gocloak.JWT, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return nil, err
 	}
 
-	token, err := kc.client.Login(ctx, kc.clientID, kc.clientSecret, kc.realm, request.Username, request.Password)
+	token, err := kc.client.Login(ctx, kc.clientID, kc.clientSecret, kc.realm, username, password)
 
 	return token, err
 }
 
-func (kc *KeycloakClient) Logout(ctx context.Context, token string) error {
+func (kc *Client) Logout(ctx context.Context, token string) error {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return err
 	}
@@ -116,7 +119,7 @@ func (kc *KeycloakClient) Logout(ctx context.Context, token string) error {
 	return err
 }
 
-func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error) {
+func (kc *Client) RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return nil, err
 	}
@@ -129,7 +132,7 @@ func (kc *KeycloakClient) RefreshToken(ctx context.Context, refreshToken string)
 	return token, err
 }
 
-func (kc *KeycloakClient) validateToken(ctx context.Context, token string) error {
+func (kc *Client) validateToken(ctx context.Context, token string) error {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return err
 	}
@@ -145,9 +148,9 @@ func (kc *KeycloakClient) validateToken(ctx context.Context, token string) error
 	return nil
 }
 
-func NewKeycloakClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *KeycloakClient {
+func NewClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
 	client := gocloak.NewClient(clientUrl)
-	keycloakClient := &KeycloakClient{
+	keycloakClient := &Client{
 		client:       client,
 		realm:        realm,
 		clientID:     clientID,

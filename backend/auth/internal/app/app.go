@@ -1,10 +1,11 @@
 package app
 
 import (
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/auth"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/config"
 	deliveryhttp "github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/keycloack"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/services"
 	"net/http"
 )
 
@@ -15,12 +16,14 @@ type App struct {
 
 func Build(conf *config.Config) *App {
 
-	keycloackClient := auth.NewKeycloakClient(
+	keycloackClient := keycloack.NewClient(
 		conf.KeyCloack.URL, conf.KeyCloack.Realm, conf.KeyCloack.ClientID, conf.KeyCloack.ClientSecret, conf.KeyCloack.AdminUsername, conf.KeyCloack.AdminPassword,
 	)
 
+	authService := services.NewAuth(keycloackClient)
+
 	deps := deliveryhttp.RouterDeps{
-		AuthHandler: handlers.NewAuthHandler(keycloackClient),
+		AuthHandler: handlers.NewAuthHandler(authService, conf.KeyCloack.AccessTokenExpires, conf.KeyCloack.RefreshTokenExpires),
 	}
 	httpRouter := deliveryhttp.NewRouter(&deps)
 
