@@ -18,6 +18,26 @@ definitions:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
     type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse:
+    properties:
+      id:
+        type: string
+      logoUrl:
+        type: string
+      name:
+        type: string
+      openVacanciesCount:
+        type: integer
+    type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse:
+    properties:
+      companies:
+        items:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse'
+        type: array
+      nextCursor:
+        type: string
+    type: object
   github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse:
     properties:
       createdAt:
@@ -35,6 +55,9 @@ definitions:
       name:
         example: Google Inc.
         type: string
+      openVacanciesCount:
+        example: 13
+        type: integer
       ownerId:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
@@ -70,6 +93,43 @@ info:
   version: "1.0"
 paths:
   /companies:
+    get:
+      consumes:
+      - application/json
+      description: List company summaries
+      parameters:
+      - default: vacancies_desc
+        description: Order attribute
+        in: query
+        name: order
+        type: string
+      - description: Items per page
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: List companies
+      tags:
+      - company
     post:
       consumes:
       - application/json

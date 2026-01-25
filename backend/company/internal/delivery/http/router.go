@@ -16,7 +16,7 @@ import (
 )
 
 type RouterDeps struct {
-	ProfileHandler *handlers.CompanyHandler
+	CompanyHandler *handlers.CompanyHandler
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
@@ -36,17 +36,20 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			With(gmiddleware.UUIDMiddleware(extractIDFn)).
 			Route("/{id}", func(r chi.Router) {
 
-				r.Get("/", deps.ProfileHandler.GetById)
+				r.Get("/", deps.CompanyHandler.GetById)
 
 				r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
-					Patch("/", deps.ProfileHandler.Update)
+					Patch("/", deps.CompanyHandler.Update)
 
-				r.Delete("/", deps.ProfileHandler.Delete)
+				r.Delete("/", deps.CompanyHandler.Delete)
 			})
 
 		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
 			With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
-			Post("/", deps.ProfileHandler.Create)
+			Post("/", deps.CompanyHandler.Create)
+
+		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			Get("/", deps.CompanyHandler.List)
 
 	})
 

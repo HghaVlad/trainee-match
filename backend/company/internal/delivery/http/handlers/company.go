@@ -3,22 +3,26 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
 type CompanyHandler struct {
 	getByID *get_company.GetByIDUsecase
 	create  *create_company.Usecase
+	list    *list_companies.Usecase
 	update  *update_company.Usecase
 	delete  *delete_company.Usecase
 }
@@ -26,6 +30,7 @@ type CompanyHandler struct {
 func NewProfileHandler(
 	getByID *get_company.GetByIDUsecase,
 	create *create_company.Usecase,
+	list *list_companies.Usecase,
 	update *update_company.Usecase,
 	delete *delete_company.Usecase,
 ) *CompanyHandler {
@@ -33,6 +38,7 @@ func NewProfileHandler(
 	return &CompanyHandler{
 		getByID: getByID,
 		create:  create,
+		list:    list,
 		update:  update,
 		delete:  delete,
 	}
@@ -66,6 +72,42 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mapper.GetCompRespToDto(company)
+	responds.RespondJSON(w, http.StatusOK, resp)
+}
+
+// List godoc
+// @Summary List company summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies, created_at and name
+// @Tags company
+// @Accept json
+// @Produce json
+// @Param order query string false "Order attribute" default(vacancies_desc)
+// @Param cursor query string false "Items per page"
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} dto.CompanyListResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies [get]
+func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	limit := helpers.ParseLimit(r, "limit", 20)
+	order := h.parseOrderQuery(r)
+	cursor := r.URL.Query().Get("cursor")
+
+	req := &list_companies.Request{
+		Limit:  limit,
+		Order:  order,
+		Cursor: cursor,
+	}
+
+	res, err := h.list.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	resp := mapper.CompanyListRespToDto(res)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -191,7 +233,25 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, domain_errors.ErrCompanyAlreadyExists):
 		responds.RespondError(w, http.StatusConflict, err)
 
+	case errors.Is(err, domain_errors.ErrInvalidCursor),
+		errors.Is(err, domain_errors.ErrCursorOrderMismatch):
+		responds.RespondError(w, http.StatusBadRequest, err)
+
 	default:
 		responds.RespondError(w, http.StatusInternalServerError, err)
+	}
+}
+
+func (h *CompanyHandler) parseOrderQuery(r *http.Request) list_companies.Order {
+	str := r.URL.Query().Get("order")
+	ord := list_companies.Order(strings.Trim(str, " "))
+
+	switch ord {
+	case list_companies.OrderNameAsc,
+		list_companies.OrderCreatedAtDesc,
+		list_companies.OrderVacanciesDesc:
+		return ord
+	default:
+		return list_companies.OrderVacanciesDesc
 	}
 }

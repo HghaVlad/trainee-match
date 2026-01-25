@@ -18,6 +18,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
@@ -40,14 +41,21 @@ func Build(conf *config.Config) (*App, error) {
 	txManager := infra_postgres.NewTxManager(compDB)
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
+	compListUc := list_companies.NewUsecase(compRepo)
 	compCreateUc := create_company.NewUsecase(compRepo, txManager)
 	compUpdateUc := update_company.NewUsecase(compRepo, txManager)
 	compDeleteUc := delete_company.NewUsecase(compRepo, txManager)
 
-	profileHandler := handlers.NewProfileHandler(compGetByIDUc, compCreateUc, compUpdateUc, compDeleteUc)
+	profileHandler := handlers.NewProfileHandler(
+		compGetByIDUc,
+		compCreateUc,
+		compListUc,
+		compUpdateUc,
+		compDeleteUc,
+	)
 
 	routerDeps := &delivery_http.RouterDeps{
-		ProfileHandler: profileHandler,
+		CompanyHandler: profileHandler,
 	}
 
 	httpRouter := delivery_http.NewRouter(routerDeps)

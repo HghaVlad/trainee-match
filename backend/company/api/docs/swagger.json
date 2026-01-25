@@ -13,6 +13,61 @@
     "basePath": "/api/v1",
     "paths": {
         "/companies": {
+            "get": {
+                "description": "List company summaries",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "List companies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "vacancies_desc",
+                        "description": "Order attribute",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Items per page",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates new company, returns id",
                 "consumes": [
@@ -244,6 +299,37 @@
                 }
             }
         },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "logoUrl": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "openVacanciesCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse": {
+            "type": "object",
+            "properties": {
+                "companies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse"
+                    }
+                },
+                "nextCursor": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse": {
             "type": "object",
             "properties": {
@@ -266,6 +352,10 @@
                 "name": {
                     "type": "string",
                     "example": "Google Inc."
+                },
+                "openVacanciesCount": {
+                    "type": "integer",
+                    "example": 13
                 },
                 "ownerId": {
                     "type": "string",

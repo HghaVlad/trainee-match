@@ -31,13 +31,14 @@ func (u *GetByIDUsecase) Execute(ctx context.Context, id uuid.UUID) (*Response, 
 
 func toResponse(company *entities.Company, logoURL *string) *Response {
 	return &Response{
-		ID:          company.ID,
-		Name:        company.Name,
-		Description: company.Description,
-		Website:     company.Website,
-		OwnerID:     company.OwnerID,
-		LogoURL:     logoURL,
-		CreatedAt:   company.CreatedAt,
-		UpdatedAt:   company.UpdatedAt,
+		ID:               company.ID,
+		Name:             company.Name,
+		OpenVacanciesCnt: company.OpenVacanciesCnt,
+		Description:      company.Description,
+		Website:          company.Website,
+		OwnerID:          company.OwnerID,
+		LogoURL:          logoURL,
+		CreatedAt:        company.CreatedAt,
+		UpdatedAt:        company.UpdatedAt,
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
 )
 
@@ -54,6 +55,65 @@ func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Com
 	}
 
 	return err
+}
+
+func (repo *CompanyRepository) ListByVacanciesCnt(ctx context.Context, cursor *list_companies.VacanciesCntCursor, limit int) ([]list_companies.CompanySummary, *list_companies.VacanciesCntCursor, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+// ListByCreatedAtDesc takes companies "after" cursor, returns them with next cursor
+func (repo *CompanyRepository) ListByCreatedAtDesc(
+	ctx context.Context,
+	cursor *list_companies.CreatedAtCursor,
+	limit int,
+) (
+	[]list_companies.CompanySummary,
+	*list_companies.CreatedAtCursor,
+	error,
+) {
+	var query string
+	var args []any
+
+	if cursor == nil {
+		query = `SELECT id, name, logo_key, created_at
+		FROM companies
+		ORDER BY created_at DESC, name
+		LIMIT $1`
+		args = []any{limit}
+	} else {
+		query = `SELECT id, name, logo_key, created_at
+		FROM companies
+		WHERE (created_at, name) < ($1, $2)
+		ORDER BY created_at DESC, name
+		LIMIT $3`
+		args = []any{cursor.CreatedAt, cursor.Name, limit}
+	}
+
+	var companies []list_companies.CompanySummary
+
+	err := repo.db.SelectContext(ctx, &companies, query, args...)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(companies) < limit {
+		return companies, nil, nil
+	}
+
+	last := companies[len(companies)-1]
+	nextCursor := list_companies.CreatedAtCursor{
+		CreatedAt: last.CreatedAt,
+		Name:      last.Name,
+	}
+
+	return companies, &nextCursor, nil
+}
+
+func (repo *CompanyRepository) ListByName(ctx context.Context, cursor *list_companies.NameCursor, limit int) ([]list_companies.CompanySummary, *list_companies.NameCursor, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // Update updates only req's non-nil fields

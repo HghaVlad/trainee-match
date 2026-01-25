@@ -5,11 +5,18 @@ CREATE TABLE companies (
    website     TEXT,
    logo_key    TEXT,
    owner_id    UUID NOT NULL,
+   open_vacancies_count INT NOT NULL DEFAULT 0,
+   CHECK (open_vacancies_count >= 0),
 
    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE INDEX idx_companies_open_vacancies_desc
+    ON companies (open_vacancies_count DESC, name ASC);
+
+CREATE INDEX idx_companies_created_at_desc
+    ON companies (created_at DESC, name ASC);
 
 -- Func for auto update_at update
 CREATE OR REPLACE FUNCTION set_updated_at()
