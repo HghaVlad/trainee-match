@@ -57,9 +57,52 @@ func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Com
 	return err
 }
 
-func (repo *CompanyRepository) ListByVacanciesCnt(ctx context.Context, cursor *list_companies.VacanciesCntCursor, limit int) ([]list_companies.CompanySummary, *list_companies.VacanciesCntCursor, error) {
-	//TODO implement me
-	panic("implement me")
+func (repo *CompanyRepository) ListByVacanciesCnt(
+	ctx context.Context,
+	cursor *list_companies.VacanciesCntCursor,
+	limit int,
+) (
+	[]list_companies.CompanySummary,
+	*list_companies.VacanciesCntCursor,
+	error,
+) {
+	var query string
+	var args []any
+
+	if cursor == nil {
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
+		FROM companies
+		ORDER BY open_vacancies_count DESC, name
+		LIMIT $1`
+		args = []any{limit}
+	} else {
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
+		FROM companies
+		WHERE (open_vacancies_count, name) < ($1, $2)
+		ORDER BY open_vacancies_count DESC, name
+		LIMIT $3`
+		args = []any{cursor.Count, cursor.Name, limit}
+	}
+
+	var companies []list_companies.CompanySummary
+
+	err := repo.db.SelectContext(ctx, &companies, query, args...)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(companies) < limit {
+		return companies, nil, nil
+	}
+
+	last := companies[len(companies)-1]
+	nextCursor := list_companies.VacanciesCntCursor{
+		Count: last.OpenVacanciesCnt,
+		Name:  last.Name,
+	}
+
+	return companies, &nextCursor, nil
 }
 
 // ListByCreatedAtDesc takes companies "after" cursor, returns them with next cursor
@@ -76,13 +119,13 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 	var args []any
 
 	if cursor == nil {
-		query = `SELECT id, name, logo_key, created_at
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
 		FROM companies
 		ORDER BY created_at DESC, name
 		LIMIT $1`
 		args = []any{limit}
 	} else {
-		query = `SELECT id, name, logo_key, created_at
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
 		FROM companies
 		WHERE (created_at, name) < ($1, $2)
 		ORDER BY created_at DESC, name
@@ -111,9 +154,51 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 	return companies, &nextCursor, nil
 }
 
-func (repo *CompanyRepository) ListByName(ctx context.Context, cursor *list_companies.NameCursor, limit int) ([]list_companies.CompanySummary, *list_companies.NameCursor, error) {
-	//TODO implement me
-	panic("implement me")
+func (repo *CompanyRepository) ListByName(
+	ctx context.Context,
+	cursor *list_companies.NameCursor,
+	limit int,
+) (
+	[]list_companies.CompanySummary,
+	*list_companies.NameCursor,
+	error,
+) {
+	var query string
+	var args []any
+
+	if cursor == nil {
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
+		FROM companies
+		ORDER BY name
+		LIMIT $1`
+		args = []any{limit}
+	} else {
+		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
+		FROM companies
+		WHERE name > $1
+		ORDER BY name
+		LIMIT $2`
+		args = []any{cursor.Name, limit}
+	}
+
+	var companies []list_companies.CompanySummary
+
+	err := repo.db.SelectContext(ctx, &companies, query, args...)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(companies) < limit {
+		return companies, nil, nil
+	}
+
+	last := companies[len(companies)-1]
+	nextCursor := list_companies.NameCursor{
+		Name: last.Name,
+	}
+
+	return companies, &nextCursor, nil
 }
 
 // Update updates only req's non-nil fields

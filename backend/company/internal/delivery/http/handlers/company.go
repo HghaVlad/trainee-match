@@ -77,7 +77,7 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 // List godoc
 // @Summary List company summaries
-// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies, created_at and name
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc
 // @Tags company
 // @Accept json
 // @Produce json

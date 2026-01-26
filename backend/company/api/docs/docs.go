@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/companies": {
             "get": {
-                "description": "List company summaries",
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "company"
                 ],
-                "summary": "List companies",
+                "summary": "List company summaries",
                 "parameters": [
                     {
                         "type": "string",

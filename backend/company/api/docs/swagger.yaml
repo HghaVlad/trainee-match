@@ -96,7 +96,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: List company summaries
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        order by vacancies_desc, created_at_desc, name_asc
       parameters:
       - default: vacancies_desc
         description: Order attribute
@@ -127,7 +128,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/responds.ErrorResponse'
-      summary: List companies
+      summary: List company summaries
       tags:
       - company
     post:

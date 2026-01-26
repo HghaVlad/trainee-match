@@ -9,3 +9,5 @@ var ErrCompanyAlreadyExists = errors.New("company with this name already exists"
 var ErrInvalidCursor = errors.New("invalid cursor")
 
 var ErrCursorOrderMismatch = errors.New("cursor order mismatch")
+
+var ErrUnsupportedListOrder = errors.New("unsupported list order")
