@@ -7,5 +7,5 @@ import (
 )
 
 type CompanyRepo interface {
-	Create(ctx context.Context, company *entities.Company) error
+	Create(ctx context.Context, company *domain.Company) error
 }

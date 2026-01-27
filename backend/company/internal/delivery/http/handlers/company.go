@@ -12,11 +12,11 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
 type CompanyHandler struct {

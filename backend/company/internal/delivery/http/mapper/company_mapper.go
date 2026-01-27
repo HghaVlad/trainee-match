@@ -4,10 +4,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
 func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {

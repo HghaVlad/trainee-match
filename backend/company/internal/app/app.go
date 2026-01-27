@@ -15,11 +15,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/create_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/delete_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/get_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	get_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 )
 
 type App struct {
@@ -37,6 +38,7 @@ func Build(conf *config.Config) (*App, error) {
 	}
 
 	compRepo := repository.NewCompanyRepository(compDB)
+	vacRepo := repository.NewVacancyRepo(compDB)
 
 	txManager := infra_postgres.NewTxManager(compDB)
 
@@ -46,7 +48,9 @@ func Build(conf *config.Config) (*App, error) {
 	compUpdateUc := update_company.NewUsecase(compRepo, txManager)
 	compDeleteUc := delete_company.NewUsecase(compRepo, txManager)
 
-	profileHandler := handlers.NewProfileHandler(
+	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo)
+
+	companyHandler := handlers.NewProfileHandler(
 		compGetByIDUc,
 		compCreateUc,
 		compListUc,
@@ -54,8 +58,13 @@ func Build(conf *config.Config) (*App, error) {
 		compDeleteUc,
 	)
 
+	vacancyHandler := handlers.NewVacancyHandler(
+		vacGetByIDUc,
+	)
+
 	routerDeps := &delivery_http.RouterDeps{
-		CompanyHandler: profileHandler,
+		CompanyHandler: companyHandler,
+		VacancyHandler: vacancyHandler,
 	}
 
 	httpRouter := delivery_http.NewRouter(routerDeps)

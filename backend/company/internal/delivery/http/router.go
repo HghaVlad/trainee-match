@@ -17,6 +17,7 @@ import (
 
 type RouterDeps struct {
 	CompanyHandler *handlers.CompanyHandler
+	VacancyHandler *handlers.VacancyHandler
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
@@ -50,6 +51,15 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
 			Get("/", deps.CompanyHandler.List)
+
+		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			Route("/{company-id}/vacancies", func(r chi.Router) {
+
+				r.Route("/{vacancy-id}", func(r chi.Router) {
+
+					r.Get("/", deps.VacancyHandler.GetByID)
+				})
+			})
 
 	})
 

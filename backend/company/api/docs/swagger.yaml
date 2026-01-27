@@ -80,6 +80,77 @@ definitions:
         example: https://google.com
         type: string
     type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      company_id:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        type: string
+      created_at:
+        example: "2026-01-18T09:30:00Z"
+        type: string
+      description:
+        example: Join Google's backend team to build scalable services in Go.
+        type: string
+      duration_from_months:
+        example: 3
+        type: integer
+      duration_to_months:
+        example: 6
+        type: integer
+      employment_type:
+        enum:
+        - internship
+        - full_time
+        - part_time
+        example: internship
+        type: string
+      flexible_schedule:
+        example: true
+        type: boolean
+      hours_per_week_from:
+        example: 30
+        type: integer
+      hours_per_week_to:
+        example: 40
+        type: integer
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      internship_to_offer:
+        example: true
+        type: boolean
+      is_active:
+        example: true
+        type: boolean
+      is_paid:
+        example: true
+        type: boolean
+      published_at:
+        example: "2026-01-20T10:00:00Z"
+        type: string
+      salary_from:
+        example: 3500
+        type: integer
+      salary_to:
+        example: 5000
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      updated_at:
+        example: "2026-01-22T14:15:00Z"
+        type: string
+      work_format:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: hybrid
+        type: string
+    type: object
   responds.ErrorResponse:
     properties:
       error:
@@ -164,6 +235,45 @@ paths:
       summary: Create new company
       tags:
       - company
+  /companies/{company-id}/vacancies/{vacancy-id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns vacancy by id, company id should be correct, otherwise
+        it's 404
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Vacancy ID (UUID)
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: Get vacancy by id
+      tags:
+      - vacancy
   /companies/{id}:
     delete:
       description: Deletes company by id

@@ -29,7 +29,7 @@ func (u *GetByIDUsecase) Execute(ctx context.Context, id uuid.UUID) (*Response, 
 	return resp, nil
 }
 
-func toResponse(company *entities.Company, logoURL *string) *Response {
+func toResponse(company *domain.Company, logoURL *string) *Response {
 	return &Response{
 		ID:               company.ID,
 		Name:             company.Name,

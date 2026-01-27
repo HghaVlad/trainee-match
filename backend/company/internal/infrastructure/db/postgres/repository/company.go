@@ -14,8 +14,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/list_companies"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/update_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
 type CompanyRepository struct {
@@ -26,8 +26,8 @@ func NewCompanyRepository(db *sqlx.DB) *CompanyRepository {
 	return &CompanyRepository{db: db}
 }
 
-func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*entities.Company, error) {
-	var company entities.Company
+func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Company, error) {
+	var company domain.Company
 	err := repo.db.GetContext(ctx, &company, "SELECT * FROM companies WHERE id = $1", id)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -41,7 +41,7 @@ func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*enti
 	return &company, err
 }
 
-func (repo *CompanyRepository) Create(ctx context.Context, company *entities.Company) error {
+func (repo *CompanyRepository) Create(ctx context.Context, company *domain.Company) error {
 	exec := repo.getExec(ctx)
 
 	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website, owner_id) VALUES ($1, $2, $3, $4, $5)",

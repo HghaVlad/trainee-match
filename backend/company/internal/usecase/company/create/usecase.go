@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type Usecase struct {
@@ -25,7 +25,7 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 
 	// TODO: do smth with owner id
 
-	company := &entities.Company{
+	company := &domain.Company{
 		ID:          uuid.New(),
 		Name:        request.Name,
 		Description: request.Description,

@@ -119,6 +119,63 @@
                 }
             }
         },
+        "/companies/{company-id}/vacancies/{vacancy-id}": {
+            "get": {
+                "description": "Returns vacancy by id, company id should be correct, otherwise it's 404",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Get vacancy by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID (UUID)",
+                        "name": "vacancy-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}": {
             "get": {
                 "description": "Returns company profile by UUID",
@@ -385,6 +442,101 @@
                 "website": {
                     "type": "string",
                     "example": "https://google.com"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Mountain View"
+                },
+                "company_id": {
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-01-18T09:30:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Join Google's backend team to build scalable services in Go."
+                },
+                "duration_from_months": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "duration_to_months": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "employment_type": {
+                    "type": "string",
+                    "enum": [
+                        "internship",
+                        "full_time",
+                        "part_time"
+                    ],
+                    "example": "internship"
+                },
+                "flexible_schedule": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "hours_per_week_from": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "hours_per_week_to": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "internship_to_offer": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_active": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_paid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "published_at": {
+                    "type": "string",
+                    "example": "2026-01-20T10:00:00Z"
+                },
+                "salary_from": {
+                    "type": "integer",
+                    "example": 3500
+                },
+                "salary_to": {
+                    "type": "integer",
+                    "example": 5000
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Go Backend Developer Intern"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-01-22T14:15:00Z"
+                },
+                "work_format": {
+                    "type": "string",
+                    "enum": [
+                        "onsite",
+                        "remote",
+                        "hybrid"
+                    ],
+                    "example": "hybrid"
                 }
             }
         },
