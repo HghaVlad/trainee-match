@@ -11,6 +11,7 @@ type Config struct {
 	HTTP      HTTPConfig
 	CompanyDB DBConfig
 	Broker    BrokerConfig
+	Redis     RedisConfig
 }
 
 func Load() (*Config, error) {
@@ -33,6 +34,10 @@ func Load() (*Config, error) {
 		Broker: BrokerConfig{
 			Brokers:       strings.Split(os.Getenv("BROKER_HOST"), ","),
 			ConsumerGroup: os.Getenv("BROKER_CONSUMER_GROUP"),
+		},
+		Redis: RedisConfig{
+			Host: os.Getenv("REDIS_HOST"),
+			Port: os.Getenv("REDIS_PORT"),
 		},
 	}
 

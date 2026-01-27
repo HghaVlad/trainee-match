@@ -1,4 +1,4 @@
-package delete_company
+package update_company
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 )
 
 type CompanyRepo interface {
-	Delete(ctx context.Context, id uuid.UUID) error
+	Update(ctx context.Context, req *Request) error
 }
 
 type CacheRepo interface {

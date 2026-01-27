@@ -7,20 +7,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
-	get_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 )
 
 type App struct {
@@ -37,18 +40,26 @@ func Build(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
+	redisConf := infra_redis.NewConfig(&conf.Redis)
+	redis, err := infra_redis.NewClient(redisConf)
+	if err != nil {
+		return nil, err
+	}
+
 	compRepo := repository.NewCompanyRepository(compDB)
 	vacRepo := repository.NewVacancyRepo(compDB)
-
 	txManager := infra_postgres.NewTxManager(compDB)
 
-	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo)
+	compCache := infra_redis.NewRepo[uuid.UUID, domain.Company](redis, "company")
+	vacCache := infra_redis.NewRepo[uuid.UUID, domain.Vacancy](redis, "vacancy")
+
+	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo)
 	compCreateUc := create_company.NewUsecase(compRepo, txManager)
-	compUpdateUc := update_company.NewUsecase(compRepo, txManager)
-	compDeleteUc := delete_company.NewUsecase(compRepo, txManager)
+	compUpdateUc := update_company.NewUsecase(compRepo, compCache, txManager)
+	compDeleteUc := delete_company.NewUsecase(compRepo, compCache, txManager)
 
-	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo)
+	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
 
 	companyHandler := handlers.NewProfileHandler(
 		compGetByIDUc,

@@ -33,8 +33,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 		extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
 
-		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-			With(gmiddleware.UUIDMiddleware(extractIDFn)).
+		// TODO: disabled timeouts for dev, fix
+
+		// r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+		r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
 			Route("/{id}", func(r chi.Router) {
 
 				r.Get("/", deps.CompanyHandler.GetById)
@@ -52,14 +54,14 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
 			Get("/", deps.CompanyHandler.List)
 
-		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-			Route("/{company-id}/vacancies", func(r chi.Router) {
+		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+		r.Route("/{company-id}/vacancies", func(r chi.Router) {
 
-				r.Route("/{vacancy-id}", func(r chi.Router) {
+			r.Route("/{vacancy-id}", func(r chi.Router) {
 
-					r.Get("/", deps.VacancyHandler.GetByID)
-				})
+				r.Get("/", deps.VacancyHandler.GetByID)
 			})
+		})
 
 	})
 

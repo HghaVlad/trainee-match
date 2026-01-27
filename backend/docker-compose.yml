@@ -27,5 +27,20 @@ services:
       company-db:
         condition: service_healthy
 
+  redis-cache:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server # --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
   company-db-data:
+  redis_data:
