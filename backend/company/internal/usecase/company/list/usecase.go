@@ -2,36 +2,61 @@ package list_companies
 
 import (
 	"context"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
 
 type Usecase struct {
-	repo Repo
+	repo          Repo
+	responseCache ResponseCacheRepo
 }
 
-func NewUsecase(repo Repo) *Usecase {
+func NewUsecase(repo Repo, responseCache ResponseCacheRepo) *Usecase {
 	return &Usecase{
-		repo: repo,
+		repo:          repo,
+		responseCache: responseCache,
 	}
 }
 
+// TODO: if wait 10 sec here, writer won't answer, check and solve this
+
 func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
-	// TODO: if wait 10 sec here, writer won't answer, check and solve this
+
+	respCacheKey := strings.Join([]string{
+		string(req.Order), req.Cursor, strconv.Itoa(req.Limit),
+	}, "-")
+
+	resp := u.responseCache.Get(ctx, respCacheKey)
+	if resp != nil {
+		return resp, nil
+	}
+
+	var err error
 
 	switch req.Order {
 	case OrderVacanciesDesc:
-		return u.listByVacanciesCnt(ctx, req)
+		resp, err = u.listByVacanciesCnt(ctx, req)
 
 	case OrderCreatedAtDesc:
-		return u.listByCreatedAt(ctx, req)
+		resp, err = u.listByCreatedAt(ctx, req)
 
 	case OrderNameAsc:
-		return u.listByName(ctx, req)
+		resp, err = u.listByName(ctx, req)
 
 	default:
 		return nil, domain_errors.ErrUnsupportedListOrder
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Adding to cache with short ttl because it won't be updated/deleted by service
+	u.responseCache.Put(ctx, respCacheKey, resp, time.Second*20)
+	return resp, nil
 }
 
 func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response, error) {

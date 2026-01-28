@@ -4,25 +4,31 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	_ "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 )
 
 type VacancyHandler struct {
 	getByID *get_vacancy.Usecase
+	create  *create_vacancy.Usecase
 }
 
 func NewVacancyHandler(
 	getByID *get_vacancy.Usecase,
+	create *create_vacancy.Usecase,
 ) *VacancyHandler {
 
 	return &VacancyHandler{
 		getByID: getByID,
+		create:  create,
 	}
 }
 
@@ -60,6 +66,50 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	resp := mapper.VacancyToDtoResponse(vacancy)
 	responds.RespondJSON(w, http.StatusOK, resp)
+}
+
+// Create godoc
+// @Summary Create new vacancy
+// @Description Creates new vacancy, returns id
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID (UUID)"
+// @Param vacancy_request body dto.VacancyCreateRequest true "Request to create vacancy"
+// @Success 201 {object} dto.VacancyCreatedResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{company-id}/vacancies [post]
+func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	dtoReq, err := middleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
+	if err != nil {
+		responds.RespondError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
+	if !ok {
+		return
+	}
+
+	if dtoReq.Title == "" {
+		responds.RespondError(w, http.StatusBadRequest, errors.New("non empty title is required"))
+		return
+	}
+
+	req := mapper.VacancyCreateReqToUC(dtoReq, companyID)
+
+	resp, err := h.create.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	dtoResp := mapper.VacancyCreateRespToDto(resp)
+	responds.RespondJSON(w, http.StatusCreated, dtoResp)
 }
 
 func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {

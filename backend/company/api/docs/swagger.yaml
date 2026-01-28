@@ -80,6 +80,58 @@ definitions:
         example: https://google.com
         type: string
     type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreateRequest:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      description:
+        example: Join Google's backend team to build scalable services in Go.
+        type: string
+      duration_from_months:
+        example: 3
+        type: integer
+      duration_to_months:
+        example: 6
+        type: integer
+      employment_type:
+        example: internship
+        type: string
+      flexible_schedule:
+        type: boolean
+      hours_per_week_from:
+        example: 20
+        type: integer
+      hours_per_week_to:
+        example: 40
+        type: integer
+      internship_to_offer:
+        type: boolean
+      is_paid:
+        type: boolean
+      salary_from:
+        example: 1000
+        type: integer
+      salary_to:
+        example: 1500
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      work_format:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: hybrid
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreatedResponse:
+    properties:
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
   github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse:
     properties:
       city:
@@ -235,6 +287,45 @@ paths:
       summary: Create new company
       tags:
       - company
+  /companies/{company-id}/vacancies:
+    post:
+      consumes:
+      - application/json
+      description: Creates new vacancy, returns id
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Request to create vacancy
+        in: body
+        name: vacancy_request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/responds.ErrorResponse'
+      summary: Create new vacancy
+      tags:
+      - vacancy
   /companies/{company-id}/vacancies/{vacancy-id}:
     get:
       consumes:

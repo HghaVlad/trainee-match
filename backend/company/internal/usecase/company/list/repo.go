@@ -2,6 +2,7 @@ package list_companies
 
 import (
 	"context"
+	"time"
 )
 
 type Repo interface {
@@ -13,4 +14,9 @@ type Repo interface {
 
 	ListByVacanciesCnt(ctx context.Context, cursor *VacanciesCntCursor, limit int) (
 		[]CompanySummary, *VacanciesCntCursor, error)
+}
+
+type ResponseCacheRepo interface {
+	Get(ctx context.Context, key string) *Response
+	Put(ctx context.Context, key string, response *Response, exp time.Duration)
 }

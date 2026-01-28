@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
 
 type CursorWrapper struct {

@@ -23,6 +23,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 )
 
@@ -52,14 +53,16 @@ func Build(conf *config.Config) (*App, error) {
 
 	compCache := infra_redis.NewRepo[uuid.UUID, domain.Company](redis, "company")
 	vacCache := infra_redis.NewRepo[uuid.UUID, domain.Vacancy](redis, "vacancy")
+	compListCache := infra_redis.NewRepo[string, list_companies.Response](redis, "companies:list")
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
-	compListUc := list_companies.NewUsecase(compRepo)
+	compListUc := list_companies.NewUsecase(compRepo, compListCache)
 	compCreateUc := create_company.NewUsecase(compRepo, txManager)
 	compUpdateUc := update_company.NewUsecase(compRepo, compCache, txManager)
 	compDeleteUc := delete_company.NewUsecase(compRepo, compCache, txManager)
 
 	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
+	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
 
 	companyHandler := handlers.NewProfileHandler(
 		compGetByIDUc,
@@ -71,6 +74,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
+		vacCreate,
 	)
 
 	routerDeps := &delivery_http.RouterDeps{

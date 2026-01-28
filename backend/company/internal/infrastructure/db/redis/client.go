@@ -12,8 +12,6 @@ import (
 func NewClient(cfg *Config) (*redis.Client, error) {
 	opts := &redis.Options{
 		Addr:         cfg.Addr,
-		Password:     "", // no password set
-		DB:           0,  // use default DB
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  200 * time.Millisecond,
 		WriteTimeout: 200 * time.Millisecond,

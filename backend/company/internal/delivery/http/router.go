@@ -51,8 +51,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
 			Post("/", deps.CompanyHandler.Create)
 
-		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-			Get("/", deps.CompanyHandler.List)
+		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+		r.Get("/", deps.CompanyHandler.List)
 
 		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
 		r.Route("/{company-id}/vacancies", func(r chi.Router) {
@@ -61,6 +61,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				r.Get("/", deps.VacancyHandler.GetByID)
 			})
+
+			r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
+				Post("/", deps.VacancyHandler.Create)
 		})
 
 	})

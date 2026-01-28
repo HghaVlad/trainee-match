@@ -36,3 +36,30 @@ type VacancyResponse struct {
 	CreatedAt   time.Time `json:"created_at" example:"2026-01-18T09:30:00Z"`
 	UpdatedAtAt time.Time `json:"updated_at" example:"2026-01-22T14:15:00Z"`
 }
+
+type VacancyCreateRequest struct {
+	Title       string `json:"title" example:"Go Backend Developer Intern"`
+	Description string `json:"description" example:"Join Google's backend team to build scalable services in Go."`
+
+	WorkFormat string  `json:"work_format" enums:"onsite,remote,hybrid" example:"hybrid"`
+	City       *string `json:"city,omitempty" example:"Mountain View"`
+
+	DurationFromMonths *int `json:"duration_from_months,omitempty" example:"3"`
+	DurationToMonths   *int `json:"duration_to_months,omitempty" example:"6"`
+
+	EmploymentType   string `json:"employment_type" example:"internship"`
+	HoursPerWeekFrom *int   `json:"hours_per_week_from,omitempty" example:"20"`
+	HoursPerWeekTo   *int   `json:"hours_per_week_to,omitempty" example:"40"`
+
+	FlexibleSchedule bool `json:"flexible_schedule"`
+
+	IsPaid     bool `json:"is_paid"`
+	SalaryFrom *int `json:"salary_from,omitempty" example:"1000"`
+	SalaryTo   *int `json:"salary_to,omitempty" example:"1500"`
+
+	InternshipToOffer bool `json:"internship_to_offer"`
+}
+
+type VacancyCreatedResponse struct {
+	ID uuid.UUID `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+}

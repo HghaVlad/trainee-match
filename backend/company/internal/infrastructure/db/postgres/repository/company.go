@@ -78,7 +78,7 @@ func (repo *CompanyRepository) ListByVacanciesCnt(
 	} else {
 		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
 		FROM companies
-		WHERE (open_vacancies_count, name) < ($1, $2)
+		WHERE open_vacancies_count < $1 OR (open_vacancies_count = $1 AND name > $2)
 		ORDER BY open_vacancies_count DESC, name
 		LIMIT $3`
 		args = []any{cursor.Count, cursor.Name, limit}
@@ -127,7 +127,7 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 	} else {
 		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
 		FROM companies
-		WHERE (created_at, name) < ($1, $2)
+		WHERE created_at < $1 OR (created_at = $1 AND name > $2)
 		ORDER BY created_at DESC, name
 		LIMIT $3`
 		args = []any{cursor.CreatedAt, cursor.Name, limit}
@@ -249,6 +249,24 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.R
 
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
+		return domain_errors.ErrCompanyNotFound
+	}
+
+	return nil
+}
+
+func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uuid.UUID) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE companies SET open_vacancies_count = open_vacancies_count+1 WHERE id = $1`, id)
+
+	if err != nil {
+		return err
+	}
+
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
 		return domain_errors.ErrCompanyNotFound
 	}
 

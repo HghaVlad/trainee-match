@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// CacheRepo doesn't return any errors, in this case you should just check actual db.
 type CacheRepo[KeyT, ValT any] struct {
 	rdb    *redis.Client
 	prefix string
@@ -81,5 +82,5 @@ func (repo *CacheRepo[KeyT, ValT]) Del(ctx context.Context, key KeyT) {
 }
 
 func (repo *CacheRepo[KeyT, ValT]) key(key KeyT) string {
-	return repo.prefix + fmt.Sprint(key)
+	return repo.prefix + ":" + fmt.Sprint(key)
 }
