@@ -25,6 +25,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 type App struct {
@@ -63,6 +64,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
 	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
+	vacUpdate := update_vacancy.NewUsecase(vacRepo, vacCache, txManager)
 
 	companyHandler := handlers.NewProfileHandler(
 		compGetByIDUc,
@@ -75,6 +77,7 @@ func Build(conf *config.Config) (*App, error) {
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
 		vacCreate,
+		vacUpdate,
 	)
 
 	routerDeps := &delivery_http.RouterDeps{

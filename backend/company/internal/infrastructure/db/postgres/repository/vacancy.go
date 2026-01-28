@@ -75,6 +75,68 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	return err
 }
 
+func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE vacancies SET
+			title = $1,
+			description = $2,
+
+			work_format = $3,
+			city = $4,
+
+			duration_from_months = $5,
+			duration_to_months = $6,
+
+			employment_type = $7,
+			hours_per_week_from = $8,
+			hours_per_week_to = $9,
+
+			flexible_schedule = $10,
+
+			is_paid = $11,
+			salary_from = $12,
+			salary_to = $13,
+
+			internship_to_offer = $14,
+
+			updated_at = now()
+		WHERE id = $15
+	`,
+		v.Title,
+		v.Description,
+		v.WorkFormat,
+		v.City,
+		v.DurationFromMonths,
+		v.DurationToMonths,
+		v.EmploymentType,
+		v.HoursPerWeekFrom,
+		v.HoursPerWeekTo,
+		v.FlexibleSchedule,
+		v.IsPaid,
+		v.SalaryFrom,
+		v.SalaryTo,
+		v.InternshipToOffer,
+		v.ID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return domain_errors.ErrVacancyNotFound
+	}
+
+	return nil
+}
+
 // returns sqlx.TX if we're in transaction or r.db if not
 func (repo *VacancyRepo) getExec(ctx context.Context) sqlx.ExtContext {
 	tx, ok := ctx.Value(infra_postgres.TxKey{}).(*sqlx.Tx)

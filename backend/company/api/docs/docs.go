@@ -236,6 +236,73 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "Partially updates vacancy fields. Nil fields are ignored (not updated).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Update vacancy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID",
+                        "name": "vacancy-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Vacancy update payload",
+                        "name": "vacancy_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Vacancy updated successfully"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/companies/{id}": {
@@ -671,6 +738,77 @@ const docTemplate = `{
                         "hybrid"
                     ],
                     "example": "hybrid"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Berlin"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Work on high-load backend services using Go and PostgreSQL."
+                },
+                "duration_from_months": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "duration_to_months": {
+                    "type": "integer",
+                    "example": 6
+                },
+                "employment_type": {
+                    "type": "string",
+                    "enum": [
+                        "internship",
+                        "full_time",
+                        "part_time"
+                    ],
+                    "example": "internship"
+                },
+                "flexible_schedule": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "hours_per_week_from": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "hours_per_week_to": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "internship_to_offer": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_paid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "salary_from": {
+                    "type": "integer",
+                    "example": 1000
+                },
+                "salary_to": {
+                    "type": "integer",
+                    "example": 1500
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Go Backend Developer Intern"
+                },
+                "work_format": {
+                    "type": "string",
+                    "enum": [
+                        "onsite",
+                        "remote",
+                        "hybrid"
+                    ],
+                    "example": "remote"
                 }
             }
         },

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
@@ -29,7 +30,13 @@ func NewUsecase(
 }
 
 func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, error) {
-	vacancy := vacancyFromReq(request)
+	id := uuid.New()
+	vacancy := vacancyFromReq(request, id)
+
+	dErr := vacancy.Validate()
+	if dErr != nil {
+		return nil, dErr
+	}
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 
@@ -48,9 +55,9 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 	return &Response{ID: vacancy.ID}, nil
 }
 
-func vacancyFromReq(request *Request) *domain.Vacancy {
-	return &domain.Vacancy{
-		ID:        uuid.New(),
+func vacancyFromReq(request *Request, id uuid.UUID) *domain.Vacancy {
+	vacancy := &domain.Vacancy{
+		ID:        id,
 		CompanyID: request.CompanyID,
 
 		Title:       request.Title,
@@ -62,7 +69,6 @@ func vacancyFromReq(request *Request) *domain.Vacancy {
 		DurationFromMonths: request.DurationFromMonths,
 		DurationToMonths:   request.DurationToMonths,
 
-		EmploymentType:   request.EmploymentType,
 		HoursPerWeekFrom: request.HoursPerWeekFrom,
 		HoursPerWeekTo:   request.HoursPerWeekTo,
 
@@ -74,4 +80,12 @@ func vacancyFromReq(request *Request) *domain.Vacancy {
 
 		InternshipToOffer: request.InternshipToOffer,
 	}
+
+	if request.EmploymentType != nil {
+		vacancy.EmploymentType = *request.EmploymentType
+	} else {
+		vacancy.EmploymentType = value_types.EmploymentTypeInternship
+	}
+
+	return vacancy
 }

@@ -60,6 +60,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.Route("/{vacancy-id}", func(r chi.Router) {
 
 				r.Get("/", deps.VacancyHandler.GetByID)
+
+				r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
+					Patch("/", deps.VacancyHandler.Update)
 			})
 
 			r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).

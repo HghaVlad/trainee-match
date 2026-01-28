@@ -47,9 +47,9 @@ type VacancyCreateRequest struct {
 	DurationFromMonths *int `json:"duration_from_months,omitempty" example:"3"`
 	DurationToMonths   *int `json:"duration_to_months,omitempty" example:"6"`
 
-	EmploymentType   string `json:"employment_type" example:"internship"`
-	HoursPerWeekFrom *int   `json:"hours_per_week_from,omitempty" example:"20"`
-	HoursPerWeekTo   *int   `json:"hours_per_week_to,omitempty" example:"40"`
+	EmploymentType   *string `json:"employment_type" example:"internship"`
+	HoursPerWeekFrom *int    `json:"hours_per_week_from,omitempty" example:"20"`
+	HoursPerWeekTo   *int    `json:"hours_per_week_to,omitempty" example:"40"`
 
 	FlexibleSchedule bool `json:"flexible_schedule"`
 
@@ -62,4 +62,27 @@ type VacancyCreateRequest struct {
 
 type VacancyCreatedResponse struct {
 	ID uuid.UUID `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
+type VacancyUpdateRequest struct {
+	Title       *string `json:"title,omitempty" example:"Go Backend Developer Intern"`
+	Description *string `json:"description,omitempty" example:"Work on high-load backend services using Go and PostgreSQL."`
+
+	WorkFormat *string `json:"work_format,omitempty" enums:"onsite,remote,hybrid" example:"remote"`
+	City       *string `json:"city,omitempty" example:"Berlin"`
+
+	DurationFromMonths *int `json:"duration_from_months,omitempty" example:"3"`
+	DurationToMonths   *int `json:"duration_to_months,omitempty" example:"6"`
+
+	EmploymentType   *string `json:"employment_type,omitempty" enums:"internship,full_time,part_time" example:"internship"`
+	HoursPerWeekFrom *int    `json:"hours_per_week_from,omitempty" example:"20"`
+	HoursPerWeekTo   *int    `json:"hours_per_week_to,omitempty" example:"40"`
+
+	FlexibleSchedule *bool `json:"flexible_schedule,omitempty" example:"true"`
+
+	IsPaid     *bool `json:"is_paid,omitempty" example:"true"`
+	SalaryFrom *int  `json:"salary_from,omitempty" example:"1000"`
+	SalaryTo   *int  `json:"salary_to,omitempty" example:"1500"`
+
+	InternshipToOffer *bool `json:"internship_to_offer,omitempty" example:"true"`
 }

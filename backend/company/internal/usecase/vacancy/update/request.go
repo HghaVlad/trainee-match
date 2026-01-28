@@ -1,4 +1,4 @@
-package create_vacancy
+package update_vacancy
 
 import (
 	"github.com/google/uuid"
@@ -8,11 +8,12 @@ import (
 
 type Request struct {
 	CompanyID uuid.UUID
+	VacancyID uuid.UUID
 
-	Title       string
-	Description string
+	Title       *string
+	Description *string
 
-	WorkFormat value_types.WorkFormat
+	WorkFormat *value_types.WorkFormat
 	City       *string
 
 	DurationFromMonths *int
@@ -22,11 +23,11 @@ type Request struct {
 	HoursPerWeekFrom *int
 	HoursPerWeekTo   *int
 
-	FlexibleSchedule bool
+	FlexibleSchedule *bool
 
-	IsPaid     bool
+	IsPaid     *bool
 	SalaryFrom *int
 	SalaryTo   *int
 
-	InternshipToOffer bool
+	InternshipToOffer *bool
 }

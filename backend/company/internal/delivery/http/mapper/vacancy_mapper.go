@@ -5,7 +5,9 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	update_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
@@ -42,19 +44,18 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
 }
 
 func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID) *create_vacancy.Request {
-	return &create_vacancy.Request{
+	req := &create_vacancy.Request{
 		CompanyID: companyID,
 
 		Title:       dtoReq.Title,
 		Description: dtoReq.Description,
 
-		WorkFormat: domain.WorkFormat(dtoReq.WorkFormat),
+		WorkFormat: value_types.WorkFormat(dtoReq.WorkFormat),
 		City:       dtoReq.City,
 
 		DurationFromMonths: dtoReq.DurationFromMonths,
 		DurationToMonths:   dtoReq.DurationToMonths,
 
-		EmploymentType:   domain.EmploymentType(dtoReq.EmploymentType),
 		HoursPerWeekFrom: dtoReq.HoursPerWeekFrom,
 		HoursPerWeekTo:   dtoReq.HoursPerWeekTo,
 
@@ -66,10 +67,60 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 
 		InternshipToOffer: dtoReq.InternshipToOffer,
 	}
+
+	if dtoReq.EmploymentType != nil {
+		et := value_types.EmploymentType(*dtoReq.EmploymentType)
+		req.EmploymentType = &et
+	}
+
+	return req
 }
 
 func VacancyCreateRespToDto(resp *create_vacancy.Response) *dto.VacancyCreatedResponse {
 	return &dto.VacancyCreatedResponse{
 		ID: resp.ID,
 	}
+}
+
+func VacancyUpdateReqToUC(
+	dtoReq *dto.VacancyUpdateRequest,
+	companyID uuid.UUID,
+	vacancyID uuid.UUID,
+) *update_vacancy.Request {
+
+	req := &update_vacancy.Request{
+		CompanyID: companyID,
+		VacancyID: vacancyID,
+
+		Title:       dtoReq.Title,
+		Description: dtoReq.Description,
+
+		City: dtoReq.City,
+
+		DurationFromMonths: dtoReq.DurationFromMonths,
+		DurationToMonths:   dtoReq.DurationToMonths,
+
+		HoursPerWeekFrom: dtoReq.HoursPerWeekFrom,
+		HoursPerWeekTo:   dtoReq.HoursPerWeekTo,
+
+		FlexibleSchedule: dtoReq.FlexibleSchedule,
+
+		IsPaid:     dtoReq.IsPaid,
+		SalaryFrom: dtoReq.SalaryFrom,
+		SalaryTo:   dtoReq.SalaryTo,
+
+		InternshipToOffer: dtoReq.InternshipToOffer,
+	}
+
+	if dtoReq.WorkFormat != nil {
+		wf := value_types.WorkFormat(*dtoReq.WorkFormat)
+		req.WorkFormat = &wf
+	}
+
+	if dtoReq.WorkFormat != nil {
+		et := value_types.EmploymentType(*dtoReq.EmploymentType)
+		req.EmploymentType = &et
+	}
+
+	return req
 }
