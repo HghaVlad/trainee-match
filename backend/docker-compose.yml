@@ -1,0 +1,21 @@
+services:
+  candidate-db:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    volumes:
+      - candidate-db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: candidate_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d candidate_db" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+
+volumes:
+  candidate-db-data:
