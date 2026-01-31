@@ -2,7 +2,6 @@ package dto
 
 import (
 	"github.com/google/uuid"
-	"time"
 )
 
 type ErrorResponse struct {
@@ -15,5 +14,5 @@ type CandidateResponse struct {
 	Phone    string    `json:"phone"`
 	Telegram string    `json:"telegram"`
 	City     string    `json:"city"`
-	Birthday time.Time `json:"birthday"`
+	Birthday Date      `json:"birthday"`
 }

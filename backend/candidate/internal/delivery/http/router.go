@@ -29,6 +29,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.Use(deps.authMiddleware.Handler)
 			r.Get("/me", deps.candidateHandler.GetMe)
 			r.Post("/", deps.candidateHandler.CreateCandidate)
+			r.Patch("/", deps.candidateHandler.UpdateCandidate)
 		})
 	})
 

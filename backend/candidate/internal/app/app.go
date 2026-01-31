@@ -29,6 +29,10 @@ func Build(conf *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = postgres.Migrate(conf.Db.GetPostgresURL())
+	if err != nil {
+		return nil, err
+	}
 	candidateRepo := repository.NewCandidateRepo(pgPool)
 
 	getCandidateUC := get_candidate.New(candidateRepo)
