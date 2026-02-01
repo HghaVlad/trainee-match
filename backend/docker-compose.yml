@@ -36,5 +36,14 @@ services:
     volumes:
       - ./auth/import:/opt/keycloak/data/import
 
+  auth-service:
+    build:
+      context: auth
+    environment:
+      KC_URL: http://keycloack:8080
+    ports:
+      - "8000:8000"
+
+
 volumes:
   keycloak-db-data:
