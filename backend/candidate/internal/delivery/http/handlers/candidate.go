@@ -36,8 +36,12 @@ func NewCandidate(getById *get_candidate.UseCase, create *create_candidate.UseCa
 // @Summary Get my candidate profile
 // @Tags candidate
 // @Accept json
-// @Product json
+// @Produce json
 // @Success 200 {object} dto.CandidateResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/me [get]
 func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.FromContext(r.Context())
 	if !ok {
@@ -53,7 +57,7 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.RespondJSON(w, http.StatusCreated, dto.CandidateResponse{
+	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserID,
 		Phone:    candidate.Phone,
@@ -71,15 +75,20 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param input body dto.CandidateCreateRequest true "Candidate creation data"
 // @Success 201 {object} dto.CandidateResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 409 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/ [post]
 func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req dto.CandidateCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		return
+	}
+	if err := req.Validate(); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
 		return
 	}
@@ -127,14 +136,19 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param input body dto.CandidateUpdateRequest true "Candidate creation data"
 // @Success 200 {object} dto.CandidateResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/ [patch]
 func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var req dto.CandidateUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		return
+	}
+	if err := req.Validate(); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
 		return
 	}

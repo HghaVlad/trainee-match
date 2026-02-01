@@ -33,5 +33,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		})
 	})
 
+	router.Get("/swagger/*", handlers.SwaggerHandler)
+
 	return router
 }

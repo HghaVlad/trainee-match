@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// @title Trainee Match: Candidate Service API
+// @version 1.0
+// @description API for managing candidate profiles
+// @host 0.0.0.0:8081
+// @BasePath /api/v1
+// @schemes http https
 func main() {
 	slog.Info("Service is starting")
 	slog.SetLogLoggerLevel(-100)

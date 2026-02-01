@@ -1,0 +1,167 @@
+basePath: /api/v1
+definitions:
+  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      id:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+      user_id:
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+    type: object
+  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+host: 0.0.0.0:8081
+info:
+  contact: {}
+  description: API for managing candidate profiles
+  title: 'Trainee Match: Candidate Service API'
+  version: "1.0"
+paths:
+  /candidate/:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+      summary: Update candidate profile
+      tags:
+      - candidate
+    post:
+      consumes:
+      - application/json
+      description: Creates a new candidate profile associated with the authenticated
+        user
+      parameters:
+      - description: Candidate creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+      summary: Create candidate profile
+      tags:
+      - candidate
+  /candidate/me:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+      summary: Get my candidate profile
+      tags:
+      - candidate
+  /swagger/:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint serves the Swagger UI for the API documentation.
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: Swagger UI served successfully
+          schema:
+            type: string
+      summary: Swagger UI
+      tags:
+      - swagger
+schemes:
+- http
+- https
+swagger: "2.0"
