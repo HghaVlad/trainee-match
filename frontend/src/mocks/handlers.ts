@@ -1,24 +1,78 @@
 import { http } from 'msw';
 
-// Исходные вакансии
-let vacancies = [
-  { id: 1, title: 'Frontend Developer', companyName: 'Google', status: undefined },
-  { id: 2, title: 'Backend Developer', companyName: 'Meta', status: 'SENT' },
-  { id: 3, title: 'QA Engineer', companyName: 'Amazon', status: 'REJECTED' },
-];
+interface Vacancy {
+  id: number;
+  title: string;
+  companyName: string;
+  status?: 'SENT' | 'REJECTED';
+  city: string;
+  format: 'remote' | 'office';
+}
+
+let vacancies: Vacancy[] = Array.from({ length: 57 }).map((_, i) => ({
+  id: i + 1,
+  title: i % 2 === 0 ? 'Frontend Developer' : 'Backend Developer',
+  companyName: ['Google', 'Meta', 'Amazon'][i % 3],
+  status: i % 4 === 0 ? 'REJECTED' : undefined,
+  city: ['moscow', 'spb', 'kazan'][i % 3],
+  format: i % 2 == 0 ? 'remote' : 'office',
+}));
 
 export const handlers = [
   // GET список вакансий
-  http.get('*/vacancies', () => {
-    return new Response(JSON.stringify(vacancies), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  http.get('*/vacancies', ({ request }) => {
+    const url = new URL(request.url);
+
+    const search = url.searchParams.get('search')?.toLowerCase() || '';
+    const page = Number(url.searchParams.get('page') ?? 1);
+    const size = Number(url.searchParams.get('size') ?? 5);
+
+    // любые фильтры
+    const city = url.searchParams.get('city');
+    const format = url.searchParams.get('format');
+
+    let filtered = [...vacancies];
+
+    if (search) {
+      filtered = filtered.filter(v =>
+        v.title.toLowerCase().includes(search) ||
+        v.companyName.toLowerCase().includes(search)
+      );
+    }
+
+    if (city) {
+      filtered = filtered.filter(v => v.city === city);
+    }
+
+    if (format) {
+      filtered = filtered.filter(v => v.format === format);
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * size;
+    const end = start + size;
+    const content = filtered.slice(start, end);
+
+    // --- ответ ---
+    return new Response(
+      JSON.stringify({
+        content,
+        page,
+        size,
+        total,
+        totalPages: Math.ceil(total / size),
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }),
 
   // Подать заявку
-  http.post('*/applications/:id/apply', async ({ params }) => {
+  http.post('*/applications/:id/apply', ({ params }) => {
     const id = Number(params.id);
+
+    console.log("clicked");
     vacancies = vacancies.map(v =>
       v.id === id ? { ...v, status: 'SENT' } : v
     );
@@ -26,13 +80,13 @@ export const handlers = [
     return new Response(null, { status: 200 });
   }),
 
-  // Отозвать заявку
-  http.delete('*/applications/:id/withdraw', async ({ params }) => {
+  http.delete('*/applications/:id/withdraw', ({ params }) => {
     const id = Number(params.id);
+
     vacancies = vacancies.map(v =>
       v.id === id ? { ...v, status: undefined } : v
     );
 
     return new Response(null, { status: 200 });
-  }),
+  })
 ];

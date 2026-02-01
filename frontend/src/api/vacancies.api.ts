@@ -2,8 +2,9 @@ import { api } from './axios';
 
 export const getVacancies = (params?: {
   search?: string;
-  city?: string;
-  format?: string;
+  page: number;
+  size: number;
+  [key: string]: any;
 }) => api.get('/vacancies', { params });
 
 export const applyToVacancy = (id: number) =>
