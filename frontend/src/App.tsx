@@ -1,8 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
+
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import RequireAuth from './auth/RequireAuth';
 import ForbiddenPage from './pages/FirbiddenPage';
+
+import VacanciesListPage from './pages/vacancies/VacanciesListPage';
 
 export default function App() {
   return (
@@ -11,11 +14,11 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
 
       <Route
-        path="/"
+        path="/vacancies"
         element={
-          <RequireAuth allowedRoles={['Candidate']}>
-            <div>Список стажировок</div>
-          </RequireAuth>
+          // <RequireAuth allowedRoles={['Candidate']}>
+            <VacanciesListPage />
+          // </RequireAuth>
         }
       />
 

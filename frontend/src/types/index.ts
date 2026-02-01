@@ -1,7 +1,7 @@
-export interface Internship {
+export interface Vacancy {
   id: number;
   title: string;
-  company: string;
-  city: string;
-  publishedAt: string;
+  companyName: string;
+  hasApplied: boolean;
+  status?: 'SENT' | 'REJECTED';
 }
