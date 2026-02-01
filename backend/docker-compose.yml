@@ -16,6 +16,21 @@ services:
       retries: 15
       start_period: 10s
 
+  candidate-service:
+    build:
+      context: candidate
+    environment:
+      DB_HOST: candidate-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB.PASSWORD: postgres
+      DB_NAME: candidate_db
+      ADDR: 0.0.0.0:8081
+      JWKURL: http://keycloack:8080/realms/trainee-match/protocol/openid-connect/certs
+
+    ports:
+      - "8081:8081"
+
 
 volumes:
   candidate-db-data:

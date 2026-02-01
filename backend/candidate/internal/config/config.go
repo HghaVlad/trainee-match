@@ -18,11 +18,14 @@ func Load() (*Config, error) {
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	v.SetDefault("DB_HOST", "localhost")
-	v.SetDefault("DB_PORT", 5432)
-	v.SetDefault("DB_USER", "postgres")
-	v.SetDefault("DB_PASSWORD", "postgres")
-	v.SetDefault("DB_NAME", "candidate")
+	v.SetDefault("DB.HOST", "localhost")
+	v.SetDefault("DB.PORT", 5432)
+	v.SetDefault("DB.USER", "postgres")
+	v.SetDefault("DB.PASSWORD", "postgres")
+	v.SetDefault("DB.NAME", "candidate")
+
+	v.BindEnv("Addr", "ADDR")
+	v.BindEnv("JWKUrl", "JWKURL")
 
 	v.SetConfigName("config")
 	v.SetConfigType("env")
