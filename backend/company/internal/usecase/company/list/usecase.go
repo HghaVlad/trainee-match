@@ -21,8 +21,6 @@ func NewUsecase(repo Repo, responseCache ResponseCacheRepo) *Usecase {
 	}
 }
 
-// TODO: if wait 10 sec here, writer won't answer, check and solve this
-
 func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
 
 	respCacheKey := strings.Join([]string{
@@ -33,6 +31,9 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 	if resp != nil {
 		return resp, nil
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
 
 	var err error
 

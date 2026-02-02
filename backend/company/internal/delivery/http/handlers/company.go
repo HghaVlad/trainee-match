@@ -59,9 +59,8 @@ func NewProfileHandler(
 func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := middleware.UUIDFromContext(ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
+	id, ok := helpers.ParseUuidFromPathOr400(r, w, "id")
+	if !ok {
 		return
 	}
 
@@ -132,11 +131,6 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if dtoReq.Name == "" {
-		responds.RespondError(w, http.StatusBadRequest, errors.New("non empty name is required"))
-		return
-	}
-
 	// TODO: add jwt owner id prolly
 
 	req := mapper.CompanyCreateReqToUC(dtoReq)
@@ -177,11 +171,6 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	dtoReq, err := middleware.BodyFromContext[dto.CompanyUpdateRequest](ctx)
 	if err != nil {
 		h.handleErr(w, err)
-		return
-	}
-
-	if dtoReq.Name != nil && *dtoReq.Name == "" {
-		responds.RespondError(w, http.StatusBadRequest, errors.New("name cannot be empty"))
 		return
 	}
 
@@ -234,7 +223,9 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 		responds.RespondError(w, http.StatusConflict, err)
 
 	case errors.Is(err, domain_errors.ErrInvalidCursor),
-		errors.Is(err, domain_errors.ErrCursorOrderMismatch):
+		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
+		errors.Is(err, domain_errors.ErrCompanyInvalidDescriptionLen),
+		errors.Is(err, domain_errors.ErrCompanyInvalidNameLen):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
 	default:

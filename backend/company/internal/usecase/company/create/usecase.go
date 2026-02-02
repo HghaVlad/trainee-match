@@ -2,22 +2,20 @@ package create_company
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type Usecase struct {
-	repo      CompanyRepo
-	txManager uc_common.TxManager
+	repo CompanyRepo
 }
 
-func NewUsecase(repo CompanyRepo, txManager uc_common.TxManager) *Usecase {
+func NewUsecase(repo CompanyRepo) *Usecase {
 	return &Usecase{
-		repo:      repo,
-		txManager: txManager,
+		repo: repo,
 	}
 }
 
@@ -33,9 +31,10 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 		OwnerID:     uuid.New(),
 	}
 
-	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		return u.repo.Create(ctx, company)
-	})
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	err := u.repo.Create(ctx, company)
 
 	if err != nil {
 		return nil, err

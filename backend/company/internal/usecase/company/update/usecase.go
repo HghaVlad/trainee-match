@@ -2,33 +2,33 @@ package update_company
 
 import (
 	"context"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"time"
 )
 
 type Usecase struct {
-	repo      CompanyRepo
-	cache     CacheRepo
-	txManager uc_common.TxManager
+	repo  CompanyRepo
+	cache CacheRepo
 }
 
 func NewUsecase(
 	repo CompanyRepo,
 	cache CacheRepo,
-	txManager uc_common.TxManager,
 ) *Usecase {
 	return &Usecase{
-		repo:      repo,
-		cache:     cache,
-		txManager: txManager,
+		repo:  repo,
+		cache: cache,
 	}
 }
 
 func (u *Usecase) Execute(ctx context.Context, req *Request) error {
-	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+	if err := req.Validate(); err != nil {
+		return err
+	}
 
-		return u.repo.Update(ctx, req)
-	})
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	err := u.repo.Update(ctx, req)
 
 	if err != nil {
 		return err

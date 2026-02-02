@@ -2,6 +2,7 @@ package update_vacancy
 
 import (
 	"context"
+	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
@@ -27,6 +28,9 @@ func NewUsecase(
 }
 
 func (u *Usecase) Execute(ctx context.Context, req *Request) error {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 
 		vacancy, err := u.repo.GetByID(ctx, req.VacancyID, req.CompanyID)

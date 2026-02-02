@@ -63,6 +63,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
 					Patch("/", deps.VacancyHandler.Update)
+
+				r.Delete("/", deps.VacancyHandler.Delete)
 			})
 
 			r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).

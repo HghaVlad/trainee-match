@@ -8,11 +8,11 @@ import (
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	_ "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
@@ -21,18 +21,21 @@ type VacancyHandler struct {
 	getByID *get_vacancy.Usecase
 	create  *create_vacancy.Usecase
 	update  *update_vacancy.Usecase
+	delete  *delete_vacancy.Usecase
 }
 
 func NewVacancyHandler(
 	getByID *get_vacancy.Usecase,
 	create *create_vacancy.Usecase,
 	update *update_vacancy.Usecase,
+	delete *delete_vacancy.Usecase,
 ) *VacancyHandler {
 
 	return &VacancyHandler{
 		getByID: getByID,
 		create:  create,
 		update:  update,
+		delete:  delete,
 	}
 }
 
@@ -99,11 +102,6 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if dtoReq.Title == "" {
-		responds.RespondError(w, http.StatusBadRequest, errors.New("non empty title is required"))
-		return
-	}
-
 	req := mapper.VacancyCreateReqToUC(dtoReq, companyID)
 
 	resp, err := h.create.Execute(ctx, req)
@@ -153,6 +151,40 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	req := mapper.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
 
 	err = h.update.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Delete godoc
+// @Summary Delete vacancy
+// @Description Deletes vacancy by id
+// @Tags vacancy
+// @Produce json
+// @Param vacancy-id path string true "Vacancy ID"
+// @Param company-id path string true "Company ID"
+// @Success 204
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{company-id}/vacancies/{vacancy-id} [delete]
+func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
+	if !ok {
+		return
+	}
+
+	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
+	if !ok {
+		return
+	}
+
+	err := h.delete.Execute(ctx, vacancyID, companyID)
 	if err != nil {
 		h.handleErr(w, err)
 		return

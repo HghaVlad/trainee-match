@@ -28,6 +28,9 @@ func (u *Usecase) Execute(ctx context.Context, vacancyID uuid.UUID, companyID uu
 		return vacancy, nil
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
 	vacancy, err := u.repo.GetByID(ctx, vacancyID, companyID)
 	if err != nil {
 		return nil, err

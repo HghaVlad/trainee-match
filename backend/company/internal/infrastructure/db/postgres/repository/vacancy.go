@@ -26,7 +26,8 @@ func NewVacancyRepo(db *sqlx.DB) *VacancyRepo {
 // GetByID returns ErrVacancyNotFound if vacancy's company_id != companyID
 func (repo *VacancyRepo) GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error) {
 	var company domain.Vacancy
-	err := repo.db.GetContext(ctx, &company, "SELECT * FROM vacancies WHERE id = $1 AND company_id = $2",
+	err := repo.db.GetContext(ctx, &company,
+		"SELECT * FROM vacancies WHERE id = $1 AND company_id = $2",
 		vacancyID, companyID)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -131,6 +132,23 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 	}
 
 	if affected == 0 {
+		return domain_errors.ErrVacancyNotFound
+	}
+
+	return nil
+}
+
+func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`DELETE FROM vacancies WHERE id = $1 AND company_id = $2`, vacancyID, companyID)
+	if err != nil {
+		return err
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
 		return domain_errors.ErrVacancyNotFound
 	}
 

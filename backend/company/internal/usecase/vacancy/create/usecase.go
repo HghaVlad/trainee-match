@@ -2,6 +2,7 @@ package create_vacancy
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -37,6 +38,9 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 	if dErr != nil {
 		return nil, dErr
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 

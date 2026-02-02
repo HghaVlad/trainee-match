@@ -2,35 +2,31 @@ package delete_company
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type Usecase struct {
-	repo      CompanyRepo
-	cache     CacheRepo
-	txManager uc_common.TxManager
+	repo  CompanyRepo
+	cache CacheRepo
 }
 
 func NewUsecase(
 	repo CompanyRepo,
 	cache CacheRepo,
-	txManager uc_common.TxManager,
 ) *Usecase {
 	return &Usecase{
-		repo:      repo,
-		cache:     cache,
-		txManager: txManager,
+		repo:  repo,
+		cache: cache,
 	}
 }
 
 func (u *Usecase) Execute(ctx context.Context, id uuid.UUID) error {
-	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
 
-		return u.repo.Delete(ctx, id)
-	})
+	err := u.repo.Delete(ctx, id)
 
 	if err != nil {
 		return err
