@@ -1,13 +1,14 @@
 package mapper
 
 import (
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
-	update_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
@@ -74,6 +75,39 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 	}
 
 	return req
+}
+
+func VacancyListRespToDto(
+	resp *list_vacancy.Response,
+) *dto.VacancyListResponse {
+
+	items := make([]dto.VacancyListItemResponse, 0, len(resp.Vacancies))
+
+	for _, v := range resp.Vacancies {
+		items = append(items, dto.VacancyListItemResponse{
+			ID:        v.ID,
+			CompanyID: v.CompanyID,
+
+			CompanyName: v.CompanyName,
+
+			Title:      v.Title,
+			WorkFormat: string(v.WorkFormat),
+			City:       v.City,
+
+			EmploymentType: string(v.EmploymentType),
+
+			IsPaid:     v.IsPaid,
+			SalaryFrom: v.SalaryFrom,
+			SalaryTo:   v.SalaryTo,
+
+			PublishedAt: v.PublishedAt,
+		})
+	}
+
+	return &dto.VacancyListResponse{
+		Vacancies:  items,
+		NextCursor: resp.NextCursor,
+	}
 }
 
 func VacancyCreateRespToDto(resp *create_vacancy.Response) *dto.VacancyCreatedResponse {

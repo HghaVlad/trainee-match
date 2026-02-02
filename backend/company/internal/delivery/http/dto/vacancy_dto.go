@@ -37,6 +37,30 @@ type VacancyResponse struct {
 	UpdatedAtAt time.Time `json:"updated_at" example:"2026-01-22T14:15:00Z"`
 }
 
+type VacancyListItemResponse struct {
+	ID        uuid.UUID `json:"id" example:"3fa85f64-5717-4562-b3fc-2c963f66afa6"`
+	CompanyID uuid.UUID `json:"companyId" example:"d290f1ee-6c54-4b01-90e6-d701748f0851"`
+
+	CompanyName string `json:"companyName" example:"Google Inc."`
+
+	Title      string  `json:"title" example:"Go Backend Developer Intern"`
+	WorkFormat string  `json:"workFormat" example:"hybrid"`
+	City       *string `json:"city,omitempty" example:"Mountain View"`
+
+	EmploymentType string `json:"employmentType" example:"internship,full_time,part_time" example:"internship"`
+
+	IsPaid     bool `json:"isPaid" example:"true"`
+	SalaryFrom *int `json:"salaryFrom,omitempty" example:"3500"`
+	SalaryTo   *int `json:"salaryTo,omitempty" example:"5000"`
+
+	PublishedAt time.Time `json:"publishedAt" example:"2026-01-18T09:30:00Z"`
+}
+
+type VacancyListResponse struct {
+	Vacancies  []VacancyListItemResponse `json:"vacancies"`
+	NextCursor *string                   `json:"nextCursor,omitempty"`
+}
+
 type VacancyCreateRequest struct {
 	Title       string `json:"title" example:"Go Backend Developer Intern"`
 	Description string `json:"description" example:"Join Google's backend team to build scalable services in Go."`

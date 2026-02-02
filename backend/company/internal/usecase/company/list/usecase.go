@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
 )
 
 type Usecase struct {
@@ -61,7 +62,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 }
 
 func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response, error) {
-	cursor, curErr := decodeCursor[CreatedAtCursor](req.Cursor, req.Order)
+	cursor, curErr := encoding.DecodeCursor[CreatedAtCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
 	}
@@ -71,7 +72,7 @@ func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response,
 		return nil, err
 	}
 
-	nextCursorEncoded, err := encodeCursor[CreatedAtCursor](OrderCreatedAtDesc, nextCursor)
+	nextCursorEncoded, err := encoding.EncodeCursor[CreatedAtCursor, Order](OrderCreatedAtDesc, nextCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response,
 }
 
 func (u *Usecase) listByVacanciesCnt(ctx context.Context, req *Request) (*Response, error) {
-	cursor, curErr := decodeCursor[VacanciesCntCursor](req.Cursor, req.Order)
+	cursor, curErr := encoding.DecodeCursor[VacanciesCntCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
 	}
@@ -95,7 +96,7 @@ func (u *Usecase) listByVacanciesCnt(ctx context.Context, req *Request) (*Respon
 		return nil, err
 	}
 
-	nextCursorEncoded, err := encodeCursor[VacanciesCntCursor](OrderVacanciesDesc, nextCursor)
+	nextCursorEncoded, err := encoding.EncodeCursor[VacanciesCntCursor, Order](OrderVacanciesDesc, nextCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (u *Usecase) listByVacanciesCnt(ctx context.Context, req *Request) (*Respon
 }
 
 func (u *Usecase) listByName(ctx context.Context, req *Request) (*Response, error) {
-	cursor, curErr := decodeCursor[NameCursor](req.Cursor, req.Order)
+	cursor, curErr := encoding.DecodeCursor[NameCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
 	}
@@ -119,7 +120,7 @@ func (u *Usecase) listByName(ctx context.Context, req *Request) (*Response, erro
 		return nil, err
 	}
 
-	nextCursorEncoded, err := encodeCursor[NameCursor](OrderNameAsc, nextCursor)
+	nextCursorEncoded, err := encoding.EncodeCursor[NameCursor, Order](OrderNameAsc, nextCursor)
 	if err != nil {
 		return nil, err
 	}

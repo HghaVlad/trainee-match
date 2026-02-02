@@ -54,6 +54,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) error {
 	return nil
 }
 
+// Applies not-nil only
 func applyPatch(v *domain.Vacancy, r *Request) {
 	if r.Title != nil {
 		v.Title = *r.Title

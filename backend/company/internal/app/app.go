@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -56,6 +57,7 @@ func Build(conf *config.Config) (*App, error) {
 	compCache := infra_redis.NewRepo[uuid.UUID, domain.Company](redis, "company")
 	vacCache := infra_redis.NewRepo[uuid.UUID, domain.Vacancy](redis, "vacancy")
 	compListCache := infra_redis.NewRepo[string, list_companies.Response](redis, "companies:list")
+	vacListCache := infra_redis.NewRepo[string, list_vacancy.Response](redis, "vacancies:list")
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
@@ -64,6 +66,7 @@ func Build(conf *config.Config) (*App, error) {
 	compDeleteUc := delete_company.NewUsecase(compRepo, compCache)
 
 	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
+	vacList := list_vacancy.NewUsecase(vacRepo, vacListCache)
 	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
 	vacUpdate := update_vacancy.NewUsecase(vacRepo, vacCache, txManager)
 	vacDelete := delete_vacancy.NewUsecase(vacRepo, vacCache)
@@ -78,6 +81,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
+		vacList,
 		vacCreate,
 		vacUpdate,
 		vacDelete,

@@ -3,7 +3,9 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
@@ -19,6 +21,7 @@ import (
 
 type VacancyHandler struct {
 	getByID *get_vacancy.Usecase
+	list    *list_vacancy.Usecase
 	create  *create_vacancy.Usecase
 	update  *update_vacancy.Usecase
 	delete  *delete_vacancy.Usecase
@@ -26,6 +29,7 @@ type VacancyHandler struct {
 
 func NewVacancyHandler(
 	getByID *get_vacancy.Usecase,
+	list *list_vacancy.Usecase,
 	create *create_vacancy.Usecase,
 	update *update_vacancy.Usecase,
 	delete *delete_vacancy.Usecase,
@@ -33,6 +37,7 @@ func NewVacancyHandler(
 
 	return &VacancyHandler{
 		getByID: getByID,
+		list:    list,
 		create:  create,
 		update:  update,
 		delete:  delete,
@@ -112,6 +117,42 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	dtoResp := mapper.VacancyCreateRespToDto(resp)
 	responds.RespondJSON(w, http.StatusCreated, dtoResp)
+}
+
+// List godoc
+// @Summary List vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param order query string false "Order attribute" default(published_at_desc)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} dto.VacancyListResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /vacancies [get]
+func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	limit := helpers.ParseLimit(r, "limit", 20)
+	order := h.parseOrderQuery(r)
+	cursor := r.URL.Query().Get("cursor")
+
+	req := &list_vacancy.Request{
+		Limit:  limit,
+		Order:  order,
+		Cursor: cursor,
+	}
+
+	res, err := h.list.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	resp := mapper.VacancyListRespToDto(res)
+	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
 // Update godoc
@@ -213,5 +254,17 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 
 	default:
 		responds.RespondError(w, http.StatusInternalServerError, err)
+	}
+}
+
+func (h *VacancyHandler) parseOrderQuery(r *http.Request) list_vacancy.Order {
+	str := r.URL.Query().Get("order")
+	ord := list_vacancy.Order(strings.Trim(str, " "))
+
+	switch ord {
+	case list_vacancy.OrderPublishedAtDesc:
+		return ord
+	default:
+		return list_vacancy.OrderPublishedAtDesc
 	}
 }

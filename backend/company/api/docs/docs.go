@@ -505,6 +505,63 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/vacancies": {
+            "get": {
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "List vacancy summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "published_at_desc",
+                        "description": "Order attribute",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -692,6 +749,69 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListItemResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Mountain View"
+                },
+                "companyId": {
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                },
+                "companyName": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "employmentType": {
+                    "type": "string",
+                    "example": "internship,full_time,part_time"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "isPaid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "publishedAt": {
+                    "type": "string",
+                    "example": "2026-01-18T09:30:00Z"
+                },
+                "salaryFrom": {
+                    "type": "integer",
+                    "example": 3500
+                },
+                "salaryTo": {
+                    "type": "integer",
+                    "example": 5000
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Go Backend Developer Intern"
+                },
+                "workFormat": {
+                    "type": "string",
+                    "example": "hybrid"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListResponse": {
+            "type": "object",
+            "properties": {
+                "nextCursor": {
+                    "type": "string"
+                },
+                "vacancies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListItemResponse"
+                    }
                 }
             }
         },

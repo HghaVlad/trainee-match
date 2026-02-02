@@ -73,6 +73,12 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 	})
 
+	router.Route("/api/v1/vacancies", func(r chi.Router) {
+
+		r.Get("/", deps.VacancyHandler.List)
+
+	})
+
 	addHello(router)
 	addSwagger(router)
 

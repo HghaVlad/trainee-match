@@ -1,4 +1,4 @@
-package list_companies
+package encoding
 
 import (
 	"encoding/base64"
@@ -8,14 +8,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
 
-type CursorWrapper struct {
-	Order Order
+type CursorWrapper[OrderT comparable] struct {
+	Order OrderT
 	Data  []byte
 }
 
-// Maybe move to somewhere common for reuse
-
-func decodeCursor[T any](raw string, expectedOrder Order) (*T, error) {
+func DecodeCursor[T any, OrderT comparable](raw string, expectedOrder OrderT) (*T, error) {
 	if raw == "" {
 		return nil, nil
 	}
@@ -25,7 +23,7 @@ func decodeCursor[T any](raw string, expectedOrder Order) (*T, error) {
 		return nil, fmt.Errorf("%v: %w", err, domain_errors.ErrInvalidCursor)
 	}
 
-	var wrapper CursorWrapper
+	var wrapper CursorWrapper[OrderT]
 	if err := json.Unmarshal(b, &wrapper); err != nil {
 		return nil, fmt.Errorf("%v: %w", domain_errors.ErrInvalidCursor, err)
 	}
@@ -42,7 +40,7 @@ func decodeCursor[T any](raw string, expectedOrder Order) (*T, error) {
 	return &result, nil
 }
 
-func encodeCursor[T any](order Order, data *T) (*string, error) {
+func EncodeCursor[T any, OrderT comparable](order OrderT, data *T) (*string, error) {
 	if data == nil {
 		return nil, nil
 	}
@@ -52,7 +50,7 @@ func encodeCursor[T any](order Order, data *T) (*string, error) {
 		return nil, err
 	}
 
-	wrapper := CursorWrapper{
+	wrapper := CursorWrapper[OrderT]{
 		Order: order,
 		Data:  payload,
 	}

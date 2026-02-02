@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
@@ -74,6 +75,59 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	}
 
 	return err
+}
+
+func (repo *VacancyRepo) ListByPublishedAt(
+	ctx context.Context,
+	cursor *list_vacancy.PublishedAtCursor,
+	limit int,
+) (
+	[]list_vacancy.VacancySummary, *list_vacancy.PublishedAtCursor, error) {
+
+	var query string
+	var args []any
+
+	if cursor == nil {
+		query =
+			`SELECT v.id, v.company_id, c.name AS company_name, v.title, v.work_format, v.city, v.employment_type,
+       	v.is_paid, v.salary_from, v.salary_to, v.published_at
+		FROM vacancies v
+		JOIN companies c ON v.company_id = c.id
+		WHERE v.is_active = true
+		ORDER BY v.published_at DESC, v.id
+		LIMIT $1`
+		args = []any{limit}
+	} else {
+		query =
+			`SELECT v.id, v.company_id, c.name AS company_name, v.title, v.work_format, v.city, v.employment_type,
+       	v.is_paid, v.salary_from, v.salary_to, v.published_at
+		FROM vacancies v
+		JOIN companies c ON v.company_id = c.id 
+		WHERE (v.published_at < $1 OR (v.published_at = $1 AND v.id < $2)) AND v.is_active = true
+		ORDER BY v.published_at DESC, v.id DESC
+		LIMIT $3`
+		args = []any{cursor.PublishedAt, cursor.Id, limit}
+	}
+
+	var vacancies []list_vacancy.VacancySummary
+
+	err := repo.db.SelectContext(ctx, &vacancies, query, args...)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(vacancies) < limit {
+		return vacancies, nil, nil
+	}
+
+	last := vacancies[len(vacancies)-1]
+	nextCursor := list_vacancy.PublishedAtCursor{
+		PublishedAt: last.PublishedAt,
+		Id:          last.ID,
+	}
+
+	return vacancies, &nextCursor, nil
 }
 
 func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
