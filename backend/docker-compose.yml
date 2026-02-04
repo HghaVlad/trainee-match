@@ -30,6 +30,8 @@ services:
 
     ports:
       - "8081:8081"
+    depends_on:
+      - candidate-db
 
 
 volumes:

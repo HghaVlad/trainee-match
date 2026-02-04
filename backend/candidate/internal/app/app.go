@@ -10,9 +10,13 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"net/http"
@@ -33,17 +37,28 @@ func Build(conf *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	candidateRepo := repository.NewCandidateRepo(pgPool)
+	resumeRepo := repository.NewResumeRepo(pgPool)
+	skillRepo := repository.NewSkillRepo(pgPool)
 
 	getCandidateUC := get_candidate.New(candidateRepo)
 	createCandidateUC := create_candidate.New(candidateRepo)
 	updateCandidateUC := update_candidate.New(candidateRepo)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
+	
+	getResumeUC := get_resume.New(resumeRepo)
+	createResumeUC := create_resume.New(resumeRepo, skillRepo)
+	updateResumeUC := update_resume.New(resumeRepo, skillRepo)
+	
+	getSkillUC := get_skill.New(skillRepo)
 
 	candidateHandler := handlers.NewCandidate(getCandidateUC, createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
+	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 
-	router := myhttp.NewRouter(myhttp.NewRouterDeps(authMiddleware, candidateHandler))
+	router := myhttp.NewRouter(myhttp.NewRouterDeps(authMiddleware, candidateHandler, resumeHandler, skillHandler))
 
 	httpServer := &http.Server{
 		Addr:         conf.Addr,
