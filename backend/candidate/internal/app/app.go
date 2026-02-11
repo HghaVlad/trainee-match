@@ -37,7 +37,7 @@ func Build(conf *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	candidateRepo := repository.NewCandidateRepo(pgPool)
 	resumeRepo := repository.NewResumeRepo(pgPool)
 	skillRepo := repository.NewSkillRepo(pgPool)
@@ -46,15 +46,15 @@ func Build(conf *config.Config) (*App, error) {
 	createCandidateUC := create_candidate.New(candidateRepo)
 	updateCandidateUC := update_candidate.New(candidateRepo)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
-	
+
 	getResumeUC := get_resume.New(resumeRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo)
 	updateResumeUC := update_resume.New(resumeRepo, skillRepo)
-	
+
 	getSkillUC := get_skill.New(skillRepo)
 
 	candidateHandler := handlers.NewCandidate(getCandidateUC, createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
-	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, getCandidateByUserIdUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 

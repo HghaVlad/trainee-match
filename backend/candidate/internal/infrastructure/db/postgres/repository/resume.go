@@ -18,7 +18,7 @@ func NewResumeRepo(db *pgxpool.Pool) *ResumeRepo {
 }
 
 func (r *ResumeRepo) Create(ctx context.Context, resume *domain.Resume) (uuid.UUID, error) {
-	query := `INSERT INTO resume (candidate_id, name, status, data) VALUES ($1, $2, $3, $4) RETURNING id`
+	query := `INSERT INTO resumes (candidate_id, name, status, data) VALUES ($1, $2, $3, $4) RETURNING id`
 
 	var id uuid.UUID
 	err := r.db.QueryRow(ctx, query, resume.CandidateId, resume.Name, resume.Status, resume.Data).Scan(&id)
@@ -29,7 +29,7 @@ func (r *ResumeRepo) Create(ctx context.Context, resume *domain.Resume) (uuid.UU
 }
 
 func (r *ResumeRepo) GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error) {
-	query := `SELECT id, candidate_id, name, status, data FROM resume WHERE id = $1`
+	query := `SELECT id, candidate_id, name, status, data FROM resumes WHERE id = $1`
 
 	var resume domain.Resume
 	err := r.db.QueryRow(ctx, query, id).Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.Data)
@@ -43,7 +43,7 @@ func (r *ResumeRepo) GetById(ctx context.Context, id uuid.UUID) (domain.Resume, 
 }
 
 func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID) ([]domain.Resume, error) {
-	query := `SELECT id, candidate_id, name, status FROM resume WHERE candidate_id = $1`
+	query := `SELECT id, candidate_id, name, status FROM resumes WHERE candidate_id = $1`
 
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
@@ -64,7 +64,7 @@ func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID) ([]
 }
 
 func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
-	query := `UPDATE resume SET name = $1, status = $2, data = $3 WHERE id = $4`
+	query := `UPDATE resumes SET name = $1, status = $2, data = $3 WHERE id = $4`
 
 	_, err := r.db.Exec(ctx, query, resume.Name, resume.Status, resume.Data, resume.ID)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
 }
 
 func (r *ResumeRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM resume WHERE id = $1`
+	query := `DELETE FROM resumes WHERE id = $1`
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {

@@ -13,7 +13,7 @@ type ResumeRepo interface {
 }
 
 type SkillRepo interface {
-	CheckExistsBatch(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]bool, error)
+	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
 type UseCase struct {
@@ -41,67 +41,85 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		resume.Status = *req.Status
 	}
 	if req.Data != nil {
-		// Check if all skills exist
-		if len(req.Data.SkillsList) > 0 {
-			existingSkills, err := uc.skillRepo.CheckExistsBatch(ctx, req.Data.SkillsList)
+		if req.Data.SkillsList != nil {
+			ok, err := uc.skillRepo.AreSkillsExist(ctx, *req.Data.SkillsList)
 			if err != nil {
 				return Response{}, err
 			}
+			if !ok {
+				return Response{}, domain.ErrSkillNotFound
+			}
+			resume.Data.SkillsList = *req.Data.SkillsList
+		}
 
-			// Check if any skill doesn't exist
-			for _, skillId := range req.Data.SkillsList {
-				if !existingSkills[skillId] {
-					return Response{}, domain.ErrSkillNotFound
+		if req.Data.LastName != nil {
+			resume.Data.LastName = *req.Data.LastName
+		}
+		if req.Data.FirstName != nil {
+			resume.Data.FirstName = *req.Data.FirstName
+		}
+		if req.Data.MiddleName != nil {
+			resume.Data.MiddleName = *req.Data.MiddleName
+		}
+		if req.Data.DateOfBirth != nil {
+			dateOfBirth, err := time.Parse("02.01.2006", *req.Data.DateOfBirth)
+			if err != nil {
+				return Response{}, err
+			}
+			resume.Data.DateOfBirth = dateOfBirth
+		}
+		if req.Data.Email != nil {
+			resume.Data.Email = *req.Data.Email
+		}
+		if req.Data.Phone != nil {
+			resume.Data.Phone = *req.Data.Phone
+		}
+		if req.Data.City != nil {
+			resume.Data.City = *req.Data.City
+		}
+		if req.Data.Citizenship != nil {
+			resume.Data.Citizenship = *req.Data.Citizenship
+		}
+		if req.Data.AdditionalInfo != nil {
+			resume.Data.AdditionalInfo = *req.Data.AdditionalInfo
+		}
+		if req.Data.PortfolioLink != nil {
+			resume.Data.PortfolioLink = *req.Data.PortfolioLink
+		}
+		if req.Data.DesiredFormat != nil {
+			resume.Data.DesiredFormat = *req.Data.DesiredFormat
+		}
+		if req.Data.EnglishLevel != nil {
+			resume.Data.EnglishLevel = *req.Data.EnglishLevel
+		}
+
+		// For slices, we replace the entire slice if provided in the request
+		if req.Data.Education != nil {
+			resume.Data.Education = make([]domain.Education, len(*req.Data.Education))
+			for i, edu := range *req.Data.Education {
+				resume.Data.Education[i] = domain.Education{
+					Level:          edu.Level,
+					University:     edu.University,
+					Faculty:        edu.Faculty,
+					Specialization: edu.Specialization,
+					StartYear:      edu.StartYear,
+					EndYear:        edu.EndYear,
+					Format:         edu.Format,
 				}
 			}
 		}
 
-		// Convert request data to domain data
-		dateOfBirth, err := time.Parse("02.01.2006", req.Data.DateOfBirth)
-		if err != nil {
-			return Response{}, err
-		}
-
-		domainData := domain.ResumeData{
-			LastName:        req.Data.LastName,
-			FirstName:       req.Data.FirstName,
-			MiddleName:      req.Data.MiddleName,
-			DateOfBirth:     dateOfBirth,
-			Email:           req.Data.Email,
-			Phone:           req.Data.Phone,
-			City:            req.Data.City,
-			Citizenship:     req.Data.Citizenship,
-			Education:       make([]domain.Education, len(req.Data.Education)),
-			WorkExperiences: make([]domain.WorkExperience, len(req.Data.WorkExperiences)),
-			SkillsList:      req.Data.SkillsList,
-			AdditionalInfo:  req.Data.AdditionalInfo,
-			PortfolioLink:   req.Data.PortfolioLink,
-			DesiredFormat:   req.Data.DesiredFormat,
-			EnglishLevel:    req.Data.EnglishLevel,
-		}
-
-		for i, edu := range req.Data.Education {
-			domainData.Education[i] = domain.Education{
-				Level:          edu.Level,
-				University:     edu.University,
-				Faculty:        edu.Faculty,
-				Specialization: edu.Specialization,
-				StartYear:      edu.StartYear,
-				EndYear:        edu.EndYear,
-				Format:         edu.Format,
+		if req.Data.WorkExperiences != nil {
+			resume.Data.WorkExperiences = make([]domain.WorkExperience, len(*req.Data.WorkExperiences))
+			for i, exp := range *req.Data.WorkExperiences {
+				resume.Data.WorkExperiences[i] = domain.WorkExperience{
+					Position:         exp.Position,
+					Company:          exp.Company,
+					Period:           exp.Period,
+					Responsibilities: exp.Responsibilities,
+				}
 			}
 		}
-
-		for i, exp := range req.Data.WorkExperiences {
-			domainData.WorkExperiences[i] = domain.WorkExperience{
-				Position:         exp.Position,
-				Company:          exp.Company,
-				Period:           exp.Period,
-				Responsibilities: exp.Responsibilities,
-			}
-		}
-
-		resume.Data = domainData
 	}
 
 	err = uc.resumeRepo.Update(ctx, &resume)

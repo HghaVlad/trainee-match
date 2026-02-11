@@ -14,5 +14,5 @@ type CandidateResponse struct {
 	Phone    string    `json:"phone"`
 	Telegram string    `json:"telegram"`
 	City     string    `json:"city"`
-	Birthday Date      `json:"birthday"`
+	Birthday string    `json:"birthday"`
 }

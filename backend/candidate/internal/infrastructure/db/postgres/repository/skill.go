@@ -3,12 +3,11 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/lib/pq"
 )
 
 type SkillRepo struct {
@@ -53,36 +52,18 @@ func (r *SkillRepo) List(ctx context.Context) ([]domain.Skill, error) {
 	return skills, nil
 }
 
-func (r *SkillRepo) CheckExistsBatch(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]bool, error) {
-	if len(ids) == 0 {
-		return map[uuid.UUID]bool{}, nil
+func (r *SkillRepo) AreSkillsExist(ctx context.Context, skillIDs []uuid.UUID) (bool, error) {
+	if len(skillIDs) == 0 {
+		return true, nil
 	}
-	
-	// Create placeholders for the query
-	placeholders := make([]string, len(ids))
-	args := make([]interface{}, len(ids))
-	for i, id := range ids {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = id
-	}
-	
-	query := fmt.Sprintf("SELECT id FROM skills WHERE id IN (%s)", strings.Join(placeholders, ", "))
-	
-	rows, err := r.db.Query(ctx, query, args...)
+
+	query := `SELECT COUNT(*) FROM skills WHERE id = ANY($1)`
+	var count int
+	err := r.db.QueryRow(ctx, query, pq.Array(skillIDs)).Scan(&count)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	defer rows.Close()
-	
-	existingIds := make(map[uuid.UUID]bool)
-	for rows.Next() {
-		var id uuid.UUID
-		err = rows.Scan(&id)
-		if err != nil {
-			return nil, err
-		}
-		existingIds[id] = true
-	}
-	
-	return existingIds, nil
+
+	// If count equals the length of skillIDs, all skills exist
+	return count == len(skillIDs), nil
 }

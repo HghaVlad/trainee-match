@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
-	"time"
 )
 
 type ResumeRepo interface {
@@ -12,7 +11,7 @@ type ResumeRepo interface {
 }
 
 type SkillRepo interface {
-	CheckExistsBatch(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]bool, error)
+	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
 type UseCase struct {
@@ -29,24 +28,12 @@ func New(resumeRepo ResumeRepo, skillRepo SkillRepo) *UseCase {
 
 func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	// Check if all skills exist
-	if len(req.Data.SkillsList) > 0 {
-		existingSkills, err := uc.skillRepo.CheckExistsBatch(ctx, req.Data.SkillsList)
-		if err != nil {
-			return Response{}, err
-		}
-
-		// Check if any skill doesn't exist
-		for _, skillId := range req.Data.SkillsList {
-			if !existingSkills[skillId] {
-				return Response{}, domain.ErrSkillNotFound
-			}
-		}
-	}
-
-	// Convert date string to time.Time
-	dateOfBirth, err := time.Parse("02.01.2006", req.Data.DateOfBirth)
+	ok, err := uc.skillRepo.AreSkillsExist(ctx, req.Data.SkillsList)
 	if err != nil {
 		return Response{}, err
+	}
+	if !ok {
+		return Response{}, domain.ErrSkillNotFound
 	}
 
 	// Convert request data to domain model
@@ -54,7 +41,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		LastName:        req.Data.LastName,
 		FirstName:       req.Data.FirstName,
 		MiddleName:      req.Data.MiddleName,
-		DateOfBirth:     dateOfBirth,
+		DateOfBirth:     req.Data.DateOfBirth,
 		Email:           req.Data.Email,
 		Phone:           req.Data.Phone,
 		City:            req.Data.City,

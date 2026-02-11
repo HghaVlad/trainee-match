@@ -73,3 +73,44 @@ func (r *ResumeData) Validate() error {
 
 	return nil
 }
+
+type PatchResumeData struct {
+	LastName        *string           `json:"last_name,omitempty"`
+	FirstName       *string           `json:"first_name,omitempty"`
+	MiddleName      *string           `json:"middle_name,omitempty"`
+	DateOfBirth     *Date             `json:"date_of_birth,omitempty"`
+	Email           *string           `json:"email,omitempty"`
+	Phone           *string           `json:"phone,omitempty"`
+	City            *string           `json:"city,omitempty"`
+	Citizenship     *string           `json:"citizenship,omitempty"`
+	Education       *[]Education      `json:"education,omitempty"`
+	WorkExperiences *[]WorkExperience `json:"work_experiences,omitempty"`
+	SkillsList      *[]uuid.UUID      `json:"skills_list,omitempty"`
+	AdditionalInfo  *string           `json:"additional_info,omitempty"`
+	PortfolioLink   *string           `json:"portfolio_link,omitempty"`
+	DesiredFormat   *string           `json:"desired_format,omitempty"`
+	EnglishLevel    *string           `json:"english_level,omitempty"`
+}
+
+func (r *PatchResumeData) Validate() error {
+	if r.LastName != nil && *r.LastName == "" {
+		return errors.New("last name cannot be empty")
+	}
+	if r.FirstName != nil && *r.FirstName == "" {
+		return errors.New("first name cannot be empty")
+	}
+	if r.City != nil && *r.City == "" {
+		return errors.New("city cannot be empty")
+	}
+
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if r.Email != nil && !emailRegex.MatchString(*r.Email) {
+		return errors.New("email cannot be empty")
+	}
+	phoneRegex := regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
+	if r.Phone != nil && !phoneRegex.MatchString(*r.Phone) {
+		return errors.New("phone cannot be empty")
+	}
+
+	return nil
+}

@@ -2,20 +2,21 @@ package create_resume
 
 import (
 	"github.com/google/uuid"
+	"time"
 )
 
 type Request struct {
-	CandidateId uuid.UUID      `json:"candidate_id"`
-	Name        string         `json:"name"`
-	Status      int            `json:"status"`
-	Data        ResumeData     `json:"data"`
+	CandidateId uuid.UUID  `json:"candidate_id"`
+	Name        string     `json:"name"`
+	Status      int        `json:"status"`
+	Data        ResumeData `json:"data"`
 }
 
 type ResumeData struct {
 	LastName        string           `json:"last_name"`
 	FirstName       string           `json:"first_name"`
 	MiddleName      string           `json:"middle_name"`
-	DateOfBirth     string           `json:"date_of_birth"` // Using string format to match DTO Date type
+	DateOfBirth     time.Time        `json:"date_of_birth"` // Using string format to match DTO Date type
 	Email           string           `json:"email"`
 	Phone           string           `json:"phone"`
 	City            string           `json:"city"`

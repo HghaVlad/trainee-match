@@ -42,6 +42,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(deps.authMiddleware.Handler)
 			r.Post("/", deps.resumeHandler.CreateResume)
+			r.Get("/", deps.resumeHandler.ListResumes)
 			r.Get("/{id}", deps.resumeHandler.GetResume)
 			r.Patch("/{id}", deps.resumeHandler.UpdateResume) // Changed from PUT to PATCH
 		})

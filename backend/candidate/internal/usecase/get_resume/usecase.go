@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
-	"time"
 )
 
 type ResumeRepo interface {
@@ -34,8 +33,6 @@ func (uc *UseCase) GetById(ctx context.Context, req GetByIdRequest) (*GetByIdRes
 		Name:        resume.Name,
 		Status:      resume.Status,
 		Data:        convertDomainDataToResponseData(resume.Data),
-		CreatedAt:   time.Now(), // Should come from repo in real implementation
-		UpdatedAt:   time.Now(), // Should come from repo in real implementation
 	}
 
 	return response, nil

@@ -5,28 +5,28 @@ import (
 )
 
 type Request struct {
-	ID     uuid.UUID      `json:"id"`
-	Name   *string        `json:"name"`
-	Status *int           `json:"status"`
-	Data   *ResumeData    `json:"data"`
+	ID     uuid.UUID   `json:"id"`
+	Name   *string     `json:"name"`
+	Status *int        `json:"status"`
+	Data   *ResumeData `json:"data"`
 }
 
 type ResumeData struct {
-	LastName        string           `json:"last_name"`
-	FirstName       string           `json:"first_name"`
-	MiddleName      string           `json:"middle_name"`
-	DateOfBirth     string           `json:"date_of_birth"` // Using string format
-	Email           string           `json:"email"`
-	Phone           string           `json:"phone"`
-	City            string           `json:"city"`
-	Citizenship     string           `json:"citizenship"`
-	Education       []Education      `json:"education"`
-	WorkExperiences []WorkExperience `json:"work_experiences"`
-	SkillsList      []uuid.UUID      `json:"skills_list"`
-	AdditionalInfo  string           `json:"additional_info"`
-	PortfolioLink   string           `json:"portfolio_link"`
-	DesiredFormat   string           `json:"desired_format"`
-	EnglishLevel    string           `json:"english_level"`
+	LastName        *string           `json:"last_name,omitempty"`
+	FirstName       *string           `json:"first_name,omitempty"`
+	MiddleName      *string           `json:"middle_name,omitempty"`
+	DateOfBirth     *string           `json:"date_of_birth,omitempty"` // Using string format
+	Email           *string           `json:"email,omitempty"`
+	Phone           *string           `json:"phone,omitempty"`
+	City            *string           `json:"city,omitempty"`
+	Citizenship     *string           `json:"citizenship,omitempty"`
+	Education       *[]Education      `json:"education,omitempty"`
+	WorkExperiences *[]WorkExperience `json:"work_experiences,omitempty"`
+	SkillsList      *[]uuid.UUID      `json:"skills_list,omitempty"`
+	AdditionalInfo  *string           `json:"additional_info,omitempty"`
+	PortfolioLink   *string           `json:"portfolio_link,omitempty"`
+	DesiredFormat   *string           `json:"desired_format,omitempty"`
+	EnglishLevel    *string           `json:"english_level,omitempty"`
 }
 
 type Education struct {
