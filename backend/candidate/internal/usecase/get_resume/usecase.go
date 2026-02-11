@@ -61,14 +61,12 @@ func (uc *UseCase) GetByCandidateId(ctx context.Context, req GetByCandidateIdReq
 
 // Helper function to convert domain data to response data
 func convertDomainDataToResponseData(domainData domain.ResumeData) ResumeData {
-	// Convert time.Time to string
-	dateOfBirthStr := domainData.DateOfBirth.Format("02.01.2006")
 
 	responseData := ResumeData{
 		LastName:        domainData.LastName,
 		FirstName:       domainData.FirstName,
 		MiddleName:      domainData.MiddleName,
-		DateOfBirth:     dateOfBirthStr,
+		DateOfBirth:     domainData.DateOfBirth,
 		Email:           domainData.Email,
 		Phone:           domainData.Phone,
 		City:            domainData.City,

@@ -62,7 +62,7 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,
-		Birthday: candidate.Birthday.Format("02.01.2006"),
+		Birthday: dto.TimeToDate(candidate.Birthday),
 	})
 }
 
@@ -109,7 +109,7 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
-		Birthday: time.Time(req.Birthday),
+		Birthday: dto.DateToTime(req.Birthday),
 	})
 	if err != nil {
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
@@ -122,7 +122,7 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
-		Birthday: time.Time(req.Birthday).Format("02.01.2006"),
+		Birthday: req.Birthday,
 	}
 
 	helpers.RespondJSON(w, http.StatusCreated, response)
@@ -165,10 +165,9 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var birthday *time.Time
+	var birthday time.Time
 	if req.Birthday != nil {
-		t := time.Time(*req.Birthday)
-		birthday = &t
+		birthday = dto.DateToTime(*req.Birthday)
 	}
 
 	updatedCandidate, err := c.update.Execute(r.Context(), &update_candidate.Request{
@@ -177,7 +176,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
-		Birthday: birthday,
+		Birthday: &birthday,
 	})
 
 	if err != nil {
@@ -190,7 +189,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		Phone:    updatedCandidate.Phone,
 		Telegram: updatedCandidate.Telegram,
 		City:     updatedCandidate.City,
-		Birthday: updatedCandidate.Birthday.Format("02.01.2006"),
+		Birthday: dto.TimeToDate(updatedCandidate.Birthday),
 	})
 
 }

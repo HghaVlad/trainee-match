@@ -84,7 +84,7 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 			LastName:        req.Data.LastName,
 			FirstName:       req.Data.FirstName,
 			MiddleName:      req.Data.MiddleName,
-			DateOfBirth:     time.Time(req.Data.DateOfBirth),
+			DateOfBirth:     dto.DateToTime(req.Data.DateOfBirth),
 			Email:           req.Data.Email,
 			Phone:           req.Data.Phone,
 			City:            req.Data.City,
@@ -331,28 +331,16 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Data != nil {
-		var dateOfBirthStr *string
+		var dateOfBirthStr time.Time
 		if req.Data.DateOfBirth != nil {
-			// Parse the date and convert to string format
-			dateOfBirthBytes, err := req.Data.DateOfBirth.MarshalJSON()
-			if err != nil {
-				helpers.RespondError(w, http.StatusInternalServerError, "failed to marshal date of birth")
-				return
-			}
-			var dateStr string
-			err = json.Unmarshal(dateOfBirthBytes, &dateStr)
-			if err != nil {
-				helpers.RespondError(w, http.StatusInternalServerError, "failed to unmarshal date of birth")
-				return
-			}
-			dateOfBirthStr = &dateStr
+			dateOfBirthStr = dto.DateToTime(*req.Data.DateOfBirth)
 		}
 
 		useCaseReq.Data = &update_resume.ResumeData{
 			LastName:       req.Data.LastName,
 			FirstName:      req.Data.FirstName,
 			MiddleName:     req.Data.MiddleName,
-			DateOfBirth:    dateOfBirthStr,
+			DateOfBirth:    &dateOfBirthStr,
 			Email:          req.Data.Email,
 			Phone:          req.Data.Phone,
 			City:           req.Data.City,
@@ -448,19 +436,12 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse date string back to DTO Date type
-	dtoDateOfBirth := dto.Date{}
-	dateStr := fmt.Sprintf("\"%s\"", updatedResumeResp.Data.DateOfBirth)
-	err = dtoDateOfBirth.UnmarshalJSON([]byte(dateStr))
-	if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, "failed to parse date of birth")
-		return
-	}
 
 	dtoData := dto.ResumeData{
 		LastName:        updatedResumeResp.Data.LastName,
 		FirstName:       updatedResumeResp.Data.FirstName,
 		MiddleName:      updatedResumeResp.Data.MiddleName,
-		DateOfBirth:     dtoDateOfBirth,
+		DateOfBirth:     dto.TimeToDate(updatedResumeResp.Data.DateOfBirth),
 		Email:           updatedResumeResp.Data.Email,
 		Phone:           updatedResumeResp.Data.Phone,
 		City:            updatedResumeResp.Data.City,

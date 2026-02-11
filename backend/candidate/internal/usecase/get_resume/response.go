@@ -2,6 +2,7 @@ package get_resume
 
 import (
 	"github.com/google/uuid"
+	"time"
 )
 
 type GetByIdResponse struct {
@@ -23,7 +24,7 @@ type ResumeData struct {
 	LastName        string           `json:"last_name"`
 	FirstName       string           `json:"first_name"`
 	MiddleName      string           `json:"middle_name"`
-	DateOfBirth     string           `json:"date_of_birth"` // Using string to represent date
+	DateOfBirth     time.Time        `json:"date_of_birth"` // Using string to represent date
 	Email           string           `json:"email"`
 	Phone           string           `json:"phone"`
 	City            string           `json:"city"`

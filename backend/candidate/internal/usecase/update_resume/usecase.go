@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
-	"time"
 )
 
 type ResumeRepo interface {
@@ -62,11 +61,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 			resume.Data.MiddleName = *req.Data.MiddleName
 		}
 		if req.Data.DateOfBirth != nil {
-			dateOfBirth, err := time.Parse("02.01.2006", *req.Data.DateOfBirth)
-			if err != nil {
-				return Response{}, err
-			}
-			resume.Data.DateOfBirth = dateOfBirth
+			resume.Data.DateOfBirth = *req.Data.DateOfBirth
 		}
 		if req.Data.Email != nil {
 			resume.Data.Email = *req.Data.Email

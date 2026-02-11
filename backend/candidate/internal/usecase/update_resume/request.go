@@ -2,6 +2,7 @@ package update_resume
 
 import (
 	"github.com/google/uuid"
+	"time"
 )
 
 type Request struct {
@@ -15,7 +16,7 @@ type ResumeData struct {
 	LastName        *string           `json:"last_name,omitempty"`
 	FirstName       *string           `json:"first_name,omitempty"`
 	MiddleName      *string           `json:"middle_name,omitempty"`
-	DateOfBirth     *string           `json:"date_of_birth,omitempty"` // Using string format
+	DateOfBirth     *time.Time        `json:"date_of_birth,omitempty"`
 	Email           *string           `json:"email,omitempty"`
 	Phone           *string           `json:"phone,omitempty"`
 	City            *string           `json:"city,omitempty"`
