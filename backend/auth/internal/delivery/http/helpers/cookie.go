@@ -11,6 +11,7 @@ func SetTokenPairToCookies(w http.ResponseWriter, accessToken, refreshToken stri
 		Value:    accessToken,
 		Expires:  time.Now().Add(time.Duration(accessTokenExpires) * time.Second),
 		HttpOnly: true,
+		Path:     "/",
 	})
 
 	http.SetCookie(w, &http.Cookie{
@@ -18,5 +19,6 @@ func SetTokenPairToCookies(w http.ResponseWriter, accessToken, refreshToken stri
 		Value:    refreshToken,
 		Expires:  time.Now().Add(time.Duration(refreshTokenExpires) * time.Second),
 		HttpOnly: true,
+		Path:     "/",
 	})
 }
