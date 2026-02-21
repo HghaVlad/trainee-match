@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
@@ -74,7 +73,7 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param input body dto.CandidateCreateRequest true "Candidate creation data"
 // @Success 201 {object} dto.CandidateResponse
-// @Failure 400 {object} dto.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future"
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 409 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -84,11 +83,11 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.CandidateCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if err := req.Validate(); err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -104,7 +103,7 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	candidate, err := c.create.Execute(r.Context(), &create_candidate.Request{
+	candidateID, err := c.create.Execute(r.Context(), &create_candidate.Request{
 		UserID:   user.Id,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
@@ -112,19 +111,26 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		Birthday: dto.DateToTime(req.Birthday),
 	})
 	if err != nil {
+		if errors.Is(err, domain.ErrInvalidPhoneFormat) || errors.Is(err, domain.ErrInvalidTelegramFormat) || errors.Is(err, domain.ErrBirthdayInFuture) || errors.Is(err, domain.ErrInvalidCityFormat) {
+			helpers.RespondError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, domain.ErrTelegramAlreadyExists) || errors.Is(err, domain.ErrPhoneAlreadyExists) {
+			helpers.RespondError(w, http.StatusConflict, err.Error())
+			return
+		}
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	response := dto.CandidateResponse{
-		ID:       candidate,
+		ID:       candidateID,
 		UserID:   user.Id,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
 		Birthday: req.Birthday,
 	}
-
 	helpers.RespondJSON(w, http.StatusCreated, response)
 }
 
@@ -133,10 +139,11 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 // @Tags candidate
 // @Accept json
 // @Produce json
-// @Param input body dto.CandidateUpdateRequest true "Candidate creation data"
+// @Param input body dto.CandidateUpdateRequest true "Candidate update data"
 // @Success 200 {object} dto.CandidateResponse
-// @Failure 400 {object} dto.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future"
 // @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /candidate/ [patch]
 func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
@@ -144,11 +151,11 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.CandidateUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if err := req.Validate(); err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -160,6 +167,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	candidate, err := c.getByUserId.Execute(r.Context(), user.Id)
 	if errors.Is(err, domain.ErrCandidateNotFound) {
 		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
+		return
 	} else if err != nil {
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -180,6 +188,14 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		if errors.Is(err, domain.ErrInvalidPhoneFormat) || errors.Is(err, domain.ErrInvalidTelegramFormat) || errors.Is(err, domain.ErrBirthdayInFuture) || errors.Is(err, domain.ErrInvalidCityFormat) {
+			helpers.RespondError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if errors.Is(err, domain.ErrTelegramAlreadyExists) || errors.Is(err, domain.ErrPhoneAlreadyExists) {
+			helpers.RespondError(w, http.StatusConflict, err.Error())
+			return
+		}
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name=SkillRepo --output=mocks --outpkg=mocks
 type SkillRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (domain.Skill, error)
 	List(ctx context.Context) ([]domain.Skill, error)
@@ -43,6 +44,9 @@ func (uc *UseCase) ExecuteList(ctx context.Context, req ListRequest) ([]*ListRes
 
 	var result []*ListResponse
 	for _, skill := range skills {
+		if err := skill.Validate(); err != nil {
+			return nil, err
+		}
 		item := &ListResponse{
 			ID:   skill.ID,
 			Name: skill.Name,

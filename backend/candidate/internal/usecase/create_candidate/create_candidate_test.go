@@ -2,233 +2,213 @@ package create_candidate
 
 import (
 	"context"
+	"errors"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate/mocks"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
-
-// MockCandidateRepo is a mock implementation of the CandidateRepo interface
-type MockCandidateRepo struct {
-	mock.Mock
-}
-
-func (m *MockCandidateRepo) Create(ctx context.Context, candidate *domain.Candidate) (uuid.UUID, error) {
-	args := m.Called(ctx, candidate)
-	var id uuid.UUID
-	if args.Get(0) != nil {
-		id = args.Get(0).(uuid.UUID)
-	}
-	return id, args.Error(1)
-}
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
+	validRequest := &Request{
+		UserID:   uuid.New(),
+		Phone:    "+1234567890",
+		Telegram: "@valid_user",
+		City:     "Valid City",
+		Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
+	}
+	validId := uuid.New()
+	var (
+		errTelegramDB = errors.New("telegram db error")
+		errPhoneDB    = errors.New("phone db error")
+		errCreateDB   = errors.New("create db error")
+	)
 
-	tests := map[string]struct {
-		req         *Request
-		setupMock   func(*MockCandidateRepo, *Request)
-		wantErr     bool
-		errCheck    func(error) bool
-		resultCheck func(*testing.T, uuid.UUID)
+	tests := []struct {
+		name          string
+		request       *Request
+		mockSetup     func(repo *mocks.CandidateRepo)
+		expectedID    uuid.UUID
+		expectedError error
 	}{
-		"happy path: valid candidate data creates successfully": {
-			req: &Request{
-				UserID:   uuid.New(),
-				Phone:    "+1234567890",
-				Telegram: "@testuser",
-				City:     "New York",
-				Birthday: time.Date(1990, 1, 15, 0, 0, 0, 0, time.UTC),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				// Mock expects Create to be called with any context and a candidate matching the request
-				m.On("Create", mock.Anything, mock.MatchedBy(func(c *domain.Candidate) bool {
-					return c.UserId == req.UserID &&
-						c.Phone == req.Phone &&
-						c.Telegram == req.Telegram &&
-						c.City == req.City &&
-						c.Birthday == req.Birthday
-				})).Return(expectedID, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id, "created candidate ID should not be nil")
-			},
-		},
+		{
+			name:    "valid request",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, validRequest.Phone).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
 
-		"repository error: database connection failure returns error": {
-			req: &Request{
-				UserID:   uuid.New(),
-				Phone:    "+9876543210",
-				Telegram: "@anotheruser",
-				City:     "Boston",
-				Birthday: time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC),
+				repo.On("Create", ctx, mock.AnythingOfType("*domain.Candidate")).Return(validId, nil).Once()
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Candidate")).
-					Return(uuid.Nil, domain.ErrCandidateNotFound).
-					Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
-			},
+			expectedID:    validId,
+			expectedError: nil,
 		},
-
-		"edge case: candidate with empty phone and telegram fields": {
-			req: &Request{
+		{
+			name: "empty phone",
+			request: &Request{
 				UserID:   uuid.New(),
 				Phone:    "",
+				Telegram: "@valid_user",
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
+			},
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidPhoneFormat,
+		},
+		{
+			name: "invalid phone format",
+			request: &Request{
+				UserID:   uuid.New(),
+				Phone:    "invalid_phone",
+				Telegram: "@valid_user",
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
+			},
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidPhoneFormat,
+		},
+		{
+			name: "phone is not unique",
+			request: &Request{
+				UserID:   uuid.New(),
+				Phone:    "+1234567890",
+				Telegram: "@valid_user",
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
+				repo.On("GetByPhone", ctx, validRequest.Phone).Return(domain.Candidate{ID: validId, Phone: "+1234567890"}, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrPhoneAlreadyExists,
+		},
+		{
+			name: "empty telegram",
+			request: &Request{
+				UserID:   uuid.New(),
+				Phone:    "+1234567890",
 				Telegram: "",
-				City:     "San Francisco",
-				Birthday: time.Date(1988, 8, 10, 0, 0, 0, 0, time.UTC),
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				m.On("Create", mock.Anything, mock.MatchedBy(func(c *domain.Candidate) bool {
-					return c.UserId == req.UserID &&
-						c.Phone == "" &&
-						c.Telegram == "" &&
-						c.City == req.City
-				})).Return(expectedID, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id)
-			},
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidTelegramFormat,
 		},
-
-		"edge case: candidate with future birth date is accepted by usecase": {
-			req: &Request{
+		{
+			name: "invalid telegram format",
+			request: &Request{
 				UserID:   uuid.New(),
-				Phone:    "+1111111111",
-				Telegram: "@future_user",
-				City:     "Seattle",
-				Birthday: time.Now().AddDate(1, 0, 0), // Future date
+				Phone:    "+1234567890",
+				Telegram: "invalid_telegram",
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Candidate")).
-					Return(expectedID, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id)
-			},
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidTelegramFormat,
 		},
-
-		"edge case: candidate with special characters in all fields": {
-			req: &Request{
+		{
+			name: "telegram is not unique",
+			request: &Request{
 				UserID:   uuid.New(),
-				Phone:    "+7 (999) 123-45-67 #123",
-				Telegram: "@user_name-123-test",
-				City:     "Санкт-Петербург, ул. Невского пр., 1",
-				Birthday: time.Date(1992, 3, 15, 0, 0, 0, 0, time.UTC),
+				Phone:    "+1234567890",
+				Telegram: "@valid_user",
+				City:     "Valid City",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				m.On("Create", mock.Anything, mock.MatchedBy(func(c *domain.Candidate) bool {
-					return c.UserId == req.UserID &&
-						c.Phone == req.Phone &&
-						c.Telegram == req.Telegram &&
-						c.City == req.City
-				})).Return(expectedID, nil).Once()
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{ID: validId, Telegram: "@valid_user"}, nil).Once()
+				repo.On("GetByPhone", ctx, validRequest.Phone).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id)
-			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrTelegramAlreadyExists,
 		},
-
-		"edge case: nil UUID passed as UserID": {
-			req: &Request{
-				UserID:   uuid.Nil,
-				Phone:    "+0000000000",
-				Telegram: "@niluser",
-				City:     "Unknown",
-				Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				m.On("Create", mock.Anything, mock.MatchedBy(func(c *domain.Candidate) bool {
-					return c.UserId == uuid.Nil
-				})).Return(expectedID, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id)
-			},
-		},
-
-		"edge case: candidate with very long field values": {
-			req: &Request{
+		{
+			name: "city is empty",
+			request: &Request{
 				UserID:   uuid.New(),
-				Phone:    "+1234567890" + "0123456789" + "0123456789",
-				Telegram: "@" + string(make([]byte, 100)),
-				City:     string(make([]byte, 200)),
-				Birthday: time.Date(1975, 6, 20, 0, 0, 0, 0, time.UTC),
+				Phone:    "+1234567890",
+				Telegram: "@valid_user",
+				City:     "",
+				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				expectedID := uuid.New()
-				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Candidate")).
-					Return(expectedID, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, id uuid.UUID) {
-				assert.NotEqual(t, uuid.Nil, id)
-			},
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidCityFormat,
 		},
-
-		"repository error: constraint violation returns error": {
-			req: &Request{
+		{
+			name: "birthday in the future",
+			request: &Request{
 				UserID:   uuid.New(),
-				Phone:    "+2222222222",
-				Telegram: "@constraint_test",
-				City:     "Miami",
-				Birthday: time.Date(1995, 7, 25, 0, 0, 0, 0, time.UTC),
+				Phone:    "+1234567890",
+				Telegram: "@valid_user",
+				City:     "Valid City",
+				Birthday: time.Now().Add(24 * time.Hour),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Candidate")).
-					Return(uuid.Nil, domain.ErrCandidateNotFound). // Simulating any repository error
-					Once()
+			mockSetup:     func(repo *mocks.CandidateRepo) {},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrBirthdayInFuture,
+		},
+		{
+			name:    "GetByTelegram returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{}, errTelegramDB).Once()
 			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
+			expectedID:    uuid.Nil,
+			expectedError: errTelegramDB,
+		},
+		{
+			name:    "GetByPhone returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, validRequest.Phone).Return(domain.Candidate{}, errPhoneDB).Once()
 			},
+			expectedID:    uuid.Nil,
+			expectedError: errPhoneDB,
+		},
+		{
+			name:    "Create returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByTelegram", ctx, validRequest.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, validRequest.Phone).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("Create", ctx, mock.AnythingOfType("*domain.Candidate")).Return(uuid.Nil, errCreateDB).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: errCreateDB,
 		},
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Setup
-			mockRepo := new(MockCandidateRepo)
-			tt.setupMock(mockRepo, tt.req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.CandidateRepo{}
+			tt.mockSetup(repo)
 
-			uc := New(mockRepo)
+			uc := New(repo)
+			id, err := uc.Execute(ctx, tt.request)
 
-			// Execute
-			gotID, err := uc.Execute(ctx, tt.req)
-
-			// Verify
-			if tt.wantErr {
+			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, tt.errCheck(err), "error check failed: %v", err)
+				require.True(t, errors.Is(err, tt.expectedError), "expected error to be %v, got %v", tt.expectedError, err)
+				require.Equal(t, uuid.Nil, id)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, gotID)
-				if tt.resultCheck != nil {
-					tt.resultCheck(t, gotID)
-				}
+				require.Equal(t, tt.expectedID, id)
 			}
 
-			// Cleanup: Verify mock expectations
-			mockRepo.AssertExpectations(t)
+			repo.AssertExpectations(t)
 		})
 	}
+
 }

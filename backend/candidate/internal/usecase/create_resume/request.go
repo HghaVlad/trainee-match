@@ -16,7 +16,7 @@ type ResumeData struct {
 	LastName        string           `json:"last_name"`
 	FirstName       string           `json:"first_name"`
 	MiddleName      string           `json:"middle_name"`
-	DateOfBirth     time.Time        `json:"date_of_birth"` // Using string format to match DTO Date type
+	DateOfBirth     time.Time        `json:"date_of_birth"`
 	Email           string           `json:"email"`
 	Phone           string           `json:"phone"`
 	City            string           `json:"city"`

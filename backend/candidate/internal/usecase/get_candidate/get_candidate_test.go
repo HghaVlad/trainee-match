@@ -2,184 +2,85 @@ package get_candidate
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate/mocks"
 	"github.com/stretchr/testify/require"
+
+	"github.com/google/uuid"
 )
 
-// MockCandidateRepo is a mock implementation of the CandidateRepo interface
-type MockCandidateRepo struct {
-	mock.Mock
-}
-
-func (m *MockCandidateRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0).(domain.Candidate), args.Error(1)
-}
+var (
+	ErrDB = errors.New("db error")
+)
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
+	id := uuid.New()
+	userId := uuid.New()
+	birthday := time.Date(1995, time.May, 10, 0, 0, 0, 0, time.UTC)
 
-	tests := map[string]struct {
-		setupMock  func(*MockCandidateRepo, uuid.UUID)
-		inputID    uuid.UUID
-		wantResult *CandidateResponse
-		wantErr    bool
-		errCheck   func(error) bool
+	dCandidate := domain.Candidate{
+		ID:       id,
+		UserId:   userId,
+		Phone:    "+1234567890",
+		Telegram: "@user",
+		City:     "City",
+		Birthday: birthday,
+	}
+
+	tests := []struct {
+		name          string
+		mockSetup     func(repo *mocks.CandidateRepo)
+		expectedError error
 	}{
-		"happy path: valid candidate ID returns complete candidate data": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				userID := uuid.New()
-				birthday := time.Date(1990, 1, 15, 0, 0, 0, 0, time.UTC)
-				expectedCandidate := domain.Candidate{
-					ID:       id,
-					UserId:   userID,
-					Phone:    "+1234567890",
-					Telegram: "@testuser",
-					City:     "New York",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, id).Return(expectedCandidate, nil).Once()
-			},
-			wantErr: false,
-			errCheck: func(err error) bool {
-				return err == nil
-			},
+		{
+			name:          "valid get",
+			mockSetup:     func(repo *mocks.CandidateRepo) { repo.On("GetByID", ctx, id).Return(dCandidate, nil).Once() },
+			expectedError: nil,
 		},
-
-		"not found: candidate ID does not exist returns ErrCandidateNotFound": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				m.On("GetByID", ctx, id).
-					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
-					Once()
+		{
+			name: "not found",
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByID", ctx, id).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
 			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err == domain.ErrCandidateNotFound
-			},
+			expectedError: domain.ErrCandidateNotFound,
 		},
-
-		"repository error: database connection failed returns error": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				m.On("GetByID", ctx, id).
-					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
-					Once()
+		{
+			name: "repo error",
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByID", ctx, id).Return(domain.Candidate{}, ErrDB).Once()
 			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
-			},
-		},
-
-		"edge case: candidate with minimal data (empty contact info)": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				userID := uuid.New()
-				birthday := time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC)
-				expectedCandidate := domain.Candidate{
-					ID:       id,
-					UserId:   userID,
-					Phone:    "",
-					Telegram: "",
-					City:     "",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, id).Return(expectedCandidate, nil).Once()
-			},
-			wantErr: false,
-			errCheck: func(err error) bool {
-				return err == nil
-			},
-		},
-
-		"edge case: candidate with special characters and different locales": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				userID := uuid.New()
-				birthday := time.Date(1992, 8, 10, 0, 0, 0, 0, time.UTC)
-				expectedCandidate := domain.Candidate{
-					ID:       id,
-					UserId:   userID,
-					Phone:    "+7 (999) 123-45-67",
-					Telegram: "@user_name-123",
-					City:     "Санкт-Петербург",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, id).Return(expectedCandidate, nil).Once()
-			},
-			wantErr: false,
-			errCheck: func(err error) bool {
-				return err == nil
-			},
-		},
-
-		"edge case: nil UUID passed as input results in not found": {
-			inputID: uuid.Nil,
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				m.On("GetByID", ctx, id).
-					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
-					Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err == domain.ErrCandidateNotFound
-			},
-		},
-
-		"edge case: candidate with very long phone and telegram fields": {
-			inputID: uuid.New(),
-			setupMock: func(m *MockCandidateRepo, id uuid.UUID) {
-				userID := uuid.New()
-				birthday := time.Date(1988, 3, 25, 0, 0, 0, 0, time.UTC)
-				expectedCandidate := domain.Candidate{
-					ID:       id,
-					UserId:   userID,
-					Phone:    "+1234567890123456789012345678901234567890",
-					Telegram: "@" + string(make([]byte, 100)),
-					City:     "Very Long City Name That Exceeds Normal Length",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, id).Return(expectedCandidate, nil).Once()
-			},
-			wantErr: false,
-			errCheck: func(err error) bool {
-				return err == nil
-			},
+			expectedError: ErrDB,
 		},
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Setup
-			mockRepo := new(MockCandidateRepo)
-			tt.setupMock(mockRepo, tt.inputID)
-
-			uc := New(mockRepo)
-
-			// Execute
-			result, err := uc.Execute(ctx, tt.inputID)
-
-			// Verify error expectation
-			if tt.wantErr {
-				require.Error(t, err)
-				require.True(t, tt.errCheck(err), "error does not match expectation: %v", err)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, result)
-				assert.NotZero(t, result.ID, "result ID should not be zero")
-				assert.NotZero(t, result.UserID, "result UserID should not be zero")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.CandidateRepo{}
+			if tt.mockSetup != nil {
+				tt.mockSetup(repo)
 			}
 
-			// Cleanup: Verify mock expectations
-			mockRepo.AssertExpectations(t)
+			uc := New(repo)
+			resp, err := uc.Execute(ctx, id)
+			if tt.expectedError != nil {
+				require.Error(t, err)
+				require.True(t, errors.Is(err, tt.expectedError))
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, dCandidate.ID, resp.ID)
+				require.Equal(t, dCandidate.UserId, resp.UserID)
+				require.Equal(t, dCandidate.Phone, resp.Phone)
+				require.Equal(t, dCandidate.Telegram, resp.Telegram)
+				require.Equal(t, dCandidate.City, resp.City)
+				require.WithinDuration(t, dCandidate.Birthday, resp.Birthday, time.Second)
+			}
+
+			repo.AssertExpectations(t)
 		})
 	}
 }

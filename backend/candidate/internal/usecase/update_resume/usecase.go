@@ -6,11 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
 	Update(ctx context.Context, resume *domain.Resume) error
 }
 
+//go:generate mockery --name=SkillRepo --output=mocks --outpkg=mocks
 type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
@@ -115,6 +117,10 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 				}
 			}
 		}
+	}
+
+	if err := resume.Validate(); err != nil {
+		return Response{}, err
 	}
 
 	err = uc.resumeRepo.Update(ctx, &resume)

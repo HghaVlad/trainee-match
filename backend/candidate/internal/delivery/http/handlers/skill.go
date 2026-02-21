@@ -51,6 +51,9 @@ func (s *Skill) GetSkill(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, domain.ErrSkillNotFound) {
 		helpers.RespondError(w, http.StatusNotFound, "skill not found")
 		return
+	} else if errors.Is(err, domain.ErrInvalidSkillName) {
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		return
 	} else if err != nil {
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
 		return

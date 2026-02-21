@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
 	GetByCandidateId(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error)

@@ -3,7 +3,6 @@ package dto
 import (
 	"errors"
 	"github.com/google/uuid"
-	"regexp"
 )
 
 type ResumeData struct {
@@ -58,17 +57,17 @@ func (r *ResumeData) Validate() error {
 	if r.City == "" {
 		return errors.New("city is required")
 	}
-
-	// Validate email format
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if !emailRegex.MatchString(r.Email) {
-		return errors.New("invalid email format")
+	if r.DateOfBirth == (Date{}) {
+		return errors.New("date of birth is required")
 	}
-
-	// Validate phone format
-	phoneRegex := regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
-	if !phoneRegex.MatchString(r.Phone) {
-		return errors.New("invalid phone number format")
+	if r.Citizenship == "" {
+		return errors.New("citizenship is required")
+	}
+	if r.DesiredFormat == "" {
+		return errors.New("desired format is required")
+	}
+	if r.EnglishLevel == "" {
+		return errors.New("english level is required")
 	}
 
 	return nil
@@ -101,15 +100,6 @@ func (r *PatchResumeData) Validate() error {
 	}
 	if r.City != nil && *r.City == "" {
 		return errors.New("city cannot be empty")
-	}
-
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if r.Email != nil && !emailRegex.MatchString(*r.Email) {
-		return errors.New("email cannot be empty")
-	}
-	phoneRegex := regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
-	if r.Phone != nil && !phoneRegex.MatchString(*r.Phone) {
-		return errors.New("phone cannot be empty")
 	}
 
 	return nil

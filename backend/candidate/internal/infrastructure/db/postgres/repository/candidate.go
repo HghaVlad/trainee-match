@@ -91,6 +91,58 @@ func (r *CandidateRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (doma
 	return candidate, nil
 }
 
+func (r *CandidateRepo) GetByTelegram(ctx context.Context, telegram string) (domain.Candidate, error) {
+	query := `
+		SELECT id, user_id, phone, telegram, city, birthday 
+		FROM candidates 
+		WHERE telegram = $1`
+
+	var candidate domain.Candidate
+	err := r.db.QueryRow(ctx, query, telegram).Scan(
+		&candidate.ID,
+		&candidate.UserId,
+		&candidate.Phone,
+		&candidate.Telegram,
+		&candidate.City,
+		&candidate.Birthday,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Candidate{}, domain.ErrCandidateNotFound
+		}
+		return domain.Candidate{}, err
+	}
+
+	return candidate, nil
+}
+
+func (r *CandidateRepo) GetByPhone(ctx context.Context, phone string) (domain.Candidate, error) {
+	query := `
+		SELECT id, user_id, phone, telegram, city, birthday 
+		FROM candidates 
+		WHERE phone = $1`
+
+	var candidate domain.Candidate
+	err := r.db.QueryRow(ctx, query, phone).Scan(
+		&candidate.ID,
+		&candidate.UserId,
+		&candidate.Phone,
+		&candidate.Telegram,
+		&candidate.City,
+		&candidate.Birthday,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Candidate{}, domain.ErrCandidateNotFound
+		}
+		return domain.Candidate{}, err
+	}
+
+	return candidate, nil
+}
+
 func (r *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error) {
 	query := `
 		UPDATE candidates 

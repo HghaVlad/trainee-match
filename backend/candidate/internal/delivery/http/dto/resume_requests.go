@@ -15,10 +15,6 @@ func (req *CreateResumeRequest) Validate() error {
 	if req.Name == "" {
 		return errors.New("name is required")
 	}
-
-	if req.Status != 0 && req.Status != 1 { // Assuming 0=Draft, 1=Published
-		return errors.New("invalid status")
-	}
 	if err := req.Data.Validate(); err != nil {
 		return err
 	}
@@ -34,11 +30,6 @@ type UpdateResumeRequest struct {
 }
 
 func (req *UpdateResumeRequest) Validate() error {
-
-	if req.Status != nil && (*req.Status != 0 && *req.Status != 1) { // Assuming 0=Draft, 1=Published
-		return errors.New("invalid status")
-	}
-
 	if req.Data != nil {
 		if err := req.Data.Validate(); err != nil {
 			return err

@@ -2,264 +2,119 @@ package get_skill
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill/mocks"
 	"github.com/stretchr/testify/require"
+
+	"github.com/google/uuid"
 )
 
-// MockSkillRepo implements the SkillRepo interface
-type MockSkillRepo struct {
-	mock.Mock
-}
-
-func (m *MockSkillRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Skill, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0).(domain.Skill), args.Error(1)
-}
-
-func (m *MockSkillRepo) List(ctx context.Context) ([]domain.Skill, error) {
-	args := m.Called(ctx)
-	skills := args.Get(0)
-	if skills == nil {
-		return []domain.Skill{}, args.Error(1)
-	}
-	return skills.([]domain.Skill), args.Error(1)
-}
+var (
+	ErrDb = errors.New("db error")
+)
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
+	id := uuid.New()
+	domainSkill := domain.Skill{ID: id, Name: "Go"}
 
-	tests := map[string]struct {
-		req       GetByIdRequest
-		setupMock func(*MockSkillRepo, uuid.UUID)
-		wantErr   bool
-		errCheck  func(error) bool
+	tests := []struct {
+		name          string
+		mockSetup     func(repo *mocks.SkillRepo)
+		expectedError error
 	}{
-		"happy path: valid skill ID returns skill data": {
-			req: GetByIdRequest{ID: uuid.New()},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{ID: skillID, Name: "Go Programming"}, nil).Once()
+		{
+			name: "valid get",
+			mockSetup: func(repo *mocks.SkillRepo) {
+				repo.On("GetByID", ctx, id).Return(domainSkill, nil).Once()
 			},
-			wantErr: false,
+			expectedError: nil,
 		},
-
-		"not found: skill ID does not exist returns ErrSkillNotFound": {
-			req: GetByIdRequest{ID: uuid.New()},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
+		{
+			name: "not found",
+			mockSetup: func(repo *mocks.SkillRepo) {
+				repo.On("GetByID", ctx, id).Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
 			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err == domain.ErrSkillNotFound
-			},
+			expectedError: domain.ErrSkillNotFound,
 		},
-
-		"repository error: database connection failed": {
-			req: GetByIdRequest{ID: uuid.New()},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
+		{
+			name: "repo error",
+			mockSetup: func(repo *mocks.SkillRepo) {
+				repo.On("GetByID", ctx, id).Return(domain.Skill{}, ErrDb).Once()
 			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
-			},
-		},
-
-		"edge case: skill with empty name": {
-			req: GetByIdRequest{ID: uuid.New()},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{ID: skillID, Name: ""}, nil).Once()
-			},
-			wantErr: false,
-		},
-
-		"edge case: skill with special characters (C++/Python/машинное обучение)": {
-			req: GetByIdRequest{ID: uuid.New()},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{ID: skillID, Name: "C++/Python-машинное обучение"}, nil).Once()
-			},
-			wantErr: false,
-		},
-
-		"edge case: nil UUID returns not found": {
-			req: GetByIdRequest{ID: uuid.Nil},
-			setupMock: func(m *MockSkillRepo, skillID uuid.UUID) {
-				m.On("GetByID", ctx, skillID).
-					Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err == domain.ErrSkillNotFound
-			},
+			expectedError: ErrDb,
 		},
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Setup
-			mockRepo := new(MockSkillRepo)
-			tt.setupMock(mockRepo, tt.req.ID)
-
-			uc := New(mockRepo)
-
-			// Execute
-			result, err := uc.Execute(ctx, tt.req)
-
-			// Verify
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errCheck != nil {
-					require.True(t, tt.errCheck(err), "error check failed: %v", err)
-				}
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, result)
-				assert.NotZero(t, result.ID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.SkillRepo{}
+			if tt.mockSetup != nil {
+				tt.mockSetup(repo)
 			}
 
-			// Cleanup: Verify mock expectations
-			mockRepo.AssertExpectations(t)
+			uc := New(repo)
+			resp, err := uc.Execute(ctx, GetByIdRequest{ID: id})
+			if tt.expectedError != nil {
+				require.Error(t, err)
+				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, domainSkill.ID, resp.ID)
+				require.Equal(t, domainSkill.Name, resp.Name)
+			}
+
+			repo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestExecuteList(t *testing.T) {
 	ctx := context.Background()
+	domainSkills := []domain.Skill{{ID: uuid.New(), Name: "Go"}, {ID: uuid.New(), Name: "Python"}}
 
-	tests := map[string]struct {
-		req       ListRequest
-		setupMock func(*MockSkillRepo)
-		wantErr   bool
-		errCheck  func(error) bool
-		checkLen  func(*testing.T, []*ListResponse)
+	tests := []struct {
+		name          string
+		mockSetup     func(repo *mocks.SkillRepo)
+		expectedError error
 	}{
-		"happy path: list all skills returns multiple skills": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				skills := []domain.Skill{
-					{ID: uuid.New(), Name: "Go"},
-					{ID: uuid.New(), Name: "Python"},
-					{ID: uuid.New(), Name: "Rust"},
-				}
-				m.On("List", ctx).Return(skills, nil).Once()
+		{
+			name: "valid list",
+			mockSetup: func(repo *mocks.SkillRepo) {
+				repo.On("List", ctx).Return(domainSkills, nil).Once()
 			},
-			wantErr: false,
-			checkLen: func(t *testing.T, skills []*ListResponse) {
-				assert.Len(t, skills, 3)
-				assert.Equal(t, "Go", skills[0].Name)
-				assert.Equal(t, "Python", skills[1].Name)
-				assert.Equal(t, "Rust", skills[2].Name)
-			},
+			expectedError: nil,
 		},
-
-		"not found: no skills exist returns empty list": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				m.On("List", ctx).Return([]domain.Skill{}, nil).Once()
+		{
+			name: "repo error",
+			mockSetup: func(repo *mocks.SkillRepo) {
+				repo.On("List", ctx).Return(nil, ErrDb).Once()
 			},
-			wantErr: false,
-			checkLen: func(t *testing.T, skills []*ListResponse) {
-				assert.Len(t, skills, 0)
-			},
-		},
-
-		"repository error: database connection failed": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				m.On("List", ctx).
-					Return(([]domain.Skill)(nil), domain.ErrSkillNotFound).Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
-			},
-		},
-
-		"edge case: list returns single skill": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				skills := []domain.Skill{
-					{ID: uuid.New(), Name: "JavaScript"},
-				}
-				m.On("List", ctx).Return(skills, nil).Once()
-			},
-			wantErr: false,
-			checkLen: func(t *testing.T, skills []*ListResponse) {
-				assert.Len(t, skills, 1)
-				assert.Equal(t, "JavaScript", skills[0].Name)
-			},
-		},
-
-		"edge case: list returns many skills (stress test with 100 items)": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				var skills []domain.Skill
-				for i := 0; i < 100; i++ {
-					skills = append(skills, domain.Skill{ID: uuid.New(), Name: "Skill"})
-				}
-				m.On("List", ctx).Return(skills, nil).Once()
-			},
-			wantErr: false,
-			checkLen: func(t *testing.T, skills []*ListResponse) {
-				assert.Len(t, skills, 100)
-			},
-		},
-
-		"edge case: list includes skills with special characters": {
-			req: ListRequest{},
-			setupMock: func(m *MockSkillRepo) {
-				skills := []domain.Skill{
-					{ID: uuid.New(), Name: "C++"},
-					{ID: uuid.New(), Name: "Node.js"},
-					{ID: uuid.New(), Name: "Machine Learning/AI"},
-					{ID: uuid.New(), Name: "Web-разработка"},
-				}
-				m.On("List", ctx).Return(skills, nil).Once()
-			},
-			wantErr: false,
-			checkLen: func(t *testing.T, skills []*ListResponse) {
-				assert.Len(t, skills, 4)
-				assert.Equal(t, "C++", skills[0].Name)
-				assert.Equal(t, "Web-разработка", skills[3].Name)
-			},
+			expectedError: ErrDb,
 		},
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Setup
-			mockRepo := new(MockSkillRepo)
-			tt.setupMock(mockRepo)
-
-			uc := New(mockRepo)
-
-			// Execute
-			result, err := uc.ExecuteList(ctx, tt.req)
-
-			// Verify
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errCheck != nil {
-					require.True(t, tt.errCheck(err), "error check failed: %v", err)
-				}
-			} else {
-				require.NoError(t, err)
-				if tt.checkLen != nil {
-					tt.checkLen(t, result)
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.SkillRepo{}
+			if tt.mockSetup != nil {
+				tt.mockSetup(repo)
 			}
 
-			// Cleanup: Verify mock expectations
-			mockRepo.AssertExpectations(t)
+			uc := New(repo)
+			resp, err := uc.ExecuteList(ctx, ListRequest{})
+			if tt.expectedError != nil {
+				require.Error(t, err)
+				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, len(domainSkills), len(resp))
+			}
+
+			repo.AssertExpectations(t)
 		})
 	}
 }

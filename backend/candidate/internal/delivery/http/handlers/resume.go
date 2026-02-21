@@ -122,6 +122,17 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := res.createResumeUC.Execute(r.Context(), useCaseReq)
 	if err != nil {
+		if errors.Is(err, domain.ErrInvalidName) ||
+			errors.Is(err, domain.ErrInvalidEmailFormat) ||
+			errors.Is(err, domain.ErrInvalidPhoneFormat) ||
+			errors.Is(err, domain.ErrInvalidResumeName) ||
+			errors.Is(err, domain.ErrInvalidResumeStatus) ||
+			errors.Is(err, domain.ErrSkillNotFound) ||
+			errors.Is(err, domain.ErrCandidateNotFound) {
+
+			helpers.RespondError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -216,20 +227,11 @@ func (res *Resume) GetResume(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Parse date string back to DTO Date type
-	dtoDateOfBirth := dto.Date{}
-	dateStr := fmt.Sprintf("\"%s\"", useCaseResp.Data.DateOfBirth)
-	err = dtoDateOfBirth.UnmarshalJSON([]byte(dateStr))
-	if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, "failed to parse date of birth")
-		return
-	}
-
 	dtoData := dto.ResumeData{
 		LastName:        useCaseResp.Data.LastName,
 		FirstName:       useCaseResp.Data.FirstName,
 		MiddleName:      useCaseResp.Data.MiddleName,
-		DateOfBirth:     dtoDateOfBirth,
+		DateOfBirth:     dto.TimeToDate(useCaseResp.Data.DateOfBirth),
 		Email:           useCaseResp.Data.Email,
 		Phone:           useCaseResp.Data.Phone,
 		City:            useCaseResp.Data.City,
@@ -395,8 +397,15 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, domain.ErrResumeNotFound) {
 			helpers.RespondError(w, http.StatusNotFound, "resume not found")
 			return
-		} else if errors.Is(err, domain.ErrSkillNotFound) {
-			helpers.RespondError(w, http.StatusBadRequest, "one or more skills not found")
+		} else if errors.Is(err, domain.ErrInvalidName) ||
+			errors.Is(err, domain.ErrInvalidEmailFormat) ||
+			errors.Is(err, domain.ErrInvalidPhoneFormat) ||
+			errors.Is(err, domain.ErrInvalidResumeName) ||
+			errors.Is(err, domain.ErrInvalidResumeStatus) ||
+			errors.Is(err, domain.ErrSkillNotFound) ||
+			errors.Is(err, domain.ErrCandidateNotFound) {
+
+			helpers.RespondError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
@@ -472,8 +481,8 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} []dto.ShortResumeResponse
-// @Failure 401 {object} dto.ErrorResponse unauthorized
-// @Failure 404 {object} dto.ErrorResponse candidate not found
+// @Failure 401 {object} dto.ErrorResponse "unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "candidate not found"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /resume [get]
 func (res *Resume) ListResumes(w http.ResponseWriter, r *http.Request) {

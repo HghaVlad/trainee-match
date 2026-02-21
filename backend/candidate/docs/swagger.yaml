@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest:
+  dto.CandidateCreateRequest:
     properties:
       birthday:
         type: string
@@ -11,7 +11,7 @@ definitions:
       telegram:
         type: string
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse:
+  dto.CandidateResponse:
     properties:
       birthday:
         type: string
@@ -26,7 +26,7 @@ definitions:
       user_id:
         type: string
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest:
+  dto.CandidateUpdateRequest:
     properties:
       birthday:
         type: string
@@ -37,16 +37,16 @@ definitions:
       telegram:
         type: string
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest:
+  dto.CreateResumeRequest:
     properties:
       data:
-        $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData'
+        $ref: '#/definitions/dto.ResumeData'
       name:
         type: string
       status:
         type: integer
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education:
+  dto.Education:
     properties:
       end_year:
         type: integer
@@ -63,12 +63,12 @@ definitions:
       university:
         type: string
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse:
+  dto.ErrorResponse:
     properties:
       message:
         type: string
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData:
+  dto.PatchResumeData:
     properties:
       additional_info:
         type: string
@@ -82,7 +82,46 @@ definitions:
         type: string
       education:
         items:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education'
+          $ref: '#/definitions/dto.Education'
+        type: array
+      email:
+        type: string
+      english_level:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      phone:
+        type: string
+      portfolio_link:
+        type: string
+      skills_list:
+        items:
+          type: string
+        type: array
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperience'
+        type: array
+    type: object
+  dto.ResumeData:
+    properties:
+      additional_info:
+        type: string
+      citizenship:
+        type: string
+      city:
+        type: string
+      date_of_birth:
+        type: string
+      desired_format:
+        type: string
+      education:
+        items:
+          $ref: '#/definitions/dto.Education'
         type: array
       email:
         type: string
@@ -105,37 +144,15 @@ definitions:
         type: array
       work_experiences:
         items:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience'
+          $ref: '#/definitions/dto.WorkExperience'
         type: array
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse:
+  dto.ResumeResponse:
     properties:
       candidate_id:
         type: string
-      created_at:
-        type: string
       data:
-        $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData'
-      id:
-        type: string
-      name:
-        type: string
-      status:
-        type: integer
-      updated_at:
-        type: string
-    type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse:
-    properties:
-      id:
-        type: string
-      name:
-        type: string
-    type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest:
-    properties:
-      data:
-        $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData'
+        $ref: '#/definitions/dto.ResumeData'
       id:
         type: string
       name:
@@ -143,7 +160,36 @@ definitions:
       status:
         type: integer
     type: object
-  github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience:
+  dto.ShortResumeResponse:
+    properties:
+      candidate_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.SkillResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdateResumeRequest:
+    properties:
+      data:
+        $ref: '#/definitions/dto.PatchResumeData'
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.WorkExperience:
     properties:
       company:
         type: string
@@ -166,31 +212,37 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Candidate creation data
+      - description: Candidate update data
         in: body
         name: input
         required: true
         schema:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest'
+          $ref: '#/definitions/dto.CandidateUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+            $ref: '#/definitions/dto.CandidateResponse'
         "400":
-          description: Bad Request
+          description: invalid request body, phone is required, telegram is required,
+            city is required, invalid phone number format, invalid telegram username,
+            invalid city format, birthday cannot be in the future
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Update candidate profile
       tags:
       - candidate
@@ -205,30 +257,32 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest'
+          $ref: '#/definitions/dto.CandidateCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+            $ref: '#/definitions/dto.CandidateResponse'
         "400":
-          description: Bad Request
+          description: invalid request body, phone is required, telegram is required,
+            city is required, invalid phone number format, invalid telegram username,
+            invalid city format, birthday cannot be in the future
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Create candidate profile
       tags:
       - candidate
@@ -242,22 +296,50 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse'
+            $ref: '#/definitions/dto.CandidateResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Get my candidate profile
       tags:
       - candidate
+  /resume:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ShortResumeResponse'
+            type: array
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: candidate not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List all resumes for the authenticated candidate
+      tags:
+      - resume
   /resume/:
     post:
       consumes:
@@ -268,26 +350,26 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest'
+          $ref: '#/definitions/dto.CreateResumeRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse'
+            $ref: '#/definitions/dto.ResumeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Create a new resume
       tags:
       - resume
@@ -307,23 +389,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse'
+            $ref: '#/definitions/dto.ResumeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Get resume by ID
       tags:
       - resume
@@ -341,34 +423,34 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest'
+          $ref: '#/definitions/dto.UpdateResumeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse'
+            $ref: '#/definitions/dto.ResumeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Update a resume
       tags:
       - resume
@@ -388,19 +470,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse'
+            $ref: '#/definitions/dto.SkillResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Get skill by ID
       tags:
       - skill
@@ -415,12 +497,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse'
+              $ref: '#/definitions/dto.SkillResponse'
             type: array
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: List all skills
       tags:
       - skill

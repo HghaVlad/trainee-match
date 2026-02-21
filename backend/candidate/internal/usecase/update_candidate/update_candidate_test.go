@@ -2,30 +2,19 @@ package update_candidate
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate/mocks"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// MockCandidateRepo is a mock implementation of the CandidateRepo interface
-type MockCandidateRepo struct {
-	mock.Mock
-}
-
-func (m *MockCandidateRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0).(domain.Candidate), args.Error(1)
-}
-
-func (m *MockCandidateRepo) Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error) {
-	args := m.Called(ctx, candidate)
-	return args.Get(0).(domain.Candidate), args.Error(1)
-}
+func stringPtr(s string) *string     { return &s }
+func timePtr(t time.Time) *time.Time { return &t }
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
@@ -33,298 +22,284 @@ func TestExecute(t *testing.T) {
 	userID := uuid.New()
 	birthday := time.Date(1990, 1, 15, 0, 0, 0, 0, time.UTC)
 
-	tests := map[string]struct {
-		req         *Request
-		setupMock   func(*MockCandidateRepo, *Request)
-		wantErr     bool
-		errCheck    func(error) bool
-		resultCheck func(*testing.T, *CandidateResponse)
+	validRequest := &Request{
+		ID:       candidateID,
+		Phone:    stringPtr("+1234567890"),
+		Telegram: stringPtr("@valid_user"),
+		City:     stringPtr("Valid City"),
+		Birthday: timePtr(birthday),
+	}
+
+	var (
+		errGetByID  = errors.New("get by id db error")
+		errTelegram = errors.New("telegram db error")
+		errPhone    = errors.New("phone db error")
+		errUpdate   = errors.New("update db error")
+	)
+
+	tests := []struct {
+		name          string
+		request       *Request
+		mockSetup     func(repo *mocks.CandidateRepo)
+		expectedID    uuid.UUID
+		expectedError error
 	}{
-		"happy path: update one field successfully": {
-			req: &Request{
-				ID:    candidateID,
-				Phone: stringPtr("+9999999999"),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				// GetByID returns existing candidate
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@olduser",
-					City:     "Old City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
+		{
+			name:    "valid request",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
 
-				// Update returns updated candidate
-				updatedCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+9999999999",
-					Telegram: "@olduser",
-					City:     "Old City",
-					Birthday: birthday,
-				}
-				m.On("Update", ctx, mock.MatchedBy(func(c domain.Candidate) bool {
-					return c.Phone == "+9999999999"
-				})).Return(updatedCandidate, nil).Once()
+				repo.On("GetByTelegram", ctx, "@valid_user").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, "+1234567890").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				updated := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1234567890", Telegram: "@valid_user", City: "Valid City", Birthday: birthday}
+				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(updated, nil).Once()
 			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, "+9999999999", resp.Phone)
-				assert.Equal(t, candidateID, resp.ID)
-			},
+			expectedID:    candidateID,
+			expectedError: nil,
 		},
-
-		"not found: candidate ID does not exist returns ErrCandidateNotFound": {
-			req: &Request{
-				ID: uuid.New(),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				m.On("GetByID", ctx, req.ID).
-					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
-					Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err == domain.ErrCandidateNotFound
-			},
-		},
-
-		"repository error: database connection failed on update": {
-			req: &Request{
-				ID:    candidateID,
-				Phone: stringPtr("+5555555555"),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-				m.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
-					Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
-			},
-			wantErr: true,
-			errCheck: func(err error) bool {
-				return err != nil
-			},
-		},
-
-		"edge case: update all candidate fields simultaneously": {
-			req: &Request{
-				ID:       candidateID,
-				UserID:   uuidPtr(uuid.New()),
-				Phone:    stringPtr("+7777777777"),
-				Telegram: stringPtr("@newuser"),
-				City:     stringPtr("New City"),
-				Birthday: timePtr(time.Date(1985, 5, 20, 0, 0, 0, 0, time.UTC)),
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@olduser",
-					City:     "Old City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-
-				updatedCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   *req.UserID,
-					Phone:    "+7777777777",
-					Telegram: "@newuser",
-					City:     "New City",
-					Birthday: *req.Birthday,
-				}
-				m.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
-					Return(updatedCandidate, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, "+7777777777", resp.Phone)
-				assert.Equal(t, "@newuser", resp.Telegram)
-				assert.Equal(t, "New City", resp.City)
-			},
-		},
-
-		"edge case: update with empty strings to clear fields": {
-			req: &Request{
+		{
+			name: "empty phone",
+			request: &Request{
 				ID:       candidateID,
 				Phone:    stringPtr(""),
+				Telegram: stringPtr("@valid_user"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidPhoneFormat,
+		},
+		{
+			name: "invalid phone format",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("invalid_phone"),
+				Telegram: stringPtr("@valid_user"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidPhoneFormat,
+		},
+		{
+			name: "phone is not unique",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("+1234567890"),
+				Telegram: stringPtr("@valid_user"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, "@valid_user").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				other := domain.Candidate{ID: uuid.New(), Phone: "+1234567890"}
+				repo.On("GetByPhone", ctx, "+1234567890").Return(other, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrPhoneAlreadyExists,
+		},
+		{
+			name:    "phone is same as existing",
+			request: &Request{ID: candidateID, Phone: stringPtr("+1111111111")},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, existing.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, "+1111111111").Return(existing, nil).Once()
+				updated := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(updated, nil).Once()
+			},
+			expectedID:    candidateID,
+			expectedError: nil,
+		},
+		{
+			name: "empty telegram",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("+1234567890"),
 				Telegram: stringPtr(""),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidTelegramFormat,
+		},
+		{
+			name: "invalid telegram format",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("+1234567890"),
+				Telegram: stringPtr("invalid_telegram"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidTelegramFormat,
+		},
+		{
+			name: "telegram is not unique",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("+1234567890"),
+				Telegram: stringPtr("@valid_user"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(birthday),
+			},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				other := domain.Candidate{ID: uuid.New(), Telegram: "@valid_user"}
+				repo.On("GetByTelegram", ctx, "@valid_user").Return(other, nil).Once()
+				repo.On("GetByPhone", ctx, "+1234567890").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrTelegramAlreadyExists,
+		},
+		{
+			name:    "telegram is same as existing",
+			request: &Request{ID: candidateID, Telegram: stringPtr("@user")},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, "@user").Return(existing, nil).Once()
+				repo.On("GetByPhone", ctx, existing.Phone).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				updated := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(updated, nil).Once()
+			},
+			expectedID:    candidateID,
+			expectedError: nil,
+		},
+		{
+			name: "city is empty",
+			request: &Request{
+				ID:       candidateID,
+				Phone:    stringPtr("+1234567890"),
+				Telegram: stringPtr("@valid_user"),
 				City:     stringPtr(""),
+				Birthday: timePtr(birthday),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-
-				clearedCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "",
-					Telegram: "",
-					City:     "",
-					Birthday: birthday,
-				}
-				m.On("Update", ctx, mock.MatchedBy(func(c domain.Candidate) bool {
-					return c.Phone == "" && c.Telegram == "" && c.City == ""
-				})).Return(clearedCandidate, nil).Once()
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
 			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, "", resp.Phone)
-				assert.Equal(t, "", resp.Telegram)
-				assert.Equal(t, "", resp.City)
-			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrInvalidCityFormat,
 		},
-
-		"edge case: update request with no fields to update": {
-			req: &Request{
-				ID: candidateID,
-				// No fields to update
-			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-				m.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
-					Return(existingCandidate, nil).Once()
-			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, "+1111111111", resp.Phone)
-				assert.Equal(t, "@user", resp.Telegram)
-			},
-		},
-
-		"edge case: update with international values and special characters": {
-			req: &Request{
+		{
+			name: "birthday in the future",
+			request: &Request{
 				ID:       candidateID,
-				Phone:    stringPtr("+33 (1) 42 68 53 00"),
-				Telegram: stringPtr("@user-paris_2024"),
-				City:     stringPtr("Paris, Île-de-France, France"),
+				Phone:    stringPtr("+1234567890"),
+				Telegram: stringPtr("@valid_user"),
+				City:     stringPtr("Valid City"),
+				Birthday: timePtr(time.Now().Add(24 * time.Hour)),
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-
-				updatedCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+33 (1) 42 68 53 00",
-					Telegram: "@user-paris_2024",
-					City:     "Paris, Île-de-France, France",
-					Birthday: birthday,
-				}
-				m.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
-					Return(updatedCandidate, nil).Once()
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
 			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, "+33 (1) 42 68 53 00", resp.Phone)
-			},
+			expectedID:    uuid.Nil,
+			expectedError: domain.ErrBirthdayInFuture,
 		},
-
-		"edge case: update with future birth date": {
-			req: &Request{
-				ID:       candidateID,
-				Birthday: timePtr(time.Now().AddDate(5, 0, 0)),
+		{
+			name:    "GetByID returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				repo.On("GetByID", ctx, candidateID).Return(domain.Candidate{}, errGetByID).Once()
 			},
-			setupMock: func(m *MockCandidateRepo, req *Request) {
-				existingCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: birthday,
-				}
-				m.On("GetByID", ctx, req.ID).Return(existingCandidate, nil).Once()
-
-				updatedCandidate := domain.Candidate{
-					ID:       candidateID,
-					UserId:   userID,
-					Phone:    "+1111111111",
-					Telegram: "@user",
-					City:     "City",
-					Birthday: *req.Birthday,
-				}
-				m.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
-					Return(updatedCandidate, nil).Once()
+			expectedID:    uuid.Nil,
+			expectedError: errGetByID,
+		},
+		{
+			name:    "GetByTelegram returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, "@valid_user").Return(domain.Candidate{}, errTelegram).Once()
 			},
-			wantErr: false,
-			resultCheck: func(t *testing.T, resp *CandidateResponse) {
-				assert.Equal(t, candidateID, resp.ID)
+			expectedID:    uuid.Nil,
+			expectedError: errTelegram,
+		},
+		{
+			name:    "GetByPhone returns repo error",
+			request: validRequest,
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, "@valid_user").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, "+1234567890").Return(domain.Candidate{}, errPhone).Once()
 			},
+			expectedID:    uuid.Nil,
+			expectedError: errPhone,
+		},
+		{
+			name:    "Update returns repo error",
+			request: &Request{ID: candidateID, Phone: stringPtr("+5555555555")},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, existing.Telegram).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("GetByPhone", ctx, "+5555555555").Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				repo.On("Update", ctx, mock.Anything).Return(domain.Candidate{}, errUpdate).Once()
+			},
+			expectedID:    uuid.Nil,
+			expectedError: errUpdate,
+		},
+		{
+			name:    "no fields",
+			request: &Request{ID: candidateID},
+			mockSetup: func(repo *mocks.CandidateRepo) {
+				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				repo.On("GetByID", ctx, candidateID).Return(existing, nil).Once()
+				repo.On("GetByTelegram", ctx, existing.Telegram).Return(existing, nil).Once()
+				repo.On("GetByPhone", ctx, existing.Phone).Return(existing, nil).Once()
+				repo.On("Update", ctx, mock.Anything).Return(existing, nil).Once()
+			},
+			expectedID:    candidateID,
+			expectedError: nil,
 		},
 	}
 
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Setup
-			mockRepo := new(MockCandidateRepo)
-			tt.setupMock(mockRepo, tt.req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &mocks.CandidateRepo{}
+			tt.mockSetup(repo)
 
-			uc := New(mockRepo)
+			uc := New(repo)
+			resp, err := uc.Execute(ctx, tt.request)
 
-			// Execute
-			result, err := uc.Execute(ctx, tt.req)
-
-			// Verify
-			if tt.wantErr {
+			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, tt.errCheck(err), "error check failed: %v", err)
+				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.Nil(t, resp)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, result)
-				if tt.resultCheck != nil {
-					tt.resultCheck(t, result)
-				}
+				require.NotNil(t, resp)
+				require.Equal(t, tt.expectedID, resp.ID)
 			}
 
-			// Cleanup: Verify mock expectations
-			mockRepo.AssertExpectations(t)
+			repo.AssertExpectations(t)
 		})
 	}
-}
-
-// Helper functions for creating pointers
-func stringPtr(s string) *string {
-	return &s
-}
-
-func uuidPtr(u uuid.UUID) *uuid.UUID {
-	return &u
-}
-
-func timePtr(t time.Time) *time.Time {
-	return &t
 }

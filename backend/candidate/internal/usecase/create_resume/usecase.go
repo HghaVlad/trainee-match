@@ -6,10 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	Create(ctx context.Context, resume *domain.Resume) (uuid.UUID, error)
 }
 
+//go:generate mockery --name=SkillRepo --output=mocks --outpkg=mocks
 type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
@@ -27,15 +29,6 @@ func New(resumeRepo ResumeRepo, skillRepo SkillRepo) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
-	// Check if all skills exist
-	ok, err := uc.skillRepo.AreSkillsExist(ctx, req.Data.SkillsList)
-	if err != nil {
-		return Response{}, err
-	}
-	if !ok {
-		return Response{}, domain.ErrSkillNotFound
-	}
-
 	// Convert request data to domain model
 	domainData := domain.ResumeData{
 		LastName:        req.Data.LastName,
@@ -81,6 +74,21 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		Name:        req.Name,
 		Status:      req.Status,
 		Data:        domainData,
+	}
+
+	if err := resume.Validate(); err != nil {
+		return Response{}, err
+	}
+
+	// Check if all skills exist
+	if len(req.Data.SkillsList) > 0 {
+		ok, err := uc.skillRepo.AreSkillsExist(ctx, req.Data.SkillsList)
+		if err != nil {
+			return Response{}, err
+		}
+		if !ok {
+			return Response{}, domain.ErrSkillNotFound
+		}
 	}
 
 	id, err := uc.resumeRepo.Create(ctx, resume)
