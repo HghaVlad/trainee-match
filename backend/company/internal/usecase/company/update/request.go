@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
 
 type Request struct {

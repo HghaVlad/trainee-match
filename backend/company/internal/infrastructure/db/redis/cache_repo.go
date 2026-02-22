@@ -44,7 +44,7 @@ func (repo *CacheRepo[KeyT, ValT]) Get(ctx context.Context, key KeyT) *ValT {
 	var val ValT
 	err = json.Unmarshal(data, &val)
 	if err != nil {
-		slog.Warn("couldn't unmarshal: ", repo.prefix, "redis repo:", err)
+		slog.Warn("redis get: couldn't unmarshal", "where", repo.prefix, "err", err)
 		return nil
 	}
 
@@ -57,7 +57,7 @@ func (repo *CacheRepo[KeyT, ValT]) Put(ctx context.Context, key KeyT, val *ValT,
 
 	data, mErr := json.Marshal(val)
 	if mErr != nil {
-		slog.Warn("couldn't marshal in", repo.prefix, "redis repo:", mErr)
+		slog.Warn("redis put: couldn't marshal in", "where", repo.prefix, "err", mErr)
 		return
 	}
 

@@ -31,6 +31,11 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 		OwnerID:     uuid.New(),
 	}
 
+	valErr := company.Validate()
+	if valErr != nil {
+		return nil, valErr
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 

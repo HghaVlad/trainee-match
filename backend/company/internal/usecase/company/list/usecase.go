@@ -40,13 +40,13 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 
 	switch req.Order {
 	case OrderVacanciesDesc:
-		resp, err = u.listByVacanciesCnt(ctx, req)
+		resp, err = u.ListByVacanciesCnt(ctx, req)
 
 	case OrderCreatedAtDesc:
-		resp, err = u.listByCreatedAt(ctx, req)
+		resp, err = u.ListByCreatedAt(ctx, req)
 
 	case OrderNameAsc:
-		resp, err = u.listByName(ctx, req)
+		resp, err = u.ListByName(ctx, req)
 
 	default:
 		return nil, domain_errors.ErrUnsupportedListOrder
@@ -61,7 +61,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 	return resp, nil
 }
 
-func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response, error) {
+func (u *Usecase) ListByCreatedAt(ctx context.Context, req *Request) (*Response, error) {
 	cursor, curErr := encoding.DecodeCursor[CreatedAtCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
@@ -85,7 +85,7 @@ func (u *Usecase) listByCreatedAt(ctx context.Context, req *Request) (*Response,
 	return &response, nil
 }
 
-func (u *Usecase) listByVacanciesCnt(ctx context.Context, req *Request) (*Response, error) {
+func (u *Usecase) ListByVacanciesCnt(ctx context.Context, req *Request) (*Response, error) {
 	cursor, curErr := encoding.DecodeCursor[VacanciesCntCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
@@ -109,7 +109,7 @@ func (u *Usecase) listByVacanciesCnt(ctx context.Context, req *Request) (*Respon
 	return &response, nil
 }
 
-func (u *Usecase) listByName(ctx context.Context, req *Request) (*Response, error) {
+func (u *Usecase) ListByName(ctx context.Context, req *Request) (*Response, error) {
 	cursor, curErr := encoding.DecodeCursor[NameCursor, Order](req.Cursor, req.Order)
 	if curErr != nil {
 		return nil, curErr

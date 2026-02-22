@@ -93,11 +93,11 @@ func (v *Vacancy) Validate() error {
 		return domain_errors.ErrNegativeSalary
 	}
 
-	if v.DurationFromMonths != nil && *v.DurationFromMonths <= 0 {
+	if v.DurationFromMonths != nil && (*v.DurationFromMonths <= 0 || *v.DurationToMonths > maxDurationMonths) {
 		return domain_errors.ErrInvalidDurationRange
 	}
 
-	if v.HoursPerWeekFrom != nil && *v.HoursPerWeekFrom <= 0 {
+	if v.HoursPerWeekFrom != nil && (*v.HoursPerWeekFrom <= 0 || *v.HoursPerWeekTo > maxHoursPerWeek) {
 		return domain_errors.ErrInvalidHoursRange
 	}
 
