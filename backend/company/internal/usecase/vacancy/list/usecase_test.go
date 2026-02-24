@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
 type cacheMock struct {
@@ -33,22 +34,17 @@ type repoMock struct {
 }
 
 func (m *repoMock) ListByPublishedAt(ctx context.Context, cursor *list_vacancy.PublishedAtCursor, limit int,
-) ([]list_vacancy.VacancySummary, *list_vacancy.PublishedAtCursor, error) {
+) ([]list_vacancy.VacancySummary, error) {
 
 	args := m.Called(ctx, cursor, limit)
 
 	cs := args.Get(0)
-	next := args.Get(1)
-
-	if cs != nil && next != nil {
-		return cs.([]list_vacancy.VacancySummary), next.(*list_vacancy.PublishedAtCursor), args.Error(2)
-	}
 
 	if cs != nil {
-		return cs.([]list_vacancy.VacancySummary), nil, args.Error(2)
+		return cs.([]list_vacancy.VacancySummary), args.Error(1)
 	}
 
-	return nil, nil, args.Error(2)
+	return nil, args.Error(1)
 }
 
 func TestUsecase_Execute_CacheHit(t *testing.T) {

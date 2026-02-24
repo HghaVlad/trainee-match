@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 )
 
 type companyRepoMock struct {

@@ -1,4 +1,4 @@
-package list_vacancy
+package list_vac_by_comp
 
 import (
 	"context"
@@ -9,12 +9,13 @@ import (
 )
 
 type Usecase struct {
-	repo      VacancyRepo
+	vacRepo   VacancyRepo
+	compRepo  CompanyRepo
 	respCache ResponseCacheRepo
 }
 
-func NewUsecase(repo VacancyRepo, cache ResponseCacheRepo) *Usecase {
-	return &Usecase{repo: repo, respCache: cache}
+func NewUsecase(vacRepo VacancyRepo, compRepo CompanyRepo, cache ResponseCacheRepo) *Usecase {
+	return &Usecase{vacRepo: vacRepo, compRepo: compRepo, respCache: cache}
 }
 
 func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
@@ -22,6 +23,15 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 	resp := uc.respCache.Get(ctx, respCacheKey)
 	if resp != nil {
 		return resp, nil
+	}
+
+	companyExists, exErr := uc.compRepo.Exists(ctx, req.CompID)
+	if exErr != nil {
+		return nil, exErr
+	}
+
+	if !companyExists {
+		return nil, domain_errors.ErrCompanyNotFound
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
@@ -53,7 +63,7 @@ func (uc *Usecase) listByPublishedAt(ctx context.Context, req *Request) (*Respon
 		return nil, curErr
 	}
 
-	vacancies, err := uc.repo.ListByPublishedAt(ctx, cursor, req.Limit)
+	vacancies, err := uc.vacRepo.ListByCompanyByPublishedAt(ctx, req.CompID, cursor, req.Limit)
 	if err != nil {
 		return nil, err
 	}

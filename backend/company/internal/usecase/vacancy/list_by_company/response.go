@@ -1,4 +1,4 @@
-package list_vacancy
+package list_vac_by_comp
 
 import (
 	"time"
@@ -9,10 +9,7 @@ import (
 )
 
 type VacancySummary struct {
-	ID        uuid.UUID `db:"id"`
-	CompanyID uuid.UUID `db:"company_id"`
-
-	CompanyName string `db:"company_name"`
+	ID uuid.UUID `db:"id"`
 
 	Title      string                 `db:"title"`
 	WorkFormat value_types.WorkFormat `db:"work_format"`

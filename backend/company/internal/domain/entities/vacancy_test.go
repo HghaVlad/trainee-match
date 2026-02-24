@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func validVacancy() *domain.Vacancy {

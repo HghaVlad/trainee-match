@@ -7,7 +7,7 @@ import (
 
 type VacancyRepo interface {
 	ListByPublishedAt(ctx context.Context, cursor *PublishedAtCursor, limit int) (
-		[]VacancySummary, *PublishedAtCursor, error)
+		[]VacancySummary, error)
 }
 
 type ResponseCacheRepo interface {

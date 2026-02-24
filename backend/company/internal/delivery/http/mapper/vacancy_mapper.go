@@ -1,13 +1,14 @@
 package mapper
 
 import (
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
@@ -105,6 +106,33 @@ func VacancyListRespToDto(
 	}
 
 	return &dto.VacancyListResponse{
+		Vacancies:  items,
+		NextCursor: resp.NextCursor,
+	}
+}
+
+func ListVacByCompRespToDto(resp *list_vac_by_comp.Response) *dto.VacancyByCompListResponse {
+	items := make([]dto.VacancyByCompListItemResponse, 0, len(resp.Vacancies))
+
+	for _, v := range resp.Vacancies {
+		items = append(items, dto.VacancyByCompListItemResponse{
+			ID: v.ID,
+
+			Title:      v.Title,
+			WorkFormat: string(v.WorkFormat),
+			City:       v.City,
+
+			EmploymentType: string(v.EmploymentType),
+
+			IsPaid:     v.IsPaid,
+			SalaryFrom: v.SalaryFrom,
+			SalaryTo:   v.SalaryTo,
+
+			PublishedAt: v.PublishedAt,
+		})
+	}
+
+	return &dto.VacancyByCompListResponse{
 		Vacancies:  items,
 		NextCursor: resp.NextCursor,
 	}

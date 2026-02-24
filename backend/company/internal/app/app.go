@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -27,6 +26,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
@@ -58,6 +59,7 @@ func Build(conf *config.Config) (*App, error) {
 	vacCache := infra_redis.NewRepo[uuid.UUID, domain.Vacancy](redis, "vacancy")
 	compListCache := infra_redis.NewRepo[string, list_companies.Response](redis, "companies:list")
 	vacListCache := infra_redis.NewRepo[string, list_vacancy.Response](redis, "vacancies:list")
+	vacByCompListCache := infra_redis.NewRepo[string, list_vac_by_comp.Response](redis, "vacancies_by_comp:list")
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
@@ -67,11 +69,12 @@ func Build(conf *config.Config) (*App, error) {
 
 	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
 	vacList := list_vacancy.NewUsecase(vacRepo, vacListCache)
+	vacListByComp := list_vac_by_comp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
 	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
 	vacUpdate := update_vacancy.NewUsecase(vacRepo, vacCache, txManager)
 	vacDelete := delete_vacancy.NewUsecase(vacRepo, vacCache)
 
-	companyHandler := handlers.NewProfileHandler(
+	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,
 		compCreateUc,
 		compListUc,
@@ -82,6 +85,7 @@ func Build(conf *config.Config) (*App, error) {
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
 		vacList,
+		vacListByComp,
 		vacCreate,
 		vacUpdate,
 		vacDelete,

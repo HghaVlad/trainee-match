@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
@@ -14,6 +13,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 )
 
 type VacancyRepo struct {
@@ -82,7 +83,7 @@ func (repo *VacancyRepo) ListByPublishedAt(
 	cursor *list_vacancy.PublishedAtCursor,
 	limit int,
 ) (
-	[]list_vacancy.VacancySummary, *list_vacancy.PublishedAtCursor, error) {
+	[]list_vacancy.VacancySummary, error) {
 
 	var query string
 	var args []any
@@ -112,22 +113,47 @@ func (repo *VacancyRepo) ListByPublishedAt(
 	var vacancies []list_vacancy.VacancySummary
 
 	err := repo.db.SelectContext(ctx, &vacancies, query, args...)
+	return vacancies, err
+}
 
-	if err != nil {
-		return nil, nil, err
+func (repo *VacancyRepo) ListByCompanyByPublishedAt(
+	ctx context.Context,
+	compID uuid.UUID,
+	cursor *list_vac_by_comp.PublishedAtCursor,
+	limit int,
+) (
+	[]list_vac_by_comp.VacancySummary, error) {
+
+	var query string
+	var args []any
+
+	if cursor == nil {
+		query =
+			`SELECT v.id, v.title, v.work_format, v.city, v.employment_type,
+       	v.is_paid, v.salary_from, v.salary_to, v.published_at
+		FROM vacancies v
+		WHERE v.company_id = $1 AND v.is_active = true
+		ORDER BY v.published_at DESC, v.id
+		LIMIT $2`
+		args = []any{compID, limit}
+	} else {
+		query =
+			`SELECT v.id, v.title, v.work_format, v.city, v.employment_type,
+       	v.is_paid, v.salary_from, v.salary_to, v.published_at
+		FROM vacancies v
+		JOIN companies c ON v.company_id = c.id 
+		WHERE v.company_id = $1 AND 
+		      (v.published_at < $2 OR (v.published_at = $2 AND v.id < $3))
+		  		AND v.is_active = true
+		ORDER BY v.published_at DESC, v.id DESC
+		LIMIT $4`
+		args = []any{compID, cursor.PublishedAt, cursor.Id, limit}
 	}
 
-	if len(vacancies) < limit {
-		return vacancies, nil, nil
-	}
+	var vacancies []list_vac_by_comp.VacancySummary
 
-	last := vacancies[len(vacancies)-1]
-	nextCursor := list_vacancy.PublishedAtCursor{
-		PublishedAt: last.PublishedAt,
-		Id:          last.ID,
-	}
-
-	return vacancies, &nextCursor, nil
+	err := repo.db.SelectContext(ctx, &vacancies, query, args...)
+	return vacancies, err
 }
 
 func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {

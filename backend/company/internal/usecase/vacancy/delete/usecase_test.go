@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 )
 
 type repoMock struct {

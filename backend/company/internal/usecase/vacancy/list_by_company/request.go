@@ -1,17 +1,20 @@
-package list_vacancy
+package list_vac_by_comp
 
 import (
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type Request struct {
+	CompID uuid.UUID
 	Order  Order
-	Limit  int
 	Cursor string
+	Limit  int
 }
 
 func (r *Request) toCacheKey() string {
 	return strings.Join([]string{
-		string(r.Order), r.Cursor, strconv.Itoa(r.Limit)}, "-")
+		r.CompID.String(), string(r.Order), r.Cursor, strconv.Itoa(r.Limit)}, "-")
 }

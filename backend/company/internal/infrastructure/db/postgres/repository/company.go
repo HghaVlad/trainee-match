@@ -57,6 +57,18 @@ func (repo *CompanyRepository) Create(ctx context.Context, company *domain.Compa
 	return err
 }
 
+func (repo *CompanyRepository) Exists(ctx context.Context, id uuid.UUID) (bool, error) {
+	query := `SELECT EXISTS (SELECT 1 FROM companies WHERE id = $1)`
+
+	var exists bool
+	err := repo.db.GetContext(ctx, &exists, query, id)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
 func (repo *CompanyRepository) ListByVacanciesCnt(
 	ctx context.Context,
 	cursor *list_companies.VacanciesCntCursor,

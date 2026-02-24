@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 )
 
 type repoMock struct {

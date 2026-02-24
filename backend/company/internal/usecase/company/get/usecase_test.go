@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 )
 
 type CompanyRepoMock struct {

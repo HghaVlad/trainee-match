@@ -17,17 +17,19 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 )
 
 type CompanyHandler struct {
 	getByID *get_company.GetByIDUsecase
 	create  *create_company.Usecase
 	list    *list_companies.Usecase
+	listVac *list_vac_by_comp.Usecase
 	update  *update_company.Usecase
 	delete  *delete_company.Usecase
 }
 
-func NewProfileHandler(
+func NewCompanyHandler(
 	getByID *get_company.GetByIDUsecase,
 	create *create_company.Usecase,
 	list *list_companies.Usecase,

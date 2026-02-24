@@ -57,6 +57,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
 		r.Route("/{company-id}/vacancies", func(r chi.Router) {
 
+			r.Get("/", deps.VacancyHandler.ListByCompany)
+
 			r.Route("/{vacancy-id}", func(r chi.Router) {
 
 				r.Get("/", deps.VacancyHandler.GetByID)

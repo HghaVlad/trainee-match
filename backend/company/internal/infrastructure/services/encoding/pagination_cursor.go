@@ -3,7 +3,7 @@ package encoding
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
@@ -20,12 +20,12 @@ func DecodeCursor[T any, OrderT comparable](raw string, expectedOrder OrderT) (*
 
 	b, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
-		return nil, fmt.Errorf("%v: %w", err, domain_errors.ErrInvalidCursor)
+		return nil, errors.Join(domain_errors.ErrInvalidCursor, err)
 	}
 
 	var wrapper CursorWrapper[OrderT]
 	if err := json.Unmarshal(b, &wrapper); err != nil {
-		return nil, fmt.Errorf("%v: %w", domain_errors.ErrInvalidCursor, err)
+		return nil, errors.Join(domain_errors.ErrInvalidCursor, err)
 	}
 
 	if wrapper.Order != expectedOrder {

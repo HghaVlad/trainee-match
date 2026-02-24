@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
@@ -16,31 +16,35 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 type VacancyHandler struct {
-	getByID *get_vacancy.Usecase
-	list    *list_vacancy.Usecase
-	create  *create_vacancy.Usecase
-	update  *update_vacancy.Usecase
-	delete  *delete_vacancy.Usecase
+	getByID    *get_vacancy.Usecase
+	list       *list_vacancy.Usecase
+	listByComp *list_vac_by_comp.Usecase
+	create     *create_vacancy.Usecase
+	update     *update_vacancy.Usecase
+	delete     *delete_vacancy.Usecase
 }
 
 func NewVacancyHandler(
 	getByID *get_vacancy.Usecase,
 	list *list_vacancy.Usecase,
+	listByComp *list_vac_by_comp.Usecase,
 	create *create_vacancy.Usecase,
 	update *update_vacancy.Usecase,
 	delete *delete_vacancy.Usecase,
 ) *VacancyHandler {
 
 	return &VacancyHandler{
-		getByID: getByID,
-		list:    list,
-		create:  create,
-		update:  update,
-		delete:  delete,
+		getByID:    getByID,
+		list:       list,
+		listByComp: listByComp,
+		create:     create,
+		update:     update,
+		delete:     delete,
 	}
 }
 
@@ -136,7 +140,7 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	limit := helpers.ParseLimit(r, "limit", 20)
-	order := h.parseOrderQuery(r)
+	order := h.parseListOrderQuery(r)
 	cursor := r.URL.Query().Get("cursor")
 
 	req := &list_vacancy.Request{
@@ -152,6 +156,50 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mapper.VacancyListRespToDto(res)
+	responds.RespondJSON(w, http.StatusOK, resp)
+}
+
+// ListByCompany godoc
+// @Summary Lists company's vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID (UUID)"
+// @Param order query string false "Order attribute" default(published_at_desc)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} dto.VacancyByCompListResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{company-id}/vacancies [get]
+func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	compID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
+	if !ok {
+		return
+	}
+
+	order := h.parseVacByCompListOrderQuery(r)
+	cursor := r.URL.Query().Get("cursor")
+	limit := helpers.ParseLimit(r, "limit", 20)
+
+	req := &list_vac_by_comp.Request{
+		CompID: compID,
+		Limit:  limit,
+		Order:  order,
+		Cursor: cursor,
+	}
+
+	res, err := h.listByComp.Execute(ctx, req)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	resp := mapper.ListVacByCompRespToDto(res)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -236,7 +284,8 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain_errors.ErrVacancyNotFound):
+	case errors.Is(err, domain_errors.ErrVacancyNotFound),
+		errors.Is(err, domain_errors.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, domain_errors.ErrInvalidWorkFormat),
@@ -249,7 +298,8 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, domain_errors.ErrNegativeSalary),
 		errors.Is(err, domain_errors.ErrSalaryTooLarge),
 		errors.Is(err, domain_errors.ErrInvalidTitleLength),
-		errors.Is(err, domain_errors.ErrInvalidDescriptionLength):
+		errors.Is(err, domain_errors.ErrInvalidDescriptionLength),
+		errors.Is(err, domain_errors.ErrInvalidCursor):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
 	default:
@@ -257,7 +307,7 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	}
 }
 
-func (h *VacancyHandler) parseOrderQuery(r *http.Request) list_vacancy.Order {
+func (h *VacancyHandler) parseListOrderQuery(r *http.Request) list_vacancy.Order {
 	str := r.URL.Query().Get("order")
 	ord := list_vacancy.Order(strings.Trim(str, " "))
 
@@ -266,5 +316,17 @@ func (h *VacancyHandler) parseOrderQuery(r *http.Request) list_vacancy.Order {
 		return ord
 	default:
 		return list_vacancy.OrderPublishedAtDesc
+	}
+}
+
+func (h *VacancyHandler) parseVacByCompListOrderQuery(r *http.Request) list_vac_by_comp.Order {
+	str := r.URL.Query().Get("order")
+	ord := list_vac_by_comp.Order(strings.Trim(str, " "))
+
+	switch ord {
+	case list_vac_by_comp.OrderPublishedAtDesc:
+		return ord
+	default:
+		return list_vac_by_comp.OrderPublishedAtDesc
 	}
 }
