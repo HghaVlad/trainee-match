@@ -4,7 +4,6 @@ CREATE TABLE companies (
    description TEXT,
    website     TEXT,
    logo_key    TEXT,
-   owner_id    UUID NOT NULL,
    open_vacancies_count INT NOT NULL DEFAULT 0,
    CHECK (open_vacancies_count >= 0),
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
@@ -127,13 +128,13 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	identity := my_middleware.IdentityFromContext(ctx)
+
 	dtoReq, err := middleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	// TODO: add jwt owner id prolly
 
 	req := mapper.CompanyCreateReqToUC(dtoReq)
 

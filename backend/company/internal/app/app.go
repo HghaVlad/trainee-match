@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -91,9 +92,12 @@ func Build(conf *config.Config) (*App, error) {
 		vacDelete,
 	)
 
+	authMiddleware, err := my_middleware.NewAuthMiddleware(conf)
+
 	routerDeps := &delivery_http.RouterDeps{
 		CompanyHandler: companyHandler,
 		VacancyHandler: vacancyHandler,
+		AuthMiddleware: authMiddleware,
 	}
 
 	httpRouter := delivery_http.NewRouter(routerDeps)

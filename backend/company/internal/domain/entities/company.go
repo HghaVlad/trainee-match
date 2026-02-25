@@ -15,7 +15,6 @@ type Company struct {
 	Description      *string   `db:"description"`
 	Website          *string   `db:"website"`
 	LogoKey          *string   `db:"logo_key"`
-	OwnerID          uuid.UUID `db:"owner_id"`
 	CreatedAt        time.Time `db:"created_at"`
 	UpdatedAt        time.Time `db:"updated_at"`
 }

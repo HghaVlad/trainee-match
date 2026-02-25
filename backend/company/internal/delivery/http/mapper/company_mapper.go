@@ -17,7 +17,6 @@ func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
 		OpenVacanciesCnt: company.OpenVacanciesCnt,
 		Description:      company.Description,
 		Website:          company.Website,
-		OwnerId:          company.OwnerID,
 		LogoURL:          company.LogoURL,
 		CreatedAt:        company.CreatedAt,
 		UpdatedAt:        company.UpdatedAt,

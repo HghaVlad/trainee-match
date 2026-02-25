@@ -1,5 +1,6 @@
 package config
 
 type HTTPConfig struct {
-	Addr string
+	Addr   string
+	JWKUrl string
 }

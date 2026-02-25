@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
@@ -19,7 +20,7 @@ func NewUsecase(repo CompanyRepo) *Usecase {
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, error) {
+func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
 
 	// TODO: do smth with owner id
 
@@ -28,7 +29,6 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 		Name:        request.Name,
 		Description: request.Description,
 		Website:     request.Website,
-		OwnerID:     uuid.New(),
 	}
 
 	valErr := company.Validate()

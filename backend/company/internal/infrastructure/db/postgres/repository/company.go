@@ -44,8 +44,8 @@ func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*doma
 func (repo *CompanyRepository) Create(ctx context.Context, company *domain.Company) error {
 	exec := repo.getExec(ctx)
 
-	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website, owner_id) VALUES ($1, $2, $3, $4, $5)",
-		company.ID, company.Name, company.Description, company.Website, company.OwnerID)
+	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website) VALUES ($1, $2, $3, $4)",
+		company.ID, company.Name, company.Description, company.Website)
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

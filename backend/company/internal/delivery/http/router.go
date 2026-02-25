@@ -18,6 +18,7 @@ import (
 type RouterDeps struct {
 	CompanyHandler *handlers.CompanyHandler
 	VacancyHandler *handlers.VacancyHandler
+	AuthMiddleware *my_middleware.AuthMiddleware
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
@@ -41,13 +42,16 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				r.Get("/", deps.CompanyHandler.GetById)
 
-				r.With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
+				r.With(deps.AuthMiddleware.Handler).
+					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
 					Patch("/", deps.CompanyHandler.Update)
 
-				r.Delete("/", deps.CompanyHandler.Delete)
+				r.With(deps.AuthMiddleware.Handler).
+					Delete("/", deps.CompanyHandler.Delete)
 			})
 
 		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			With(deps.AuthMiddleware.Handler).
 			With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
 			Post("/", deps.CompanyHandler.Create)
 
@@ -63,13 +67,16 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 				r.Get("/", deps.VacancyHandler.GetByID)
 
-				r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
+				r.With(deps.AuthMiddleware.Handler).
+					With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
 					Patch("/", deps.VacancyHandler.Update)
 
-				r.Delete("/", deps.VacancyHandler.Delete)
+				r.With(deps.AuthMiddleware.Handler).
+					Delete("/", deps.VacancyHandler.Delete)
 			})
 
-			r.With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
+			r.With(deps.AuthMiddleware.Handler).
+				With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
 				Post("/", deps.VacancyHandler.Create)
 		})
 
