@@ -51,7 +51,6 @@ func toResponse(company *domain.Company, logoURL *string) *Response {
 		OpenVacanciesCnt: company.OpenVacanciesCnt,
 		Description:      company.Description,
 		Website:          company.Website,
-		OwnerID:          company.OwnerID,
 		LogoURL:          logoURL,
 		CreatedAt:        company.CreatedAt,
 		UpdatedAt:        company.UpdatedAt,

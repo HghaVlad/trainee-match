@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"strings"
 
-	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
+	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
@@ -138,7 +138,7 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyCreateReqToUC(dtoReq)
 
-	resp, err := h.create.Execute(ctx, req)
+	resp, err := h.create.Execute(ctx, req, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return

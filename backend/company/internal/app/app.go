@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
@@ -54,6 +54,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	compRepo := repository.NewCompanyRepository(compDB)
 	vacRepo := repository.NewVacancyRepo(compDB)
+	memRepo := repository.NewCompanyMemberRepo(compDB)
 	txManager := infra_postgres.NewTxManager(compDB)
 
 	compCache := infra_redis.NewRepo[uuid.UUID, domain.Company](redis, "company")
@@ -64,7 +65,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
-	compCreateUc := create_company.NewUsecase(compRepo)
+	compCreateUc := create_company.NewUsecase(compRepo, memRepo, txManager)
 	compUpdateUc := update_company.NewUsecase(compRepo, compCache)
 	compDeleteUc := delete_company.NewUsecase(compRepo, compCache)
 

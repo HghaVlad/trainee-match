@@ -30,3 +30,5 @@ var ErrInvalidDescriptionLength = errors.New("invalid description length")
 
 var ErrSalaryTooLarge = errors.New("salary too large")
 var ErrNegativeSalary = errors.New("salary negative")
+
+var ErrHrRoleRequired = errors.New("hr role is required")

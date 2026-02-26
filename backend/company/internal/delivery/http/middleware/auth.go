@@ -5,12 +5,13 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/lestrrat-go/jwx/v3/jwt"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type AuthMiddleware struct {
@@ -45,13 +46,19 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		token, err := jwt.ParseString(tokenString, jwt.WithKeySet(m.keys), jwt.WithValidate(true))
+		var claims CustomClaims
+		token, err := jwt.ParseString(
+			tokenString,
+			jwt.WithKeySet(m.keys),
+			jwt.WithValidate(true),
+			jwt.WithTypedClaim("realm_access", &claims.RealmAccess),
+		)
 		if err != nil {
 			responds.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
-		identity, err := getIdentityFromToken(token)
+		identity, err := getIdentityFromToken(token, &claims)
 		if err != nil {
 			responds.RespondError(w, http.StatusUnauthorized, err)
 			return
@@ -81,23 +88,23 @@ func getAccessTokenFromCookies(cookies []*http.Cookie) string {
 	return ""
 }
 
-func getIdentityFromToken(token jwt.Token) (*uc_common.Identity, error) {
+func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*uc_common.Identity, error) {
 	identity := new(uc_common.Identity)
 
-	var userId string
-	err := token.Get("sub", &userId)
-	if err != nil {
+	sub, ok := token.Subject()
+	if !ok {
 		return nil, errors.New("invalid jwt: sub not found")
 	}
 
-	identity.UserID, err = uuid.Parse(userId)
+	subID, err := uuid.Parse(sub)
 	if err != nil {
 		return nil, errors.New("invalid jwt: sub was expected to be uuid format")
 	}
+	identity.UserID = subID
 
 	var realmAccess RealmAccess
 	if err := token.Get("realm_access", &realmAccess); err != nil {
-		return nil, errors.New("invalid jwt: realm_access was expected")
+		return nil, errors.New("invalid jwt: realm_access invalid")
 	}
 
 	for _, role := range realmAccess.Roles {
@@ -120,4 +127,8 @@ func getIdentityFromToken(token jwt.Token) (*uc_common.Identity, error) {
 
 type RealmAccess struct {
 	Roles []string `json:"roles"`
+}
+
+type CustomClaims struct {
+	RealmAccess RealmAccess `json:"realm_access"`
 }

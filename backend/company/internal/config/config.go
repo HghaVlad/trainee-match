@@ -17,7 +17,7 @@ type Config struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		HTTP: HTTPConfig{
-			Addr:   getEnv("HTTP_ADDR", ":8080"),
+			Addr:   getEnv("HTTP_ADDR", ":8088"),
 			JWKUrl: getEnv("JWK_URL", ""),
 		},
 		CompanyDB: DBConfig{
