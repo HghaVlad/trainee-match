@@ -2,11 +2,13 @@ package create_vacancy
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
@@ -14,23 +16,26 @@ import (
 type Usecase struct {
 	vacancyRepo VacancyRepo
 	companyRepo CompanyRepo
+	memberRepo  CompMemberRepo
 	txManager   uc_common.TxManager
 }
 
 func NewUsecase(
 	vacancyRepo VacancyRepo,
 	companyRepo CompanyRepo,
+	memberRepo CompMemberRepo,
 	txManager uc_common.TxManager,
 ) *Usecase {
 
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
 		companyRepo: companyRepo,
+		memberRepo:  memberRepo,
 		txManager:   txManager,
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, error) {
+func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
 	id := uuid.New()
 	vacancy := vacancyFromReq(request, id)
 
@@ -43,6 +48,9 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 	defer cancel()
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		if err := u.authorize(ctx, request.CompanyID, identity); err != nil {
+			return err
+		}
 
 		vacErr := u.vacancyRepo.Create(ctx, vacancy)
 		if vacErr != nil {
@@ -57,6 +65,20 @@ func (u *Usecase) Execute(ctx context.Context, request *Request) (*Response, err
 	}
 
 	return &Response{ID: vacancy.ID}, nil
+}
+
+// only member of company can create vacancy
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
+	if identity.Role != uc_common.RoleHR {
+		return domain_errors.ErrHrRoleRequired
+	}
+
+	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
+	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
+		return domain_errors.ErrCompanyMemberRequired
+	}
+
+	return err
 }
 
 func vacancyFromReq(request *Request, id uuid.UUID) *domain.Vacancy {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -40,6 +41,20 @@ func (m *cacheMock) Del(ctx context.Context, id uuid.UUID) {
 	m.Called(ctx, id)
 }
 
+type memRepoMock struct {
+	mock.Mock
+}
+
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+	res := m.Called(ctx, userID, companyID)
+
+	if c := res.Get(0); c != nil {
+		return c.(*domain.CompanyMember), res.Error(1)
+	}
+
+	return nil, res.Error(1)
+}
+
 type FakeTxManager struct {
 	called bool
 }
@@ -53,6 +68,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 	txManager := new(FakeTxManager)
+	memRepo := new(memRepoMock)
 
 	vID := uuid.New()
 	cID := uuid.New()
@@ -72,6 +88,9 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 		EmploymentType: value_types.EmploymentTypeInternship,
 	}
 
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+
 	repo.On("GetByID", mock.Anything, vID, cID).
 		Return(&vac, nil).Once()
 
@@ -80,9 +99,11 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := update_vacancy.NewUsecase(repo, cache, txManager)
+	uc := update_vacancy.NewUsecase(repo, memRepo, cache, txManager)
 
-	err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	err := uc.Execute(context.Background(), req, identity)
 
 	require.NoError(t, err)
 	assert.Equal(t, vac.ID, req.VacancyID)
@@ -95,6 +116,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 
 func TestUsecase_Execute_GetErr(t *testing.T) {
 	repo := new(repoMock)
+	memRepo := new(memRepoMock)
 	cache := new(cacheMock)
 	txManager := new(FakeTxManager)
 
@@ -107,12 +129,17 @@ func TestUsecase_Execute_GetErr(t *testing.T) {
 		Title:     ptr("New Title"),
 	}
 
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+
 	repo.On("GetByID", mock.Anything, vID, cID).
 		Return(nil, errors.New("repo get err")).Once()
 
-	uc := update_vacancy.NewUsecase(repo, cache, txManager)
+	uc := update_vacancy.NewUsecase(repo, memRepo, cache, txManager)
 
-	err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	err := uc.Execute(context.Background(), req, identity)
 
 	require.Error(t, err)
 

@@ -2,36 +2,47 @@ package update_vacancy
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type Usecase struct {
-	repo      VacancyRepo
-	cache     CacheRepo
-	txManager uc_common.TxManager
+	repo       VacancyRepo
+	memberRepo CompMemberRepo
+	cache      CacheRepo
+	txManager  uc_common.TxManager
 }
 
 func NewUsecase(
 	repo VacancyRepo,
+	memberRepo CompMemberRepo,
 	cacheRepo CacheRepo,
 	txManager uc_common.TxManager,
 ) *Usecase {
 
 	return &Usecase{
-		repo:      repo,
-		cache:     cacheRepo,
-		txManager: txManager,
+		repo:       repo,
+		memberRepo: memberRepo,
+		cache:      cacheRepo,
+		txManager:  txManager,
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req *Request) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+
+		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
+			return err
+		}
 
 		vacancy, err := u.repo.GetByID(ctx, req.VacancyID, req.CompanyID)
 		if err != nil {
@@ -52,6 +63,20 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) error {
 
 	u.cache.Del(ctx, req.VacancyID)
 	return nil
+}
+
+// only member of company can update vacancy
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
+	if identity.Role != uc_common.RoleHR {
+		return domain_errors.ErrHrRoleRequired
+	}
+
+	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
+	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
+		return domain_errors.ErrCompanyMemberRequired
+	}
+
+	return err
 }
 
 // Applies not-nil only

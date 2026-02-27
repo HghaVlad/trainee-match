@@ -11,6 +11,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
@@ -94,11 +95,15 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Param vacancy_request body dto.VacancyCreateRequest true "Request to create vacancy"
 // @Success 201 {object} dto.VacancyCreatedResponse
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{company-id}/vacancies [post]
 func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	dtoReq, err := middleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
 	if err != nil {
@@ -113,7 +118,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.VacancyCreateReqToUC(dtoReq, companyID)
 
-	resp, err := h.create.Execute(ctx, req)
+	resp, err := h.create.Execute(ctx, req, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -214,12 +219,16 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 // @Param vacancy_request body dto.VacancyUpdateRequest true "Vacancy update payload"
 // @Success 204 "Vacancy updated successfully"
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 409 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [patch]
 func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -239,7 +248,7 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
 
-	err = h.update.Execute(ctx, req)
+	err = h.update.Execute(ctx, req, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -257,11 +266,15 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Param company-id path string true "Company ID"
 // @Success 204
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [delete]
 func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -273,7 +286,7 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.delete.Execute(ctx, vacancyID, companyID)
+	err := h.delete.Execute(ctx, vacancyID, companyID, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -301,6 +314,12 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, domain_errors.ErrInvalidDescriptionLength),
 		errors.Is(err, domain_errors.ErrInvalidCursor):
 		responds.RespondError(w, http.StatusBadRequest, err)
+
+	case errors.Is(err, domain_errors.ErrInsufficientRole),
+		errors.Is(err, domain_errors.ErrHrRoleRequired),
+		errors.Is(err, domain_errors.ErrCompanyMemberRequired),
+		errors.Is(err, domain_errors.ErrInsufficientRoleInCompany):
+		responds.RespondError(w, http.StatusForbidden, err)
 
 	default:
 		responds.RespondError(w, http.StatusInternalServerError, err)

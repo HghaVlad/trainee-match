@@ -32,3 +32,9 @@ var ErrSalaryTooLarge = errors.New("salary too large")
 var ErrNegativeSalary = errors.New("salary negative")
 
 var ErrHrRoleRequired = errors.New("hr role is required")
+var ErrInsufficientRole = errors.New("insufficient role")
+
+var ErrCompanyMemberRequired = errors.New("being this company's member is required")
+var ErrInsufficientRoleInCompany = errors.New("insufficient company member role")
+
+var ErrCompanyMemberNotFound = errors.New("company member not found")

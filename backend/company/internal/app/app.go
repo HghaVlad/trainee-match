@@ -66,15 +66,15 @@ func Build(conf *config.Config) (*App, error) {
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
 	compCreateUc := create_company.NewUsecase(compRepo, memRepo, txManager)
-	compUpdateUc := update_company.NewUsecase(compRepo, compCache)
-	compDeleteUc := delete_company.NewUsecase(compRepo, compCache)
+	compUpdateUc := update_company.NewUsecase(compRepo, memRepo, compCache)
+	compDeleteUc := delete_company.NewUsecase(compRepo, memRepo, compCache)
 
 	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache)
 	vacList := list_vacancy.NewUsecase(vacRepo, vacListCache)
 	vacListByComp := list_vac_by_comp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
-	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
-	vacUpdate := update_vacancy.NewUsecase(vacRepo, vacCache, txManager)
-	vacDelete := delete_vacancy.NewUsecase(vacRepo, vacCache)
+	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
+	vacUpdate := update_vacancy.NewUsecase(vacRepo, memRepo, vacCache, txManager)
+	vacDelete := delete_vacancy.NewUsecase(vacRepo, memRepo, vacCache)
 
 	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,

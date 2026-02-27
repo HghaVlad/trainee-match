@@ -13,6 +13,10 @@ type VacancyRepo interface {
 	Update(ctx context.Context, v *domain.Vacancy) error
 }
 
+type CompMemberRepo interface {
+	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
+}
+
 type CacheRepo interface {
 	Del(ctx context.Context, id uuid.UUID)
 }

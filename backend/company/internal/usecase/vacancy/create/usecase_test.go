@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -40,9 +42,24 @@ func (f *FakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 	return fn(ctx)
 }
 
+type memRepoMock struct {
+	mock.Mock
+}
+
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+	res := m.Called(ctx, userID, companyID)
+
+	if c := res.Get(0); c != nil {
+		return c.(*domain.CompanyMember), res.Error(1)
+	}
+
+	return nil, res.Error(1)
+}
+
 func TestUsecase_Execute_HappyPath(t *testing.T) {
 	vacRepo := new(vacancyRepoMock)
 	compRepo := new(companyRepoMock)
+	memRepo := new(memRepoMock)
 	txManager := new(FakeTxManager)
 
 	req := &create_vacancy.Request{
@@ -52,15 +69,20 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 		WorkFormat:  value_types.WorkFormatHybrid,
 	}
 
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleRecruiter}, nil).Once()
+
 	vacRepo.On("Create", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
 	compRepo.On("IncrementOpenVacancies", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	uc := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
+	uc := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
 
-	resp, err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	resp, err := uc.Execute(context.Background(), req, identity)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -70,7 +92,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 	compRepo.AssertExpectations(t)
 }
 
-func TestUsecase_Execute_VacCreateFail(t *testing.T) {
+func TestUsecase_Execute_AuthErr(t *testing.T) {
 	vacRepo := new(vacancyRepoMock)
 	compRepo := new(companyRepoMock)
 	txManager := new(FakeTxManager)
@@ -82,12 +104,63 @@ func TestUsecase_Execute_VacCreateFail(t *testing.T) {
 		WorkFormat:  value_types.WorkFormatHybrid,
 	}
 
+	tests := []struct {
+		name     string
+		identity uc_common.Identity
+		memRepo  *memRepoMock
+		resErr   error
+	}{
+		{
+			name:     "Global Role Wrong",
+			identity: uc_common.Identity{Role: uc_common.RoleCandidate},
+			resErr:   domain_errors.ErrHrRoleRequired,
+		},
+		{
+			name:     "HR is not member of company",
+			identity: uc_common.Identity{Role: uc_common.RoleHR},
+			memRepo: func() *memRepoMock {
+				memRepo := new(memRepoMock)
+				memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, domain_errors.ErrCompanyMemberNotFound).Once()
+				return memRepo
+			}(),
+			resErr: domain_errors.ErrCompanyMemberRequired,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			uc := create_vacancy.NewUsecase(vacRepo, compRepo, test.memRepo, txManager)
+			_, err := uc.Execute(context.Background(), req, test.identity)
+			assert.Equal(t, test.resErr, err)
+		})
+	}
+}
+
+func TestUsecase_Execute_VacCreateFail(t *testing.T) {
+	vacRepo := new(vacancyRepoMock)
+	compRepo := new(companyRepoMock)
+	memRepo := new(memRepoMock)
+	txManager := new(FakeTxManager)
+
+	req := &create_vacancy.Request{
+		CompanyID:   uuid.New(),
+		Title:       "Go Dack Dev",
+		Description: "Go Back dev pretty much",
+		WorkFormat:  value_types.WorkFormatHybrid,
+	}
+
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleRecruiter}, nil).Once()
+
 	vacRepo.On("Create", mock.Anything, mock.Anything).
 		Return(errors.New("some err")).Once()
 
-	uc := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
+	uc := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
 
-	_, err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	_, err := uc.Execute(context.Background(), req, identity)
 
 	require.Error(t, err)
 	assert.True(t, txManager.Called)
@@ -98,15 +171,18 @@ func TestUsecase_Execute_VacCreateFail(t *testing.T) {
 func TestUsecase_Execute_ValidateErr(t *testing.T) {
 	vacRepo := new(vacancyRepoMock)
 	compRepo := new(companyRepoMock)
+	memRepo := new(memRepoMock)
 	txManager := new(FakeTxManager)
 
 	invalidReq := &create_vacancy.Request{
 		CompanyID: uuid.New(),
 	}
 
-	uc := create_vacancy.NewUsecase(vacRepo, compRepo, txManager)
+	uc := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
 
-	_, err := uc.Execute(context.Background(), invalidReq)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	_, err := uc.Execute(context.Background(), invalidReq, identity)
 
 	require.Error(t, err)
 	vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)

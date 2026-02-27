@@ -63,7 +63,6 @@ func TestGetByIdUsecase_Execute(t *testing.T) {
 		OpenVacanciesCnt: 3,
 		Description:      ptr("desc"),
 		Website:          ptr("site"),
-		OwnerID:          uuid.New(),
 		LogoKey:          ptr("logo.png"),
 		CreatedAt:        now,
 		UpdatedAt:        now,

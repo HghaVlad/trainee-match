@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -32,23 +34,43 @@ func (m *cacheMock) Del(ctx context.Context, id uuid.UUID) {
 	m.Called(ctx, id)
 }
 
+type memRepoMock struct {
+	mock.Mock
+}
+
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+	res := m.Called(ctx, userID, companyID)
+
+	if c := res.Get(0); c != nil {
+		return c.(*domain.CompanyMember), res.Error(1)
+	}
+
+	return nil, res.Error(1)
+}
+
 func TestUsecase_ExecuteOK(t *testing.T) {
 	cache := new(cacheMock)
+	memRepo := new(memRepoMock)
 	repo := new(companyRepoMock)
+
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("Update", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := update_company.NewUsecase(repo, cache)
+	uc := update_company.NewUsecase(repo, memRepo, cache)
 
 	req := &update_company.Request{
 		ID:   uuid.New(),
 		Name: ptr("Acme"),
 	}
 
-	err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	err := uc.Execute(context.Background(), req, identity)
 
 	require.NoError(t, err)
 	cache.AssertExpectations(t)
@@ -57,19 +79,25 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 func TestUsecase_DbErr(t *testing.T) {
 	cache := new(cacheMock)
+	memRepo := new(memRepoMock)
 	repo := new(companyRepoMock)
+
+	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
+		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("Update", mock.Anything, mock.Anything).
 		Return(errors.New("db err")).Once()
 
-	uc := update_company.NewUsecase(repo, cache)
+	uc := update_company.NewUsecase(repo, memRepo, cache)
 
 	req := &update_company.Request{
 		ID:   uuid.New(),
 		Name: ptr("Acme"),
 	}
 
-	err := uc.Execute(context.Background(), req)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	err := uc.Execute(context.Background(), req, identity)
 
 	assert.Error(t, err)
 	repo.AssertExpectations(t)
@@ -79,8 +107,11 @@ func TestUsecase_DbErr(t *testing.T) {
 func TestUsecase_ValidateErr(t *testing.T) {
 	cache := new(cacheMock)
 	repo := new(companyRepoMock)
+	memRepo := new(memRepoMock)
 
-	uc := update_company.NewUsecase(repo, cache)
+	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+
+	uc := update_company.NewUsecase(repo, memRepo, cache)
 
 	tests := []struct {
 		name string
@@ -115,7 +146,7 @@ func TestUsecase_ValidateErr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := uc.Execute(context.Background(), &tt.req)
+			err := uc.Execute(context.Background(), &tt.req, identity)
 
 			assert.Equal(t, tt.err, err)
 			repo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)

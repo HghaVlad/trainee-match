@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -38,10 +37,10 @@ func (m *repoMock) ListByPublishedAt(ctx context.Context, cursor *list_vacancy.P
 
 	args := m.Called(ctx, cursor, limit)
 
-	cs := args.Get(0)
+	vcs := args.Get(0)
 
-	if cs != nil {
-		return cs.([]list_vacancy.VacancySummary), args.Error(1)
+	if vcs != nil {
+		return vcs.([]list_vacancy.VacancySummary), args.Error(1)
 	}
 
 	return nil, args.Error(1)
@@ -80,13 +79,11 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 		Limit:  10,
 	}
 
-	nextCur := list_vacancy.PublishedAtCursor{PublishedAt: time.Now(), Id: uuid.New()}
-
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
 	repo.On("ListByPublishedAt", mock.Anything, mock.Anything, mock.Anything).
-		Return([]list_vacancy.VacancySummary{{}}, &nextCur, nil).Once()
+		Return([]list_vacancy.VacancySummary{{}}, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
@@ -96,7 +93,6 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, len(resp.Vacancies), 1)
-	assert.NotEmpty(t, resp.NextCursor)
 	cache.AssertExpectations(t)
 	repo.AssertExpectations(t)
 }

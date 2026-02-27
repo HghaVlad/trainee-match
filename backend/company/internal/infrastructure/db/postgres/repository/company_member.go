@@ -2,11 +2,15 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	infra_postgres "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 )
 
 type CompanyMemberRepo struct {
@@ -17,6 +21,18 @@ func NewCompanyMemberRepo(db *sqlx.DB) *CompanyMemberRepo {
 	return &CompanyMemberRepo{
 		db: db,
 	}
+}
+
+func (repo *CompanyMemberRepo) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+	query := `SELECT * FROM company_members WHERE company_id = $1 AND user_id = $2`
+	var member domain.CompanyMember
+	err := repo.db.GetContext(ctx, &member, query, companyID, userID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, domain_errors.ErrCompanyMemberNotFound
+	}
+
+	return &member, nil
 }
 
 func (repo *CompanyMemberRepo) Create(ctx context.Context, member *domain.CompanyMember) error {

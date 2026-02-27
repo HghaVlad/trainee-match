@@ -12,6 +12,10 @@ type VacancyRepo interface {
 	Create(ctx context.Context, vacancy *domain.Vacancy) error
 }
 
+type CompMemberRepo interface {
+	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
+}
+
 type CompanyRepo interface {
 	IncrementOpenVacancies(ctx context.Context, id uuid.UUID) error
 }

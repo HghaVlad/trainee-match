@@ -41,6 +41,21 @@ services:
       timeout: 3s
       retries: 5
 
+  company-service:
+    build:
+      context: ./company
+    env_file:
+      - company/.env
+    ports:
+      - "8088:8080"
+    depends_on:
+      company-db:
+        condition: service_healthy
+      company-db-migrate:
+        condition: service_completed_successfully
+      redis-cache:
+        condition: service_healthy
+
 volumes:
   company-db-data:
   redis_data:

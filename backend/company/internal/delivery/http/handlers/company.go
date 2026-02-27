@@ -11,7 +11,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
-	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
@@ -122,6 +122,8 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Param company_request body dto.CompanyCreateRequest true "Request to create a company"
 // @Success 201 {object} dto.CompanyCreatedResponse
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 409 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies [post]
@@ -158,12 +160,16 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param company_request body dto.CompanyUpdateRequest true "Request to update company"
 // @Success 204
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 409 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{id} [patch]
 func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	id, err := middleware.UUIDFromContext(ctx)
 	if err != nil {
@@ -179,7 +185,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyUpdateReqToUC(id, dtoReq)
 
-	err = h.update.Execute(ctx, req)
+	err = h.update.Execute(ctx, req, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -196,11 +202,15 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "Company ID"
 // @Success 204
 // @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{id} [delete]
 func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	id, err := middleware.UUIDFromContext(ctx)
 	if err != nil {
@@ -208,7 +218,7 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.delete.Execute(ctx, id)
+	err = h.delete.Execute(ctx, id, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -230,6 +240,12 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, domain_errors.ErrCompanyInvalidDescriptionLen),
 		errors.Is(err, domain_errors.ErrCompanyInvalidNameLen):
 		responds.RespondError(w, http.StatusBadRequest, err)
+
+	case errors.Is(err, domain_errors.ErrInsufficientRole),
+		errors.Is(err, domain_errors.ErrHrRoleRequired),
+		errors.Is(err, domain_errors.ErrCompanyMemberRequired),
+		errors.Is(err, domain_errors.ErrInsufficientRoleInCompany):
+		responds.RespondError(w, http.StatusForbidden, err)
 
 	default:
 		responds.RespondError(w, http.StatusInternalServerError, err)
