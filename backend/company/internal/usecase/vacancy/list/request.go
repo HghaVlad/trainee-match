@@ -1,17 +1,8 @@
 package list_vacancy
 
-import (
-	"strconv"
-	"strings"
-)
-
 type Request struct {
-	Order  Order
-	Limit  int
-	Cursor string
-}
-
-func (r *Request) toCacheKey() string {
-	return strings.Join([]string{
-		string(r.Order), r.Cursor, strconv.Itoa(r.Limit)}, "-")
+	Order         Order
+	Limit         int
+	EncodedCursor string
+	Requirements  *Requirements
 }

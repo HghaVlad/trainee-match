@@ -107,6 +107,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
                     "409": {
                         "description": "Conflict",
                         "schema": {
@@ -134,7 +146,7 @@ const docTemplate = `{
                 "tags": [
                     "vacancy"
                 ],
-                "summary": "Lists company's vacancy summaries",
+                "summary": "Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param",
                 "parameters": [
                     {
                         "type": "string",
@@ -230,6 +242,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
@@ -340,6 +364,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -397,6 +433,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
@@ -499,6 +547,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -553,6 +613,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -576,7 +648,7 @@ const docTemplate = `{
         },
         "/vacancies": {
             "get": {
-                "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc",
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports filters, orders.",
                 "consumes": [
                     "application/json"
                 ],
@@ -591,7 +663,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "published_at_desc",
-                        "description": "Order attribute",
+                        "description": "Order attribute, supports published_at_desc, salary_desc",
                         "name": "order",
                         "in": "query"
                     },
@@ -606,6 +678,90 @@ const docTemplate = `{
                         "default": 20,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in months",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in months",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Company filter (repeat param)",
+                        "name": "company_id",
                         "in": "query"
                     }
                 ],
@@ -716,10 +872,6 @@ const docTemplate = `{
                 "openVacanciesCount": {
                     "type": "integer",
                     "example": 13
-                },
-                "ownerId": {
-                    "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "updatedAt": {
                     "type": "string",

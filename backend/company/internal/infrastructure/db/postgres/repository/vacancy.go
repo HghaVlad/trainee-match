@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -78,37 +79,39 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	return err
 }
 
-func (repo *VacancyRepo) ListByPublishedAt(
+// List - pass cursor as pointer
+func (repo *VacancyRepo) List(
 	ctx context.Context,
-	cursor *list_vacancy.PublishedAtCursor,
+	requirements *list_vacancy.Requirements,
+	order list_vacancy.Order,
+	cursor any,
 	limit int,
 ) (
 	[]list_vacancy.VacancySummary, error) {
 
-	var query string
-	var args []any
+	requireFilters, args := listVacRequirementsToSQL(requirements)
 
-	if cursor == nil {
-		query =
-			`SELECT v.id, v.company_id, c.name AS company_name, v.title, v.work_format, v.city, v.employment_type,
+	cursorCondition := ""
+	if cursor != nil && !reflect.ValueOf(cursor).IsNil() {
+		cursorCondition, args = listVacCursorToSQL(cursor, args)
+		cursorCondition = "AND " + cursorCondition
+	}
+
+	if order == list_vacancy.OrderSalaryDesc {
+		requireFilters += andSalaryNotNull
+	}
+
+	orderBy := listVacOrderToSQL(order)
+
+	args = append(args, limit)
+
+	query := fmt.Sprintf(`SELECT v.id, v.company_id, c.name AS company_name, v.title, v.work_format, v.city, v.employment_type,
        	v.is_paid, v.salary_from, v.salary_to, v.published_at
 		FROM vacancies v
 		JOIN companies c ON v.company_id = c.id
-		WHERE v.is_active = true
-		ORDER BY v.published_at DESC, v.id
-		LIMIT $1`
-		args = []any{limit}
-	} else {
-		query =
-			`SELECT v.id, v.company_id, c.name AS company_name, v.title, v.work_format, v.city, v.employment_type,
-       	v.is_paid, v.salary_from, v.salary_to, v.published_at
-		FROM vacancies v
-		JOIN companies c ON v.company_id = c.id 
-		WHERE (v.published_at < $1 OR (v.published_at = $1 AND v.id < $2)) AND v.is_active = true
-		ORDER BY v.published_at DESC, v.id DESC
-		LIMIT $3`
-		args = []any{cursor.PublishedAt, cursor.Id, limit}
-	}
+		WHERE %s %s AND v.is_active = true
+		%s 
+		LIMIT $%d`, requireFilters, cursorCondition, orderBy, len(args))
 
 	var vacancies []list_vacancy.VacancySummary
 

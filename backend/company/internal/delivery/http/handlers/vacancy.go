@@ -3,10 +3,14 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
+	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
@@ -130,13 +134,31 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // List godoc
 // @Summary List vacancy summaries
-// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports filters, orders.
 // @Tags vacancy
 // @Accept json
 // @Produce json
-// @Param order query string false "Order attribute" default(published_at_desc)
+// @Param order query string false "Order attribute, supports published_at_desc, salary_desc" default(published_at_desc)
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
+// / Filters:
+// Salary range
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// Hours per week range
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// Duration range (months)
+// @Param duration_min query int false "Minimum duration in months"
+// @Param duration_max query int false "Maximum duration in months"
+// Boolean filters
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// Slice filters (multiple values allowed)
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
+// @Param company_id query []string false "Company filter (repeat param)" collectionFormat(multi)
 // @Success 200 {object} dto.VacancyListResponse
 // @Failure 400 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
@@ -144,15 +166,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	limit := helpers.ParseLimit(r, "limit", 20)
-	order := h.parseListOrderQuery(r)
-	cursor := r.URL.Query().Get("cursor")
-
-	req := &list_vacancy.Request{
-		Limit:  limit,
-		Order:  order,
-		Cursor: cursor,
-	}
+	req := h.listVacRequestFromQuery(r)
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
@@ -165,7 +179,7 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListByCompany godoc
-// @Summary Lists company's vacancy summaries
+// @Summary Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param
 // @Description Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
 // @Tags vacancy
 // @Accept json
@@ -312,7 +326,9 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, domain_errors.ErrSalaryTooLarge),
 		errors.Is(err, domain_errors.ErrInvalidTitleLength),
 		errors.Is(err, domain_errors.ErrInvalidDescriptionLength),
-		errors.Is(err, domain_errors.ErrInvalidCursor):
+		errors.Is(err, domain_errors.ErrInvalidCursor),
+		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
+		errors.Is(err, domain_errors.ErrUnsupportedListOrder):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, domain_errors.ErrInsufficientRole),
@@ -326,12 +342,105 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	}
 }
 
+func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) *list_vacancy.Request {
+	q := r.URL.Query()
+
+	limit := helpers.ParseLimit(r, "limit", 20)
+	order := h.parseListOrderQuery(r)
+	cursor := q.Get("cursor")
+
+	req := &list_vacancy.Request{
+		Limit:         limit,
+		Order:         order,
+		EncodedCursor: cursor,
+		Requirements:  new(list_vacancy.Requirements),
+	}
+
+	req.Requirements.Salary = parseRangeInt(q, "salary_min", "salary_max")
+	req.Requirements.HoursPerWeek = parseRangeInt(q, "hours_min", "hours_max")
+	req.Requirements.Duration = parseRangeInt(q, "duration_min", "duration_max")
+
+	if isPaidStr := q.Get("is_paid"); isPaidStr != "" {
+		if isPaid, err := strconv.ParseBool(isPaidStr); err == nil {
+			req.Requirements.IsPaid = &isPaid
+		}
+	}
+
+	if internshipStr := q.Get("internship_to_offer"); internshipStr != "" {
+		if val, err := strconv.ParseBool(internshipStr); err == nil {
+			req.Requirements.InternshipToOffer = &val
+		}
+	}
+
+	if flexStr := q.Get("flexible_schedule"); flexStr != "" {
+		if val, err := strconv.ParseBool(flexStr); err == nil {
+			req.Requirements.FlexibleSchedule = &val
+		}
+	}
+
+	if workFormats, ok := q["work_format"]; ok && len(workFormats) > 0 {
+		var wfs []value_types.WorkFormat
+		for _, str := range workFormats {
+			wf := value_types.WorkFormat(str)
+			if wf.IsValid() {
+				wfs = append(wfs, wf)
+			}
+		}
+		if len(wfs) > 0 {
+			req.Requirements.WorkFormat = &wfs
+		}
+	}
+
+	if companies, ok := q["company_id"]; ok && len(companies) > 0 {
+		ids := make([]uuid.UUID, 0, len(companies))
+		for _, str := range companies {
+			id, err := uuid.Parse(str)
+			if err == nil {
+				ids = append(ids, id)
+			}
+		}
+		req.Requirements.Companies = &ids
+	}
+
+	if cities, ok := q["city"]; ok && len(cities) > 0 {
+		req.Requirements.City = &cities
+	}
+
+	return req
+}
+
+func parseRangeInt(q url.Values, minKey, maxKey string) *list_vacancy.RangeInt {
+	var r list_vacancy.RangeInt
+	var hasValue bool
+
+	if minStr := q.Get(minKey); minStr != "" {
+		if mn, err := strconv.Atoi(minStr); err == nil {
+			r.Min = &mn
+			hasValue = true
+		}
+	}
+
+	if maxStr := q.Get(maxKey); maxStr != "" {
+		if mx, err := strconv.Atoi(maxStr); err == nil {
+			r.Max = &mx
+			hasValue = true
+		}
+	}
+
+	if !hasValue {
+		return nil
+	}
+
+	return &r
+}
+
 func (h *VacancyHandler) parseListOrderQuery(r *http.Request) list_vacancy.Order {
 	str := r.URL.Query().Get("order")
 	ord := list_vacancy.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case list_vacancy.OrderPublishedAtDesc:
+	case list_vacancy.OrderPublishedAtDesc,
+		list_vacancy.OrderSalaryDesc:
 		return ord
 	default:
 		return list_vacancy.OrderPublishedAtDesc

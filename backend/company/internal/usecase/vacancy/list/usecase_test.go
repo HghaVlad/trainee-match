@@ -32,10 +32,8 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) ListByPublishedAt(ctx context.Context, cursor *list_vacancy.PublishedAtCursor, limit int,
-) ([]list_vacancy.VacancySummary, error) {
-
-	args := m.Called(ctx, cursor, limit)
+func (m *repoMock) List(ctx context.Context, requirements *list_vacancy.Requirements, order list_vacancy.Order, cursor any, limit int) ([]list_vacancy.VacancySummary, error) {
+	args := m.Called(ctx, requirements, order, cursor, limit)
 
 	vcs := args.Get(0)
 
@@ -51,9 +49,9 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	cache := new(cacheMock)
 
 	req := &list_vacancy.Request{
-		Order:  list_vacancy.OrderPublishedAtDesc,
-		Cursor: "",
-		Limit:  10,
+		Order:         list_vacancy.OrderPublishedAtDesc,
+		EncodedCursor: "",
+		Limit:         10,
 	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
@@ -69,21 +67,23 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	repo.AssertNotCalled(t, "ListByPublishedAt", mock.Anything, mock.Anything, mock.Anything)
 }
 
-func TestUsecase_Execute_CacheMiss(t *testing.T) {
+func TestUsecase_Execute_NextCursor(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
 	req := &list_vacancy.Request{
-		Order:  list_vacancy.OrderPublishedAtDesc,
-		Cursor: "",
-		Limit:  10,
+		Order:         list_vacancy.OrderPublishedAtDesc,
+		EncodedCursor: "",
+		Limit:         10,
 	}
+
+	vcs := make([]list_vacancy.VacancySummary, req.Limit+1)
 
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	repo.On("ListByPublishedAt", mock.Anything, mock.Anything, mock.Anything).
-		Return([]list_vacancy.VacancySummary{{}}, nil).Once()
+	repo.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+		Return(vcs, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
@@ -92,7 +92,39 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 	resp, err := uc.Execute(context.Background(), req)
 
 	require.NoError(t, err)
-	assert.Equal(t, len(resp.Vacancies), 1)
+	assert.Equal(t, len(resp.Vacancies), req.Limit)
+	assert.NotEmpty(t, resp.NextCursor)
+	cache.AssertExpectations(t)
+	repo.AssertExpectations(t)
+}
+
+func TestUsecase_Execute_NoNextCursor(t *testing.T) {
+	repo := new(repoMock)
+	cache := new(cacheMock)
+
+	req := &list_vacancy.Request{
+		Order:         list_vacancy.OrderPublishedAtDesc,
+		EncodedCursor: "",
+		Limit:         10,
+	}
+
+	vcs := make([]list_vacancy.VacancySummary, req.Limit)
+
+	cache.On("Get", mock.Anything, mock.Anything).
+		Return(nil).Once()
+
+	repo.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+		Return(vcs, nil).Once()
+
+	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+
+	uc := list_vacancy.NewUsecase(repo, cache)
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.NoError(t, err)
+	assert.Equal(t, len(resp.Vacancies), req.Limit)
+	assert.Empty(t, resp.NextCursor)
 	cache.AssertExpectations(t)
 	repo.AssertExpectations(t)
 }

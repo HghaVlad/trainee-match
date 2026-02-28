@@ -70,23 +70,18 @@ CHECK (
     OR salary_from <= salary_to
 );
 
-
-CREATE INDEX idx_vacancies_active
-    ON vacancies (is_active)
+-- for active vacancy listing
+CREATE INDEX idx_vacancies_feed
+    ON vacancies (published_at DESC, id DESC)
     WHERE is_active = true;
 
-CREATE INDEX idx_vacancies_work_format
-    ON vacancies (work_format);
+CREATE INDEX idx_vacancies_company_feed
+    ON vacancies (company_id, published_at DESC, id DESC)
+    WHERE is_active = true;
 
-CREATE INDEX idx_vacancies_employment_type
-    ON vacancies (employment_type);
-
-CREATE INDEX idx_vacancies_company_id
-    ON vacancies (company_id);
-
-CREATE INDEX idx_vacancies_published_at
-    ON vacancies (published_at DESC);
-
+CREATE INDEX idx_vacancies_salary_feed
+    ON vacancies(salary_from DESC NULLS LAST, salary_to DESC NULLS LAST, id DESC)
+    WHERE is_active = true;
 
 CREATE TRIGGER trg_vacancy_updated_at
 BEFORE UPDATE ON vacancies

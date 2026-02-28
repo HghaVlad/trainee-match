@@ -18,7 +18,7 @@ func NewUsecase(repo VacancyRepo, cache ResponseCacheRepo) *Usecase {
 }
 
 func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
-	respCacheKey := req.toCacheKey()
+	respCacheKey := requestToCacheKey(req)
 	resp := uc.respCache.Get(ctx, respCacheKey)
 	if resp != nil {
 		return resp, nil
@@ -31,7 +31,9 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 
 	switch req.Order {
 	case OrderPublishedAtDesc:
-		resp, err = uc.listByPublishedAt(ctx, req)
+		resp, err = list[PublishedAtCursor](ctx, uc, req)
+	case OrderSalaryDesc:
+		resp, err = list[SalaryCursor](ctx, uc, req)
 
 	default:
 		return nil, domain_errors.ErrUnsupportedListOrder
@@ -47,33 +49,60 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 	return resp, nil
 }
 
-func (uc *Usecase) listByPublishedAt(ctx context.Context, req *Request) (*Response, error) {
-	cursor, curErr := encoding.DecodeCursor[PublishedAtCursor, Order](req.Cursor, req.Order)
+func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Response, error) {
+	cursor, curErr := encoding.DecodeCursor[CursorT, Order](req.EncodedCursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
 	}
 
-	vacancies, err := uc.repo.ListByPublishedAt(ctx, cursor, req.Limit)
+	// limit + 1 strat
+	vacancies, err := uc.repo.List(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
 	if err != nil {
 		return nil, err
 	}
 
-	// next cursor if full page
-	var nextCursor *PublishedAtCursor = nil
-	if len(vacancies) == req.Limit {
-		last := vacancies[len(vacancies)-1]
-		nextCursor = &PublishedAtCursor{
-			PublishedAt: last.PublishedAt,
-			Id:          last.ID,
-		}
-	}
+	nextCursor, vacancies := getNextCursor[CursorT](vacancies, req.Limit)
 
-	resp, err := buildResponse[PublishedAtCursor](vacancies, nextCursor, OrderPublishedAtDesc)
+	resp, err := buildResponse[CursorT](vacancies, nextCursor, req.Order)
 	if err != nil {
 		return nil, err
 	}
 
 	return resp, nil
+}
+
+func getNextCursor[CursorT any](vacancies []VacancySummary, limit int) (*CursorT, []VacancySummary) {
+	if len(vacancies) <= limit {
+		return nil, vacancies
+	}
+
+	vacancies = vacancies[:len(vacancies)-1]
+	last := vacancies[len(vacancies)-1]
+
+	var zero CursorT
+
+	switch any(zero).(type) {
+
+	case PublishedAtCursor:
+		cursor := PublishedAtCursor{
+			PublishedAt: last.PublishedAt,
+			Id:          last.ID,
+		}
+		return any(&cursor).(*CursorT), vacancies
+
+	case SalaryCursor:
+		if last.SalaryFrom == nil || last.SalaryTo == nil {
+			return nil, vacancies
+		}
+		cursor := SalaryCursor{
+			SalaryFrom: *last.SalaryFrom,
+			SalaryTo:   *last.SalaryTo,
+			Id:         last.ID,
+		}
+		return any(&cursor).(*CursorT), vacancies
+	}
+
+	return nil, nil
 }
 
 func buildResponse[CursorT any](vacancies []VacancySummary, nextCursor *CursorT, order Order) (*Response, error) {
