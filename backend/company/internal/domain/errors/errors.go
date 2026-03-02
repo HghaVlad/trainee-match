@@ -38,3 +38,10 @@ var ErrCompanyMemberRequired = errors.New("being this company's member is requir
 var ErrInsufficientRoleInCompany = errors.New("insufficient company member role")
 
 var ErrCompanyMemberNotFound = errors.New("company member not found")
+
+var ErrEmptyCompaniesFilter = errors.New("empty companies filter")
+var ErrEmptyCityFilter = errors.New("empty city filter")
+
+var ErrLimitTooLarge = errors.New("limit too large")
+
+var ErrInvalidSalaryOrderForUnpaid = errors.New("unpaid vacancies don't support this order")

@@ -306,7 +306,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse"
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyFullResponse"
                         }
                     },
                     "400": {
@@ -457,6 +457,72 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/companies/{company-id}/vacancies/{vacancy-id}/archive": {
+            "post": {
+                "description": "Archive vacancy (deactivation for candidates)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Archive vacancy (deactivation for candidates)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID",
+                        "name": "vacancy-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Vacancy archived successfully"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/responds.ErrorResponse"
                         }
@@ -663,7 +729,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "published_at_desc",
-                        "description": "Order attribute, supports published_at_desc, salary_desc",
+                        "description": "Order attribute, supports published_at_desc, salary_desc, salary_asc",
                         "name": "order",
                         "in": "query"
                     },
@@ -706,13 +772,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Minimum duration in months",
+                        "description": "Minimum duration in days",
                         "name": "duration_min",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Maximum duration in months",
+                        "description": "Maximum duration in days",
                         "name": "duration_max",
                         "in": "query"
                     },
@@ -958,6 +1024,14 @@ const docTemplate = `{
         "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreateRequest": {
             "type": "object",
             "properties": {
+                "DurationFromDays": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "DurationToDays": {
+                    "type": "integer",
+                    "example": 90
+                },
                 "city": {
                     "type": "string",
                     "example": "Mountain View"
@@ -966,40 +1040,32 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Join Google's backend team to build scalable services in Go."
                 },
-                "duration_from_months": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "duration_to_months": {
-                    "type": "integer",
-                    "example": 6
-                },
-                "employment_type": {
+                "employmentType": {
                     "type": "string",
                     "example": "internship"
                 },
-                "flexible_schedule": {
+                "flexibleSchedule": {
                     "type": "boolean"
                 },
-                "hours_per_week_from": {
+                "hoursPerWeekFrom": {
                     "type": "integer",
                     "example": 20
                 },
-                "hours_per_week_to": {
+                "hoursPerWeekTo": {
                     "type": "integer",
                     "example": 40
                 },
-                "internship_to_offer": {
+                "internshipToOffer": {
                     "type": "boolean"
                 },
-                "is_paid": {
+                "isPaid": {
                     "type": "boolean"
                 },
-                "salary_from": {
+                "salaryFrom": {
                     "type": "integer",
                     "example": 1000
                 },
-                "salary_to": {
+                "salaryTo": {
                     "type": "integer",
                     "example": 1500
                 },
@@ -1007,7 +1073,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Go Backend Developer Intern"
                 },
-                "work_format": {
+                "workFormat": {
                     "type": "string",
                     "enum": [
                         "onsite",
@@ -1024,6 +1090,106 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyFullResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Mountain View"
+                },
+                "companyId": {
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2026-01-18T09:30:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Join Google's backend team to build scalable services in Go."
+                },
+                "durationFromDays": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "durationToDays": {
+                    "type": "integer",
+                    "example": 90
+                },
+                "employmentType": {
+                    "type": "string",
+                    "enum": [
+                        "internship",
+                        "full_time",
+                        "part_time"
+                    ],
+                    "example": "internship"
+                },
+                "flexibleSchedule": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "hoursPerWeekFrom": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "hoursPerWeekTo": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "internshipToOffer": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "isPaid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "publishedAt": {
+                    "type": "string",
+                    "example": "2026-01-20T10:00:00Z"
+                },
+                "salaryFrom": {
+                    "type": "integer",
+                    "example": 3500
+                },
+                "salaryTo": {
+                    "type": "integer",
+                    "example": 5000
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "archived"
+                    ],
+                    "example": "published"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Go Backend Developer Intern"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2026-01-22T14:15:00Z"
+                },
+                "workFormat": {
+                    "type": "string",
+                    "enum": [
+                        "onsite",
+                        "remote",
+                        "hybrid"
+                    ],
+                    "example": "hybrid"
                 }
             }
         },
@@ -1090,101 +1256,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyResponse": {
-            "type": "object",
-            "properties": {
-                "city": {
-                    "type": "string",
-                    "example": "Mountain View"
-                },
-                "company_id": {
-                    "type": "string",
-                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2026-01-18T09:30:00Z"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Join Google's backend team to build scalable services in Go."
-                },
-                "duration_from_months": {
-                    "type": "integer",
-                    "example": 3
-                },
-                "duration_to_months": {
-                    "type": "integer",
-                    "example": 6
-                },
-                "employment_type": {
-                    "type": "string",
-                    "enum": [
-                        "internship",
-                        "full_time",
-                        "part_time"
-                    ],
-                    "example": "internship"
-                },
-                "flexible_schedule": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "hours_per_week_from": {
-                    "type": "integer",
-                    "example": 30
-                },
-                "hours_per_week_to": {
-                    "type": "integer",
-                    "example": 40
-                },
-                "id": {
-                    "type": "string",
-                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                },
-                "internship_to_offer": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "is_active": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "is_paid": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "published_at": {
-                    "type": "string",
-                    "example": "2026-01-20T10:00:00Z"
-                },
-                "salary_from": {
-                    "type": "integer",
-                    "example": 3500
-                },
-                "salary_to": {
-                    "type": "integer",
-                    "example": 5000
-                },
-                "title": {
-                    "type": "string",
-                    "example": "Go Backend Developer Intern"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2026-01-22T14:15:00Z"
-                },
-                "work_format": {
-                    "type": "string",
-                    "enum": [
-                        "onsite",
-                        "remote",
-                        "hybrid"
-                    ],
-                    "example": "hybrid"
-                }
-            }
-        },
         "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyUpdateRequest": {
             "type": "object",
             "properties": {
@@ -1196,15 +1267,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Work on high-load backend services using Go and PostgreSQL."
                 },
-                "duration_from_months": {
+                "durationFromDays": {
                     "type": "integer",
                     "example": 3
                 },
-                "duration_to_months": {
+                "durationToDays": {
                     "type": "integer",
                     "example": 6
                 },
-                "employment_type": {
+                "employmentType": {
                     "type": "string",
                     "enum": [
                         "internship",
@@ -1213,31 +1284,31 @@ const docTemplate = `{
                     ],
                     "example": "internship"
                 },
-                "flexible_schedule": {
+                "flexibleSchedule": {
                     "type": "boolean",
                     "example": true
                 },
-                "hours_per_week_from": {
+                "hoursPerWeekFrom": {
                     "type": "integer",
                     "example": 20
                 },
-                "hours_per_week_to": {
+                "hoursPerWeekTo": {
                     "type": "integer",
                     "example": 40
                 },
-                "internship_to_offer": {
+                "internshipToOffer": {
                     "type": "boolean",
                     "example": true
                 },
-                "is_paid": {
+                "isPaid": {
                     "type": "boolean",
                     "example": true
                 },
-                "salary_from": {
+                "salaryFrom": {
                     "type": "integer",
                     "example": 1000
                 },
-                "salary_to": {
+                "salaryTo": {
                     "type": "integer",
                     "example": 1500
                 },
@@ -1245,7 +1316,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Go Backend Developer Intern"
                 },
-                "work_format": {
+                "workFormat": {
                     "type": "string",
                     "enum": [
                         "onsite",

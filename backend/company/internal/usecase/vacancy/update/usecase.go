@@ -97,12 +97,12 @@ func applyPatch(v *domain.Vacancy, r *Request) {
 		v.City = r.City
 	}
 
-	if r.DurationFromMonths != nil {
-		v.DurationFromMonths = r.DurationFromMonths
+	if r.DurationFromDays != nil {
+		v.DurationFromDays = r.DurationFromDays
 	}
 
-	if r.DurationToMonths != nil {
-		v.DurationToMonths = r.DurationToMonths
+	if r.DurationToDays != nil {
+		v.DurationToDays = r.DurationToDays
 	}
 
 	if r.EmploymentType != nil {

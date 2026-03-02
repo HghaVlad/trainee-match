@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -74,6 +75,7 @@ func Build(conf *config.Config) (*App, error) {
 	vacListByComp := list_vac_by_comp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
 	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
 	vacUpdate := update_vacancy.NewUsecase(vacRepo, memRepo, vacCache, txManager)
+	vacArchive := archive_vacancy.NewUsecase(vacRepo, memRepo)
 	vacDelete := delete_vacancy.NewUsecase(vacRepo, memRepo, vacCache)
 
 	companyHandler := handlers.NewCompanyHandler(
@@ -90,6 +92,7 @@ func Build(conf *config.Config) (*App, error) {
 		vacListByComp,
 		vacCreate,
 		vacUpdate,
+		vacArchive,
 		vacDelete,
 	)
 

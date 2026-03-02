@@ -63,7 +63,7 @@ func TestVacancy_Validate_Errors(t *testing.T) {
 			mod: func(v *domain.Vacancy) {
 				from, to := 12, 6
 				v.DurationFromMonths = &from
-				v.DurationToMonths = &to
+				v.DurationToDays = &to
 			},
 			err: domain_errors.ErrInvalidDurationRange,
 		},

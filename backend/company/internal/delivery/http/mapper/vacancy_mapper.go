@@ -8,12 +8,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
-func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
-	return &dto.VacancyResponse{
+func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
+	return &dto.VacancyFullResponse{
 		ID:        v.ID,
 		CompanyID: v.CompanyID,
 
@@ -23,8 +23,8 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
 		WorkFormat: string(v.WorkFormat),
 		City:       v.City,
 
-		DurationFromMonths: v.DurationFromMonths,
-		DurationToMonths:   v.DurationToMonths,
+		DurationFromDays: v.DurationFromDays,
+		DurationToDays:   v.DurationToDays,
 
 		EmploymentType:   string(v.EmploymentType),
 		HoursPerWeekFrom: v.HoursPerWeekFrom,
@@ -38,8 +38,10 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyResponse {
 
 		InternshipToOffer: v.InternshipToOffer,
 
-		IsActive:    v.IsActive,
+		Status:      string(v.Status),
+		CreatedBy:   v.CreatedBy,
 		PublishedAt: v.PublishedAt,
+
 		CreatedAt:   v.CreatedAt,
 		UpdatedAtAt: v.UpdatedAtAt,
 	}
@@ -55,8 +57,8 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 		WorkFormat: value_types.WorkFormat(dtoReq.WorkFormat),
 		City:       dtoReq.City,
 
-		DurationFromMonths: dtoReq.DurationFromMonths,
-		DurationToMonths:   dtoReq.DurationToMonths,
+		DurationFromDays: dtoReq.DurationFromDays,
+		DurationToDays:   dtoReq.DurationToDays,
 
 		HoursPerWeekFrom: dtoReq.HoursPerWeekFrom,
 		HoursPerWeekTo:   dtoReq.HoursPerWeekTo,
@@ -159,8 +161,8 @@ func VacancyUpdateReqToUC(
 
 		City: dtoReq.City,
 
-		DurationFromMonths: dtoReq.DurationFromMonths,
-		DurationToMonths:   dtoReq.DurationToMonths,
+		DurationFromDays: dtoReq.DurationFromDays,
+		DurationToDays:   dtoReq.DurationToDays,
 
 		HoursPerWeekFrom: dtoReq.HoursPerWeekFrom,
 		HoursPerWeekTo:   dtoReq.HoursPerWeekTo,

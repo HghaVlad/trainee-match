@@ -19,8 +19,8 @@ type Vacancy struct {
 	WorkFormat value_types.WorkFormat `db:"work_format"`
 	City       *string                `db:"city"`
 
-	DurationFromMonths *int `db:"duration_from_months"`
-	DurationToMonths   *int `db:"duration_to_months"`
+	DurationFromDays *int `db:"duration_from_days"`
+	DurationToDays   *int `db:"duration_to_days"`
 
 	EmploymentType   value_types.EmploymentType `db:"employment_type"`
 	HoursPerWeekFrom *int                       `db:"hours_per_week_from"`
@@ -34,8 +34,10 @@ type Vacancy struct {
 
 	InternshipToOffer bool `db:"internship_to_offer"`
 
-	IsActive    bool      `db:"is_active"`
-	PublishedAt time.Time `db:"published_at"`
+	Status      value_types.VacancyStatus `db:"status"`
+	PublishedAt *time.Time                `db:"published_at"`
+
+	CreatedBy   uuid.UUID `db:"created_by_user_id"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAtAt time.Time `db:"updated_at"`
 }
@@ -46,9 +48,9 @@ const (
 )
 
 const (
-	maxSalary         = 15_000_000
-	maxDurationMonths = 60
-	maxHoursPerWeek   = 80
+	MaxSalary       = 15_000_000
+	MaxDurationDays = 1800
+	MaxHoursPerWeek = 80
 )
 
 // Validate checks domain invariants
@@ -61,8 +63,8 @@ func (v *Vacancy) Validate() error {
 		return domain_errors.ErrInvalidEmploymentType
 	}
 
-	if v.DurationFromMonths != nil && v.DurationToMonths != nil {
-		if *v.DurationFromMonths > *v.DurationToMonths {
+	if v.DurationFromDays != nil && v.DurationToDays != nil {
+		if *v.DurationFromDays > *v.DurationToDays {
 			return domain_errors.ErrInvalidDurationRange
 		}
 	}
@@ -85,7 +87,7 @@ func (v *Vacancy) Validate() error {
 		}
 	}
 
-	if v.SalaryTo != nil && *v.SalaryTo > maxSalary {
+	if v.SalaryTo != nil && *v.SalaryTo > MaxSalary {
 		return domain_errors.ErrSalaryTooLarge
 	}
 
@@ -93,11 +95,11 @@ func (v *Vacancy) Validate() error {
 		return domain_errors.ErrNegativeSalary
 	}
 
-	if v.DurationFromMonths != nil && (*v.DurationFromMonths <= 0 || *v.DurationToMonths > maxDurationMonths) {
+	if v.DurationFromDays != nil && (*v.DurationFromDays <= 0 || *v.DurationToDays > MaxDurationDays) {
 		return domain_errors.ErrInvalidDurationRange
 	}
 
-	if v.HoursPerWeekFrom != nil && (*v.HoursPerWeekFrom <= 0 || *v.HoursPerWeekTo > maxHoursPerWeek) {
+	if v.HoursPerWeekFrom != nil && (*v.HoursPerWeekFrom <= 0 || *v.HoursPerWeekTo > MaxHoursPerWeek) {
 		return domain_errors.ErrInvalidHoursRange
 	}
 

@@ -11,5 +11,10 @@ CREATE TABLE IF NOT EXISTS company_members (
     PRIMARY KEY (user_id, company_id)
 );
 
+ALTER TABLE vacancies
+ADD FOREIGN KEY (created_by_user_id, company_id)
+    REFERENCES company_members(user_id, company_id)
+    ON DELETE RESTRICT;
+
 CREATE INDEX idx_company_members_company
     ON company_members(company_id);

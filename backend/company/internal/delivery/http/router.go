@@ -72,6 +72,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					Patch("/", deps.VacancyHandler.Update)
 
 				r.With(deps.AuthMiddleware.Handler).
+					Post("/archive", deps.VacancyHandler.Archive)
+
+				r.With(deps.AuthMiddleware.Handler).
 					Delete("/", deps.VacancyHandler.Delete)
 			})
 

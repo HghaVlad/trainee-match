@@ -5,5 +5,5 @@ import (
 )
 
 type VacancyRepo interface {
-	List(ctx context.Context, requirements *Requirements, order Order, cursor any, limit int) ([]VacancySummary, error)
+	ListPublished(ctx context.Context, requirements *Requirements, order Order, cursor any, limit int) ([]VacancySummary, error)
 }

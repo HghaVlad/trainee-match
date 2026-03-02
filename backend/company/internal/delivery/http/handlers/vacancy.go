@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
@@ -31,6 +32,7 @@ type VacancyHandler struct {
 	listByComp *list_vac_by_comp.Usecase
 	create     *create_vacancy.Usecase
 	update     *update_vacancy.Usecase
+	archive    *archive_vacancy.Usecase
 	delete     *delete_vacancy.Usecase
 }
 
@@ -40,6 +42,7 @@ func NewVacancyHandler(
 	listByComp *list_vac_by_comp.Usecase,
 	create *create_vacancy.Usecase,
 	update *update_vacancy.Usecase,
+	archive *archive_vacancy.Usecase,
 	delete *delete_vacancy.Usecase,
 ) *VacancyHandler {
 
@@ -49,6 +52,7 @@ func NewVacancyHandler(
 		listByComp: listByComp,
 		create:     create,
 		update:     update,
+		archive:    archive,
 		delete:     delete,
 	}
 }
@@ -61,7 +65,7 @@ func NewVacancyHandler(
 // @Produce json
 // @Param company-id path string true "Company ID (UUID)"
 // @Param vacancy-id path string true "Vacancy ID (UUID)"
-// @Success 200 {object} dto.VacancyResponse
+// @Success 200 {object} dto.VacancyFullResponse
 // @Failure 400 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
@@ -138,7 +142,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Tags vacancy
 // @Accept json
 // @Produce json
-// @Param order query string false "Order attribute, supports published_at_desc, salary_desc" default(published_at_desc)
+// @Param order query string false "Order attribute, supports published_at_desc, salary_desc, salary_asc" default(published_at_desc)
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
 // / Filters:
@@ -149,8 +153,8 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param hours_min query int false "Minimum hours per week"
 // @Param hours_max query int false "Maximum hours per week"
 // Duration range (months)
-// @Param duration_min query int false "Minimum duration in months"
-// @Param duration_max query int false "Maximum duration in months"
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
 // Boolean filters
 // @Param is_paid query bool false "Paid vacancy filter"
 // @Param internship_to_offer query bool false "Internship with possible job offer"
@@ -166,7 +170,11 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	req := h.listVacRequestFromQuery(r)
+	req, err := h.listVacRequestFromQuery(r)
+	if err != nil {
+		responds.RespondError(w, http.StatusBadRequest, err)
+		return
+	}
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
@@ -271,6 +279,45 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Archive
+// @Summary Archive vacancy (deactivation for candidates)
+// @Description Archive vacancy (deactivation for candidates)
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID"
+// @Param vacancy-id path string true "Vacancy ID"
+// @Success 204 "Vacancy archived successfully"
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{company-id}/vacancies/{vacancy-id}/archive [post]
+func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
+
+	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
+	if !ok {
+		return
+	}
+
+	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
+	if !ok {
+		return
+	}
+
+	err := h.archive.Execute(ctx, companyID, vacancyID, identity)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Delete godoc
 // @Summary Delete vacancy
 // @Description Deletes vacancy by id
@@ -328,7 +375,11 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, domain_errors.ErrInvalidDescriptionLength),
 		errors.Is(err, domain_errors.ErrInvalidCursor),
 		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
-		errors.Is(err, domain_errors.ErrUnsupportedListOrder):
+		errors.Is(err, domain_errors.ErrUnsupportedListOrder),
+		errors.Is(err, domain_errors.ErrEmptyCityFilter),
+		errors.Is(err, domain_errors.ErrEmptyCompaniesFilter),
+		errors.Is(err, domain_errors.ErrInvalidSalaryOrderForUnpaid),
+		errors.Is(err, domain_errors.ErrLimitTooLarge):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, domain_errors.ErrInsufficientRole),
@@ -342,11 +393,14 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	}
 }
 
-func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) *list_vacancy.Request {
+func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list_vacancy.Request, error) {
 	q := r.URL.Query()
 
 	limit := helpers.ParseLimit(r, "limit", 20)
-	order := h.parseListOrderQuery(r)
+	order, err := h.parseListOrderQuery(r)
+	if err != nil {
+		return nil, err
+	}
 	cursor := q.Get("cursor")
 
 	req := &list_vacancy.Request{
@@ -406,7 +460,7 @@ func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) *list_vacancy.
 		req.Requirements.City = &cities
 	}
 
-	return req
+	return req, nil
 }
 
 func parseRangeInt(q url.Values, minKey, maxKey string) *list_vacancy.RangeInt {
@@ -434,16 +488,21 @@ func parseRangeInt(q url.Values, minKey, maxKey string) *list_vacancy.RangeInt {
 	return &r
 }
 
-func (h *VacancyHandler) parseListOrderQuery(r *http.Request) list_vacancy.Order {
+func (h *VacancyHandler) parseListOrderQuery(r *http.Request) (list_vacancy.Order, error) {
 	str := r.URL.Query().Get("order")
+	if str == "" {
+		return list_vacancy.OrderPublishedAtDesc, nil
+	}
+
 	ord := list_vacancy.Order(strings.Trim(str, " "))
 
 	switch ord {
 	case list_vacancy.OrderPublishedAtDesc,
-		list_vacancy.OrderSalaryDesc:
-		return ord
+		list_vacancy.OrderSalaryDesc,
+		list_vacancy.OrderSalaryAsc:
+		return ord, nil
 	default:
-		return list_vacancy.OrderPublishedAtDesc
+		return "", domain_errors.ErrUnsupportedListOrder
 	}
 }
 

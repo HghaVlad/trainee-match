@@ -11,6 +11,7 @@ type Order string
 const (
 	OrderPublishedAtDesc Order = "published_at_desc"
 	OrderSalaryDesc      Order = "salary_desc"
+	OrderSalaryAsc       Order = "salary_asc"
 )
 
 type PublishedAtCursor struct {
@@ -22,4 +23,15 @@ type SalaryCursor struct {
 	SalaryFrom int
 	SalaryTo   int
 	Id         uuid.UUID
+}
+
+func (r Order) IsValid() bool {
+	switch r {
+	case OrderPublishedAtDesc,
+		OrderSalaryDesc,
+		OrderSalaryAsc:
+		return true
+	}
+
+	return false
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
+// Usecase creates vacancy in draft status
 type Usecase struct {
 	vacancyRepo VacancyRepo
 	companyRepo CompanyRepo
@@ -35,9 +36,9 @@ func NewUsecase(
 	}
 }
 
+// Execute creates vacancy in draft status
 func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
-	id := uuid.New()
-	vacancy := vacancyFromReq(request, id)
+	vacancy := vacancyFromReq(request, identity)
 
 	dErr := vacancy.Validate()
 	if dErr != nil {
@@ -81,19 +82,22 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity u
 	return err
 }
 
-func vacancyFromReq(request *Request, id uuid.UUID) *domain.Vacancy {
+func vacancyFromReq(request *Request, identity uc_common.Identity) *domain.Vacancy {
 	vacancy := &domain.Vacancy{
-		ID:        id,
+		ID:        uuid.New(),
 		CompanyID: request.CompanyID,
+		CreatedBy: identity.UserID,
 
 		Title:       request.Title,
 		Description: request.Description,
 
+		Status: value_types.VacancyStatusDraft,
+
 		WorkFormat: request.WorkFormat,
 		City:       request.City,
 
-		DurationFromMonths: request.DurationFromMonths,
-		DurationToMonths:   request.DurationToMonths,
+		DurationFromDays: request.DurationFromDays,
+		DurationToDays:   request.DurationToDays,
 
 		HoursPerWeekFrom: request.HoursPerWeekFrom,
 		HoursPerWeekTo:   request.HoursPerWeekTo,

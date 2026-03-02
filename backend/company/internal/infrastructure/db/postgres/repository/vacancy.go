@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
@@ -49,24 +51,24 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 
 	_, err := exec.ExecContext(ctx, `
 		INSERT INTO vacancies (
-			id, company_id,	title, description,	work_format, city,
-			duration_from_months, duration_to_months,
+			id, company_id, created_by_user_id,	title, description,	work_format, city,
+			duration_from_days, duration_to_days,
 		    employment_type, hours_per_week_from, hours_per_week_to,
 			flexible_schedule, is_paid, salary_from, salary_to,
-			internship_to_offer
+			internship_to_offer, status, published_at
 		) VALUES (
-		    $1, $2, $3, $4,	$5, $6,
+		    $1, $2, $3, $4,	$5, $6, 
 			$7, $8,
 			$9,	$10, $11,
 			$12, $13, $14, $15,
-			$16
+			$16, $17, $18, $19
 		)
 	`,
-		vacancy.ID, vacancy.CompanyID, vacancy.Title, vacancy.Description, vacancy.WorkFormat, vacancy.City,
-		vacancy.DurationFromMonths, vacancy.DurationToMonths,
+		vacancy.ID, vacancy.CompanyID, vacancy.CreatedBy, vacancy.Title, vacancy.Description, vacancy.WorkFormat, vacancy.City,
+		vacancy.DurationFromDays, vacancy.DurationToDays,
 		vacancy.EmploymentType, vacancy.HoursPerWeekFrom, vacancy.HoursPerWeekTo,
 		vacancy.FlexibleSchedule, vacancy.IsPaid, vacancy.SalaryFrom, vacancy.SalaryTo,
-		vacancy.InternshipToOffer,
+		vacancy.InternshipToOffer, vacancy.Status, vacancy.PublishedAt,
 	)
 
 	var pgErr *pgconn.PgError
@@ -79,8 +81,8 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	return err
 }
 
-// List - pass cursor as pointer
-func (repo *VacancyRepo) List(
+// ListPublished - pass cursor as pointer
+func (repo *VacancyRepo) ListPublished(
 	ctx context.Context,
 	requirements *list_vacancy.Requirements,
 	order list_vacancy.Order,
@@ -93,11 +95,11 @@ func (repo *VacancyRepo) List(
 
 	cursorCondition := ""
 	if cursor != nil && !reflect.ValueOf(cursor).IsNil() {
-		cursorCondition, args = listVacCursorToSQL(cursor, args)
+		cursorCondition, args = listVacCursorToSQL(order, cursor, args)
 		cursorCondition = "AND " + cursorCondition
 	}
 
-	if order == list_vacancy.OrderSalaryDesc {
+	if order == list_vacancy.OrderSalaryDesc || order == list_vacancy.OrderSalaryAsc {
 		requireFilters += andSalaryNotNull
 	}
 
@@ -109,7 +111,7 @@ func (repo *VacancyRepo) List(
        	v.is_paid, v.salary_from, v.salary_to, v.published_at
 		FROM vacancies v
 		JOIN companies c ON v.company_id = c.id
-		WHERE %s %s AND v.is_active = true
+		WHERE %s %s AND v.status = 'published'
 		%s 
 		LIMIT $%d`, requireFilters, cursorCondition, orderBy, len(args))
 
@@ -135,7 +137,7 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 			`SELECT v.id, v.title, v.work_format, v.city, v.employment_type,
        	v.is_paid, v.salary_from, v.salary_to, v.published_at
 		FROM vacancies v
-		WHERE v.company_id = $1 AND v.is_active = true
+		WHERE v.company_id = $1 AND v.status = 'published'
 		ORDER BY v.published_at DESC, v.id
 		LIMIT $2`
 		args = []any{compID, limit}
@@ -147,7 +149,7 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 		JOIN companies c ON v.company_id = c.id 
 		WHERE v.company_id = $1 AND 
 		      (v.published_at < $2 OR (v.published_at = $2 AND v.id < $3))
-		  		AND v.is_active = true
+		  		AND v.status = 'published'
 		ORDER BY v.published_at DESC, v.id DESC
 		LIMIT $4`
 		args = []any{compID, cursor.PublishedAt, cursor.Id, limit}
@@ -170,8 +172,8 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 			work_format = $3,
 			city = $4,
 
-			duration_from_months = $5,
-			duration_to_months = $6,
+			duration_from_days = $5,
+			duration_to_days = $6,
 
 			employment_type = $7,
 			hours_per_week_from = $8,
@@ -192,8 +194,8 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 		v.Description,
 		v.WorkFormat,
 		v.City,
-		v.DurationFromMonths,
-		v.DurationToMonths,
+		v.DurationFromDays,
+		v.DurationToDays,
 		v.EmploymentType,
 		v.HoursPerWeekFrom,
 		v.HoursPerWeekTo,
@@ -204,6 +206,35 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 		v.InternshipToOffer,
 		v.ID,
 	)
+
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return domain_errors.ErrVacancyNotFound
+	}
+
+	return nil
+}
+
+func (repo *VacancyRepo) UpdateStatus(
+	ctx context.Context,
+	compID uuid.UUID,
+	vacID uuid.UUID,
+	status value_types.VacancyStatus,
+	pubTime *time.Time,
+) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE vacancies SET status = $1, published_at = $2 WHERE id = $3 AND company_id = $4`,
+		status, pubTime, vacID, compID)
 
 	if err != nil {
 		return err

@@ -8,6 +8,16 @@ import (
 	"github.com/lib/pq"
 )
 
+const (
+	publishedAtDescOrderBy string = "ORDER BY v.published_at DESC, v.id DESC"
+	salaryDescOrderBy      string = "ORDER BY v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
+	salaryAscOrderBy       string = "ORDER BY v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
+)
+
+const (
+	andSalaryNotNull string = " AND v.salary_from IS NOT NULL AND v.salary_to IS NOT NULL"
+)
+
 func listVacRequirementsToSQL(requirements *list_vacancy.Requirements) (string, []any) {
 	if requirements == nil {
 		return "1=1", nil
@@ -49,12 +59,12 @@ func listVacRequirementsToSQL(requirements *list_vacancy.Requirements) (string, 
 		if requirements.Duration.Min != nil {
 			args = append(args, *requirements.Duration.Min)
 			conditions = append(conditions,
-				fmt.Sprintf("v.duration_to_months >= $%d", len(args)))
+				fmt.Sprintf("v.duration_to_days >= $%d", len(args)))
 		}
 		if requirements.Duration.Max != nil {
 			args = append(args, *requirements.Duration.Max)
 			conditions = append(conditions,
-				fmt.Sprintf("v.duration_from_months <= $%d", len(args)))
+				fmt.Sprintf("v.duration_from_days <= $%d", len(args)))
 		}
 	}
 
@@ -107,12 +117,12 @@ func listVacRequirementsToSQL(requirements *list_vacancy.Requirements) (string, 
 	return strings.Join(conditions, " AND "), args
 }
 
-func listVacCursorToSQL(cursor any, args []any) (condition string, newArgs []any) {
+func listVacCursorToSQL(order list_vacancy.Order, cursor any, args []any) (condition string, newArgs []any) {
 	switch c := cursor.(type) {
 	case *list_vacancy.PublishedAtCursor:
 		return publishedAtCursorToSQL(*c, args)
 	case *list_vacancy.SalaryCursor:
-		return salaryCursorToSQL(*c, args)
+		return salaryCursorToSQL(order, *c, args)
 	}
 
 	return
@@ -127,10 +137,18 @@ func publishedAtCursorToSQL(cursor list_vacancy.PublishedAtCursor, args []any) (
 	return condition, args
 }
 
-func salaryCursorToSQL(cursor list_vacancy.SalaryCursor, args []any) (string, []any) {
-	condition := fmt.Sprintf(
-		"(v.salary_from, v.salary_to, v.id) < ($%d, $%d, $%d)",
-		len(args)+1, len(args)+2, len(args)+3)
+func salaryCursorToSQL(order list_vacancy.Order, cursor list_vacancy.SalaryCursor, args []any) (string, []any) {
+	var condition string
+
+	if order == list_vacancy.OrderSalaryDesc {
+		condition = fmt.Sprintf(
+			"(v.salary_from, v.salary_to, v.id) < ($%d, $%d, $%d)",
+			len(args)+1, len(args)+2, len(args)+3)
+	} else {
+		condition = fmt.Sprintf(
+			"(v.salary_from, v.salary_to, v.id) > ($%d, $%d, $%d)",
+			len(args)+1, len(args)+2, len(args)+3)
+	}
 
 	args = append(args, cursor.SalaryFrom, cursor.SalaryTo, cursor.Id)
 	return condition, args
@@ -142,16 +160,9 @@ func listVacOrderToSQL(order list_vacancy.Order) string {
 		return publishedAtDescOrderBy
 	case list_vacancy.OrderSalaryDesc:
 		return salaryDescOrderBy
+	case list_vacancy.OrderSalaryAsc:
+		return salaryAscOrderBy
 	}
 
 	return ""
 }
-
-const (
-	publishedAtDescOrderBy string = "ORDER BY v.published_at DESC, v.id DESC"
-	salaryDescOrderBy      string = "ORDER BY v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
-)
-
-const (
-	andSalaryNotNull string = " AND v.salary_from IS NOT NULL AND v.salary_to IS NOT NULL"
-)

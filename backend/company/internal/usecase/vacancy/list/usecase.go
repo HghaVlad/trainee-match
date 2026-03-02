@@ -18,6 +18,10 @@ func NewUsecase(repo VacancyRepo, cache ResponseCacheRepo) *Usecase {
 }
 
 func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	respCacheKey := requestToCacheKey(req)
 	resp := uc.respCache.Get(ctx, respCacheKey)
 	if resp != nil {
@@ -32,7 +36,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 	switch req.Order {
 	case OrderPublishedAtDesc:
 		resp, err = list[PublishedAtCursor](ctx, uc, req)
-	case OrderSalaryDesc:
+	case OrderSalaryDesc, OrderSalaryAsc:
 		resp, err = list[SalaryCursor](ctx, uc, req)
 
 	default:
@@ -56,7 +60,7 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 	}
 
 	// limit + 1 strat
-	vacancies, err := uc.repo.List(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
+	vacancies, err := uc.repo.ListPublished(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,9 @@ func (u *Usecase) Execute(ctx context.Context, vacancyID uuid.UUID, companyID uu
 		return vacancy, nil
 	}
 
+	// TODO: add auth member check
+	// TODO: add read model get vacancy for candidates
+
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 

@@ -15,8 +15,8 @@ type Request struct {
 	WorkFormat value_types.WorkFormat
 	City       *string
 
-	DurationFromMonths *int
-	DurationToMonths   *int
+	DurationFromDays *int
+	DurationToDays   *int
 
 	EmploymentType   *value_types.EmploymentType
 	HoursPerWeekFrom *int
