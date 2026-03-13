@@ -8,6 +8,7 @@ import (
 	"time"
 
 	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
+	publish_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -75,6 +76,7 @@ func Build(conf *config.Config) (*App, error) {
 	vacListByComp := list_vac_by_comp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
 	vacCreate := create_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager)
 	vacUpdate := update_vacancy.NewUsecase(vacRepo, memRepo, vacCache, txManager)
+	vacPublish := publish_vacancy.NewUsecase(vacRepo, memRepo)
 	vacArchive := archive_vacancy.NewUsecase(vacRepo, memRepo)
 	vacDelete := delete_vacancy.NewUsecase(vacRepo, memRepo, vacCache)
 
@@ -92,11 +94,15 @@ func Build(conf *config.Config) (*App, error) {
 		vacListByComp,
 		vacCreate,
 		vacUpdate,
+		vacPublish,
 		vacArchive,
 		vacDelete,
 	)
 
 	authMiddleware, err := my_middleware.NewAuthMiddleware(conf)
+	if err != nil {
+		return nil, err
+	}
 
 	routerDeps := &delivery_http.RouterDeps{
 		CompanyHandler: companyHandler,

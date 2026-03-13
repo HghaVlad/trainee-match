@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) List(ctx context.Context, requirements *list_vacancy.Requirements, order list_vacancy.Order, cursor any, limit int) ([]list_vacancy.VacancySummary, error) {
+func (m *repoMock) ListPublished(ctx context.Context, requirements *list_vacancy.Requirements, order list_vacancy.Order, cursor any, limit int) ([]list_vacancy.VacancySummary, error) {
 	args := m.Called(ctx, requirements, order, cursor, limit)
 
 	vcs := args.Get(0)
@@ -64,7 +65,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(resp.Vacancies), 1)
 	cache.AssertExpectations(t)
-	repo.AssertNotCalled(t, "ListByPublishedAt", mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertNotCalled(t, "ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestUsecase_Execute_NextCursor(t *testing.T) {
@@ -78,11 +79,17 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 	}
 
 	vcs := make([]list_vacancy.VacancySummary, req.Limit+1)
+	for i := range vcs {
+		vcs[i] = list_vacancy.VacancySummary{
+			ID:          uuid.New(),
+			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
+		}
+	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	repo.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+	repo.On("ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
 		Return(vcs, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
@@ -109,11 +116,17 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 	}
 
 	vcs := make([]list_vacancy.VacancySummary, req.Limit)
+	for i := range vcs {
+		vcs[i] = list_vacancy.VacancySummary{
+			ID:          uuid.New(),
+			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
+		}
+	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	repo.On("List", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+	repo.On("ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
 		Return(vcs, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()

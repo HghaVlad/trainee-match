@@ -536,6 +536,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{company-id}/vacancies/{vacancy-id}/publish": {
+            "post": {
+                "description": "Publish vacancy for candidates",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Publish vacancy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID",
+                        "name": "vacancy-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Vacancy published successfully"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}": {
             "get": {
                 "description": "Returns company profile by UUID",
@@ -1107,6 +1173,10 @@ const docTemplate = `{
                 "createdAt": {
                     "type": "string",
                     "example": "2026-01-18T09:30:00Z"
+                },
+                "createdBy": {
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
                 },
                 "description": {
                     "type": "string",

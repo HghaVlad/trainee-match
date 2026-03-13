@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"time"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
@@ -223,18 +220,39 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 	return nil
 }
 
-func (repo *VacancyRepo) UpdateStatus(
-	ctx context.Context,
-	compID uuid.UUID,
-	vacID uuid.UUID,
-	status value_types.VacancyStatus,
-	pubTime *time.Time,
-) error {
+func (repo *VacancyRepo) Publish(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error {
 	exec := repo.getExec(ctx)
 
 	res, err := exec.ExecContext(ctx,
-		`UPDATE vacancies SET status = $1, published_at = $2 WHERE id = $3 AND company_id = $4`,
-		status, pubTime, vacID, compID)
+		`UPDATE vacancies
+		SET status = 'published', published_at = now()
+		WHERE id = $1 AND company_id = $2`,
+		vacID, compID)
+
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return domain_errors.ErrVacancyNotFound
+	}
+
+	return nil
+}
+
+func (repo *VacancyRepo) Archive(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE vacancies
+		SET status = 'archived', published_at = NULL
+		WHERE id = $1 AND company_id = $2`,
+		vacID, compID)
 
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package archive_vacancy
+package publish_vacancy
 
 import (
 	"context"
@@ -28,16 +28,14 @@ func (u *Usecase) Execute(
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	// TODO: think about cache here
 	if err := u.authorize(ctx, compID, identity); err != nil {
 		return err
 	}
 
-	err := u.vacRepo.Archive(ctx, compID, vacID)
-	return err
+	return u.vacRepo.Publish(ctx, compID, vacID)
 }
 
-// only member of company can archive vacancy
+// only member of company can publish vacancy
 func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
 	if identity.Role != uc_common.RoleHR {
 		return domain_errors.ErrHrRoleRequired

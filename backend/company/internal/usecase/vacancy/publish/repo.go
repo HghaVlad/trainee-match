@@ -1,4 +1,4 @@
-package archive_vacancy
+package publish_vacancy
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 )
 
 type VacancyRepo interface {
-	Archive(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error
+	Publish(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error
 }
 
 type CompMemberRepo interface {

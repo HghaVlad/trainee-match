@@ -9,6 +9,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
@@ -32,6 +33,7 @@ type VacancyHandler struct {
 	listByComp *list_vac_by_comp.Usecase
 	create     *create_vacancy.Usecase
 	update     *update_vacancy.Usecase
+	publish    *publish_vacancy.Usecase
 	archive    *archive_vacancy.Usecase
 	delete     *delete_vacancy.Usecase
 }
@@ -42,6 +44,7 @@ func NewVacancyHandler(
 	listByComp *list_vac_by_comp.Usecase,
 	create *create_vacancy.Usecase,
 	update *update_vacancy.Usecase,
+	publish *publish_vacancy.Usecase,
 	archive *archive_vacancy.Usecase,
 	delete *delete_vacancy.Usecase,
 ) *VacancyHandler {
@@ -52,6 +55,7 @@ func NewVacancyHandler(
 		listByComp: listByComp,
 		create:     create,
 		update:     update,
+		publish:    publish,
 		archive:    archive,
 		delete:     delete,
 	}
@@ -271,6 +275,45 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	req := mapper.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
 
 	err = h.update.Execute(ctx, req, identity)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Publish
+// @Summary Publish vacancy
+// @Description Publish vacancy for candidates
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID"
+// @Param vacancy-id path string true "Vacancy ID"
+// @Success 204 "Vacancy published successfully"
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{company-id}/vacancies/{vacancy-id}/publish [post]
+func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
+
+	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
+	if !ok {
+		return
+	}
+
+	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
+	if !ok {
+		return
+	}
+
+	err := h.publish.Execute(ctx, companyID, vacancyID, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return

@@ -13,6 +13,8 @@ import (
 )
 
 func validVacancy() *domain.Vacancy {
+	now := time.Now()
+
 	return &domain.Vacancy{
 		ID:        uuid.New(),
 		CompanyID: uuid.New(),
@@ -25,9 +27,9 @@ func validVacancy() *domain.Vacancy {
 
 		IsPaid: false,
 
-		IsActive:    true,
-		PublishedAt: time.Now(),
-		CreatedAt:   time.Now(),
+		Status:      value_types.VacancyStatusPublished,
+		PublishedAt: &now,
+		CreatedAt:   now,
 		UpdatedAtAt: time.Now(),
 	}
 }
@@ -62,7 +64,7 @@ func TestVacancy_Validate_Errors(t *testing.T) {
 			name: "invalid duration range",
 			mod: func(v *domain.Vacancy) {
 				from, to := 12, 6
-				v.DurationFromMonths = &from
+				v.DurationFromDays = &from
 				v.DurationToDays = &to
 			},
 			err: domain_errors.ErrInvalidDurationRange,
