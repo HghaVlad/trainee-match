@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -13,6 +12,7 @@ import (
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 

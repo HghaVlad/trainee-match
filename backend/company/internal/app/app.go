@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
-	publish_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 
@@ -26,11 +24,14 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	add_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	publish_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
@@ -68,6 +69,7 @@ func Build(conf *config.Config) (*App, error) {
 	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
 	compCreateUc := create_company.NewUsecase(compRepo, memRepo, txManager)
+	compAddHrUc := add_member.NewUsecase(memRepo)
 	compUpdateUc := update_company.NewUsecase(compRepo, memRepo, compCache)
 	compDeleteUc := delete_company.NewUsecase(compRepo, memRepo, compCache)
 
@@ -87,6 +89,7 @@ func Build(conf *config.Config) (*App, error) {
 		compUpdateUc,
 		compDeleteUc,
 	)
+	memberHandler := handlers.NewMemberHandler(compAddHrUc)
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
@@ -106,6 +109,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	routerDeps := &delivery_http.RouterDeps{
 		CompanyHandler: companyHandler,
+		MemberHandler:  memberHandler,
 		VacancyHandler: vacancyHandler,
 		AuthMiddleware: authMiddleware,
 	}

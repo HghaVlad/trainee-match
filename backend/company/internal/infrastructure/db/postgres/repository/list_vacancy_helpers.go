@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/lib/pq"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
 const (

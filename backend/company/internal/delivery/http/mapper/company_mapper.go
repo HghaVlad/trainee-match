@@ -4,10 +4,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	add_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 )
 
 func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
@@ -67,5 +69,16 @@ func CompanyUpdateReqToUC(
 		Name:        dtoReq.Name,
 		Description: dtoReq.Description,
 		Website:     dtoReq.Website,
+	}
+}
+
+func CompanyAddHrReqToUC(
+	companyID uuid.UUID,
+	dtoReq *dto.CompanyAddHrRequest,
+) *add_member.Request {
+	return &add_member.Request{
+		CompanyID: companyID,
+		UserID:    dtoReq.UserID,
+		Role:      value_types.CompanyRole(dtoReq.Role),
 	}
 }

@@ -3,10 +3,11 @@ package list_vacancy
 import (
 	"errors"
 
+	"github.com/google/uuid"
+
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/google/uuid"
 )
 
 type RangeInt struct {

@@ -5,13 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 )
 

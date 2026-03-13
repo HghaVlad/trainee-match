@@ -232,13 +232,16 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, domain_errors.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
 
-	case errors.Is(err, domain_errors.ErrCompanyAlreadyExists):
+	case errors.Is(err, domain_errors.ErrCompanyAlreadyExists),
+		errors.Is(err, domain_errors.ErrCompanyMemberAlreadyExists):
 		responds.RespondError(w, http.StatusConflict, err)
 
 	case errors.Is(err, domain_errors.ErrInvalidCursor),
 		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
 		errors.Is(err, domain_errors.ErrCompanyInvalidDescriptionLen),
-		errors.Is(err, domain_errors.ErrCompanyInvalidNameLen):
+		errors.Is(err, domain_errors.ErrCompanyInvalidNameLen),
+		errors.Is(err, domain_errors.ErrInvalidUserID),
+		errors.Is(err, domain_errors.ErrInvalidCompanyMemberRole):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, domain_errors.ErrInsufficientRole),

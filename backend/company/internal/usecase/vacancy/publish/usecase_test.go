@@ -5,14 +5,15 @@ import (
 	"errors"
 	"testing"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 )
 
 type vacancyRepoMock struct {

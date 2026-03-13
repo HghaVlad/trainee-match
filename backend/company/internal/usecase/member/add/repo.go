@@ -1,4 +1,4 @@
-package publish_vacancy
+package add_member
 
 import (
 	"context"
@@ -8,10 +8,7 @@ import (
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 )
 
-type VacancyRepo interface {
-	Publish(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error
-}
-
-type CompMemberRepo interface {
+type CompanyMemberRepo interface {
 	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
+	Create(ctx context.Context, member *domain.CompanyMember) error
 }

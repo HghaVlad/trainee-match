@@ -45,3 +45,8 @@ type CompanyUpdateRequest struct {
 	Description *string `json:"description" example:"New description"`
 	Website     *string `json:"website" example:"https://google.com"`
 }
+
+type CompanyAddHrRequest struct {
+	UserID uuid.UUID `json:"userID" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Role   string    `json:"role" enums:"recruiter,admin" example:"recruiter"`
+}

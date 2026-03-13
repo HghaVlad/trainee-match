@@ -17,6 +17,7 @@ import (
 
 type RouterDeps struct {
 	CompanyHandler *handlers.CompanyHandler
+	MemberHandler  *handlers.MemberHandler
 	VacancyHandler *handlers.VacancyHandler
 	AuthMiddleware *my_middleware.AuthMiddleware
 }
@@ -41,6 +42,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			Route("/{id}", func(r chi.Router) {
 
 				r.Get("/", deps.CompanyHandler.GetById)
+
+				r.With(deps.AuthMiddleware.Handler).
+					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyAddHrRequest]()).
+					Post("/members", deps.MemberHandler.Add)
 
 				r.With(deps.AuthMiddleware.Handler).
 					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).

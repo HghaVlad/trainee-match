@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
@@ -39,6 +40,17 @@ func (repo *CompanyMemberRepo) Create(ctx context.Context, member *domain.Compan
 	exec := repo.getExec(ctx)
 	query := `INSERT INTO company_members (user_id, company_id, role) VALUES ($1, $2, $3)`
 	_, err := exec.ExecContext(ctx, query, member.UserID, member.CompanyID, member.Role)
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23505":
+			return domain_errors.ErrCompanyMemberAlreadyExists
+		case "23503":
+			return domain_errors.ErrCompanyNotFound
+		}
+	}
+
 	return err
 }
 

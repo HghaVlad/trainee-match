@@ -778,6 +778,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/members": {
+            "post": {
+                "description": "Adds member to company. Requires admin role in company",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "member"
+                ],
+                "summary": "Add member to company",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request to add member",
+                        "name": "company_add_hr_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyAddHrRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/vacancies": {
             "get": {
                 "description": "Uses cursor pagination, returns next cursor if there's more. Supports filters, orders.",
@@ -921,6 +995,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyAddHrRequest": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "recruiter",
+                        "admin"
+                    ],
+                    "example": "recruiter"
+                },
+                "userID": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
         "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreateRequest": {
             "type": "object",
             "properties": {

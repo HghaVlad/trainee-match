@@ -3,8 +3,9 @@ package archive_vacancy
 import (
 	"context"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/google/uuid"
+
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 )
 
 type VacancyRepo interface {
