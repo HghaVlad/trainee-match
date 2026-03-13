@@ -25,6 +25,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	add_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	update_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
@@ -70,6 +71,7 @@ func Build(conf *config.Config) (*App, error) {
 	compListUc := list_companies.NewUsecase(compRepo, compListCache)
 	compCreateUc := create_company.NewUsecase(compRepo, memRepo, txManager)
 	compAddHrUc := add_member.NewUsecase(memRepo)
+	compUpdateMemberUc := update_member.NewUsecase(memRepo)
 	compUpdateUc := update_company.NewUsecase(compRepo, memRepo, compCache)
 	compDeleteUc := delete_company.NewUsecase(compRepo, memRepo, compCache)
 
@@ -89,7 +91,7 @@ func Build(conf *config.Config) (*App, error) {
 		compUpdateUc,
 		compDeleteUc,
 	)
-	memberHandler := handlers.NewMemberHandler(compAddHrUc)
+	memberHandler := handlers.NewMemberHandler(compAddHrUc, compUpdateMemberUc)
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,

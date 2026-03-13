@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	add_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	update_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
@@ -79,6 +80,18 @@ func CompanyAddHrReqToUC(
 	return &add_member.Request{
 		CompanyID: companyID,
 		UserID:    dtoReq.UserID,
+		Role:      value_types.CompanyRole(dtoReq.Role),
+	}
+}
+
+func CompanyUpdateMemberReqToUC(
+	companyID uuid.UUID,
+	userID uuid.UUID,
+	dtoReq *dto.CompanyUpdateMemberRequest,
+) *update_member.Request {
+	return &update_member.Request{
+		CompanyID: companyID,
+		UserID:    userID,
 		Role:      value_types.CompanyRole(dtoReq.Role),
 	}
 }

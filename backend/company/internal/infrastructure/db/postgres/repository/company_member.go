@@ -11,6 +11,7 @@ import (
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 )
 
@@ -52,6 +53,28 @@ func (repo *CompanyMemberRepo) Create(ctx context.Context, member *domain.Compan
 	}
 
 	return err
+}
+
+func (repo *CompanyMemberRepo) UpdateRole(ctx context.Context, userID, companyID uuid.UUID, role value_types.CompanyRole) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE company_members SET role = $1 WHERE user_id = $2 AND company_id = $3`,
+		role, userID, companyID)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return domain_errors.ErrCompanyMemberNotFound
+	}
+
+	return nil
 }
 
 // returns sqlx.TX if we're in transaction or r.db if not

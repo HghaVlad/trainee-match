@@ -48,6 +48,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					Post("/members", deps.MemberHandler.Add)
 
 				r.With(deps.AuthMiddleware.Handler).
+					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateMemberRequest]()).
+					Patch("/members/{user-id}", deps.MemberHandler.Update)
+
+				r.With(deps.AuthMiddleware.Handler).
 					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
 					Patch("/", deps.CompanyHandler.Update)
 
