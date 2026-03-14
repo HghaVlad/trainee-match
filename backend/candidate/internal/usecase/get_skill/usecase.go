@@ -36,7 +36,7 @@ func (uc *UseCase) Execute(ctx context.Context, req GetByIdRequest) (*GetByIdRes
 	return response, nil
 }
 
-// TODO: emplement pagination
+// TODO: implement pagination
 func (uc *UseCase) ExecuteList(ctx context.Context, req ListRequest) ([]*ListResponse, error) {
 	skills, err := uc.repo.List(ctx)
 

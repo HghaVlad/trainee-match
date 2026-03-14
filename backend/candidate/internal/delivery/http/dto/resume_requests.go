@@ -96,16 +96,17 @@ func (req *UpdateResumeRequest) ToUseCaseRequest() update_resume.Request {
 	}
 
 	if req.Data != nil {
-		var dateOfBirthStr time.Time
+		var dateOfBirthStr *time.Time
 		if req.Data.DateOfBirth != nil {
-			dateOfBirthStr = DateToTime(*req.Data.DateOfBirth)
+			dob := DateToTime(*req.Data.DateOfBirth)
+			dateOfBirthStr = &dob
 		}
 
 		useCaseReq.Data = &update_resume.ResumeData{
 			LastName:       req.Data.LastName,
 			FirstName:      req.Data.FirstName,
 			MiddleName:     req.Data.MiddleName,
-			DateOfBirth:    &dateOfBirthStr,
+			DateOfBirth:    dateOfBirthStr,
 			Email:          req.Data.Email,
 			Phone:          req.Data.Phone,
 			City:           req.Data.City,

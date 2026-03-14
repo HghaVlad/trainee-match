@@ -43,44 +43,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 
 	// Convert request data to domain model
-	domainData := domain.ResumeData{
-		LastName:        req.Data.LastName,
-		FirstName:       req.Data.FirstName,
-		MiddleName:      req.Data.MiddleName,
-		DateOfBirth:     req.Data.DateOfBirth,
-		Email:           req.Data.Email,
-		Phone:           req.Data.Phone,
-		City:            req.Data.City,
-		Citizenship:     req.Data.Citizenship,
-		Education:       make([]domain.Education, len(req.Data.Education)),
-		WorkExperiences: make([]domain.WorkExperience, len(req.Data.WorkExperiences)),
-		SkillsList:      req.Data.SkillsList,
-		AdditionalInfo:  req.Data.AdditionalInfo,
-		PortfolioLink:   req.Data.PortfolioLink,
-		DesiredFormat:   req.Data.DesiredFormat,
-		EnglishLevel:    req.Data.EnglishLevel,
-	}
-
-	for i, edu := range req.Data.Education {
-		domainData.Education[i] = domain.Education{
-			Level:          edu.Level,
-			University:     edu.University,
-			Faculty:        edu.Faculty,
-			Specialization: edu.Specialization,
-			StartYear:      edu.StartYear,
-			EndYear:        edu.EndYear,
-			Format:         edu.Format,
-		}
-	}
-
-	for i, exp := range req.Data.WorkExperiences {
-		domainData.WorkExperiences[i] = domain.WorkExperience{
-			Position:         exp.Position,
-			Company:          exp.Company,
-			Period:           exp.Period,
-			Responsibilities: exp.Responsibilities,
-		}
-	}
+	domainData := convertRequestDataToDomainData(req.Data)
 
 	resume := &domain.Resume{
 		CandidateId: candidate.ID,
@@ -110,4 +73,47 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 
 	return Response{ID: id, CandidateID: candidate.ID}, nil
+}
+
+func convertRequestDataToDomainData(reqData ResumeData) domain.ResumeData {
+	domainData := domain.ResumeData{
+		LastName:        reqData.LastName,
+		FirstName:       reqData.FirstName,
+		MiddleName:      reqData.MiddleName,
+		DateOfBirth:     reqData.DateOfBirth,
+		Email:           reqData.Email,
+		Phone:           reqData.Phone,
+		City:            reqData.City,
+		Citizenship:     reqData.Citizenship,
+		Education:       make([]domain.Education, len(reqData.Education)),
+		WorkExperiences: make([]domain.WorkExperience, len(reqData.WorkExperiences)),
+		SkillsList:      reqData.SkillsList,
+		AdditionalInfo:  reqData.AdditionalInfo,
+		PortfolioLink:   reqData.PortfolioLink,
+		DesiredFormat:   reqData.DesiredFormat,
+		EnglishLevel:    reqData.EnglishLevel,
+	}
+
+	for i, edu := range reqData.Education {
+		domainData.Education[i] = domain.Education{
+			Level:          edu.Level,
+			University:     edu.University,
+			Faculty:        edu.Faculty,
+			Specialization: edu.Specialization,
+			StartYear:      edu.StartYear,
+			EndYear:        edu.EndYear,
+			Format:         edu.Format,
+		}
+	}
+
+	for i, exp := range reqData.WorkExperiences {
+		domainData.WorkExperiences[i] = domain.WorkExperience{
+			Position:         exp.Position,
+			Company:          exp.Company,
+			Period:           exp.Period,
+			Responsibilities: exp.Responsibilities,
+		}
+	}
+
+	return domainData
 }

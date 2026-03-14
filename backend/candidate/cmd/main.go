@@ -26,13 +26,13 @@ func main() {
 
 	conf, err := config.Load()
 	if err != nil {
-		slog.Error("Error loading config", err)
+		slog.Error("Error loading config", "error", err)
 	}
 	slog.Debug("Config loaded", "config", conf)
 
 	myApp, err := app.Build(conf)
 	if err != nil {
-		slog.Error("Error building app", err)
+		slog.Error("Error building app", "error", err)
 		return
 	}
 	slog.Info("App built")

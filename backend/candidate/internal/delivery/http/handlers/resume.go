@@ -46,7 +46,7 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.CreateResumeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
+		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %v", err))
 		return
 	}
 
@@ -212,6 +212,7 @@ func (res *Resume) ListResumes(w http.ResponseWriter, r *http.Request) {
 	useCaseResp, err := res.getResumeUC.GetByCandidateId(r.Context(), user.Id)
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
+		return
 	}
 
 	responses := make([]dto.ShortResumeResponse, len(useCaseResp))

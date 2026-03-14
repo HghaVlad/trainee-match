@@ -77,7 +77,7 @@ func (app *App) Run() error {
 	slog.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("http listening server err: %w \n", err)
+		slog.Error("http listening server err", "error", err)
 	}
 	return err
 }
@@ -85,7 +85,7 @@ func (app *App) Run() error {
 func (app *App) Shutdown(ctx context.Context) {
 	err := app.server.Shutdown(ctx)
 	if err != nil {
-		slog.Error("shutdown error", err)
+		slog.Error("shutdown error", "error", err)
 	}
 	slog.Info("Server stopped")
 	app.Db.Close()

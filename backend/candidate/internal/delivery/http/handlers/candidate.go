@@ -146,9 +146,10 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var birthday time.Time
+	var birthday *time.Time
 	if req.Birthday != nil {
-		birthday = dto.DateToTime(*req.Birthday)
+		dob := dto.DateToTime(*req.Birthday)
+		birthday = &dob
 	}
 
 	// Call update usecase — let it resolve the candidate owned by the user if ID is not provided
@@ -157,7 +158,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
-		Birthday: &birthday,
+		Birthday: birthday,
 	})
 
 	if err != nil {

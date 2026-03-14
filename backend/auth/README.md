@@ -1,7 +1,7 @@
 # Auth service
 
 The authentication microservice handles user registration, login, logout, and token refresh operations using the
-Keycloack
+Keycloak
 
 ## HTTP Handlers
 
@@ -9,9 +9,9 @@ Keycloack
 - User login/logout
 - Refreshing token
 
-The service uses the Keycloack for user authentication and authorization. The keycloack realm config in [
+The service uses the Keycloak for user authentication and authorization. The Keycloak realm config in [
 `import/trainee-match-realm.json`](import/trainee-match-realm.json)
-Keycloack realm has 2 roles (Candidate and Company), so when you register user you choose one of Roles
+Keycloak realm has 2 roles (Candidate and Company), so when you register user you choose one of Roles
 
 JWT stores in request cookies with HttpOnly true
 
@@ -40,7 +40,7 @@ The service can be configured using environment variables:
 
 ## Running the Service
 
-Please ensure that you have running KeyCloack instance
+Please ensure that you have running Keycloak instance
 
 To start service run Dockerfile
 

@@ -67,12 +67,13 @@ func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID) ([]
 func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
 	query := `UPDATE resumes SET name = $1, status = $2, data = $3 WHERE id = $4`
 
-	_, err := r.db.Exec(ctx, query, resume.Name, resume.Status, resume.Data, resume.ID)
+	cmdTag, err := r.db.Exec(ctx, query, resume.Name, resume.Status, resume.Data, resume.ID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.ErrResumeNotFound
-		}
 		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return domain.ErrResumeNotFound
 	}
 	return nil
 }

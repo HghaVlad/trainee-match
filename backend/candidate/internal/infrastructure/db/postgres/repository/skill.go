@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lib/pq"
 )
 
 type SkillRepo struct {
@@ -60,7 +59,7 @@ func (r *SkillRepo) AreSkillsExist(ctx context.Context, skillIDs []uuid.UUID) (b
 
 	query := `SELECT COUNT(*) FROM skills WHERE id = ANY($1)`
 	var count int
-	err := r.db.QueryRow(ctx, query, pq.Array(skillIDs)).Scan(&count)
+	err := r.db.QueryRow(ctx, query, skillIDs).Scan(&count)
 	if err != nil {
 		return false, err
 	}

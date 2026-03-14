@@ -10,7 +10,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o auth-service ./cmd/main.go
 
-FROM alpine:latest
+FROM alpine:3.23
 
 WORKDIR /root/
 
