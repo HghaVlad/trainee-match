@@ -13,16 +13,18 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 type MemberHandler struct {
 	add    *add_member.Usecase
+	delete *delete_member.Usecase
 	update *update_member.Usecase
 }
 
-func NewMemberHandler(add *add_member.Usecase, update *update_member.Usecase) *MemberHandler {
-	return &MemberHandler{add: add, update: update}
+func NewMemberHandler(add *add_member.Usecase, update *update_member.Usecase, delete *delete_member.Usecase) *MemberHandler {
+	return &MemberHandler{add: add, update: update, delete: delete}
 }
 
 // Add godoc
@@ -110,6 +112,45 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 	req := mapper.CompanyUpdateMemberReqToUC(companyID, userID, dtoReq)
 
 	err = h.update.Execute(ctx, req, identity)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Delete godoc
+// @Summary Delete company member
+// @Description Deletes company member. Requires admin role in company
+// @Tags member
+// @Produce json
+// @Param id path string true "Company ID"
+// @Param user-id path string true "User ID"
+// @Success 204
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 401 {object} responds.ErrorResponse
+// @Failure 403 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /companies/{id}/members/{user-id} [delete]
+func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	identity := my_middleware.IdentityFromContext(ctx)
+
+	companyID, err := middleware.UUIDFromContext(ctx)
+	if err != nil {
+		responds.RespondError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	userID, ok := helpers.ParseUuidFromPathOr400(r, w, "user-id")
+	if !ok {
+		return
+	}
+
+	err = h.delete.Execute(ctx, companyID, userID, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return

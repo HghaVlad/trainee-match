@@ -52,6 +52,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					Patch("/members/{user-id}", deps.MemberHandler.Update)
 
 				r.With(deps.AuthMiddleware.Handler).
+					Delete("/members/{user-id}", deps.MemberHandler.Delete)
+
+				r.With(deps.AuthMiddleware.Handler).
 					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
 					Patch("/", deps.CompanyHandler.Update)
 

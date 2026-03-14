@@ -77,6 +77,28 @@ func (repo *CompanyMemberRepo) UpdateRole(ctx context.Context, userID, companyID
 	return nil
 }
 
+func (repo *CompanyMemberRepo) Delete(ctx context.Context, userID, companyID uuid.UUID) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`DELETE FROM company_members WHERE user_id = $1 AND company_id = $2`,
+		userID, companyID)
+	if err != nil {
+		return err
+	}
+
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return domain_errors.ErrCompanyMemberNotFound
+	}
+
+	return nil
+}
+
 // returns sqlx.TX if we're in transaction or r.db if not
 func (repo *CompanyMemberRepo) getExec(ctx context.Context) sqlx.ExtContext {
 	tx, ok := ctx.Value(infra_postgres.TxKey{}).(*sqlx.Tx)
