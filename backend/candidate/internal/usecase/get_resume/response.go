@@ -1,19 +1,20 @@
 package get_resume
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-type GetByIdResponse struct {
+type Response struct {
 	ID          uuid.UUID  `json:"id"`
-	CandidateId uuid.UUID  `json:"candidate_id"`
+	CandidateID uuid.UUID  `json:"candidate_id"`
 	Name        string     `json:"name"`
 	Status      int        `json:"status"`
 	Data        ResumeData `json:"data"`
 }
 
-type GetByCandidateIdResponse struct {
+type ShortResponse struct {
 	ID          uuid.UUID `json:"id"`
 	CandidateId uuid.UUID `json:"candidate_id"`
 	Name        string    `json:"name"`

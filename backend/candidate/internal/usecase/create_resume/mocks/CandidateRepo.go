@@ -6,6 +6,7 @@ import (
 	context "context"
 
 	domain "github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+
 	mock "github.com/stretchr/testify/mock"
 
 	uuid "github.com/google/uuid"
@@ -37,34 +38,6 @@ func (_m *CandidateRepo) GetByUserID(ctx context.Context, id uuid.UUID) (domain.
 
 	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
 		r1 = rf(ctx, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// Update provides a mock function with given fields: ctx, candidate
-func (_m *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error) {
-	ret := _m.Called(ctx, candidate)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Update")
-	}
-
-	var r0 domain.Candidate
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, domain.Candidate) (domain.Candidate, error)); ok {
-		return rf(ctx, candidate)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, domain.Candidate) domain.Candidate); ok {
-		r0 = rf(ctx, candidate)
-	} else {
-		r0 = ret.Get(0).(domain.Candidate)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, domain.Candidate) error); ok {
-		r1 = rf(ctx, candidate)
 	} else {
 		r1 = ret.Error(1)
 	}

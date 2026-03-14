@@ -2,7 +2,7 @@ package update_candidate
 
 import (
 	"context"
-	"errors"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -10,9 +10,7 @@ import (
 //go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error)
-	GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
-	GetByTelegram(ctx context.Context, telegram string) (domain.Candidate, error)
-	GetByPhone(ctx context.Context, phone string) (domain.Candidate, error)
+	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
 type UseCase struct {
@@ -23,13 +21,21 @@ func New(repo CandidateRepo) *UseCase {
 	return &UseCase{repo: repo}
 }
 
-func (uc *UseCase) Execute(ctx context.Context, req *Request) (*CandidateResponse, error) {
-	candidate, err := uc.repo.GetByID(ctx, req.ID)
+func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) (*CandidateResponse, error) {
+	candidate, err := uc.repo.GetByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
+	if candidate.UserId != userID {
+		return nil, domain.ErrForbidden
+	}
+
 	if req.UserID != nil {
+		// prevent changing owner to another user
+		if *req.UserID != userID {
+			return nil, domain.ErrForbidden
+		}
 		candidate.UserId = *req.UserID
 	}
 	if req.Phone != nil {
@@ -49,10 +55,6 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (*CandidateRespons
 		return nil, err
 	}
 
-	if err = uc.validateUniqueness(ctx, candidate); err != nil {
-		return nil, err
-	}
-
 	candidate, err = uc.repo.Update(ctx, candidate)
 	if err != nil {
 		return nil, err
@@ -68,24 +70,4 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (*CandidateRespons
 	}
 
 	return &resp, nil
-}
-
-func (uc *UseCase) validateUniqueness(ctx context.Context, candidate domain.Candidate) error {
-	other, err := uc.repo.GetByTelegram(ctx, candidate.Telegram)
-	if err == nil && other.ID != candidate.ID {
-		return domain.ErrTelegramAlreadyExists
-	}
-	if err != nil && !errors.Is(domain.ErrCandidateNotFound, err) {
-		return err
-	}
-
-	other, err = uc.repo.GetByPhone(ctx, candidate.Phone)
-	if err == nil && other.ID != candidate.ID {
-		return domain.ErrPhoneAlreadyExists
-	}
-	if err != nil && !errors.Is(domain.ErrCandidateNotFound, err) {
-		return err
-	}
-
-	return nil
 }

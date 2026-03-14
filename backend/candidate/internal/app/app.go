@@ -3,6 +3,10 @@ package app
 import (
 	"context"
 	"errors"
+	"log/slog"
+	"net/http"
+	"time"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
@@ -11,16 +15,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log/slog"
-	"net/http"
-	"time"
 )
 
 type App struct {
@@ -42,19 +42,18 @@ func Build(conf *config.Config) (*App, error) {
 	resumeRepo := repository.NewResumeRepo(pgPool)
 	skillRepo := repository.NewSkillRepo(pgPool)
 
-	getCandidateUC := get_candidate.New(candidateRepo)
 	createCandidateUC := create_candidate.New(candidateRepo)
 	updateCandidateUC := update_candidate.New(candidateRepo)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
 
-	getResumeUC := get_resume.New(resumeRepo)
-	createResumeUC := create_resume.New(resumeRepo, skillRepo)
-	updateResumeUC := update_resume.New(resumeRepo, skillRepo)
+	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
+	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo)
+	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo)
 
 	getSkillUC := get_skill.New(skillRepo)
 
-	candidateHandler := handlers.NewCandidate(getCandidateUC, createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
-	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, getCandidateByUserIdUC)
+	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 

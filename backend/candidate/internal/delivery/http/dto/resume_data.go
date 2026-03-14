@@ -2,6 +2,7 @@ package dto
 
 import (
 	"errors"
+
 	"github.com/google/uuid"
 )
 

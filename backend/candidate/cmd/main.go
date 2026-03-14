@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/app"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	"log/slog"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/app"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 )
 
 // @title Trainee Match: Candidate Service API

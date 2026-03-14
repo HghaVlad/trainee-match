@@ -25,10 +25,6 @@ CREATE TABLE IF NOT EXISTS candidates
                          WITH TIME ZONE DEFAULT NOW()
     );
 
-
-CREATE INDEX IF NOT EXISTS idx_candidates_user_id ON candidates(user_id);
-
-
 CREATE
 OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -25,7 +26,7 @@ func (r *SkillRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Skill, er
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Skill{}, domain.ErrResumeNotFound
+			return domain.Skill{}, domain.ErrSkillNotFound
 		}
 		return domain.Skill{}, err
 	}

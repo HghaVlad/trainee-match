@@ -22,3 +22,23 @@ func SetTokenPairToCookies(w http.ResponseWriter, accessToken, refreshToken stri
 		Path:     "/",
 	})
 }
+
+func GetRefreshTokenFromCookies(r *http.Request) string {
+	cookies := r.Cookies()
+	for _, cookie := range cookies {
+		if cookie.Name == "refresh_token" {
+			return cookie.Value
+		}
+	}
+	return ""
+}
+
+func GetAccessTokenFromCookies(r *http.Request) string {
+	cookies := r.Cookies()
+	for _, cookie := range cookies {
+		if cookie.Name == "access_token" {
+			return cookie.Value
+		}
+	}
+	return ""
+}

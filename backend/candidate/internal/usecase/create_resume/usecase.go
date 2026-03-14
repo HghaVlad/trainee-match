@@ -2,6 +2,7 @@ package create_resume
 
 import (
 	"context"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -16,19 +17,31 @@ type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
-type UseCase struct {
-	resumeRepo ResumeRepo
-	skillRepo  SkillRepo
+//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
+type CandidateRepo interface {
+	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
-func New(resumeRepo ResumeRepo, skillRepo SkillRepo) *UseCase {
+type UseCase struct {
+	resumeRepo    ResumeRepo
+	skillRepo     SkillRepo
+	candidateRepo CandidateRepo
+}
+
+func New(resumeRepo ResumeRepo, skillRepo SkillRepo, candidateRepo CandidateRepo) *UseCase {
 	return &UseCase{
-		resumeRepo: resumeRepo,
-		skillRepo:  skillRepo,
+		resumeRepo:    resumeRepo,
+		skillRepo:     skillRepo,
+		candidateRepo: candidateRepo,
 	}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
+	candidate, err := uc.candidateRepo.GetByUserID(ctx, req.UserId)
+	if err != nil {
+		return Response{}, err
+	}
+
 	// Convert request data to domain model
 	domainData := domain.ResumeData{
 		LastName:        req.Data.LastName,
@@ -70,7 +83,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 
 	resume := &domain.Resume{
-		CandidateId: req.CandidateId,
+		CandidateId: candidate.ID,
 		Name:        req.Name,
 		Status:      req.Status,
 		Data:        domainData,
@@ -96,5 +109,5 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		return Response{}, err
 	}
 
-	return Response{ID: id}, nil
+	return Response{ID: id, CandidateID: candidate.ID}, nil
 }

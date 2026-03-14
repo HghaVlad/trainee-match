@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 type Skill struct {

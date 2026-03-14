@@ -2,6 +2,7 @@ package get_resume
 
 import (
 	"context"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -12,25 +13,34 @@ type ResumeRepo interface {
 	GetByCandidateId(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error)
 }
 
+//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
+type CandidateRepo interface {
+	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
+}
+
 type UseCase struct {
-	repo ResumeRepo
+	resumeRepo    ResumeRepo
+	candidateRepo CandidateRepo
 }
 
-func New(repo ResumeRepo) *UseCase {
-	return &UseCase{repo: repo}
+func New(resumeRepo ResumeRepo, candidateRepo CandidateRepo) *UseCase {
+	return &UseCase{
+		resumeRepo:    resumeRepo,
+		candidateRepo: candidateRepo,
+	}
 }
 
-func (uc *UseCase) GetById(ctx context.Context, req GetByIdRequest) (*GetByIdResponse, error) {
-	resume, err := uc.repo.GetById(ctx, req.ID)
+// TODO: add check that user has access to this resume
+func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Response, error) {
+	resume, err := uc.resumeRepo.GetById(ctx, resumeId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert domain model to response
-	response := &GetByIdResponse{
+	response := &Response{
 		ID:          resume.ID,
-		CandidateId: resume.CandidateId,
+		CandidateID: resume.CandidateId,
 		Name:        resume.Name,
 		Status:      resume.Status,
 		Data:        convertDomainDataToResponseData(resume.Data),
@@ -39,16 +49,20 @@ func (uc *UseCase) GetById(ctx context.Context, req GetByIdRequest) (*GetByIdRes
 	return response, nil
 }
 
-func (uc *UseCase) GetByCandidateId(ctx context.Context, req GetByCandidateIdRequest) ([]*GetByCandidateIdResponse, error) {
-	resumes, err := uc.repo.GetByCandidateId(ctx, req.CandidateId)
+func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID) ([]*ShortResponse, error) {
+	candidate, err := uc.candidateRepo.GetByUserID(ctx, UserId)
+	if err != nil {
+		return nil, err
+	}
+	resumes, err := uc.resumeRepo.GetByCandidateId(ctx, candidate.ID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*GetByCandidateIdResponse
+	var result []*ShortResponse
 	for _, resume := range resumes {
-		item := &GetByCandidateIdResponse{
+		item := &ShortResponse{
 			ID:          resume.ID,
 			CandidateId: resume.CandidateId,
 			Name:        resume.Name,

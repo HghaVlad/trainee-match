@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/go-playground/validator/v10"
-	"net/http"
 )
 
 type AuthService interface {
@@ -35,6 +36,16 @@ func NewAuthHandler(authClient AuthService, accessTokenExpires, refreshTokenExpi
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body dto.RegisterUserRequest true "User registration data"
+// @Success 200 {object} domain.User
+// @Failure 400 {object} dto.ErrorResponse "invalid request"
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var request dto.RegisterUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -64,6 +75,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(w, http.StatusOK, user)
 }
 
+// Login godoc
+// @Summary Login a user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body dto.LoginRequest true "User login data"
+// @Success 200 {object} dto.MessageResponse
+// @Failure 400 {object} dto.ErrorResponse "invalid request"
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var request dto.LoginRequest
@@ -84,16 +106,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "OK"})
 }
 
+// RefreshToken godoc
+// @Summary Refresh JWT token
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.MessageResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var request dto.RefreshTokenRequest
-	err := decoder.Decode(&request)
-	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request: %v", err))
+	token := helpers.GetRefreshTokenFromCookies(r)
+	if token == "" {
+		helpers.RespondError(w, http.StatusBadRequest, "missing refresh token")
 		return
 	}
 
-	newToken, err := h.authClient.RefreshToken(r.Context(), request.RefreshToken)
+	newToken, err := h.authClient.RefreshToken(r.Context(), token)
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -103,15 +132,20 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "OK"})
 }
 
+// Logout godoc
+// @Summary Logout a user
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.MessageResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
+	token := helpers.GetAccessTokenFromCookies(r)
 	if token == "" {
-		helpers.RespondError(w, http.StatusBadRequest, "missing authorization header")
+		helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 		return
-	}
-
-	if len(token) > 7 && token[:7] == "Bearer " {
-		token = token[7:]
 	}
 
 	err := h.authClient.Logout(r.Context(), token)

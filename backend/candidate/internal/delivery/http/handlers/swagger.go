@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"github.com/HghaVlad/trainee-match/backend/candidate/docs"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"strings"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // SwaggerHandler

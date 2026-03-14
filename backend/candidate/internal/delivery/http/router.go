@@ -1,10 +1,11 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 	"github.com/go-chi/chi/v5"
-	"net/http"
 )
 
 type RouterDeps struct {

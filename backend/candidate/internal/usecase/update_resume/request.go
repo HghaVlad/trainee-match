@@ -1,12 +1,14 @@
 package update_resume
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Request struct {
 	ID     uuid.UUID   `json:"id"`
+	UserId uuid.UUID   `json:"userId"`
 	Name   *string     `json:"name"`
 	Status *int        `json:"status"`
 	Data   *ResumeData `json:"data"`

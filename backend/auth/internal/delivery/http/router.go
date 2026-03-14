@@ -1,9 +1,10 @@
 package delivery_http
 
 import (
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/handlers"
 	"github.com/go-chi/chi"
-	"net/http"
 )
 
 type RouterDeps struct {

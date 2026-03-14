@@ -1,15 +1,16 @@
 package create_resume
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Request struct {
-	CandidateId uuid.UUID  `json:"candidate_id"`
-	Name        string     `json:"name"`
-	Status      int        `json:"status"`
-	Data        ResumeData `json:"data"`
+	UserId uuid.UUID  `json:"userId"`
+	Name   string     `json:"name"`
+	Status int        `json:"status"`
+	Data   ResumeData `json:"data"`
 }
 
 type ResumeData struct {

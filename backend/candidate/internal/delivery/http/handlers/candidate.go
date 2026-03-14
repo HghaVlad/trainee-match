@@ -3,28 +3,26 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
-	"net/http"
-	"time"
 )
 
 type Candidate struct {
-	getById     *get_candidate.UseCase
 	create      *create_candidate.UseCase
 	update      *update_candidate.UseCase
 	getByUserId *get_candidate_by_user_id.UseCase
 }
 
-func NewCandidate(getById *get_candidate.UseCase, create *create_candidate.UseCase, update *update_candidate.UseCase, getByUserId *get_candidate_by_user_id.UseCase) *Candidate {
+func NewCandidate(create *create_candidate.UseCase, update *update_candidate.UseCase, getByUserId *get_candidate_by_user_id.UseCase) *Candidate {
 	return &Candidate{
-		getById:     getById,
 		create:      create,
 		update:      update,
 		getByUserId: getByUserId,
@@ -49,10 +47,7 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 	candidate, err := c.getByUserId.Execute(r.Context(), user.Id)
 	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
@@ -97,12 +92,6 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := c.getByUserId.Execute(r.Context(), user.Id)
-	if err == nil {
-		helpers.RespondError(w, http.StatusConflict, "candidate already exists")
-		return
-	}
-
 	candidateID, err := c.create.Execute(r.Context(), &create_candidate.Request{
 		UserID:   user.Id,
 		Phone:    req.Phone,
@@ -111,15 +100,7 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 		Birthday: dto.DateToTime(req.Birthday),
 	})
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidPhoneFormat) || errors.Is(err, domain.ErrInvalidTelegramFormat) || errors.Is(err, domain.ErrBirthdayInFuture) || errors.Is(err, domain.ErrInvalidCityFormat) {
-			helpers.RespondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if errors.Is(err, domain.ErrTelegramAlreadyExists) || errors.Is(err, domain.ErrPhoneAlreadyExists) {
-			helpers.RespondError(w, http.StatusConflict, err.Error())
-			return
-		}
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 
@@ -164,22 +145,14 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	candidate, err := c.getByUserId.Execute(r.Context(), user.Id)
-	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
 
 	var birthday time.Time
 	if req.Birthday != nil {
 		birthday = dto.DateToTime(*req.Birthday)
 	}
 
-	updatedCandidate, err := c.update.Execute(r.Context(), &update_candidate.Request{
-		ID:       candidate.ID,
+	// Call update usecase — let it resolve the candidate owned by the user if ID is not provided
+	updatedCandidate, err := c.update.Execute(r.Context(), user.Id, &update_candidate.Request{
 		UserID:   &user.Id,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
@@ -188,15 +161,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidPhoneFormat) || errors.Is(err, domain.ErrInvalidTelegramFormat) || errors.Is(err, domain.ErrBirthdayInFuture) || errors.Is(err, domain.ErrInvalidCityFormat) {
-			helpers.RespondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if errors.Is(err, domain.ErrTelegramAlreadyExists) || errors.Is(err, domain.ErrPhoneAlreadyExists) {
-			helpers.RespondError(w, http.StatusConflict, err.Error())
-			return
-		}
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{

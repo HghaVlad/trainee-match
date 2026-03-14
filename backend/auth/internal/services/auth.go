@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/Nerzal/gocloak/v13"
 )

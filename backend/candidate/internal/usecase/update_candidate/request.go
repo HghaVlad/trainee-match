@@ -1,12 +1,12 @@
 package update_candidate
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Request struct {
-	ID       uuid.UUID  `json:"id"`
 	UserID   *uuid.UUID `json:"user_id"`
 	Phone    *string    `json:"phone"`
 	Telegram *string    `json:"telegram"`

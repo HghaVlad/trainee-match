@@ -2,6 +2,7 @@ package update_resume
 
 import (
 	"context"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -17,22 +18,38 @@ type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
-type UseCase struct {
-	resumeRepo ResumeRepo
-	skillRepo  SkillRepo
+//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
+type CandidateRepo interface {
+	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
-func New(resumeRepo ResumeRepo, skillRepo SkillRepo) *UseCase {
+type UseCase struct {
+	resumeRepo    ResumeRepo
+	skillRepo     SkillRepo
+	candidateRepo CandidateRepo
+}
+
+func New(resumeRepo ResumeRepo, skillRepo SkillRepo, candidateRepo CandidateRepo) *UseCase {
 	return &UseCase{
-		resumeRepo: resumeRepo,
-		skillRepo:  skillRepo,
+		resumeRepo:    resumeRepo,
+		skillRepo:     skillRepo,
+		candidateRepo: candidateRepo,
 	}
 }
 
-func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
+func (uc *UseCase) Execute(ctx context.Context, req Request) error {
+	candidate, err := uc.candidateRepo.GetByUserID(ctx, req.UserId)
+	if err != nil {
+		return err
+	}
+
 	resume, err := uc.resumeRepo.GetById(ctx, req.ID)
 	if err != nil {
-		return Response{}, err
+		return err
+	}
+
+	if resume.CandidateId != candidate.ID {
+		return domain.ErrForbidden
 	}
 
 	if req.Name != nil {
@@ -45,10 +62,10 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		if req.Data.SkillsList != nil {
 			ok, err := uc.skillRepo.AreSkillsExist(ctx, *req.Data.SkillsList)
 			if err != nil {
-				return Response{}, err
+				return err
 			}
 			if !ok {
-				return Response{}, domain.ErrSkillNotFound
+				return domain.ErrSkillNotFound
 			}
 			resume.Data.SkillsList = *req.Data.SkillsList
 		}
@@ -120,13 +137,13 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	}
 
 	if err := resume.Validate(); err != nil {
-		return Response{}, err
+		return err
 	}
 
 	err = uc.resumeRepo.Update(ctx, &resume)
 	if err != nil {
-		return Response{}, err
+		return err
 	}
 
-	return Response{Success: true}, nil
+	return nil
 }

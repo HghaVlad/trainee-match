@@ -5,5 +5,6 @@ import (
 )
 
 type Response struct {
-	ID uuid.UUID `json:"id"`
+	ID          uuid.UUID `json:"id"`
+	CandidateID uuid.UUID `json:"candidateID"`
 }

@@ -2,6 +2,7 @@ package get_skill
 
 import (
 	"context"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -35,6 +36,7 @@ func (uc *UseCase) Execute(ctx context.Context, req GetByIdRequest) (*GetByIdRes
 	return response, nil
 }
 
+// TODO: emplement pagination
 func (uc *UseCase) ExecuteList(ctx context.Context, req ListRequest) ([]*ListResponse, error) {
 	skills, err := uc.repo.List(ctx)
 

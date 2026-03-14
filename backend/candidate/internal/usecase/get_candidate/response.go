@@ -1,8 +1,9 @@
 package get_candidate
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type CandidateResponse struct {

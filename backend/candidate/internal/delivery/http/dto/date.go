@@ -20,7 +20,7 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// Should be marshaled by value
+// MarshalJSON Should be marshaled by value
 func (d Date) MarshalJSON() ([]byte, error) {
 	t := time.Time(d)
 	return json.Marshal(t.Format("02.01.2006"))

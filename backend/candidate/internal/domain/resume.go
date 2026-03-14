@@ -2,10 +2,11 @@ package domain
 
 import (
 	"errors"
-	"github.com/google/uuid"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -74,7 +75,7 @@ func (e Education) Validate() error {
 	if strings.TrimSpace(e.Level) == "" || strings.TrimSpace(e.University) == "" {
 		return ErrInvalidEducationEntry
 	}
-	if e.StartYear < 1900 || e.EndYear < 1900 && e.StartYear > e.EndYear {
+	if e.StartYear < 1900 || e.EndYear < 1900 || e.StartYear > e.EndYear {
 		return ErrInvalidEducationEntry
 	}
 	return nil

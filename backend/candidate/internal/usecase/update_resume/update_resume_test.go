@@ -8,23 +8,23 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume/mocks"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/google/uuid"
 )
 
 // TODO: add more tests
 
 var (
-	ErrUpdateDb = errors.New("update db error")
+	ErrUpdateDb    = errors.New("update db error")
+	ErrCandidateDb = errors.New("candidate db error")
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
 	resumeID := uuid.New()
 	candidateID := uuid.New()
-
+	userId := uuid.New()
 	existing := domain.Resume{
 		ID:          resumeID,
 		CandidateId: candidateID,
@@ -38,17 +38,23 @@ func TestExecute(t *testing.T) {
 			SkillsList:      []uuid.UUID{uuid.New()},
 		},
 	}
+	candidate := domain.Candidate{
+		ID:     candidateID,
+		UserId: userId,
+	}
 
 	tests := []struct {
 		name          string
 		req           Request
-		mockSetup     func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo)
+		mockSetup     func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid update",
-			req:  Request{ID: resumeID, Name: stringPtr("New Name")},
-			mockSetup: func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo) {
+			req:  Request{ID: resumeID, UserId: userId, Name: stringPtr("New Name")},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
+
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
 				repo.On("Update", ctx, mock.AnythingOfType("*domain.Resume")).Return(nil).Once()
 			},
@@ -56,16 +62,37 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "not found",
-			req:  Request{ID: uuid.New()},
-			mockSetup: func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo) {
+			req:  Request{ID: uuid.New(), UserId: userId},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
+
 				repo.On("GetById", ctx, mock.Anything).Return(domain.Resume{}, domain.ErrResumeNotFound).Once()
 			},
 			expectedError: domain.ErrResumeNotFound,
 		},
 		{
+			name: "forbidden",
+			req:  Request{ID: resumeID, UserId: userId},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				otherCandidate := domain.Candidate{ID: userId, UserId: uuid.New()}
+				candidateRepo.On("GetByUserID", ctx, userId).Return(otherCandidate, nil).Once()
+				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
+			},
+			expectedError: domain.ErrForbidden,
+		},
+		{name: "candidate not found",
+			req: Request{ID: resumeID, UserId: userId},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+			},
+			expectedError: domain.ErrCandidateNotFound,
+		},
+		{
 			name: "skills not exist",
-			req:  Request{ID: resumeID, Data: &ResumeData{SkillsList: &[]uuid.UUID{uuid.New()}}},
-			mockSetup: func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo) {
+			req:  Request{ID: resumeID, UserId: userId, Data: &ResumeData{SkillsList: &[]uuid.UUID{uuid.New()}}},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
+
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
 				skillRepo.On("AreSkillsExist", ctx, mock.Anything).Return(false, nil).Once()
 			},
@@ -73,39 +100,49 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "validation fail after update",
-			req:  Request{ID: resumeID, Data: &ResumeData{Phone: stringPtr("bad phone")}},
-			mockSetup: func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo) {
+			req:  Request{ID: resumeID, UserId: userId, Data: &ResumeData{Phone: stringPtr("bad phone")}},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
+
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
 			},
 			expectedError: domain.ErrInvalidPhoneFormat,
 		},
 		{
 			name: "repo update error",
-			req:  Request{ID: resumeID, Name: stringPtr("New")},
-			mockSetup: func(repo *mocks.ResumeRepo, skillRepo *mocks.SkillRepo) {
+			req:  Request{ID: resumeID, UserId: userId, Name: stringPtr("New")},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
+
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
 				repo.On("Update", ctx, mock.AnythingOfType("*domain.Resume")).Return(ErrUpdateDb).Once()
 			},
 			expectedError: ErrUpdateDb,
 		},
+		{name: "candidate repo error",
+			req: Request{ID: resumeID, UserId: userId},
+			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{}, ErrCandidateDb).Once()
+			},
+			expectedError: ErrCandidateDb,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := &mocks.ResumeRepo{}
 			skillRepo := &mocks.SkillRepo{}
+			candidateRepo := &mocks.CandidateRepo{}
 			if tt.mockSetup != nil {
-				tt.mockSetup(repo, skillRepo)
+				tt.mockSetup(repo, candidateRepo, skillRepo)
 			}
 
-			uc := New(repo, skillRepo)
-			res, err := uc.Execute(ctx, tt.req)
+			uc := New(repo, skillRepo, candidateRepo)
+			err := uc.Execute(ctx, tt.req)
 			if tt.expectedError != nil {
 				require.Error(t, err)
 				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
 			} else {
 				require.NoError(t, err)
-				require.True(t, res.Success)
 			}
 
 			repo.AssertExpectations(t)
@@ -114,4 +151,6 @@ func TestExecute(t *testing.T) {
 	}
 }
 
-func stringPtr(s string) *string { return &s }
+func stringPtr(s string) *string {
+	return &s
+}

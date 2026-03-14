@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/Nerzal/gocloak/v13"
-	"log/slog"
 )
 
 var ErrorInvalidToken = errors.New("invalid access token")

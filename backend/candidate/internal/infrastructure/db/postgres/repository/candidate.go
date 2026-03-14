@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"errors"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -33,6 +35,17 @@ func (r *CandidateRepo) Create(ctx context.Context, candidate *domain.Candidate)
 	).Scan(&id)
 
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "candidates_phone_key":
+				return uuid.Nil, domain.ErrPhoneAlreadyExists
+			case "candidates_telegram_key":
+				return uuid.Nil, domain.ErrTelegramAlreadyExists
+			case "candidates_user_id_key":
+				return uuid.Nil, domain.ErrCandidateAlreadyExists
+			}
+		}
 		return uuid.Nil, err
 	}
 
@@ -169,6 +182,17 @@ func (r *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Candidate{}, domain.ErrCandidateNotFound
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "candidates_phone_key":
+				return domain.Candidate{}, domain.ErrPhoneAlreadyExists
+			case "candidates_telegram_key":
+				return domain.Candidate{}, domain.ErrTelegramAlreadyExists
+			case "candidates_user_id_key":
+				return domain.Candidate{}, domain.ErrCandidateAlreadyExists
+			}
 		}
 		return domain.Candidate{}, err
 	}

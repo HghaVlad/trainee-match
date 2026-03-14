@@ -3,6 +3,7 @@ package create_candidate
 import (
 	"context"
 	"errors"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 )
@@ -10,8 +11,7 @@ import (
 //go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	Create(ctx context.Context, candidate *domain.Candidate) (uuid.UUID, error)
-	GetByTelegram(ctx context.Context, telegram string) (domain.Candidate, error)
-	GetByPhone(ctx context.Context, phone string) (domain.Candidate, error)
+	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
 type UseCase struct {
@@ -23,6 +23,12 @@ func New(repo CandidateRepo) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error) {
+	if _, err := uc.repo.GetByUserID(ctx, req.UserID); err == nil {
+		return uuid.Nil, domain.ErrCandidateAlreadyExists
+	} else if !errors.Is(err, domain.ErrCandidateNotFound) {
+		return uuid.Nil, err
+	}
+
 	candidate := &domain.Candidate{
 		UserId:   req.UserID,
 		Phone:    req.Phone,
@@ -33,31 +39,12 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error)
 	if err := candidate.Validate(); err != nil {
 		return uuid.Nil, err
 	}
-	if err := uc.validateUniqueness(ctx, candidate); err != nil {
+
+	id, err := uc.repo.Create(ctx, candidate)
+	if err != nil {
 		return uuid.Nil, err
 	}
 
-	if id, err := uc.repo.Create(ctx, candidate); err != nil {
-		return uuid.Nil, err
-	} else {
-		return id, nil
-	}
-}
+	return id, nil
 
-func (uc *UseCase) validateUniqueness(ctx context.Context, candidate *domain.Candidate) error {
-	_, err := uc.repo.GetByTelegram(ctx, candidate.Telegram)
-	if err == nil {
-		return domain.ErrTelegramAlreadyExists
-	} else if !errors.Is(err, domain.ErrCandidateNotFound) {
-		return err
-	}
-
-	_, err = uc.repo.GetByPhone(ctx, candidate.Phone)
-	if err == nil {
-		return domain.ErrPhoneAlreadyExists
-	} else if !errors.Is(err, domain.ErrCandidateNotFound) {
-		return err
-	}
-
-	return nil
 }

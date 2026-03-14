@@ -1,12 +1,13 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/config"
 	deliveryhttp "github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/keycloack"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/services"
-	"net/http"
 )
 
 type App struct {

@@ -1,8 +1,9 @@
 package create_candidate
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Request struct {

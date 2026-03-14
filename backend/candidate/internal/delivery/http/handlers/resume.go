@@ -2,36 +2,31 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"net/http"
-	"time"
 )
 
 type Resume struct {
 	createResumeUC *create_resume.UseCase
 	getResumeUC    *get_resume.UseCase
 	updateResumeUC *update_resume.UseCase
-	getCandidateUC *get_candidate_by_user_id.UseCase
 }
 
 func NewResume(createResumeUC *create_resume.UseCase, getResumeUC *get_resume.UseCase,
-	updateResumeUC *update_resume.UseCase, getCandidateUC *get_candidate_by_user_id.UseCase) *Resume {
+	updateResumeUC *update_resume.UseCase) *Resume {
 	return &Resume{
 		createResumeUC: createResumeUC,
 		getResumeUC:    getResumeUC,
 		updateResumeUC: updateResumeUC,
-		getCandidateUC: getCandidateUC,
 	}
 }
 
@@ -55,7 +50,6 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate the request
 	if err := req.Validate(); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("validation error: %s", err.Error()))
 		return
@@ -67,79 +61,18 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	candidate, err := res.getCandidateUC.Execute(r.Context(), user.Id)
-	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	useCaseRequest := req.ToUseCaseRequest()
+	useCaseRequest.UserId = user.Id
 
-	useCaseReq := create_resume.Request{
-		CandidateId: candidate.ID,
-		Name:        req.Name,
-		Status:      req.Status,
-		Data: create_resume.ResumeData{
-			LastName:        req.Data.LastName,
-			FirstName:       req.Data.FirstName,
-			MiddleName:      req.Data.MiddleName,
-			DateOfBirth:     dto.DateToTime(req.Data.DateOfBirth),
-			Email:           req.Data.Email,
-			Phone:           req.Data.Phone,
-			City:            req.Data.City,
-			Citizenship:     req.Data.Citizenship,
-			Education:       make([]create_resume.Education, len(req.Data.Education)),
-			WorkExperiences: make([]create_resume.WorkExperience, len(req.Data.WorkExperiences)),
-			SkillsList:      req.Data.SkillsList,
-			AdditionalInfo:  req.Data.AdditionalInfo,
-			PortfolioLink:   req.Data.PortfolioLink,
-			DesiredFormat:   req.Data.DesiredFormat,
-			EnglishLevel:    req.Data.EnglishLevel,
-		},
-	}
-
-	for i, edu := range req.Data.Education {
-		useCaseReq.Data.Education[i] = create_resume.Education{
-			Level:          edu.Level,
-			University:     edu.University,
-			Faculty:        edu.Faculty,
-			Specialization: edu.Specialization,
-			StartYear:      edu.StartYear,
-			EndYear:        edu.EndYear,
-			Format:         edu.Format,
-		}
-	}
-
-	for i, exp := range req.Data.WorkExperiences {
-		useCaseReq.Data.WorkExperiences[i] = create_resume.WorkExperience{
-			Position:         exp.Position,
-			Company:          exp.Company,
-			Period:           exp.Period,
-			Responsibilities: exp.Responsibilities,
-		}
-	}
-
-	resp, err := res.createResumeUC.Execute(r.Context(), useCaseReq)
+	resp, err := res.createResumeUC.Execute(r.Context(), useCaseRequest)
 	if err != nil {
-		if errors.Is(err, domain.ErrInvalidName) ||
-			errors.Is(err, domain.ErrInvalidEmailFormat) ||
-			errors.Is(err, domain.ErrInvalidPhoneFormat) ||
-			errors.Is(err, domain.ErrInvalidResumeName) ||
-			errors.Is(err, domain.ErrInvalidResumeStatus) ||
-			errors.Is(err, domain.ErrSkillNotFound) ||
-			errors.Is(err, domain.ErrCandidateNotFound) {
-
-			helpers.RespondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 
 	response := dto.ResumeResponse{
 		ID:          resp.ID,
-		CandidateId: candidate.ID,
+		CandidateID: resp.CandidateID,
 		Name:        req.Name,
 		Status:      req.Status,
 		Data:        req.Data,
@@ -173,85 +106,19 @@ func (res *Resume) GetResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := get_resume.GetByIdRequest{ID: parsedId}
-	useCaseResp, err := res.getResumeUC.GetById(r.Context(), req)
-	if errors.Is(err, domain.ErrResumeNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "resume not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Check if the user has access to this resume (must be the owner)
 	user, ok := auth.FromContext(r.Context())
 	if !ok {
 		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	candidate, err := res.getCandidateUC.Execute(r.Context(), user.Id)
-	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+
+	useCaseResp, err := res.getResumeUC.GetById(r.Context(), parsedId, user.Id)
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 
-	if useCaseResp.CandidateId != candidate.ID {
-		helpers.RespondError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-
-	// Convert use case response to DTO
-	educationDTO := make([]dto.Education, len(useCaseResp.Data.Education))
-	for i, edu := range useCaseResp.Data.Education {
-		educationDTO[i] = dto.Education{
-			Level:          edu.Level,
-			University:     edu.University,
-			Faculty:        edu.Faculty,
-			Specialization: edu.Specialization,
-			StartYear:      edu.StartYear,
-			EndYear:        edu.EndYear,
-			Format:         edu.Format,
-		}
-	}
-
-	workExpDTO := make([]dto.WorkExperience, len(useCaseResp.Data.WorkExperiences))
-	for i, exp := range useCaseResp.Data.WorkExperiences {
-		workExpDTO[i] = dto.WorkExperience{
-			Position:         exp.Position,
-			Company:          exp.Company,
-			Period:           exp.Period,
-			Responsibilities: exp.Responsibilities,
-		}
-	}
-
-	dtoData := dto.ResumeData{
-		LastName:        useCaseResp.Data.LastName,
-		FirstName:       useCaseResp.Data.FirstName,
-		MiddleName:      useCaseResp.Data.MiddleName,
-		DateOfBirth:     dto.TimeToDate(useCaseResp.Data.DateOfBirth),
-		Email:           useCaseResp.Data.Email,
-		Phone:           useCaseResp.Data.Phone,
-		City:            useCaseResp.Data.City,
-		Citizenship:     useCaseResp.Data.Citizenship,
-		Education:       educationDTO,
-		WorkExperiences: workExpDTO,
-		SkillsList:      useCaseResp.Data.SkillsList,
-		AdditionalInfo:  useCaseResp.Data.AdditionalInfo,
-		PortfolioLink:   useCaseResp.Data.PortfolioLink,
-		DesiredFormat:   useCaseResp.Data.DesiredFormat,
-		EnglishLevel:    useCaseResp.Data.EnglishLevel,
-	}
-
-	response := dto.ResumeResponse{
-		ID:          useCaseResp.ID,
-		CandidateId: useCaseResp.CandidateId,
-		Name:        useCaseResp.Name,
-		Status:      useCaseResp.Status,
-		Data:        dtoData,
-	}
+	response := dto.UseCaseResponseToDtoResumeResponse(*useCaseResp)
 
 	helpers.RespondJSON(w, http.StatusOK, response)
 }
@@ -286,191 +153,41 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req dto.UpdateResumeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body %e", err))
 		return
 	}
 
 	// Validate the request
-	if err := req.Validate(); err != nil {
+	if err = req.Validate(); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("validation error: %s", err.Error()))
 		return
 	}
 
-	// Check if the user has access to this resume (must be the owner)
-	getReq := get_resume.GetByIdRequest{ID: parsedId}
-	resume, err := res.getResumeUC.GetById(r.Context(), getReq)
-	if errors.Is(err, domain.ErrResumeNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "resume not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
 	user, ok := auth.FromContext(r.Context())
 	if !ok {
 		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	candidate, err := res.getCandidateUC.Execute(r.Context(), user.Id)
-	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if resume.CandidateId != candidate.ID {
-		helpers.RespondError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 
 	// Prepare the use case request
-	useCaseReq := update_resume.Request{
-		ID:     parsedId,
-		Name:   req.Name,
-		Status: req.Status,
-	}
+	useCaseReq := req.ToUseCaseRequest()
+	useCaseReq.ID = parsedId
+	useCaseReq.UserId = user.Id
 
-	if req.Data != nil {
-		var dateOfBirthStr time.Time
-		if req.Data.DateOfBirth != nil {
-			dateOfBirthStr = dto.DateToTime(*req.Data.DateOfBirth)
-		}
-
-		useCaseReq.Data = &update_resume.ResumeData{
-			LastName:       req.Data.LastName,
-			FirstName:      req.Data.FirstName,
-			MiddleName:     req.Data.MiddleName,
-			DateOfBirth:    &dateOfBirthStr,
-			Email:          req.Data.Email,
-			Phone:          req.Data.Phone,
-			City:           req.Data.City,
-			Citizenship:    req.Data.Citizenship,
-			AdditionalInfo: req.Data.AdditionalInfo,
-			PortfolioLink:  req.Data.PortfolioLink,
-			DesiredFormat:  req.Data.DesiredFormat,
-			EnglishLevel:   req.Data.EnglishLevel,
-		}
-
-		// Handle Education if provided
-		if req.Data.Education != nil {
-			educationSlice := make([]update_resume.Education, len(*req.Data.Education))
-			for i, edu := range *req.Data.Education {
-				educationSlice[i] = update_resume.Education{
-					Level:          edu.Level,
-					University:     edu.University,
-					Faculty:        edu.Faculty,
-					Specialization: edu.Specialization,
-					StartYear:      edu.StartYear,
-					EndYear:        edu.EndYear,
-					Format:         edu.Format,
-				}
-			}
-			useCaseReq.Data.Education = &educationSlice
-		}
-
-		// Handle WorkExperiences if provided
-		if req.Data.WorkExperiences != nil {
-			workExpSlice := make([]update_resume.WorkExperience, len(*req.Data.WorkExperiences))
-			for i, exp := range *req.Data.WorkExperiences {
-				workExpSlice[i] = update_resume.WorkExperience{
-					Position:         exp.Position,
-					Company:          exp.Company,
-					Period:           exp.Period,
-					Responsibilities: exp.Responsibilities,
-				}
-			}
-			useCaseReq.Data.WorkExperiences = &workExpSlice
-		}
-
-		// Handle SkillsList if provided
-		if req.Data.SkillsList != nil {
-			skillsListCopy := make([]uuid.UUID, len(*req.Data.SkillsList))
-			copy(skillsListCopy, *req.Data.SkillsList)
-			useCaseReq.Data.SkillsList = &skillsListCopy
-		}
-	}
-
-	_, err = res.updateResumeUC.Execute(r.Context(), useCaseReq)
+	err = res.updateResumeUC.Execute(r.Context(), useCaseReq)
 	if err != nil {
-		if errors.Is(err, domain.ErrResumeNotFound) {
-			helpers.RespondError(w, http.StatusNotFound, "resume not found")
-			return
-		} else if errors.Is(err, domain.ErrInvalidName) ||
-			errors.Is(err, domain.ErrInvalidEmailFormat) ||
-			errors.Is(err, domain.ErrInvalidPhoneFormat) ||
-			errors.Is(err, domain.ErrInvalidResumeName) ||
-			errors.Is(err, domain.ErrInvalidResumeStatus) ||
-			errors.Is(err, domain.ErrSkillNotFound) ||
-			errors.Is(err, domain.ErrCandidateNotFound) {
-
-			helpers.RespondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
 
 	// Return the updated resume
-	updatedResumeReq := get_resume.GetByIdRequest{ID: parsedId}
-	updatedResumeResp, err := res.getResumeUC.GetById(r.Context(), updatedResumeReq)
+	updatedResumeResp, err := res.getResumeUC.GetById(r.Context(), parsedId, user.Id)
 	if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
+		helpers.RespondErrorSmart(w, err)
 		return
 	}
-
-	// Convert use case response to DTO
-	educationDTO := make([]dto.Education, len(updatedResumeResp.Data.Education))
-	for i, edu := range updatedResumeResp.Data.Education {
-		educationDTO[i] = dto.Education{
-			Level:          edu.Level,
-			University:     edu.University,
-			Faculty:        edu.Faculty,
-			Specialization: edu.Specialization,
-			StartYear:      edu.StartYear,
-			EndYear:        edu.EndYear,
-			Format:         edu.Format,
-		}
-	}
-
-	workExpDTO := make([]dto.WorkExperience, len(updatedResumeResp.Data.WorkExperiences))
-	for i, exp := range updatedResumeResp.Data.WorkExperiences {
-		workExpDTO[i] = dto.WorkExperience{
-			Position:         exp.Position,
-			Company:          exp.Company,
-			Period:           exp.Period,
-			Responsibilities: exp.Responsibilities,
-		}
-	}
-
-	// Parse date string back to DTO Date type
-
-	dtoData := dto.ResumeData{
-		LastName:        updatedResumeResp.Data.LastName,
-		FirstName:       updatedResumeResp.Data.FirstName,
-		MiddleName:      updatedResumeResp.Data.MiddleName,
-		DateOfBirth:     dto.TimeToDate(updatedResumeResp.Data.DateOfBirth),
-		Email:           updatedResumeResp.Data.Email,
-		Phone:           updatedResumeResp.Data.Phone,
-		City:            updatedResumeResp.Data.City,
-		Citizenship:     updatedResumeResp.Data.Citizenship,
-		Education:       educationDTO,
-		WorkExperiences: workExpDTO,
-		SkillsList:      updatedResumeResp.Data.SkillsList,
-		AdditionalInfo:  updatedResumeResp.Data.AdditionalInfo,
-		PortfolioLink:   updatedResumeResp.Data.PortfolioLink,
-		DesiredFormat:   updatedResumeResp.Data.DesiredFormat,
-		EnglishLevel:    updatedResumeResp.Data.EnglishLevel,
-	}
-
-	response := dto.ResumeResponse{
-		ID:          updatedResumeResp.ID,
-		CandidateId: updatedResumeResp.CandidateId,
-		Name:        updatedResumeResp.Name,
-		Status:      updatedResumeResp.Status,
-		Data:        dtoData,
-	}
+	response := dto.UseCaseResponseToDtoResumeResponse(*updatedResumeResp)
 
 	helpers.RespondJSON(w, http.StatusOK, response)
 }
@@ -492,21 +209,9 @@ func (res *Resume) ListResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	candidate, err := res.getCandidateUC.Execute(r.Context(), user.Id)
-	if errors.Is(err, domain.ErrCandidateNotFound) {
-		helpers.RespondError(w, http.StatusNotFound, "candidate not found")
-		return
-	} else if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	// Get all resumes for this candidate
-	useCaseReq := get_resume.GetByCandidateIdRequest{CandidateId: candidate.ID}
-	useCaseResp, err := res.getResumeUC.GetByCandidateId(r.Context(), useCaseReq)
+	useCaseResp, err := res.getResumeUC.GetByCandidateId(r.Context(), user.Id)
 	if err != nil {
-		helpers.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
+		helpers.RespondErrorSmart(w, err)
 	}
 
 	responses := make([]dto.ShortResumeResponse, len(useCaseResp))

@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/app"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/config"
-	"log/slog"
 )
 
 func main() {

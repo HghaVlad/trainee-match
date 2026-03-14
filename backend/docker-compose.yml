@@ -14,7 +14,7 @@ services:
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
 
-  keycloack:
+  keycloak:
     image: quay.io/keycloak/keycloak:26.5
     command: start-dev --import-realm
     environment:
@@ -39,7 +39,7 @@ services:
     build:
       context: auth
     environment:
-      KC_URL: http://keycloack:8080
+      KC_URL: http://keycloak:8080
     ports:
       - "8000:8000"
 
@@ -67,10 +67,10 @@ services:
       DB_HOST: candidate-db
       DB_PORT: 5432
       DB_USER: postgres
-      DB.PASSWORD: postgres
+      DB_PASSWORD: postgres
       DB_NAME: candidate_db
       ADDR: 0.0.0.0:8081
-      JWKURL: http://keycloack:8080/realms/trainee-match/protocol/openid-connect/certs
+      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
 
     ports:
       - "8081:8081"

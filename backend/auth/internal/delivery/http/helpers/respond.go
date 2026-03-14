@@ -2,9 +2,10 @@ package helpers
 
 import (
 	"encoding/json"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"log"
 	"net/http"
+
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 )
 
 func RespondJSON(w http.ResponseWriter, status int, payload any) {
