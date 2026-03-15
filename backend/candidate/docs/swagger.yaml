@@ -1,0 +1,527 @@
+basePath: /api/v1
+definitions:
+  dto.CandidateCreateRequest:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+    type: object
+  dto.CandidateResponse:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      id:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dto.CandidateUpdateRequest:
+    properties:
+      birthday:
+        type: string
+      city:
+        type: string
+      phone:
+        type: string
+      telegram:
+        type: string
+    type: object
+  dto.CreateResumeRequest:
+    properties:
+      data:
+        $ref: '#/definitions/dto.ResumeData'
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.Education:
+    properties:
+      end_year:
+        type: integer
+      faculty:
+        type: string
+      format:
+        type: string
+      level:
+        type: string
+      specialization:
+        type: string
+      start_year:
+        type: integer
+      university:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.PatchResumeData:
+    properties:
+      additional_info:
+        type: string
+      citizenship:
+        type: string
+      city:
+        type: string
+      date_of_birth:
+        type: string
+      desired_format:
+        type: string
+      education:
+        items:
+          $ref: '#/definitions/dto.Education'
+        type: array
+      email:
+        type: string
+      english_level:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      phone:
+        type: string
+      portfolio_link:
+        type: string
+      skills_list:
+        items:
+          type: string
+        type: array
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperience'
+        type: array
+    type: object
+  dto.ResumeData:
+    properties:
+      additional_info:
+        type: string
+      citizenship:
+        type: string
+      city:
+        type: string
+      date_of_birth:
+        type: string
+      desired_format:
+        type: string
+      education:
+        items:
+          $ref: '#/definitions/dto.Education'
+        type: array
+      email:
+        type: string
+      english_level:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      middle_name:
+        type: string
+      phone:
+        type: string
+      portfolio_link:
+        type: string
+      skills_list:
+        description: Store skill IDs
+        items:
+          type: string
+        type: array
+      work_experiences:
+        items:
+          $ref: '#/definitions/dto.WorkExperience'
+        type: array
+    type: object
+  dto.ResumeResponse:
+    properties:
+      candidate_id:
+        type: string
+      data:
+        $ref: '#/definitions/dto.ResumeData'
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.ShortResumeResponse:
+    properties:
+      candidate_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.SkillResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdateResumeRequest:
+    properties:
+      data:
+        $ref: '#/definitions/dto.PatchResumeData'
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  dto.WorkExperience:
+    properties:
+      company:
+        type: string
+      period:
+        type: string
+      position:
+        type: string
+      responsibilities:
+        type: string
+    type: object
+host: 0.0.0.0:8081
+info:
+  contact: {}
+  description: API for managing candidate profiles
+  title: 'Trainee Match: Candidate Service API'
+  version: "1.0"
+paths:
+  /candidate/:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate update data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CandidateUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CandidateResponse'
+        "400":
+          description: invalid request body, phone is required, telegram is required,
+            city is required, invalid phone number format, invalid telegram username,
+            invalid city format, birthday cannot be in the future
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update candidate profile
+      tags:
+      - candidate
+    post:
+      consumes:
+      - application/json
+      description: Creates a new candidate profile associated with the authenticated
+        user
+      parameters:
+      - description: Candidate creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CandidateCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CandidateResponse'
+        "400":
+          description: invalid request body, phone is required, telegram is required,
+            city is required, invalid phone number format, invalid telegram username,
+            invalid city format, birthday cannot be in the future
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create candidate profile
+      tags:
+      - candidate
+  /candidate/me:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CandidateResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get my candidate profile
+      tags:
+      - candidate
+  /resume:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ShortResumeResponse'
+            type: array
+        "401":
+          description: unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: candidate not found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List all resumes for the authenticated candidate
+      tags:
+      - resume
+  /resume/:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Resume creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateResumeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new resume
+      tags:
+      - resume
+  /resume/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Resume ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get resume by ID
+      tags:
+      - resume
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Resume ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Resume update data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateResumeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ResumeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a resume
+      tags:
+      - resume
+  /skill/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Skill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get skill by ID
+      tags:
+      - skill
+  /skill/list:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.SkillResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List all skills
+      tags:
+      - skill
+  /swagger/:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint serves the Swagger UI for the API documentation.
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: Swagger UI served successfully
+          schema:
+            type: string
+      summary: Swagger UI
+      tags:
+      - swagger
+schemes:
+- http
+- https
+swagger: "2.0"
