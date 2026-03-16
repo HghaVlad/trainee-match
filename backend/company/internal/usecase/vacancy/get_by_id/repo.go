@@ -17,3 +17,7 @@ type CacheRepo interface {
 	Get(ctx context.Context, key uuid.UUID) *domain.Vacancy
 	Put(ctx context.Context, key uuid.UUID, val *domain.Vacancy, exp time.Duration)
 }
+
+type CompMemberRepo interface {
+	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
+}

@@ -285,6 +285,24 @@ func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uu
 	return nil
 }
 
+func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uuid.UUID) error {
+	exec := repo.getExec(ctx)
+
+	res, err := exec.ExecContext(ctx,
+		`UPDATE companies SET open_vacancies_count = open_vacancies_count-1 WHERE id = $1`, id)
+
+	if err != nil {
+		return err
+	}
+
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return domain_errors.ErrCompanyNotFound
+	}
+
+	return nil
+}
+
 func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	exec := repo.getExec(ctx)
 

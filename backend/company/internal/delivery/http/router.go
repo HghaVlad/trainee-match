@@ -77,7 +77,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			r.Route("/{vacancy-id}", func(r chi.Router) {
 
-				r.Get("/", deps.VacancyHandler.GetByID)
+				r.With(deps.AuthMiddleware.Handler).
+					Get("/", deps.VacancyHandler.GetByID)
 
 				r.With(deps.AuthMiddleware.Handler).
 					With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
@@ -103,6 +104,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 	router.Route("/api/v1/vacancies", func(r chi.Router) {
 
 		r.Get("/", deps.VacancyHandler.List)
+		r.Get("/{vacancy-id}", deps.VacancyHandler.GetPublishedByID)
 
 	})
 

@@ -4,9 +4,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
@@ -44,6 +45,37 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
 
 		CreatedAt:   v.CreatedAt,
 		UpdatedAtAt: v.UpdatedAtAt,
+	}
+}
+
+func VacancyPublicToDtoResponse(v *get_published_vacancy.Response) *dto.VacancyPublicResponse {
+	return &dto.VacancyPublicResponse{
+		ID:        v.ID,
+		CompanyID: v.CompanyID,
+
+		CompanyName: v.CompanyName,
+
+		Title:       v.Title,
+		Description: v.Description,
+
+		WorkFormat: string(v.WorkFormat),
+		City:       v.City,
+
+		DurationFromDays: v.DurationFromDays,
+		DurationToDays:   v.DurationToDays,
+
+		EmploymentType:   string(v.EmploymentType),
+		HoursPerWeekFrom: v.HoursPerWeekFrom,
+		HoursPerWeekTo:   v.HoursPerWeekTo,
+
+		FlexibleSchedule: v.FlexibleSchedule,
+
+		IsPaid:     v.IsPaid,
+		SalaryFrom: v.SalaryFrom,
+		SalaryTo:   v.SalaryTo,
+
+		InternshipToOffer: v.InternshipToOffer,
+		PublishedAt:       v.PublishedAt,
 	}
 }
 

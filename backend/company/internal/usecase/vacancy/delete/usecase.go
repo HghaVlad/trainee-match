@@ -12,15 +12,38 @@ import (
 )
 
 type Usecase struct {
-	compRepo   VacancyRepo
-	memberRepo CompMemberRepo
-	cache      CacheRepo
+	vacRepo     VacancyRepo
+	compRepo    CompanyRepo
+	txManager   uc_common.TxManager
+	memberRepo  CompMemberRepo
+	vacCache    CacheRepo
+	pubVacCache CacheRepo
+	compCache   CacheRepo
 }
 
-func NewUsecase(repo VacancyRepo, memberRepo CompMemberRepo, cache CacheRepo) *Usecase {
-	return &Usecase{compRepo: repo, memberRepo: memberRepo, cache: cache}
+func NewUsecase(
+	vacRepo VacancyRepo,
+	compRepo CompanyRepo,
+	memberRepo CompMemberRepo,
+	txManager uc_common.TxManager,
+	vacCache CacheRepo,
+	pubVacCache CacheRepo,
+	compCache CacheRepo,
+) *Usecase {
+
+	return &Usecase{
+		vacRepo:     vacRepo,
+		memberRepo:  memberRepo,
+		compRepo:    compRepo,
+		txManager:   txManager,
+		vacCache:    vacCache,
+		pubVacCache: pubVacCache,
+		compCache:   compCache,
+	}
 }
 
+// Execute hard delete from db.
+// Also removes company from cache because of the updated OpenVacCnt
 func (u *Usecase) Execute(
 	ctx context.Context,
 	vacancyID uuid.UUID,
@@ -31,17 +54,28 @@ func (u *Usecase) Execute(
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	if err := u.authorize(ctx, companyID, identity); err != nil {
-		return err
-	}
+	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		if err := u.authorize(ctx, companyID, identity); err != nil {
+			return err
+		}
 
-	err := u.compRepo.Delete(ctx, vacancyID, companyID)
-	if err != nil {
-		return err
-	}
+		if err := u.authorize(ctx, companyID, identity); err != nil {
+			return err
+		}
 
-	u.cache.Del(ctx, vacancyID)
-	return nil
+		if err := u.vacRepo.Delete(ctx, vacancyID, companyID); err != nil {
+			return err
+		}
+
+		if err := u.compRepo.DecrementOpenVacancies(ctx, companyID); err != nil {
+			return err
+		}
+
+		u.vacCache.Del(ctx, vacancyID)
+		u.pubVacCache.Del(ctx, vacancyID)
+		u.compCache.Del(ctx, companyID)
+		return nil
+	})
 }
 
 // only member of company can delete vacancy

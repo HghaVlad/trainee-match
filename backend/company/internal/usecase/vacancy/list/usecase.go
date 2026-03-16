@@ -8,6 +8,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
 )
 
+// Usecase of vacancy listing, uses cursor pagination, supports orders, filters
 type Usecase struct {
 	repo      VacancyRepo
 	respCache ResponseCacheRepo
@@ -17,6 +18,7 @@ func NewUsecase(repo VacancyRepo, cache ResponseCacheRepo) *Usecase {
 	return &Usecase{repo: repo, respCache: cache}
 }
 
+// Execute uses cursor pagination, support orders, filters
 func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err

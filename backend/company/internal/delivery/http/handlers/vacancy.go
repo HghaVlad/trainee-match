@@ -7,20 +7,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
+	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	my_middleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
+	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
@@ -28,18 +29,20 @@ import (
 )
 
 type VacancyHandler struct {
-	getByID    *get_vacancy.Usecase
-	list       *list_vacancy.Usecase
-	listByComp *list_vac_by_comp.Usecase
-	create     *create_vacancy.Usecase
-	update     *update_vacancy.Usecase
-	publish    *publish_vacancy.Usecase
-	archive    *archive_vacancy.Usecase
-	delete     *delete_vacancy.Usecase
+	getByID          *get_vacancy.Usecase
+	getPublishedByID *get_published_vacancy.Usecase
+	list             *list_vacancy.Usecase
+	listByComp       *list_vac_by_comp.Usecase
+	create           *create_vacancy.Usecase
+	update           *update_vacancy.Usecase
+	publish          *publish_vacancy.Usecase
+	archive          *archive_vacancy.Usecase
+	delete           *delete_vacancy.Usecase
 }
 
 func NewVacancyHandler(
 	getByID *get_vacancy.Usecase,
+	getPublishedByID *get_published_vacancy.Usecase,
 	list *list_vacancy.Usecase,
 	listByComp *list_vac_by_comp.Usecase,
 	create *create_vacancy.Usecase,
@@ -50,14 +53,15 @@ func NewVacancyHandler(
 ) *VacancyHandler {
 
 	return &VacancyHandler{
-		getByID:    getByID,
-		list:       list,
-		listByComp: listByComp,
-		create:     create,
-		update:     update,
-		publish:    publish,
-		archive:    archive,
-		delete:     delete,
+		getByID:          getByID,
+		getPublishedByID: getPublishedByID,
+		list:             list,
+		listByComp:       listByComp,
+		create:           create,
+		update:           update,
+		publish:          publish,
+		archive:          archive,
+		delete:           delete,
 	}
 }
 
@@ -76,6 +80,7 @@ func NewVacancyHandler(
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [get]
 func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	identity := my_middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -87,13 +92,43 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vacancy, err := h.getByID.Execute(ctx, vacancyID, companyID)
+	vacancy, err := h.getByID.Execute(ctx, vacancyID, companyID, identity)
 	if err != nil {
 		h.handleErr(w, err)
 		return
 	}
 
 	resp := mapper.VacancyToDtoResponse(vacancy)
+	responds.RespondJSON(w, http.StatusOK, resp)
+}
+
+// GetPublishedByID godoc
+// @Summary Get published vacancy by id
+// @Description Returns public vacancy view for candidates. Only published vacancies are visible.
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param vacancy-id path string true "Vacancy ID (UUID)"
+// @Success 200 {object} dto.VacancyPublicResponse
+// @Failure 400 {object} responds.ErrorResponse
+// @Failure 404 {object} responds.ErrorResponse
+// @Failure 500 {object} responds.ErrorResponse
+// @Router /vacancies/{vacancy-id} [get]
+func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
+	if !ok {
+		return
+	}
+
+	vacancy, err := h.getPublishedByID.Execute(ctx, vacancyID)
+	if err != nil {
+		h.handleErr(w, err)
+		return
+	}
+
+	resp := mapper.VacancyPublicToDtoResponse(vacancy)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -117,7 +152,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	identity := my_middleware.IdentityFromContext(ctx)
 
-	dtoReq, err := middleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
@@ -266,7 +301,7 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtoReq, err := middleware.BodyFromContext[dto.VacancyUpdateRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.VacancyUpdateRequest](ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return

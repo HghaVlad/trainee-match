@@ -10,7 +10,7 @@ type Identity struct {
 type GlobalRole string
 
 const (
-	RoleHR        GlobalRole = "Company" // TODO: ask vlad to change it to HR or smth and to place it normally
+	RoleHR        GlobalRole = "Company"
 	RoleCandidate GlobalRole = "Candidate"
 	RoleAdmin     GlobalRole = "Admin"
 )

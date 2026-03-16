@@ -16,23 +16,17 @@ import (
 // Usecase creates vacancy in draft status
 type Usecase struct {
 	vacancyRepo VacancyRepo
-	companyRepo CompanyRepo
 	memberRepo  CompMemberRepo
-	txManager   uc_common.TxManager
 }
 
 func NewUsecase(
 	vacancyRepo VacancyRepo,
-	companyRepo CompanyRepo,
 	memberRepo CompMemberRepo,
-	txManager uc_common.TxManager,
 ) *Usecase {
 
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
-		companyRepo: companyRepo,
 		memberRepo:  memberRepo,
-		txManager:   txManager,
 	}
 }
 
@@ -40,27 +34,18 @@ func NewUsecase(
 func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
 	vacancy := vacancyFromReq(request, identity)
 
-	dErr := vacancy.Validate()
-	if dErr != nil {
-		return nil, dErr
+	if err := vacancy.Validate(); err != nil {
+		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, request.CompanyID, identity); err != nil {
-			return err
-		}
+	if err := u.authorize(ctx, request.CompanyID, identity); err != nil {
+		return nil, err
+	}
 
-		vacErr := u.vacancyRepo.Create(ctx, vacancy)
-		if vacErr != nil {
-			return vacErr
-		}
-
-		return u.companyRepo.IncrementOpenVacancies(ctx, vacancy.CompanyID)
-	})
-
+	err := u.vacancyRepo.Create(ctx, vacancy)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +67,7 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity u
 	return err
 }
 
+// user of identity is the creator of the vacancy
 func vacancyFromReq(request *Request, identity uc_common.Identity) *domain.Vacancy {
 	vacancy := &domain.Vacancy{
 		ID:        uuid.New(),

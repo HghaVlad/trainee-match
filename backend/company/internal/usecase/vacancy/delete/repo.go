@@ -12,6 +12,10 @@ type VacancyRepo interface {
 	Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error
 }
 
+type CompanyRepo interface {
+	DecrementOpenVacancies(ctx context.Context, id uuid.UUID) error
+}
+
 type CompMemberRepo interface {
 	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
 }

@@ -34,6 +34,8 @@ func NewUsecase(
 	}
 }
 
+// Execute updates vacancy. All nil fields of vacancy in request won't be applied.
+// Deletes vacancy from cache.
 func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

@@ -8,32 +8,80 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
+// Usecase publishes vacancy, thus makes it available for candidates.
+// Increases company open vacancies count
 type Usecase struct {
-	vacRepo    VacancyRepo
-	memberRepo CompMemberRepo
+	vacRepo     VacancyRepo
+	companyRepo CompanyRepo
+	memberRepo  CompMemberRepo
+	txManager   uc_common.TxManager
+	compCache   CacheRepo
+	vacCache    CacheRepo
 }
 
-func NewUsecase(vacRepo VacancyRepo, memberRepo CompMemberRepo) *Usecase {
-	return &Usecase{vacRepo: vacRepo, memberRepo: memberRepo}
+func NewUsecase(
+	vacRepo VacancyRepo,
+	compRepo CompanyRepo,
+	memberRepo CompMemberRepo,
+	txManager uc_common.TxManager,
+	vacCache CacheRepo,
+	compCache CacheRepo,
+) *Usecase {
+
+	return &Usecase{
+		vacRepo:     vacRepo,
+		memberRepo:  memberRepo,
+		companyRepo: compRepo,
+		txManager:   txManager,
+		compCache:   compCache,
+		vacCache:    vacCache,
+	}
 }
 
+// Execute publishes vacancy, thus makes it available for candidates.
+// Increases company open vacancies count if vacancy wasn't published.
+// Deletes company and vacancy from cache because of the updates.
 func (u *Usecase) Execute(
 	ctx context.Context,
 	compID uuid.UUID,
 	vacID uuid.UUID,
 	identity uc_common.Identity,
 ) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
-	if err := u.authorize(ctx, compID, identity); err != nil {
-		return err
-	}
+	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		if err := u.authorize(ctx, compID, identity); err != nil {
+			return err
+		}
 
-	return u.vacRepo.Publish(ctx, compID, vacID)
+		vacancy, err := u.vacRepo.GetByID(ctx, vacID, compID)
+		if err != nil {
+			return err
+		}
+
+		if vacancy.Status == value_types.VacancyStatusPublished {
+			return nil
+		}
+
+		err = u.vacRepo.Publish(ctx, compID, vacID)
+		if err != nil {
+			return err
+		}
+
+		err = u.companyRepo.IncrementOpenVacancies(ctx, compID)
+		if err != nil {
+			return err
+		}
+
+		u.compCache.Del(ctx, compID)
+		u.vacCache.Del(ctx, vacID)
+		return nil
+	})
 }
 
 // only member of company can publish vacancy

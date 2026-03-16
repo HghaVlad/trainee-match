@@ -11,11 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	infra_postgres "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	get_published_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
+	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 )
 
 type VacancyRepo struct {
@@ -42,6 +43,31 @@ func (repo *VacancyRepo) GetByID(ctx context.Context, vacancyID uuid.UUID, compa
 	}
 
 	return &company, err
+}
+
+func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UUID) (*get_published_vacancy.Response, error) {
+	var vacancy get_published_vacancy.Response
+	err := repo.db.GetContext(ctx, &vacancy, `
+		SELECT v.id, v.company_id, c.name AS company_name,
+		       v.title, v.description, v.work_format, v.city,
+		       v.duration_from_days, v.duration_to_days,
+		       v.employment_type, v.hours_per_week_from, v.hours_per_week_to,
+		       v.flexible_schedule, v.is_paid, v.salary_from, v.salary_to,
+		       v.internship_to_offer, v.published_at
+		FROM vacancies v
+		JOIN companies c ON c.id = v.company_id
+		WHERE v.id = $1 AND v.status = 'published'
+	`, vacancyID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("%w: id=%s", domain_errors.ErrVacancyNotFound, vacancyID)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &vacancy, nil
 }
 
 func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) error {
@@ -79,7 +105,8 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	return err
 }
 
-// ListPublished - pass cursor as pointer
+// ListPublished uses dynamic sql for all the requirements (filters).
+// Pass cursor as a pointer
 func (repo *VacancyRepo) ListPublished(
 	ctx context.Context,
 	requirements *list_vacancy.Requirements,
