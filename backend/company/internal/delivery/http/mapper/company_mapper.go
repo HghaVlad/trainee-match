@@ -9,8 +9,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
-	add_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
-	update_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {

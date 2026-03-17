@@ -10,7 +10,7 @@ import (
 
 type VacancyRepo interface {
 	GetByID(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) (*domain.Vacancy, error)
-	Archive(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error
+	Archive(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) error
 }
 
 type CompanyRepo interface {

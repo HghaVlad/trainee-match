@@ -40,7 +40,7 @@ import (
 
 type App struct {
 	conf    *config.Config
-	httpSrv *http.Server
+	HttpSrv *http.Server
 	compDB  *sqlx.DB
 }
 
@@ -132,21 +132,21 @@ func Build(conf *config.Config) (*App, error) {
 	}
 
 	return &App{
-		httpSrv: httpServer,
+		HttpSrv: httpServer,
 		compDB:  compDB,
 		conf:    conf,
 	}, nil
 }
 
 func (app *App) Run() {
-	err := app.httpSrv.ListenAndServe()
+	err := app.HttpSrv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("http listening server err: %s\n", err)
 	}
 }
 
 func (app *App) Shutdown(shutdownCtx context.Context) {
-	err := app.httpSrv.Shutdown(shutdownCtx)
+	err := app.HttpSrv.Shutdown(shutdownCtx)
 	if err != nil {
 		log.Printf("shutdown error: %v", err)
 	}

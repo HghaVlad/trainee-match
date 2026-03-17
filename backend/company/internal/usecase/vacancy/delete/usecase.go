@@ -8,9 +8,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
+// Usecase hard delete from db. Reckon using archive vacancy instead.
 type Usecase struct {
 	vacRepo     VacancyRepo
 	compRepo    CompanyRepo
@@ -42,7 +44,7 @@ func NewUsecase(
 	}
 }
 
-// Execute hard delete from db.
+// Execute hard delete from db. Reckon using archive vacancy instead.
 // Also removes company from cache because of the updated OpenVacCnt
 func (u *Usecase) Execute(
 	ctx context.Context,
@@ -59,7 +61,8 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if err := u.authorize(ctx, companyID, identity); err != nil {
+		vacancy, err := u.vacRepo.GetByID(ctx, vacancyID, companyID)
+		if err != nil {
 			return err
 		}
 
@@ -67,8 +70,10 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if err := u.compRepo.DecrementOpenVacancies(ctx, companyID); err != nil {
-			return err
+		if vacancy.Status == value_types.VacancyStatusPublished {
+			if err := u.compRepo.DecrementOpenVacancies(ctx, companyID); err != nil {
+				return err
+			}
 		}
 
 		u.vacCache.Del(ctx, vacancyID)

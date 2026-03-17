@@ -9,6 +9,7 @@ import (
 )
 
 type VacancyRepo interface {
+	GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error)
 	Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error
 }
 

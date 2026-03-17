@@ -7,8 +7,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// TODO: maybe add pass and etc.
-
 func NewClient(cfg *Config) (*redis.Client, error) {
 	opts := &redis.Options{
 		Addr:         cfg.Addr,

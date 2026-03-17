@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	update_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 type memberRepoMock struct {

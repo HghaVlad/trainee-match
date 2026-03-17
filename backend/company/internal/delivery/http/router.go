@@ -31,84 +31,82 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		middleware.Logger,
 	)
 
-	router.Route("/api/v1/companies", func(r chi.Router) {
+	router.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+		Route("/api/v1/companies", func(r chi.Router) {
 
-		extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
+			extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
 
-		// TODO: disabled timeouts for dev, fix
+			r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
+				Route("/{id}", func(r chi.Router) {
 
-		// r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-		r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
-			Route("/{id}", func(r chi.Router) {
+					r.Get("/", deps.CompanyHandler.GetById)
 
-				r.Get("/", deps.CompanyHandler.GetById)
+					r.With(deps.AuthMiddleware.Handler).
+						With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyAddHrRequest]()).
+						Post("/members", deps.MemberHandler.Add)
+
+					r.With(deps.AuthMiddleware.Handler).
+						With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateMemberRequest]()).
+						Patch("/members/{user-id}", deps.MemberHandler.Update)
+
+					r.With(deps.AuthMiddleware.Handler).
+						Delete("/members/{user-id}", deps.MemberHandler.Delete)
+
+					r.With(deps.AuthMiddleware.Handler).
+						With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
+						Patch("/", deps.CompanyHandler.Update)
+
+					r.With(deps.AuthMiddleware.Handler).
+						Delete("/", deps.CompanyHandler.Delete)
+				})
+
+			r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+				With(deps.AuthMiddleware.Handler).
+				With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
+				Post("/", deps.CompanyHandler.Create)
+
+			r.Get("/", deps.CompanyHandler.List)
+
+			r.Route("/{company-id}/vacancies", func(r chi.Router) {
+
+				r.Get("/", deps.VacancyHandler.ListByCompany)
+
+				r.Route("/{vacancy-id}", func(r chi.Router) {
+
+					r.With(deps.AuthMiddleware.Handler).
+						Get("/", deps.VacancyHandler.GetByID)
+
+					r.With(deps.AuthMiddleware.Handler).
+						With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
+						Patch("/", deps.VacancyHandler.Update)
+
+					r.With(deps.AuthMiddleware.Handler).
+						Post("/publish", deps.VacancyHandler.Publish)
+
+					r.With(deps.AuthMiddleware.Handler).
+						Post("/archive", deps.VacancyHandler.Archive)
+
+					r.With(deps.AuthMiddleware.Handler).
+						Delete("/", deps.VacancyHandler.Delete)
+				})
 
 				r.With(deps.AuthMiddleware.Handler).
-					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyAddHrRequest]()).
-					Post("/members", deps.MemberHandler.Add)
-
-				r.With(deps.AuthMiddleware.Handler).
-					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateMemberRequest]()).
-					Patch("/members/{user-id}", deps.MemberHandler.Update)
-
-				r.With(deps.AuthMiddleware.Handler).
-					Delete("/members/{user-id}", deps.MemberHandler.Delete)
-
-				r.With(deps.AuthMiddleware.Handler).
-					With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest]()).
-					Patch("/", deps.CompanyHandler.Update)
-
-				r.With(deps.AuthMiddleware.Handler).
-					Delete("/", deps.CompanyHandler.Delete)
+					With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
+					Post("/", deps.VacancyHandler.Create)
 			})
 
-		r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-			With(deps.AuthMiddleware.Handler).
-			With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
-			Post("/", deps.CompanyHandler.Create)
-
-		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-		r.Get("/", deps.CompanyHandler.List)
-
-		//r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
-		r.Route("/{company-id}/vacancies", func(r chi.Router) {
-
-			r.Get("/", deps.VacancyHandler.ListByCompany)
-
-			r.Route("/{vacancy-id}", func(r chi.Router) {
-
-				r.With(deps.AuthMiddleware.Handler).
-					Get("/", deps.VacancyHandler.GetByID)
-
-				r.With(deps.AuthMiddleware.Handler).
-					With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyUpdateRequest]()).
-					Patch("/", deps.VacancyHandler.Update)
-
-				r.With(deps.AuthMiddleware.Handler).
-					Post("/publish", deps.VacancyHandler.Publish)
-
-				r.With(deps.AuthMiddleware.Handler).
-					Post("/archive", deps.VacancyHandler.Archive)
-
-				r.With(deps.AuthMiddleware.Handler).
-					Delete("/", deps.VacancyHandler.Delete)
-			})
-
-			r.With(deps.AuthMiddleware.Handler).
-				With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
-				Post("/", deps.VacancyHandler.Create)
 		})
 
-	})
+	router.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+		Route("/api/v1/vacancies", func(r chi.Router) {
 
-	router.Route("/api/v1/vacancies", func(r chi.Router) {
+			r.Get("/", deps.VacancyHandler.List)
+			r.Get("/{vacancy-id}", deps.VacancyHandler.GetPublishedByID)
 
-		r.Get("/", deps.VacancyHandler.List)
-		r.Get("/{vacancy-id}", deps.VacancyHandler.GetPublishedByID)
-
-	})
+		})
 
 	addHello(router)
+
 	addSwagger(router)
 
 	return router

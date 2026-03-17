@@ -12,11 +12,11 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	infra_postgres "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
-	get_published_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
-	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
 )
 
 type VacancyRepo struct {
@@ -29,8 +29,8 @@ func NewVacancyRepo(db *sqlx.DB) *VacancyRepo {
 
 // GetByID returns ErrVacancyNotFound if vacancy's company_id != companyID
 func (repo *VacancyRepo) GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error) {
-	var company domain.Vacancy
-	err := repo.db.GetContext(ctx, &company,
+	var vacancy domain.Vacancy
+	err := repo.db.GetContext(ctx, &vacancy,
 		"SELECT * FROM vacancies WHERE id = $1 AND company_id = $2",
 		vacancyID, companyID)
 
@@ -42,7 +42,7 @@ func (repo *VacancyRepo) GetByID(ctx context.Context, vacancyID uuid.UUID, compa
 		return nil, err
 	}
 
-	return &company, err
+	return &vacancy, err
 }
 
 func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UUID) (*get_published_vacancy.Response, error) {
@@ -248,7 +248,7 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 	return nil
 }
 
-func (repo *VacancyRepo) Publish(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error {
+func (repo *VacancyRepo) Publish(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) error {
 	exec := repo.getExec(ctx)
 
 	res, err := exec.ExecContext(ctx,
@@ -273,7 +273,7 @@ func (repo *VacancyRepo) Publish(ctx context.Context, compID uuid.UUID, vacID uu
 	return nil
 }
 
-func (repo *VacancyRepo) Archive(ctx context.Context, compID uuid.UUID, vacID uuid.UUID) error {
+func (repo *VacancyRepo) Archive(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) error {
 	exec := repo.getExec(ctx)
 
 	res, err := exec.ExecContext(ctx,

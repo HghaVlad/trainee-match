@@ -12,6 +12,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
+// Usecase of company creation.
+// Adds creator as an admin member of company.
 type Usecase struct {
 	compRepo   CompanyRepo
 	memberRepo CompanyMemberRepo
@@ -26,6 +28,8 @@ func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager uc
 	}
 }
 
+// Execute create company.
+// Adds creator as an admin member of company.
 func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
 	if identity.Role != uc_common.RoleHR {
 		return nil, domain_errors.ErrHrRoleRequired

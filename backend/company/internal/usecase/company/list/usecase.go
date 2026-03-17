@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
 )
 
+// Usecase cursor pagination list company. Supports different orders.
 type Usecase struct {
 	repo          Repo
 	responseCache ResponseCacheRepo
@@ -22,6 +23,7 @@ func NewUsecase(repo Repo, responseCache ResponseCacheRepo) *Usecase {
 	}
 }
 
+// Execute cursor pagination list company. Supports different orders
 func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
 
 	respCacheKey := strings.Join([]string{

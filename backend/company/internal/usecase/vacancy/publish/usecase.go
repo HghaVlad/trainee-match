@@ -68,7 +68,7 @@ func (u *Usecase) Execute(
 			return nil
 		}
 
-		err = u.vacRepo.Publish(ctx, compID, vacID)
+		err = u.vacRepo.Publish(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}

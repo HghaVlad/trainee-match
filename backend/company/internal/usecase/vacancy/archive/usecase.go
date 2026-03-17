@@ -51,7 +51,7 @@ func (u *Usecase) Execute(
 	vacID uuid.UUID,
 	identity uc_common.Identity,
 ) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
@@ -68,20 +68,20 @@ func (u *Usecase) Execute(
 			return nil
 		}
 
-		if err := u.vacRepo.Archive(ctx, compID, vacID); err != nil {
+		if err := u.vacRepo.Archive(ctx, vacID, compID); err != nil {
 			return err
 		}
 
 		if vacancy.Status == value_types.VacancyStatusPublished {
-			err := u.compRepo.DecrementOpenVacancies(ctx, vacID)
+			err := u.compRepo.DecrementOpenVacancies(ctx, compID)
 			if err != nil {
 				return err
 			}
 		}
 
-		u.vacCache.Del(ctx, compID)
+		u.vacCache.Del(ctx, vacID)
 		u.pubVacCache.Del(ctx, vacID)
-		u.compCache.Del(ctx, vacID)
+		u.compCache.Del(ctx, compID)
 		return nil
 	})
 }

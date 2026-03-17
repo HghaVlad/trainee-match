@@ -852,6 +852,142 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/members/{user-id}": {
+            "delete": {
+                "description": "Deletes company member. Requires admin role in company",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "member"
+                ],
+                "summary": "Delete company member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates only company member role. Requires admin role in company",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "member"
+                ],
+                "summary": "Update company member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request to update member",
+                        "name": "company_update_member_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/vacancies": {
             "get": {
                 "description": "Uses cursor pagination, returns next cursor if there's more. Supports filters, orders.",
@@ -992,6 +1128,56 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/vacancies/{vacancy-id}": {
+            "get": {
+                "description": "Returns public vacancy view for candidates. Only published vacancies are visible.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Get published vacancy by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID (UUID)",
+                        "name": "vacancy-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyPublicResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/responds.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1103,6 +1289,19 @@ const docTemplate = `{
                 "website": {
                     "type": "string",
                     "example": "https://www.google.com"
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateMemberRequest": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "recruiter",
+                        "admin"
+                    ],
+                    "example": "admin"
                 }
             }
         },
@@ -1414,6 +1613,93 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListItemResponse"
                     }
+                }
+            }
+        },
+        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyPublicResponse": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Mountain View"
+                },
+                "companyId": {
+                    "type": "string",
+                    "example": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+                },
+                "companyName": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Join Google's backend team to build scalable services in Go."
+                },
+                "durationFromDays": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "durationToDays": {
+                    "type": "integer",
+                    "example": 90
+                },
+                "employmentType": {
+                    "type": "string",
+                    "enum": [
+                        "internship",
+                        "full_time",
+                        "part_time"
+                    ],
+                    "example": "internship"
+                },
+                "flexibleSchedule": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "hoursPerWeekFrom": {
+                    "type": "integer",
+                    "example": 30
+                },
+                "hoursPerWeekTo": {
+                    "type": "integer",
+                    "example": 40
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "internshipToOffer": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "isPaid": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "publishedAt": {
+                    "type": "string",
+                    "example": "2026-01-20T10:00:00Z"
+                },
+                "salaryFrom": {
+                    "type": "integer",
+                    "example": 3500
+                },
+                "salaryTo": {
+                    "type": "integer",
+                    "example": 5000
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Go Backend Developer Intern"
+                },
+                "workFormat": {
+                    "type": "string",
+                    "enum": [
+                        "onsite",
+                        "remote",
+                        "hybrid"
+                    ],
+                    "example": "hybrid"
                 }
             }
         },

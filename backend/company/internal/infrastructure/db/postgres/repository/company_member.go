@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 )

@@ -3,7 +3,7 @@ package update_member
 import (
 	"github.com/google/uuid"
 
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 )
 
