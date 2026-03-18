@@ -1,0 +1,141 @@
+name: Backend CI
+on:
+  push:
+    paths:
+      - "backend/**"
+      - 'golangci.yml'
+
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.golangci.yml'
+
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+
+jobs:
+  detect-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Find all Go modules in backend/
+        id: set-modules
+        run: |
+          mapfile -t modules < <(find backend -mindepth 2 -maxdepth 2 -name go.mod -printf '%h\n' | sort -u)
+          
+          if [ ${#modules[@]} -eq 0 ]; then
+            echo "No Go modules found in backend/"
+            modules_json='[]'
+          else
+            modules_json=$(printf '%s\n' "${modules[@]}" | jq -R . | jq -sc .)
+          fi
+          
+          echo "modules=$modules_json" >> $GITHUB_OUTPUT
+          echo "Found modules: $modules_json"
+
+  lint:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.11
+          # Используем абсолютный путь к конфигу, чтобы он был одинаков для всех модулей
+          args: --config=../../golangci.yml
+          only-new-issues: false
+          skip-cache: false
+          working-directory: ${{ matrix.modules }}
+
+#      - name: Check formatting (gofmt, goimports, gci, golines)
+#        run: |
+#          cd ${{ matrix.modules }}
+#          gofmt -l -w .
+#          goimports -l -w .
+#          gci write --skip-unchanged .
+#          golines -w --max-len=100 .
+#          # Проверяем, что после форматирования не осталось изменений
+#          git diff --exit-code
+#        shell: bash
+
+
+  # Tests only service where commit was made
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        include:
+          - go-version: 1.24
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Check changed services
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            auth:
+              - 'backend/auth/**'
+            candidate:
+              - 'backend/candidate/**'
+            company:
+              - 'backend/company/**'
+            admin:
+              - 'backend/admin/**'
+            api-gateway:
+              - 'backend/api-gateway/**'
+            application:
+              - 'backend/application/**'
+
+      - name: Test changed services only
+        run: |
+          declare -a changed_services=()
+          
+          [[ "${{ steps.changes.outputs.auth }}" == "true" ]] && changed_services+=("auth")
+          [[ "${{ steps.changes.outputs.candidate }}" == "true" ]] && changed_services+=("candidate")
+          [[ "${{ steps.changes.outputs.company }}" == "true" ]] && changed_services+=("company")
+          [[ "${{ steps.changes.outputs.admin }}" == "true" ]] && changed_services+=("admin")
+          [[ "${{ steps.changes.outputs.api-gateway }}" == "true" ]] && changed_services+=("api-gateway")
+          [[ "${{ steps.changes.outputs.application }}" == "true" ]] && changed_services+=("application")
+          
+          if [ ${#changed_services[@]} -eq 0 ]; then
+            echo "No backend changes detected - skipping tests"
+            exit 0
+          fi
+          
+          for service in "${changed_services[@]}"; do
+            echo "=== Testing backend/$service ==="
+            if [ -d "backend/$service/cmd" ] && [ -f "backend/$service/cmd/go.mod" ]; then
+              (cd "backend/$service/cmd" && go mod tidy && go test ./... -v -race -timeout=3m)
+            else
+              echo "Service $service/cmd not found or no go.mod"
+            fi
+          done
