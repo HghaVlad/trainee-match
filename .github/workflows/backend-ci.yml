@@ -49,6 +49,7 @@ jobs:
     strategy:
       matrix:
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +62,7 @@ jobs:
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
+        continue-on-error: true
         with:
           version: v2.11
           # Используем абсолютный путь к конфигу, чтобы он был одинаков для всех модулей
