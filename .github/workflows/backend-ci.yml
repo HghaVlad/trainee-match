@@ -1,10 +1,6 @@
 name: Backend CI
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "backend/**"
-      - 'golangci.yml'
 
   pull_request:
     paths:
@@ -68,8 +64,7 @@ jobs:
         continue-on-error: true
         with:
           version: v2.11
-          # Используем абсолютный путь к конфигу, чтобы он был одинаков для всех модулей
-          args: --config=../../golangci.yml
+          args: --config=${{ github.workspace }}/golangci.yml
           only-new-issues: false
           skip-cache: false
           working-directory: ${{ matrix.modules }}
@@ -138,9 +133,9 @@ jobs:
           
           for service in "${changed_services[@]}"; do
             echo "=== Testing backend/$service ==="
-            if [ -d "backend/$service/cmd" ] && [ -f "backend/$service/cmd/go.mod" ]; then
-              (cd "backend/$service/cmd" && go mod tidy && go test ./... -v -race -timeout=3m)
+            if [ -f "backend/$service/go.mod" ]; then
+              (cd "backend/$service" && go mod tidy && go test ./... -v -race -timeout=3m)
             else
-              echo "Service $service/cmd not found or no go.mod"
+              echo "Service $service not found or no go.mod"
             fi
           done
