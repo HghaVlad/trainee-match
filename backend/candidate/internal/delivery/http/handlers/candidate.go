@@ -1,0 +1,177 @@
+package handlers
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"time"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
+)
+
+type Candidate struct {
+	create      *create_candidate.UseCase
+	update      *update_candidate.UseCase
+	getByUserId *get_candidate_by_user_id.UseCase
+}
+
+func NewCandidate(create *create_candidate.UseCase, update *update_candidate.UseCase, getByUserId *get_candidate_by_user_id.UseCase) *Candidate {
+	return &Candidate{
+		create:      create,
+		update:      update,
+		getByUserId: getByUserId,
+	}
+}
+
+// GetMe godoc
+// @Summary Get my candidate profile
+// @Tags candidate
+// @Accept json
+// @Produce json
+// @Success 200 {object} dto.CandidateResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/me [get]
+func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.FromContext(r.Context())
+	if !ok {
+		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	candidate, err := c.getByUserId.Execute(r.Context(), user.Id)
+	if errors.Is(err, domain.ErrCandidateNotFound) {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
+		ID:       candidate.ID,
+		UserID:   candidate.UserID,
+		Phone:    candidate.Phone,
+		Telegram: candidate.Telegram,
+		City:     candidate.City,
+		Birthday: dto.TimeToDate(candidate.Birthday),
+	})
+}
+
+// CreateCandidate godoc
+// @Summary Create candidate profile
+// @Description Creates a new candidate profile associated with the authenticated user
+// @Tags candidate
+// @Accept json
+// @Produce json
+// @Param input body dto.CandidateCreateRequest true "Candidate creation data"
+// @Success 201 {object} dto.CandidateResponse
+// @Failure 400 {object} dto.ErrorResponse "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future"
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/ [post]
+func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var req dto.CandidateCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := req.Validate(); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, ok := auth.FromContext(r.Context())
+	if !ok {
+		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	candidateID, err := c.create.Execute(r.Context(), &create_candidate.Request{
+		UserID:   user.Id,
+		Phone:    req.Phone,
+		Telegram: req.Telegram,
+		City:     req.City,
+		Birthday: dto.DateToTime(req.Birthday),
+	})
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+
+	response := dto.CandidateResponse{
+		ID:       candidateID,
+		UserID:   user.Id,
+		Phone:    req.Phone,
+		Telegram: req.Telegram,
+		City:     req.City,
+		Birthday: req.Birthday,
+	}
+	helpers.RespondJSON(w, http.StatusCreated, response)
+}
+
+// UpdateCandidate godoc
+// @Summary Update candidate profile
+// @Tags candidate
+// @Accept json
+// @Produce json
+// @Param input body dto.CandidateUpdateRequest true "Candidate update data"
+// @Success 200 {object} dto.CandidateResponse
+// @Failure 400 {object} dto.ErrorResponse "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future"
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /candidate/ [patch]
+func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var req dto.CandidateUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := req.Validate(); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, ok := auth.FromContext(r.Context())
+	if !ok {
+		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var birthday *time.Time
+	if req.Birthday != nil {
+		dob := dto.DateToTime(*req.Birthday)
+		birthday = &dob
+	}
+
+	// Call update usecase — let it resolve the candidate owned by the user if ID is not provided
+	updatedCandidate, err := c.update.Execute(r.Context(), user.Id, &update_candidate.Request{
+		UserID:   &user.Id,
+		Phone:    req.Phone,
+		Telegram: req.Telegram,
+		City:     req.City,
+		Birthday: birthday,
+	})
+
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
+		ID:       updatedCandidate.ID,
+		UserID:   updatedCandidate.UserID,
+		Phone:    updatedCandidate.Phone,
+		Telegram: updatedCandidate.Telegram,
+		City:     updatedCandidate.City,
+		Birthday: dto.TimeToDate(updatedCandidate.Birthday),
+	})
+
+}

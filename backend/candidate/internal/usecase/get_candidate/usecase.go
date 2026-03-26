@@ -1,0 +1,40 @@
+package get_candidate
+
+import (
+	"context"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/google/uuid"
+)
+
+//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
+type CandidateRepo interface {
+	GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
+}
+
+type UseCase struct {
+	repo CandidateRepo
+}
+
+func New(repo CandidateRepo) *UseCase {
+	return &UseCase{repo: repo}
+}
+
+func (uc *UseCase) Execute(ctx context.Context, id uuid.UUID) (*CandidateResponse, error) {
+	candidate, err := uc.repo.GetByID(ctx, id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp := CandidateResponse{
+		ID:       candidate.ID,
+		UserID:   candidate.UserId,
+		Phone:    candidate.Phone,
+		Telegram: candidate.Telegram,
+		City:     candidate.City,
+		Birthday: candidate.Birthday,
+	}
+
+	return &resp, nil
+}

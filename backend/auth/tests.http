@@ -1,0 +1,36 @@
+### Login user
+POST http://0.0.0.0:8000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "heheuser",
+  "password": "testpass"
+}
+
+### Register user
+POST http://0.0.0.0:8000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "first_name": "hh",
+  "last_name": "hfh",
+  "email": "hehe@gmail.com",
+  "username": "heheuser",
+  "password": "testpass",
+  "role": "Candidate"
+}
+
+### Refresh token
+POST http://0.0.0.0:8000/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI0MjRlYjc0Yi05Mzc4LTRmNzctODVlNy02MTg1ZDM0MzUyZTEifQ.eyJleHAiOjE3NjkxNTg1MzIsImlhdCI6MTc2OTE1NjczMiwianRpIjoiZDRkMmJmNDUtNDkwYy01ZDYwLWJlYTQtMzBiMDdjNzI4YzQ1IiwiaXNzIjoiaHR0cDovLzAuMC4wLjA6ODA4MC9yZWFsbXMvdHJhaW5lZS1tYXRjaCIsImF1ZCI6Imh0dHA6Ly8wLjAuMC4wOjgwODAvcmVhbG1zL3RyYWluZWUtbWF0Y2giLCJzdWIiOiIzZDIwNzBkYS02NjEwLTQ1YjMtYTNiOC1jZTAwNTA2M2VhMTEiLCJ0eXAiOiJSZWZyZXNoIiwiYXpwIjoiYXV0aF9iYWNrZW5kIiwic2lkIjoib3FZN3RlQ0tfekJWaDhiWkZTUlV6bFpkIiwic2NvcGUiOiJvcGVuaWQgcm9sZXMgZW1haWwgYmFzaWMgcHJvZmlsZV9teSJ9.vyUdbJ6ll-EN6xSDs7CQ5fmCyACyYBZ-BN_R6vEwdSIrarRli9m9C578Wuc0O1ekDasokaPhC8k-q5JdoLTB6Q"
+}
+
+
+### Logout
+POST http://0.0.0.0:8000/api/v1/auth/logout
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI0MjRlYjc0Yi05Mzc4LTRmNzctODVlNy02MTg1ZDM0MzUyZTEifQ.eyJleHAiOjE3NjkxNTg1MzIsImlhdCI6MTc2OTE1NjczMiwianRpIjoiZDRkMmJmNDUtNDkwYy01ZDYwLWJlYTQtMzBiMDdjNzI4YzQ1IiwiaXNzIjoiaHR0cDovLzAuMC4wLjA6ODA4MC9yZWFsbXMvdHJhaW5lZS1tYXRjaCIsImF1ZCI6Imh0dHA6Ly8wLjAuMC4wOjgwODAvcmVhbG1zL3RyYWluZWUtbWF0Y2giLCJzdWIiOiIzZDIwNzBkYS02NjEwLTQ1YjMtYTNiOC1jZTAwNTA2M2VhMTEiLCJ0eXAiOiJSZWZyZXNoIiwiYXpwIjoiYXV0aF9iYWNrZW5kIiwic2lkIjoib3FZN3RlQ0tfekJWaDhiWkZTUlV6bFpkIiwic2NvcGUiOiJvcGVuaWQgcm9sZXMgZW1haWwgYmFzaWMgcHJvZmlsZV9teSJ9.vyUdbJ6ll-EN6xSDs7CQ5fmCyACyYBZ-BN_R6vEwdSIrarRli9m9C578Wuc0O1ekDasokaPhC8k-q5JdoLTB6Q
+
