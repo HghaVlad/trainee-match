@@ -1,4 +1,3 @@
-DROP INDEX IF EXISTS unique_owner_per_company;
 DROP INDEX IF EXISTS idx_company_members_company;
 
 DROP TABLE IF EXISTS company_members;

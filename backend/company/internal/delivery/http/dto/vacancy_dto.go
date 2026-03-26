@@ -79,7 +79,7 @@ type VacancyListItemResponse struct {
 	WorkFormat string  `json:"workFormat" example:"hybrid"`
 	City       *string `json:"city,omitempty" example:"Mountain View"`
 
-	EmploymentType string `json:"employmentType" example:"internship,full_time,part_time" example:"internship"`
+	EmploymentType string `json:"employmentType" example:"internship,full_time,part_time"`
 
 	IsPaid     bool `json:"isPaid" example:"true"`
 	SalaryFrom *int `json:"salaryFrom,omitempty" example:"3500"`
@@ -121,8 +121,8 @@ type VacancyCreateRequest struct {
 	WorkFormat string  `json:"workFormat" enums:"onsite,remote,hybrid" example:"hybrid"`
 	City       *string `json:"city,omitempty" example:"Mountain View"`
 
-	DurationFromDays *int `json:"DurationFromDays,omitempty" example:"60"`
-	DurationToDays   *int `json:"DurationToDays,omitempty" example:"90"`
+	DurationFromDays *int `json:"durationFromDays,omitempty" example:"60"`
+	DurationToDays   *int `json:"durationToDays,omitempty" example:"90"`
 
 	EmploymentType   *string `json:"employmentType" example:"internship"`
 	HoursPerWeekFrom *int    `json:"hoursPerWeekFrom,omitempty" example:"20"`

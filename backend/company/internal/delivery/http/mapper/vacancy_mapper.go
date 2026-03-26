@@ -213,7 +213,7 @@ func VacancyUpdateReqToUC(
 		req.WorkFormat = &wf
 	}
 
-	if dtoReq.WorkFormat != nil {
+	if dtoReq.EmploymentType != nil {
 		et := value_types.EmploymentType(*dtoReq.EmploymentType)
 		req.EmploymentType = &et
 	}

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	_ "path/filepath"
 	"testing"
 	"time"
 
@@ -45,8 +44,24 @@ func TestMain(m *testing.M) {
 		postgres.BasicWaitStrategies(),
 	)
 
-	pgHost, _ := postgresContainer.Host(ctx)
-	pgPort, _ := postgresContainer.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		log.Fatalf("Error creating postgres container: %v", err)
+	}
+
+	defer func() {
+		if err := postgresContainer.Terminate(ctx); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+
+	pgHost, err := postgresContainer.Host(ctx)
+	if err != nil {
+		log.Fatalf("Error getting postgres host: %v", err)
+	}
+	pgPort, err := postgresContainer.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		log.Fatalf("Error getting postgres port: %v", err)
+	}
 	pgSPort := pgPort.Port()
 
 	log.Printf("postgres host: %s, port: %s", pgHost, pgSPort)
@@ -77,8 +92,20 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	redisHost, _ := redisC.Host(ctx)
-	redisPort, _ := redisC.MappedPort(ctx, "6379/tcp")
+	defer func() {
+		if err := redisC.Terminate(ctx); err != nil {
+			log.Printf("failed to terminate redis container: %s", err)
+		}
+	}()
+
+	redisHost, err := redisC.Host(ctx)
+	if err != nil {
+		log.Fatalf("Error getting redis host: %v", err)
+	}
+	redisPort, err := redisC.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		log.Fatalf("Error getting redis port: %v", err)
+	}
 
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 

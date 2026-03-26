@@ -34,6 +34,10 @@ func (repo *CompanyMemberRepo) Get(ctx context.Context, userID, companyID uuid.U
 		return nil, domain_errors.ErrCompanyMemberNotFound
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &member, nil
 }
 

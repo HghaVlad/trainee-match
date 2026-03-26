@@ -13,7 +13,6 @@ type Response struct {
 	Description      *string
 	Website          *string
 	LogoURL          *string // IDK about that
-	OwnerID          uuid.UUID
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }

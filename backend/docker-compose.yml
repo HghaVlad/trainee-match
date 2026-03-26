@@ -1,5 +1,5 @@
 services:
-  company-db:
+  company-postgres:
     image: postgres:17
     env_file:
       - company/.env
@@ -8,23 +8,23 @@ services:
     volumes:
       - company-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U dima_terekhov -d company_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${COMPANY_PGS_USER} -d ${COMPANY_PGS_NAME}" ]
       interval: 20s
       timeout: 5s
       retries: 15
       start_period: 10s
 
-  company-db-migrate:
+  company-postgres-migrate:
     image: migrate/migrate
     volumes:
       - ./company/internal/infrastructure/db/postgres/migrations:/migrations
     command: [
       "-path", "/migrations",
-      "-database", "postgres://dima_terekhov:lowkey_tough@company-db:5432/company_db?sslmode=disable",
+      "-database", "postgres://${COMPANY_PGS_USER}:${COMPANY_PGS_PASS}@company-postgres:5432/${COMPANY_PGS_NAME}?sslmode=disable",
       "up"
     ]
     depends_on:
-      company-db:
+      company-postgres:
         condition: service_healthy
 
   redis-cache:
@@ -49,9 +49,9 @@ services:
     ports:
       - "8088:8080"
     depends_on:
-      company-db:
+      company-postgres:
         condition: service_healthy
-      company-db-migrate:
+      company-postgres-migrate:
         condition: service_completed_successfully
       redis-cache:
         condition: service_healthy
