@@ -1,4 +1,4 @@
-package value_types
+package vacancy
 
 type EmploymentType string
 

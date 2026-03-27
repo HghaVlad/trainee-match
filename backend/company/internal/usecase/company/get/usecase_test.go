@@ -1,4 +1,4 @@
-package get_company_test
+package get_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 )
 
@@ -19,11 +19,11 @@ type CompanyRepoMock struct {
 	mock.Mock
 }
 
-func (m *CompanyRepoMock) GetByID(ctx context.Context, id uuid.UUID) (*domain.Company, error) {
+func (m *CompanyRepoMock) GetByID(ctx context.Context, id uuid.UUID) (*company.Company, error) {
 	args := m.Called(ctx, id)
 
 	if c := args.Get(0); c != nil {
-		return c.(*domain.Company), args.Error(1)
+		return c.(*company.Company), args.Error(1)
 	}
 
 	return nil, args.Error(1)
@@ -33,11 +33,11 @@ type CacheRepoMock struct {
 	mock.Mock
 }
 
-func (m *CacheRepoMock) Get(ctx context.Context, id uuid.UUID) *domain.Company {
+func (m *CacheRepoMock) Get(ctx context.Context, id uuid.UUID) *company.Company {
 	args := m.Called(ctx, id)
 
 	if c := args.Get(0); c != nil {
-		return c.(*domain.Company)
+		return c.(*company.Company)
 	}
 
 	return nil
@@ -46,7 +46,7 @@ func (m *CacheRepoMock) Get(ctx context.Context, id uuid.UUID) *domain.Company {
 func (m *CacheRepoMock) Put(
 	ctx context.Context,
 	id uuid.UUID,
-	company *domain.Company,
+	company *company.Company,
 	ttl time.Duration,
 ) {
 	m.Called(ctx, id, company, ttl)
@@ -57,7 +57,7 @@ func TestGetByIdUsecase_Execute(t *testing.T) {
 	id := uuid.New()
 
 	now := time.Now()
-	company := &domain.Company{
+	comp := &company.Company{
 		ID:               id,
 		Name:             "Acme",
 		OpenVacanciesCnt: 3,
@@ -79,7 +79,7 @@ func TestGetByIdUsecase_Execute(t *testing.T) {
 			setup: func(repo *CompanyRepoMock, cache *CacheRepoMock) {
 				cache.
 					On("Get", mock.Anything, id).
-					Return(company)
+					Return(comp)
 
 				repo.
 					On("GetByID", mock.Anything, id).
@@ -96,10 +96,10 @@ func TestGetByIdUsecase_Execute(t *testing.T) {
 
 				repo.
 					On("GetByID", mock.Anything, id).
-					Return(company, nil)
+					Return(comp, nil)
 
 				cache.
-					On("Put", mock.Anything, id, company, 5*time.Minute).
+					On("Put", mock.Anything, id, comp, 5*time.Minute).
 					Once()
 			},
 			wantName: "Acme",
@@ -126,7 +126,7 @@ func TestGetByIdUsecase_Execute(t *testing.T) {
 
 			tt.setup(repo, cache)
 
-			uc := get_company.NewGetByIDUsecase(repo, cache)
+			uc := get.NewGetByIDUsecase(repo, cache)
 
 			resp, err := uc.Execute(context.Background(), id)
 

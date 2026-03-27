@@ -1,4 +1,4 @@
-package add_member_test
+package add_test
 
 import (
 	"context"
@@ -10,10 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 )
 
@@ -21,40 +19,40 @@ type memberRepoMock struct {
 	mock.Mock
 }
 
-func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	args := m.Called(ctx, userID, companyID)
 
-	if member := args.Get(0); member != nil {
-		return member.(*domain.CompanyMember), args.Error(1)
+	if memb := args.Get(0); memb != nil {
+		return memb.(*member.CompanyMember), args.Error(1)
 	}
 
 	return nil, args.Error(1)
 }
 
-func (m *memberRepoMock) Create(ctx context.Context, member *domain.CompanyMember) error {
+func (m *memberRepoMock) Create(ctx context.Context, member *member.CompanyMember) error {
 	return m.Called(ctx, member).Error(0)
 }
 
 func TestUsecase_ExecuteOK(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := add_member.NewUsecase(repo)
+	uc := add.NewUsecase(repo)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
-	req := &add_member.Request{
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	req := &add.Request{
 		CompanyID: uuid.New(),
 		UserID:    uuid.New(),
-		Role:      value_types.CompanyRoleRecruiter,
+		Role:      member.CompanyRoleRecruiter,
 	}
 
-	repo.On("Get", mock.Anything, identity.UserID, req.CompanyID).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
-	repo.On("Create", mock.Anything, mock.MatchedBy(func(member *domain.CompanyMember) bool {
+	repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
+	repo.On("Create", mock.Anything, mock.MatchedBy(func(member *member.CompanyMember) bool {
 		return member.UserID == req.UserID &&
 			member.CompanyID == req.CompanyID &&
 			member.Role == req.Role
 	})).Return(nil).Once()
 
-	err := uc.Execute(context.Background(), req, identity)
+	err := uc.Execute(context.Background(), req, ident)
 
 	require.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -62,45 +60,45 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := add_member.NewUsecase(repo)
+	uc := add.NewUsecase(repo)
 
-	req := &add_member.Request{
+	req := &add.Request{
 		CompanyID: uuid.New(),
 		UserID:    uuid.New(),
-		Role:      value_types.CompanyRoleRecruiter,
+		Role:      member.CompanyRoleRecruiter,
 	}
 
 	t.Run("global role required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleCandidate}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrHrRoleRequired)
+		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 
 	t.Run("company member required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, identity.UserID, req.CompanyID).
-			Return(nil, domain_errors.ErrCompanyMemberNotFound).Once()
+		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
+			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrCompanyMemberRequired)
+		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 
 	t.Run("admin company role required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, identity.UserID, req.CompanyID).
-			Return(&domain.CompanyMember{Role: value_types.CompanyRoleRecruiter}, nil).Once()
+		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrInsufficientRoleInCompany)
+		assert.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 }
@@ -108,55 +106,55 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 	t.Run("invalid user id", func(t *testing.T) {
 		repo := new(memberRepoMock)
-		uc := add_member.NewUsecase(repo)
+		uc := add.NewUsecase(repo)
 
-		req := &add_member.Request{
+		req := &add.Request{
 			CompanyID: uuid.New(),
 			UserID:    uuid.Nil,
-			Role:      value_types.CompanyRoleRecruiter,
+			Role:      member.CompanyRoleRecruiter,
 		}
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrInvalidUserID)
+		assert.ErrorIs(t, err, member.ErrInvalidUserID)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("invalid role", func(t *testing.T) {
 		repo := new(memberRepoMock)
-		uc := add_member.NewUsecase(repo)
+		uc := add.NewUsecase(repo)
 
-		req := &add_member.Request{
+		req := &add.Request{
 			CompanyID: uuid.New(),
 			UserID:    uuid.New(),
 			Role:      "owner",
 		}
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrInvalidCompanyMemberRole)
+		assert.ErrorIs(t, err, member.ErrInvalidCompanyMemberRole)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("repo err", func(t *testing.T) {
 		repo := new(memberRepoMock)
-		uc := add_member.NewUsecase(repo)
+		uc := add.NewUsecase(repo)
 
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
-		req := &add_member.Request{
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		req := &add.Request{
 			CompanyID: uuid.New(),
 			UserID:    uuid.New(),
-			Role:      value_types.CompanyRoleAdmin,
+			Role:      member.CompanyRoleAdmin,
 		}
 
-		repo.On("Get", mock.Anything, identity.UserID, req.CompanyID).
-			Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 		repo.On("Create", mock.Anything, mock.Anything).
 			Return(errors.New("db err")).Once()
 
-		err := uc.Execute(context.Background(), req, identity)
+		err := uc.Execute(context.Background(), req, ident)
 
 		assert.EqualError(t, err, "db err")
 		repo.AssertExpectations(t)

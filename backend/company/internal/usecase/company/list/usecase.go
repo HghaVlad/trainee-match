@@ -1,4 +1,4 @@
-package list_companies
+package list
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 // Usecase cursor pagination list company. Supports different orders.
@@ -51,7 +51,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 		resp, err = u.ListByName(ctx, req)
 
 	default:
-		return nil, domain_errors.ErrUnsupportedListOrder
+		return nil, common.ErrUnsupportedListOrder
 	}
 
 	if err != nil {

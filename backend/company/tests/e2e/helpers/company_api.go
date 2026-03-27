@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
@@ -70,13 +70,13 @@ type CreateVacancyParams struct {
 	Title       string
 	Description string
 
-	WorkFormat value_types.WorkFormat
+	WorkFormat vacancy.WorkFormat
 	City       *string
 
 	DurationFromDays *int
 	DurationToDays   *int
 
-	EmploymentType   value_types.EmploymentType
+	EmploymentType   vacancy.EmploymentType
 	HoursPerWeekFrom *int
 	HoursPerWeekTo   *int
 
@@ -95,7 +95,7 @@ type RangeIntFilter struct {
 }
 
 type ListVacanciesParams struct {
-	Order  list_vacancy.Order
+	Order  list.Order
 	Cursor *string
 	Limit  *int
 
@@ -103,7 +103,7 @@ type ListVacanciesParams struct {
 	HoursPerWeek *RangeIntFilter
 	Duration     *RangeIntFilter
 
-	WorkFormat []value_types.WorkFormat
+	WorkFormat []vacancy.WorkFormat
 	City       []string
 	CompanyIDs []uuid.UUID
 
@@ -121,16 +121,34 @@ func (api *CompanyAPI) CreateCompany(t testing.TB, params CreateCompanyParams) d
 		Website:     params.Website,
 	}
 
-	return doJSON[dto.CompanyCreatedResponse](t, api.authClient, http.MethodPost, api.url("/api/v1/companies/"), http.StatusCreated, reqBody)
+	return doJSON[dto.CompanyCreatedResponse](
+		t,
+		api.authClient,
+		http.MethodPost,
+		api.url("/api/v1/companies/"),
+		http.StatusCreated,
+		reqBody,
+	)
 }
 
 func (api *CompanyAPI) GetCompany(t testing.TB, companyID uuid.UUID) dto.CompanyResponse {
 	t.Helper()
 
-	return doJSON[dto.CompanyResponse](t, api.authClient, http.MethodGet, api.url("/api/v1/companies/%s/", companyID), http.StatusOK, nil)
+	return doJSON[dto.CompanyResponse](
+		t,
+		api.authClient,
+		http.MethodGet,
+		api.url("/api/v1/companies/%s/", companyID),
+		http.StatusOK,
+		nil,
+	)
 }
 
-func (api *CompanyAPI) CreateVacancy(t testing.TB, companyID uuid.UUID, params CreateVacancyParams) dto.VacancyCreatedResponse {
+func (api *CompanyAPI) CreateVacancy(
+	t testing.TB,
+	companyID uuid.UUID,
+	params CreateVacancyParams,
+) dto.VacancyCreatedResponse {
 	t.Helper()
 
 	employmentType := string(params.EmploymentType)
@@ -152,19 +170,40 @@ func (api *CompanyAPI) CreateVacancy(t testing.TB, companyID uuid.UUID, params C
 		InternshipToOffer: params.InternshipToOffer,
 	}
 
-	return doJSON[dto.VacancyCreatedResponse](t, api.authClient, http.MethodPost, api.url("/api/v1/companies/%s/vacancies/", companyID), http.StatusCreated, reqBody)
+	return doJSON[dto.VacancyCreatedResponse](
+		t,
+		api.authClient,
+		http.MethodPost,
+		api.url("/api/v1/companies/%s/vacancies/", companyID),
+		http.StatusCreated,
+		reqBody,
+	)
 }
 
 func (api *CompanyAPI) GetVacancy(t testing.TB, companyID, vacancyID uuid.UUID) dto.VacancyFullResponse {
 	t.Helper()
 
-	return doJSON[dto.VacancyFullResponse](t, api.authClient, http.MethodGet, api.url("/api/v1/companies/%s/vacancies/%s/", companyID, vacancyID), http.StatusOK, nil)
+	return doJSON[dto.VacancyFullResponse](
+		t,
+		api.authClient,
+		http.MethodGet,
+		api.url("/api/v1/companies/%s/vacancies/%s/", companyID, vacancyID),
+		http.StatusOK,
+		nil,
+	)
 }
 
 func (api *CompanyAPI) GetPublishedVacancy(t testing.TB, vacancyID uuid.UUID) dto.VacancyPublicResponse {
 	t.Helper()
 
-	return doJSON[dto.VacancyPublicResponse](t, api.authClient, http.MethodGet, api.url("/api/v1/vacancies/%s", vacancyID), http.StatusOK, nil)
+	return doJSON[dto.VacancyPublicResponse](
+		t,
+		api.authClient,
+		http.MethodGet,
+		api.url("/api/v1/vacancies/%s", vacancyID),
+		http.StatusOK,
+		nil,
+	)
 }
 
 func (api *CompanyAPI) ListVacancies(t testing.TB, params ListVacanciesParams) dto.VacancyListResponse {
@@ -217,13 +256,21 @@ func (api *CompanyAPI) RequirePublishedVacancyNotFound(t testing.TB, vacancyID u
 func (api *CompanyAPI) PublishVacancy(t testing.TB, companyID, vacancyID uuid.UUID) {
 	t.Helper()
 
-	doNoContent(t, api.authClient, http.MethodPost, api.url("/api/v1/companies/%s/vacancies/%s/publish", companyID, vacancyID), http.StatusNoContent)
+	doNoContent(t, api.authClient, http.MethodPost, api.url(
+		"/api/v1/companies/%s/vacancies/%s/publish",
+		companyID,
+		vacancyID,
+	), http.StatusNoContent)
 }
 
 func (api *CompanyAPI) ArchiveVacancy(t testing.TB, companyID, vacancyID uuid.UUID) {
 	t.Helper()
 
-	doNoContent(t, api.authClient, http.MethodPost, api.url("/api/v1/companies/%s/vacancies/%s/archive", companyID, vacancyID), http.StatusNoContent)
+	doNoContent(t, api.authClient, http.MethodPost, api.url(
+		"/api/v1/companies/%s/vacancies/%s/archive",
+		companyID,
+		vacancyID,
+	), http.StatusNoContent)
 }
 
 func (api *CompanyAPI) url(pattern string, args ...any) string {
@@ -255,7 +302,9 @@ func doJSON[T any](t testing.TB, client *http.Client, method, url string, expect
 	t.Helper()
 
 	resp := doRequest(t, client, method, url, expectedStatus, requestBody)
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	var result T
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -269,10 +318,18 @@ func doNoContent(t testing.TB, client *http.Client, method, url string, expected
 	t.Helper()
 
 	resp := doRequest(t, client, method, url, expectedStatus, nil)
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 }
 
-func doRequest(t testing.TB, client *http.Client, method, url string, expectedStatus int, requestBody any) *http.Response {
+func doRequest(
+	t testing.TB,
+	client *http.Client,
+	method, url string,
+	expectedStatus int,
+	requestBody any,
+) *http.Response {
 	t.Helper()
 
 	var bodyReader io.Reader = http.NoBody
@@ -298,15 +355,31 @@ func doRequest(t testing.TB, client *http.Client, method, url string, expectedSt
 	}
 
 	if resp.StatusCode != expectedStatus {
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 
 		var errResp responds.ErrorResponse
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil && errResp.Error != "" {
-			t.Fatalf("unexpected status for %s %s: got %d, want %d, error: %s", method, url, resp.StatusCode, expectedStatus, errResp.Error)
+			t.Fatalf(
+				"unexpected status for %s %s: got %d, want %d, error: %s",
+				method,
+				url,
+				resp.StatusCode,
+				expectedStatus,
+				errResp.Error,
+			)
 		}
 
 		rawBody, _ := io.ReadAll(resp.Body)
-		t.Fatalf("unexpected status for %s %s: got %d, want %d, body: %s", method, url, resp.StatusCode, expectedStatus, string(rawBody))
+		t.Fatalf(
+			"unexpected status for %s %s: got %d, want %d, body: %s",
+			method,
+			url,
+			resp.StatusCode,
+			expectedStatus,
+			string(rawBody),
+		)
 	}
 
 	return resp

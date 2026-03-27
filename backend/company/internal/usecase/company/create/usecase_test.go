@@ -1,4 +1,4 @@
-package create_company_test
+package create_test
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 )
 
@@ -19,7 +19,7 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) Create(ctx context.Context, company *domain.Company) error {
+func (m *repoMock) Create(ctx context.Context, company *company.Company) error {
 	return m.Called(ctx, company).Error(0)
 }
 
@@ -27,7 +27,7 @@ type companyMemberRepoMock struct {
 	mock.Mock
 }
 
-func (m *companyMemberRepoMock) Create(ctx context.Context, member *domain.CompanyMember) error {
+func (m *companyMemberRepoMock) Create(ctx context.Context, member *member.CompanyMember) error {
 	return m.Called(ctx, member).Error(0)
 }
 
@@ -45,7 +45,7 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 	memRepo := new(companyMemberRepoMock)
 	txManager := new(FakeTxManager)
 
-	req := &create_company.Request{
+	req := &create.Request{
 		Name:        "Acme",
 		Description: ptr("Hello!"),
 	}
@@ -56,11 +56,11 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 	memRepo.On("Create", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	uc := create_company.NewUsecase(repo, memRepo, txManager)
+	uc := create.NewUsecase(repo, memRepo, txManager)
 
-	iden := uc_common.Identity{
+	iden := identity.Identity{
 		UserID: uuid.New(),
-		Role:   uc_common.RoleHR,
+		Role:   identity.RoleHR,
 	}
 
 	resp, err := uc.Execute(context.Background(), req, iden)
@@ -75,39 +75,39 @@ func TestUsecase_ExecuteValidateErr(t *testing.T) {
 	memRepo := new(companyMemberRepoMock)
 	txManager := new(FakeTxManager)
 
-	iden := uc_common.Identity{
+	iden := identity.Identity{
 		UserID: uuid.New(),
-		Role:   uc_common.RoleHR,
+		Role:   identity.RoleHR,
 	}
 
-	uc := create_company.NewUsecase(repo, memRepo, txManager)
+	uc := create.NewUsecase(repo, memRepo, txManager)
 
 	tests := []struct {
 		name string
-		req  create_company.Request
+		req  create.Request
 		err  error
 	}{
 		{
 			name: "empty name",
-			req: create_company.Request{
+			req: create.Request{
 				Name: "",
 			},
-			err: domain_errors.ErrCompanyInvalidNameLen,
+			err: company.ErrCompanyInvalidNameLen,
 		},
 		{
 			name: "too long name",
-			req: create_company.Request{
-				Name: string(make([]byte, domain.MaxCompanyNameLen+1)),
+			req: create.Request{
+				Name: string(make([]byte, company.MaxCompanyNameLen+1)),
 			},
-			err: domain_errors.ErrCompanyInvalidNameLen,
+			err: company.ErrCompanyInvalidNameLen,
 		},
 		{
 			name: "too long desc",
-			req: create_company.Request{
+			req: create.Request{
 				Name:        "Acme",
-				Description: ptr(string(make([]byte, domain.MaxCompanyDescriptionLen+1))),
+				Description: ptr(string(make([]byte, company.MaxCompanyDescriptionLen+1))),
 			},
-			err: domain_errors.ErrCompanyInvalidDescriptionLen,
+			err: company.ErrCompanyInvalidDescriptionLen,
 		},
 	}
 

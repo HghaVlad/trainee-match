@@ -4,27 +4,38 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
+	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 type MemberHandler struct {
-	add    *add_member.Usecase
-	delete *delete_member.Usecase
-	update *update_member.Usecase
+	add    *add.Usecase
+	update *update.Usecase
+	delete *delete.Usecase
 }
 
-func NewMemberHandler(add *add_member.Usecase, update *update_member.Usecase, delete *delete_member.Usecase) *MemberHandler {
-	return &MemberHandler{add: add, update: update, delete: delete}
+func NewMemberHandler(
+	add *add.Usecase,
+	update *update.Usecase,
+	del *delete.Usecase,
+) *MemberHandler {
+
+	return &MemberHandler{
+		add:    add,
+		update: update,
+		delete: del,
+	}
 }
 
 // Add godoc
@@ -46,15 +57,15 @@ func NewMemberHandler(add *add_member.Usecase, update *update_member.Usecase, de
 func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	id, err := middleware.UUIDFromContext(ctx)
+	id, err := gmiddleware.UUIDFromContext(ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	dtoReq, err := middleware.BodyFromContext[dto.CompanyAddHrRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyAddHrRequest](ctx)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -62,7 +73,7 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyAddHrReqToUC(id, dtoReq)
 
-	err = h.add.Execute(ctx, req, identity)
+	err = h.add.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -90,9 +101,9 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	companyID, err := middleware.UUIDFromContext(ctx)
+	companyID, err := gmiddleware.UUIDFromContext(ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
@@ -103,7 +114,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtoReq, err := middleware.BodyFromContext[dto.CompanyUpdateMemberRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyUpdateMemberRequest](ctx)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -111,7 +122,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyUpdateMemberReqToUC(companyID, userID, dtoReq)
 
-	err = h.update.Execute(ctx, req, identity)
+	err = h.update.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -137,9 +148,9 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	companyID, err := middleware.UUIDFromContext(ctx)
+	companyID, err := gmiddleware.UUIDFromContext(ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
@@ -150,7 +161,7 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.delete.Execute(ctx, companyID, userID, identity)
+	err = h.delete.Execute(ctx, companyID, userID, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -161,20 +172,20 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *MemberHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain_errors.ErrCompanyNotFound),
-		errors.Is(err, domain_errors.ErrCompanyMemberNotFound):
+	case errors.Is(err, company.ErrCompanyNotFound),
+		errors.Is(err, member.ErrCompanyMemberNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
 
-	case errors.Is(err, domain_errors.ErrCompanyMemberAlreadyExists):
+	case errors.Is(err, member.ErrCompanyMemberAlreadyExists):
 		responds.RespondError(w, http.StatusConflict, err)
 
-	case errors.Is(err, domain_errors.ErrInvalidUserID),
-		errors.Is(err, domain_errors.ErrInvalidCompanyMemberRole):
+	case errors.Is(err, member.ErrInvalidUserID),
+		errors.Is(err, member.ErrInvalidCompanyMemberRole):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, domain_errors.ErrHrRoleRequired),
-		errors.Is(err, domain_errors.ErrCompanyMemberRequired),
-		errors.Is(err, domain_errors.ErrInsufficientRoleInCompany):
+	case errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, member.ErrCompanyMemberRequired),
+		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		responds.RespondError(w, http.StatusForbidden, err)
 
 	default:

@@ -1,6 +1,9 @@
-package list_vacancy
+package list
 
-import "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+import (
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+)
 
 type Request struct {
 	Order         Order
@@ -11,14 +14,14 @@ type Request struct {
 
 func (r *Request) Validate() error {
 	if !r.Order.IsValid() {
-		return domain_errors.ErrUnsupportedListOrder
+		return common.ErrUnsupportedListOrder
 	}
 
 	if r.Limit <= 0 {
 		r.Limit = defaultLimit
 	}
 	if r.Limit > maxLimit {
-		return domain_errors.ErrLimitTooLarge
+		return common.ErrLimitTooLarge
 	}
 
 	if r.Requirements != nil {
@@ -31,7 +34,7 @@ func (r *Request) Validate() error {
 		if r.Requirements != nil &&
 			r.Requirements.IsPaid != nil &&
 			!*r.Requirements.IsPaid {
-			return domain_errors.ErrInvalidSalaryOrderForUnpaid
+			return vacancy.ErrInvalidSalaryOrderForUnpaid
 		}
 	}
 

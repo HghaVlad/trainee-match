@@ -1,4 +1,4 @@
-package create_vacancy
+package create
 
 import (
 	"context"
@@ -7,10 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 // Usecase creates vacancy in draft status
@@ -31,53 +30,53 @@ func NewUsecase(
 }
 
 // Execute creates vacancy in draft status
-func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
-	vacancy := vacancyFromReq(request, identity)
+func (u *Usecase) Execute(ctx context.Context, request *Request, ident identity.Identity) (*Response, error) {
+	vac := vacancyFromReq(request, ident)
 
-	if err := vacancy.Validate(); err != nil {
+	if err := vac.Validate(); err != nil {
 		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	if err := u.authorize(ctx, request.CompanyID, identity); err != nil {
+	if err := u.authorize(ctx, request.CompanyID, ident); err != nil {
 		return nil, err
 	}
 
-	err := u.vacancyRepo.Create(ctx, vacancy)
+	err := u.vacancyRepo.Create(ctx, vac)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Response{ID: vacancy.ID}, nil
+	return &Response{ID: vac.ID}, nil
 }
 
 // only member of company can create vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	_, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 
 	return err
 }
 
 // user of identity is the creator of the vacancy
-func vacancyFromReq(request *Request, identity uc_common.Identity) *domain.Vacancy {
-	vacancy := &domain.Vacancy{
+func vacancyFromReq(request *Request, ident identity.Identity) *vacancy.Vacancy {
+	vac := &vacancy.Vacancy{
 		ID:        uuid.New(),
 		CompanyID: request.CompanyID,
-		CreatedBy: identity.UserID,
+		CreatedBy: ident.UserID,
 
 		Title:       request.Title,
 		Description: request.Description,
 
-		Status: value_types.VacancyStatusDraft,
+		Status: vacancy.VacancyStatusDraft,
 
 		WorkFormat: request.WorkFormat,
 		City:       request.City,
@@ -98,10 +97,10 @@ func vacancyFromReq(request *Request, identity uc_common.Identity) *domain.Vacan
 	}
 
 	if request.EmploymentType != nil {
-		vacancy.EmploymentType = *request.EmploymentType
+		vac.EmploymentType = *request.EmploymentType
 	} else {
-		vacancy.EmploymentType = value_types.EmploymentTypeInternship
+		vac.EmploymentType = vacancy.EmploymentTypeInternship
 	}
 
-	return vacancy
+	return vac
 }

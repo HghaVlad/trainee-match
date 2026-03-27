@@ -5,14 +5,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/middleware"
+	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
@@ -21,27 +24,27 @@ import (
 )
 
 type CompanyHandler struct {
-	getByID *get_company.GetByIDUsecase
-	create  *create_company.Usecase
-	list    *list_companies.Usecase
-	update  *update_company.Usecase
-	delete  *delete_company.Usecase
+	getByID *get.Usecase
+	create  *create.Usecase
+	list    *list.Usecase
+	update  *update.Usecase
+	delete  *delete.Usecase
 }
 
 func NewCompanyHandler(
-	getByID *get_company.GetByIDUsecase,
-	create *create_company.Usecase,
-	list *list_companies.Usecase,
-	update *update_company.Usecase,
-	delete *delete_company.Usecase,
+	get *get.Usecase,
+	create *create.Usecase,
+	list *list.Usecase,
+	upd *update.Usecase,
+	del *delete.Usecase,
 ) *CompanyHandler {
 
 	return &CompanyHandler{
-		getByID: getByID,
+		getByID: get,
 		create:  create,
 		list:    list,
-		update:  update,
-		delete:  delete,
+		update:  upd,
+		delete:  del,
 	}
 }
 
@@ -65,13 +68,13 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	company, err := h.getByID.Execute(ctx, id)
+	comp, err := h.getByID.Execute(ctx, id)
 	if err != nil {
 		h.handleErr(w, err)
 		return
 	}
 
-	resp := mapper.GetCompRespToDto(company)
+	resp := mapper.GetCompRespToDto(comp)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -95,7 +98,7 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 	order := h.parseOrderQuery(r)
 	cursor := r.URL.Query().Get("cursor")
 
-	req := &list_companies.Request{
+	req := &list.Request{
 		Limit:  limit,
 		Order:  order,
 		Cursor: cursor,
@@ -128,9 +131,9 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	dtoReq, err := middleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
@@ -138,7 +141,7 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyCreateReqToUC(dtoReq)
 
-	resp, err := h.create.Execute(ctx, req, identity)
+	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -167,15 +170,15 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	id, err := middleware.UUIDFromContext(ctx)
+	id, err := gmiddleware.UUIDFromContext(ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	dtoReq, err := middleware.BodyFromContext[dto.CompanyUpdateRequest](ctx)
+	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyUpdateRequest](ctx)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -183,7 +186,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.CompanyUpdateReqToUC(id, dtoReq)
 
-	err = h.update.Execute(ctx, req, identity)
+	err = h.update.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -208,15 +211,15 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
-	id, err := middleware.UUIDFromContext(ctx)
+	id, err := gmiddleware.UUIDFromContext(ctx)
 	if err != nil {
 		responds.RespondError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	err = h.delete.Execute(ctx, id, identity)
+	err = h.delete.Execute(ctx, id, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -227,25 +230,25 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain_errors.ErrCompanyNotFound):
+	case errors.Is(err, company.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
 
-	case errors.Is(err, domain_errors.ErrCompanyAlreadyExists),
-		errors.Is(err, domain_errors.ErrCompanyMemberAlreadyExists):
+	case errors.Is(err, company.ErrCompanyAlreadyExists),
+		errors.Is(err, member.ErrCompanyMemberAlreadyExists):
 		responds.RespondError(w, http.StatusConflict, err)
 
-	case errors.Is(err, domain_errors.ErrInvalidCursor),
-		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
-		errors.Is(err, domain_errors.ErrCompanyInvalidDescriptionLen),
-		errors.Is(err, domain_errors.ErrCompanyInvalidNameLen),
-		errors.Is(err, domain_errors.ErrInvalidUserID),
-		errors.Is(err, domain_errors.ErrInvalidCompanyMemberRole):
+	case errors.Is(err, common.ErrInvalidCursor),
+		errors.Is(err, common.ErrCursorOrderMismatch),
+		errors.Is(err, company.ErrCompanyInvalidDescriptionLen),
+		errors.Is(err, company.ErrCompanyInvalidNameLen),
+		errors.Is(err, member.ErrInvalidUserID),
+		errors.Is(err, member.ErrInvalidCompanyMemberRole):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, domain_errors.ErrInsufficientRole),
-		errors.Is(err, domain_errors.ErrHrRoleRequired),
-		errors.Is(err, domain_errors.ErrCompanyMemberRequired),
-		errors.Is(err, domain_errors.ErrInsufficientRoleInCompany):
+	case errors.Is(err, identity.ErrInsufficientRole),
+		errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, member.ErrCompanyMemberRequired),
+		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		responds.RespondError(w, http.StatusForbidden, err)
 
 	default:
@@ -253,16 +256,16 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 	}
 }
 
-func (h *CompanyHandler) parseOrderQuery(r *http.Request) list_companies.Order {
+func (h *CompanyHandler) parseOrderQuery(r *http.Request) list.Order {
 	str := r.URL.Query().Get("order")
-	ord := list_companies.Order(strings.Trim(str, " "))
+	ord := list.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case list_companies.OrderNameAsc,
-		list_companies.OrderCreatedAtDesc,
-		list_companies.OrderVacanciesDesc:
+	case list.OrderNameAsc,
+		list.OrderCreatedAtDesc,
+		list.OrderVacanciesDesc:
 		return ord
 	default:
-		return list_companies.OrderVacanciesDesc
+		return list.OrderVacanciesDesc
 	}
 }

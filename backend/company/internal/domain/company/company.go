@@ -1,11 +1,9 @@
-package domain
+package company
 
 import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 )
 
 type Company struct {
@@ -25,12 +23,12 @@ const (
 )
 
 func (c *Company) Validate() error {
-	if len(c.Name) == 0 || len(c.Name) > MaxCompanyNameLen {
-		return domain_errors.ErrCompanyInvalidNameLen
+	if len(c.Name) == 0 || len([]rune(c.Name)) > MaxCompanyNameLen {
+		return ErrCompanyInvalidNameLen
 	}
 
-	if c.Description != nil && len(*c.Description) > MaxCompanyDescriptionLen {
-		return domain_errors.ErrCompanyInvalidDescriptionLen
+	if c.Description != nil && len([]rune(*c.Description)) > MaxCompanyDescriptionLen {
+		return ErrCompanyInvalidDescriptionLen
 	}
 
 	return nil

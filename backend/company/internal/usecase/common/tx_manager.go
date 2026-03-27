@@ -1,4 +1,4 @@
-package uc_common
+package common
 
 import "context"
 

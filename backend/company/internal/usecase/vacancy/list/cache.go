@@ -1,4 +1,4 @@
-package list_vacancy
+package list
 
 import (
 	"context"

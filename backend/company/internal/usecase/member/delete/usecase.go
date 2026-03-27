@@ -1,4 +1,4 @@
-package delete_member
+package delete
 
 import (
 	"context"
@@ -7,9 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type Usecase struct {
@@ -20,7 +19,7 @@ func NewUsecase(memberRepo CompanyMemberRepo) *Usecase {
 	return &Usecase{memberRepo: memberRepo}
 }
 
-func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, identity uc_common.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, identity identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
@@ -31,21 +30,21 @@ func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, iden
 	return u.memberRepo.Delete(ctx, userID, companyID)
 }
 
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	member, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	memb, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 	if err != nil {
 		return err
 	}
 
-	if member.Role != value_types.CompanyRoleAdmin {
-		return domain_errors.ErrInsufficientRoleInCompany
+	if memb.Role != member.CompanyRoleAdmin {
+		return member.ErrInsufficientRoleInCompany
 	}
 
 	return nil

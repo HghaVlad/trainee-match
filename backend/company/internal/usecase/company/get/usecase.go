@@ -1,4 +1,4 @@
-package get_company
+package get
 
 import (
 	"context"
@@ -6,22 +6,22 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 )
 
-type GetByIDUsecase struct {
+type Usecase struct {
 	repo  CompanyRepo
 	cache CacheRepo
 }
 
-func NewGetByIDUsecase(repo CompanyRepo, cache CacheRepo) *GetByIDUsecase {
-	return &GetByIDUsecase{
+func NewGetByIDUsecase(repo CompanyRepo, cache CacheRepo) *Usecase {
+	return &Usecase{
 		repo:  repo,
 		cache: cache,
 	}
 }
 
-func (u *GetByIDUsecase) Execute(ctx context.Context, id uuid.UUID) (*Response, error) {
+func (u *Usecase) Execute(ctx context.Context, id uuid.UUID) (*Response, error) {
 	// TODO: think about retrieving logo from minio (via presigned or nah)
 	company := u.cache.Get(ctx, id)
 

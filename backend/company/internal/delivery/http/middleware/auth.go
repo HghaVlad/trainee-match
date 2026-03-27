@@ -1,4 +1,4 @@
-package my_middleware
+package middleware
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/lestrrat-go/jwx/v3/jwt"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type AuthMiddleware struct {
@@ -58,13 +58,13 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			return
 		}
 
-		identity, err := getIdentityFromToken(token, &claims)
+		ident, err := getIdentityFromToken(token, &claims)
 		if err != nil {
 			responds.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
-		ctx := WithIdentity(r.Context(), *identity)
+		ctx := WithIdentity(r.Context(), *ident)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -88,8 +88,8 @@ func getAccessTokenFromCookies(cookies []*http.Cookie) string {
 	return ""
 }
 
-func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*uc_common.Identity, error) {
-	identity := new(uc_common.Identity)
+func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*identity.Identity, error) {
+	ident := new(identity.Identity)
 
 	sub, ok := token.Subject()
 	if !ok {
@@ -100,7 +100,7 @@ func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*uc_common.Ide
 	if err != nil {
 		return nil, errors.New("invalid jwt: sub was expected to be uuid format")
 	}
-	identity.UserID = subID
+	ident.UserID = subID
 
 	var realmAccess RealmAccess
 	if err := token.Get("realm_access", &realmAccess); err != nil {
@@ -108,21 +108,21 @@ func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*uc_common.Ide
 	}
 
 	for _, role := range realmAccess.Roles {
-		grole := uc_common.GlobalRole(role)
+		grole := identity.GlobalRole(role)
 
 		switch grole {
-		case uc_common.RoleCandidate,
-			uc_common.RoleHR,
-			uc_common.RoleAdmin:
-			identity.Role = grole
+		case identity.RoleCandidate,
+			identity.RoleHR,
+			identity.RoleAdmin:
+			ident.Role = grole
 		}
 	}
 
-	if identity.Role == "" {
+	if ident.Role == "" {
 		return nil, errors.New("invalid jwt: no valid role was found")
 	}
 
-	return identity, nil
+	return ident, nil
 }
 
 type RealmAccess struct {

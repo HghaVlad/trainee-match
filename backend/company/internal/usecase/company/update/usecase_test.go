@@ -1,4 +1,4 @@
-package update_company_test
+package update_test
 
 import (
 	"context"
@@ -10,10 +10,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
@@ -21,7 +20,7 @@ type companyRepoMock struct {
 	mock.Mock
 }
 
-func (m *companyRepoMock) Update(ctx context.Context, req *update_company.Request) error {
+func (m *companyRepoMock) Update(ctx context.Context, req *update.Request) error {
 	args := m.Called(ctx, req)
 	return args.Error(0)
 }
@@ -38,11 +37,11 @@ type memRepoMock struct {
 	mock.Mock
 }
 
-func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	res := m.Called(ctx, userID, companyID)
 
 	if c := res.Get(0); c != nil {
-		return c.(*domain.CompanyMember), res.Error(1)
+		return c.(*member.CompanyMember), res.Error(1)
 	}
 
 	return nil, res.Error(1)
@@ -54,23 +53,23 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 	repo := new(companyRepoMock)
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("Update", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := update_company.NewUsecase(repo, memRepo, cache)
+	uc := update.NewUsecase(repo, memRepo, cache)
 
-	req := &update_company.Request{
+	req := &update.Request{
 		ID:   uuid.New(),
 		Name: ptr("Acme"),
 	}
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	err := uc.Execute(context.Background(), req, identity)
+	err := uc.Execute(context.Background(), req, ident)
 
 	require.NoError(t, err)
 	cache.AssertExpectations(t)
@@ -83,21 +82,21 @@ func TestUsecase_DbErr(t *testing.T) {
 	repo := new(companyRepoMock)
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("Update", mock.Anything, mock.Anything).
 		Return(errors.New("db err")).Once()
 
-	uc := update_company.NewUsecase(repo, memRepo, cache)
+	uc := update.NewUsecase(repo, memRepo, cache)
 
-	req := &update_company.Request{
+	req := &update.Request{
 		ID:   uuid.New(),
 		Name: ptr("Acme"),
 	}
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	err := uc.Execute(context.Background(), req, identity)
+	err := uc.Execute(context.Background(), req, ident)
 
 	assert.Error(t, err)
 	repo.AssertExpectations(t)
@@ -109,44 +108,44 @@ func TestUsecase_ValidateErr(t *testing.T) {
 	repo := new(companyRepoMock)
 	memRepo := new(memRepoMock)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	uc := update_company.NewUsecase(repo, memRepo, cache)
+	uc := update.NewUsecase(repo, memRepo, cache)
 
 	tests := []struct {
 		name string
-		req  update_company.Request
+		req  update.Request
 		err  error
 	}{
 		{
 			name: "empty name",
-			req: update_company.Request{
+			req: update.Request{
 				ID:   uuid.New(),
 				Name: ptr(""),
 			},
-			err: domain_errors.ErrCompanyInvalidNameLen,
+			err: company.ErrCompanyInvalidNameLen,
 		},
 		{
 			name: "too long name",
-			req: update_company.Request{
+			req: update.Request{
 				ID:   uuid.New(),
-				Name: ptr(string(make([]byte, domain.MaxCompanyNameLen+1))),
+				Name: ptr(string(make([]byte, company.MaxCompanyNameLen+1))),
 			},
-			err: domain_errors.ErrCompanyInvalidNameLen,
+			err: company.ErrCompanyInvalidNameLen,
 		},
 		{
 			name: "too long desc",
-			req: update_company.Request{
+			req: update.Request{
 				ID:          uuid.New(),
-				Description: ptr(string(make([]byte, domain.MaxCompanyDescriptionLen+1))),
+				Description: ptr(string(make([]byte, company.MaxCompanyDescriptionLen+1))),
 			},
-			err: domain_errors.ErrCompanyInvalidDescriptionLen,
+			err: company.ErrCompanyInvalidDescriptionLen,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := uc.Execute(context.Background(), &tt.req, identity)
+			err := uc.Execute(context.Background(), &tt.req, ident)
 
 			assert.Equal(t, tt.err, err)
 			repo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)

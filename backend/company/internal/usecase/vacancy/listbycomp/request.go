@@ -1,4 +1,4 @@
-package list_vac_by_comp
+package listbycomp
 
 import (
 	"strconv"

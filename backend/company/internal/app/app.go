@@ -11,31 +11,32 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
+	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
+	deletecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
+	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
+	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
+	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	deletemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
+	updatemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	deletevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
+	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
+	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
+	updatevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 type App struct {
@@ -45,15 +46,15 @@ type App struct {
 }
 
 func Build(conf *config.Config) (*App, error) {
-	psgConf := infra_postgres.NewConfig(conf)
-	logger := service_logger.NewSlogLogger()
-	compDB, err := infra_postgres.New(psgConf, logger)
+	psgConf := postgres.NewConfig(conf)
+	logger := logger.NewSlogLogger()
+	compDB, err := postgres.New(psgConf, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	redisConf := infra_redis.NewConfig(&conf.Redis)
-	redis, err := infra_redis.NewClient(redisConf)
+	redisConf := redis.NewConfig(&conf.Redis)
+	rediss, err := redis.NewClient(redisConf)
 	if err != nil {
 		return nil, err
 	}
@@ -61,33 +62,33 @@ func Build(conf *config.Config) (*App, error) {
 	compRepo := repository.NewCompanyRepository(compDB)
 	vacRepo := repository.NewVacancyRepo(compDB)
 	memRepo := repository.NewCompanyMemberRepo(compDB)
-	txManager := infra_postgres.NewTxManager(compDB)
+	txManager := postgres.NewTxManager(compDB)
 
-	compCache := infra_redis.NewRepo[uuid.UUID, domain.Company](redis, "company")
-	vacCache := infra_redis.NewRepo[uuid.UUID, domain.Vacancy](redis, "vacancy")
-	publicVacCache := infra_redis.NewRepo[uuid.UUID, get_published_vacancy.Response](redis, "vacancy:public")
-	compListCache := infra_redis.NewRepo[string, list_companies.Response](redis, "companies:list")
-	vacListCache := infra_redis.NewRepo[string, list_vacancy.Response](redis, "vacancies:list")
-	vacByCompListCache := infra_redis.NewRepo[string, list_vac_by_comp.Response](redis, "vacancies_by_comp:list")
+	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company")
+	vacCache := redis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy")
+	publicVacCache := redis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public")
+	compListCache := redis.NewRepo[string, listcomp.Response](rediss, "companies:list")
+	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list")
+	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list")
 
-	compGetByIDUc := get_company.NewGetByIDUsecase(compRepo, compCache)
-	compListUc := list_companies.NewUsecase(compRepo, compListCache)
-	compCreateUc := create_company.NewUsecase(compRepo, memRepo, txManager)
-	compAddHrUc := add_member.NewUsecase(memRepo)
-	compDeleteMemberUc := delete_member.NewUsecase(memRepo)
-	compUpdateMemberUc := update_member.NewUsecase(memRepo)
-	compUpdateUc := update_company.NewUsecase(compRepo, memRepo, compCache)
-	compDeleteUc := delete_company.NewUsecase(compRepo, memRepo, compCache)
+	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
+	compListUc := listcomp.NewUsecase(compRepo, compListCache)
+	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
+	compAddHrUc := addmember.NewUsecase(memRepo)
+	compDeleteMemberUc := deletemember.NewUsecase(memRepo)
+	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
+	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, compCache)
+	compDeleteUc := deletecomp.NewUsecase(compRepo, memRepo, compCache)
 
-	vacGetByIDUc := get_vacancy.NewUsecase(vacRepo, vacCache, memRepo)
-	vacGetPublishedByIDUc := get_published_vacancy.NewUsecase(vacRepo, publicVacCache)
-	vacList := list_vacancy.NewUsecase(vacRepo, vacListCache)
-	vacListByComp := list_vac_by_comp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
-	vacCreate := create_vacancy.NewUsecase(vacRepo, memRepo)
-	vacUpdate := update_vacancy.NewUsecase(vacRepo, memRepo, vacCache, txManager)
-	vacPublish := publish_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
-	vacArchive := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
-	vacDelete := delete_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
+	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
+	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
+	vacList := listvac.NewUsecase(vacRepo, vacListCache)
+	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
+	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
+	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
+	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
+	vacArchive := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
+	vacDelete := deletevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,
@@ -110,19 +111,19 @@ func Build(conf *config.Config) (*App, error) {
 		vacDelete,
 	)
 
-	authMiddleware, err := my_middleware.NewAuthMiddleware(conf)
+	authMiddleware, err := compmiddleware.NewAuthMiddleware(conf)
 	if err != nil {
 		return nil, err
 	}
 
-	routerDeps := &delivery_http.RouterDeps{
+	routerDeps := &httpapp.RouterDeps{
 		CompanyHandler: companyHandler,
 		MemberHandler:  memberHandler,
 		VacancyHandler: vacancyHandler,
 		AuthMiddleware: authMiddleware,
 	}
 
-	httpRouter := delivery_http.NewRouter(routerDeps)
+	httpRouter := httpapp.NewRouter(routerDeps)
 
 	httpServer := &http.Server{
 		Addr:         conf.HTTP.Addr,

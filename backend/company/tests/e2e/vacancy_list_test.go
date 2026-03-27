@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/tests/e2e/helpers"
 )
 
@@ -36,11 +36,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Go Remote Paid Junior",
 				Description:       "remote paid junior",
-				WorkFormat:        value_types.WorkFormatRemote,
+				WorkFormat:        vacancy.WorkFormatRemote,
 				City:              helpers.Ptr("Moscow"),
 				DurationFromDays:  helpers.Ptr(60),
 				DurationToDays:    helpers.Ptr(120),
-				EmploymentType:    value_types.EmploymentTypeInternship,
+				EmploymentType:    vacancy.EmploymentTypeInternship,
 				HoursPerWeekFrom:  helpers.Ptr(20),
 				HoursPerWeekTo:    helpers.Ptr(30),
 				FlexibleSchedule:  true,
@@ -56,11 +56,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Go Hybrid Mid",
 				Description:       "hybrid mid",
-				WorkFormat:        value_types.WorkFormatHybrid,
+				WorkFormat:        vacancy.WorkFormatHybrid,
 				City:              helpers.Ptr("Moscow"),
 				DurationFromDays:  helpers.Ptr(90),
 				DurationToDays:    helpers.Ptr(180),
-				EmploymentType:    value_types.EmploymentTypeInternship,
+				EmploymentType:    vacancy.EmploymentTypeInternship,
 				HoursPerWeekFrom:  helpers.Ptr(30),
 				HoursPerWeekTo:    helpers.Ptr(40),
 				FlexibleSchedule:  false,
@@ -76,11 +76,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "QA Onsite Unpaid",
 				Description:       "onsite unpaid",
-				WorkFormat:        value_types.WorkFormatOnSite,
+				WorkFormat:        vacancy.WorkFormatOnSite,
 				City:              helpers.Ptr("Kazan"),
 				DurationFromDays:  helpers.Ptr(30),
 				DurationToDays:    helpers.Ptr(60),
-				EmploymentType:    value_types.EmploymentTypeInternship,
+				EmploymentType:    vacancy.EmploymentTypeInternship,
 				HoursPerWeekFrom:  helpers.Ptr(15),
 				HoursPerWeekTo:    helpers.Ptr(20),
 				FlexibleSchedule:  false,
@@ -94,11 +94,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Frontend Remote Senior",
 				Description:       "remote senior",
-				WorkFormat:        value_types.WorkFormatRemote,
+				WorkFormat:        vacancy.WorkFormatRemote,
 				City:              helpers.Ptr("Saint Petersburg"),
 				DurationFromDays:  helpers.Ptr(120),
 				DurationToDays:    helpers.Ptr(180),
-				EmploymentType:    value_types.EmploymentTypeFullTime,
+				EmploymentType:    vacancy.EmploymentTypeFullTime,
 				HoursPerWeekFrom:  helpers.Ptr(35),
 				HoursPerWeekTo:    helpers.Ptr(40),
 				FlexibleSchedule:  true,
@@ -114,11 +114,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Data Analyst Hybrid",
 				Description:       "analyst hybrid",
-				WorkFormat:        value_types.WorkFormatHybrid,
+				WorkFormat:        vacancy.WorkFormatHybrid,
 				City:              helpers.Ptr("Novosibirsk"),
 				DurationFromDays:  helpers.Ptr(45),
 				DurationToDays:    helpers.Ptr(90),
-				EmploymentType:    value_types.EmploymentTypePartTime,
+				EmploymentType:    vacancy.EmploymentTypePartTime,
 				HoursPerWeekFrom:  helpers.Ptr(20),
 				HoursPerWeekTo:    helpers.Ptr(25),
 				FlexibleSchedule:  true,
@@ -134,11 +134,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "DevOps Remote Part Time",
 				Description:       "devops remote",
-				WorkFormat:        value_types.WorkFormatRemote,
+				WorkFormat:        vacancy.WorkFormatRemote,
 				City:              helpers.Ptr("Yerevan"),
 				DurationFromDays:  helpers.Ptr(75),
 				DurationToDays:    helpers.Ptr(100),
-				EmploymentType:    value_types.EmploymentTypePartTime,
+				EmploymentType:    vacancy.EmploymentTypePartTime,
 				HoursPerWeekFrom:  helpers.Ptr(10),
 				HoursPerWeekTo:    helpers.Ptr(20),
 				FlexibleSchedule:  true,
@@ -154,11 +154,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Backend Onsite Lead",
 				Description:       "backend onsite lead",
-				WorkFormat:        value_types.WorkFormatOnSite,
+				WorkFormat:        vacancy.WorkFormatOnSite,
 				City:              helpers.Ptr("Moscow"),
 				DurationFromDays:  helpers.Ptr(180),
 				DurationToDays:    helpers.Ptr(365),
-				EmploymentType:    value_types.EmploymentTypeFullTime,
+				EmploymentType:    vacancy.EmploymentTypeFullTime,
 				HoursPerWeekFrom:  helpers.Ptr(40),
 				HoursPerWeekTo:    helpers.Ptr(40),
 				FlexibleSchedule:  false,
@@ -174,11 +174,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Support Hybrid Unpaid",
 				Description:       "support hybrid unpaid",
-				WorkFormat:        value_types.WorkFormatHybrid,
+				WorkFormat:        vacancy.WorkFormatHybrid,
 				City:              helpers.Ptr("Samara"),
 				DurationFromDays:  helpers.Ptr(30),
 				DurationToDays:    helpers.Ptr(45),
-				EmploymentType:    value_types.EmploymentTypeInternship,
+				EmploymentType:    vacancy.EmploymentTypeInternship,
 				HoursPerWeekFrom:  helpers.Ptr(20),
 				HoursPerWeekTo:    helpers.Ptr(25),
 				FlexibleSchedule:  true,
@@ -192,11 +192,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "ML Remote Research",
 				Description:       "ml remote research",
-				WorkFormat:        value_types.WorkFormatRemote,
+				WorkFormat:        vacancy.WorkFormatRemote,
 				City:              helpers.Ptr("Tbilisi"),
 				DurationFromDays:  helpers.Ptr(120),
 				DurationToDays:    helpers.Ptr(240),
-				EmploymentType:    value_types.EmploymentTypeInternship,
+				EmploymentType:    vacancy.EmploymentTypeInternship,
 				HoursPerWeekFrom:  helpers.Ptr(25),
 				HoursPerWeekTo:    helpers.Ptr(35),
 				FlexibleSchedule:  true,
@@ -212,11 +212,11 @@ func Test_Vacancy_List(t *testing.T) {
 			Params: helpers.CreateVacancyParams{
 				Title:             "Product Remote Associate",
 				Description:       "product remote associate",
-				WorkFormat:        value_types.WorkFormatRemote,
+				WorkFormat:        vacancy.WorkFormatRemote,
 				City:              helpers.Ptr("Moscow"),
 				DurationFromDays:  helpers.Ptr(60),
 				DurationToDays:    helpers.Ptr(90),
-				EmploymentType:    value_types.EmploymentTypePartTime,
+				EmploymentType:    vacancy.EmploymentTypePartTime,
 				HoursPerWeekFrom:  helpers.Ptr(20),
 				HoursPerWeekTo:    helpers.Ptr(30),
 				FlexibleSchedule:  true,
@@ -242,15 +242,15 @@ func Test_Vacancy_List(t *testing.T) {
 	draftID := api.CreateVacancy(t, compA, helpers.CreateVacancyParams{
 		Title:          "Draft Hidden Vacancy",
 		Description:    "draft should not be listed",
-		WorkFormat:     value_types.WorkFormatRemote,
-		EmploymentType: value_types.EmploymentTypeInternship,
+		WorkFormat:     vacancy.WorkFormatRemote,
+		EmploymentType: vacancy.EmploymentTypeInternship,
 	}).ID
 
 	archivedID := api.CreateVacancy(t, compA, helpers.CreateVacancyParams{
 		Title:             "Archived Hidden Vacancy",
 		Description:       "archived should not be listed",
-		WorkFormat:        value_types.WorkFormatRemote,
-		EmploymentType:    value_types.EmploymentTypeInternship,
+		WorkFormat:        vacancy.WorkFormatRemote,
+		EmploymentType:    vacancy.EmploymentTypeInternship,
 		IsPaid:            true,
 		SalaryFrom:        helpers.Ptr(900),
 		SalaryTo:          helpers.Ptr(1100),
@@ -261,7 +261,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("lists only published vacancies", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list_vacancy.OrderPublishedAtDesc,
+			Order: list.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(20),
 		})
 
@@ -281,9 +281,9 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by company work format and paid flag", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:      list_vacancy.OrderPublishedAtDesc,
+			Order:      list.OrderPublishedAtDesc,
 			CompanyIDs: []uuid.UUID{compA},
-			WorkFormat: []value_types.WorkFormat{value_types.WorkFormatRemote},
+			WorkFormat: []vacancy.WorkFormat{vacancy.WorkFormatRemote},
 			IsPaid:     helpers.Ptr(true),
 			Limit:      helpers.Ptr(20),
 		})
@@ -296,7 +296,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by city internship offer and flexible schedule", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:             list_vacancy.OrderPublishedAtDesc,
+			Order:             list.OrderPublishedAtDesc,
 			City:              []string{"Moscow"},
 			InternshipToOffer: helpers.Ptr(true),
 			FlexibleSchedule:  helpers.Ptr(true),
@@ -310,7 +310,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by intersecting hours and duration ranges", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list_vacancy.OrderSalaryDesc,
+			Order: list.OrderSalaryDesc,
 			HoursPerWeek: &helpers.RangeIntFilter{
 				Min: helpers.Ptr(24),
 				Max: helpers.Ptr(36),
@@ -334,7 +334,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("orders by published at desc", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list_vacancy.OrderPublishedAtDesc,
+			Order: list.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(4),
 		})
 
@@ -348,7 +348,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("orders by salary desc", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:  list_vacancy.OrderSalaryDesc,
+			Order:  list.OrderSalaryDesc,
 			IsPaid: helpers.Ptr(true),
 			Limit:  helpers.Ptr(5),
 		})
@@ -364,7 +364,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("paginates published at desc without overlap", func(t *testing.T) {
 		firstPage := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list_vacancy.OrderPublishedAtDesc,
+			Order: list.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(3),
 		})
 
@@ -375,7 +375,7 @@ func Test_Vacancy_List(t *testing.T) {
 		assert.Equal(t, "Support Hybrid Unpaid", firstPage.Vacancies[2].Title)
 
 		secondPage := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:  list_vacancy.OrderPublishedAtDesc,
+			Order:  list.OrderPublishedAtDesc,
 			Limit:  helpers.Ptr(3),
 			Cursor: firstPage.NextCursor,
 		})

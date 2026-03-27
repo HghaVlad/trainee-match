@@ -1,4 +1,4 @@
-package create_company
+package create
 
 import "github.com/google/uuid"
 

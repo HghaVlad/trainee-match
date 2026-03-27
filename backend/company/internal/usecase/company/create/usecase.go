@@ -1,4 +1,4 @@
-package create_company
+package create
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 // Usecase of company creation.
@@ -17,10 +17,10 @@ import (
 type Usecase struct {
 	compRepo   CompanyRepo
 	memberRepo CompanyMemberRepo
-	txManager  uc_common.TxManager
+	txManager  common.TxManager
 }
 
-func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager uc_common.TxManager) *Usecase {
+func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager common.TxManager) *Usecase {
 	return &Usecase{
 		compRepo:   compRepo,
 		memberRepo: memberRepo,
@@ -30,40 +30,40 @@ func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager uc
 
 // Execute create company.
 // Adds creator as an admin member of company.
-func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_common.Identity) (*Response, error) {
-	if identity.Role != uc_common.RoleHR {
-		return nil, domain_errors.ErrHrRoleRequired
+func (u *Usecase) Execute(ctx context.Context, request *Request, ident identity.Identity) (*Response, error) {
+	if ident.Role != identity.RoleHR {
+		return nil, identity.ErrHrRoleRequired
 	}
 
-	company := &domain.Company{
+	comp := &company.Company{
 		ID:          uuid.New(),
 		Name:        request.Name,
 		Description: request.Description,
 		Website:     request.Website,
 	}
 
-	valErr := company.Validate()
+	valErr := comp.Validate()
 	if valErr != nil {
 		return nil, valErr
 	}
 
 	// creator is an admin of company
-	member := &domain.CompanyMember{
-		UserID:    identity.UserID,
-		CompanyID: company.ID,
-		Role:      value_types.CompanyRoleAdmin,
+	memb := &member.CompanyMember{
+		UserID:    ident.UserID,
+		CompanyID: comp.ID,
+		Role:      member.CompanyRoleAdmin,
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		err := u.compRepo.Create(ctx, company)
+		err := u.compRepo.Create(ctx, comp)
 		if err != nil {
 			return err
 		}
 
-		return u.memberRepo.Create(ctx, member)
+		return u.memberRepo.Create(ctx, memb)
 	})
 
 	if err != nil {
@@ -71,7 +71,7 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, identity uc_com
 	}
 
 	resp := &Response{
-		ID: company.ID,
+		ID: comp.ID,
 	}
 
 	return resp, nil

@@ -1,9 +1,9 @@
-package create_vacancy
+package create
 
 import (
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type Request struct {
@@ -12,13 +12,13 @@ type Request struct {
 	Title       string
 	Description string
 
-	WorkFormat value_types.WorkFormat
+	WorkFormat vacancy.WorkFormat
 	City       *string
 
 	DurationFromDays *int
 	DurationToDays   *int
 
-	EmploymentType   *value_types.EmploymentType
+	EmploymentType   *vacancy.EmploymentType
 	HoursPerWeekFrom *int
 	HoursPerWeekTo   *int
 

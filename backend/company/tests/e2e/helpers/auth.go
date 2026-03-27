@@ -8,9 +8,8 @@ import (
 	"net/http/cookiejar"
 	"strings"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/google/uuid"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 const authServiceBaseUrl string = "http://localhost:8000/api/v1"
@@ -32,7 +31,7 @@ func GetAuthClient() *http.Client {
 		"username":"%s",
 		"password":"testpass",
 		"role":"%s"
-	}`, email, username, uc_common.RoleHR)
+	}`, email, username, identity.RoleHR)
 
 	resp, err := client.Post(
 		authServiceBaseUrl+"/auth/register",
@@ -48,11 +47,13 @@ func GetAuthClient() *http.Client {
 		var errResp struct {
 			Error string `json:"error"`
 		}
-		json.NewDecoder(resp.Body).Decode(&errResp)
+		_ = json.NewDecoder(resp.Body).Decode(&errResp)
 		log.Fatalf("register error: %d %s %s", resp.StatusCode, resp.Status, errResp.Error)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	loginBody := fmt.Sprintf(`{
 		"username":"%s",
@@ -77,7 +78,9 @@ func GetAuthClient() *http.Client {
 		log.Println("cookie:", c.Name, c.Value)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	return client
 }

@@ -1,4 +1,4 @@
-package create_company
+package create
 
 type Request struct {
 	Name        string

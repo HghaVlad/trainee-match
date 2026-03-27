@@ -1,4 +1,4 @@
-package add_member
+package add
 
 import (
 	"context"
@@ -7,10 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type Usecase struct {
@@ -21,7 +19,7 @@ func NewUsecase(memberRepo CompanyMemberRepo) *Usecase {
 	return &Usecase{memberRepo: memberRepo}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.Identity) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -33,30 +31,30 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.
 		return err
 	}
 
-	member := &domain.CompanyMember{
+	memb := &member.CompanyMember{
 		UserID:    req.UserID,
 		CompanyID: req.CompanyID,
 		Role:      req.Role,
 	}
 
-	return u.memberRepo.Create(ctx, member)
+	return u.memberRepo.Create(ctx, memb)
 }
 
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	member, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	memb, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 	if err != nil {
 		return err
 	}
 
-	if member.Role != value_types.CompanyRoleAdmin {
-		return domain_errors.ErrInsufficientRoleInCompany
+	if memb.Role != member.CompanyRoleAdmin {
+		return member.ErrInsufficientRoleInCompany
 	}
 
 	return nil

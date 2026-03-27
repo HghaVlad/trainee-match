@@ -1,25 +1,24 @@
-package add_member
+package add
 
 import (
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
 type Request struct {
 	CompanyID uuid.UUID
 	UserID    uuid.UUID
-	Role      value_types.CompanyRole
+	Role      member.CompanyRole
 }
 
 func (r *Request) Validate() error {
 	if r.UserID == uuid.Nil {
-		return domain_errors.ErrInvalidUserID
+		return member.ErrInvalidUserID
 	}
 
 	if !r.Role.IsValid() {
-		return domain_errors.ErrInvalidCompanyMemberRole
+		return member.ErrInvalidCompanyMemberRole
 	}
 
 	return nil

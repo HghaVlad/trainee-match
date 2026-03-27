@@ -1,4 +1,4 @@
-package list_companies_test
+package list_test
 
 import (
 	"context"
@@ -18,9 +18,9 @@ type companyRepoMock struct {
 
 func (m *companyRepoMock) ListByCreatedAtDesc(
 	ctx context.Context,
-	cursor *list_companies.CreatedAtCursor,
+	cursor *list.CreatedAtCursor,
 	limit int,
-) ([]list_companies.CompanySummary, *list_companies.CreatedAtCursor, error) {
+) ([]list.CompanySummary, *list.CreatedAtCursor, error) {
 
 	args := m.Called(ctx, cursor, limit)
 
@@ -28,11 +28,11 @@ func (m *companyRepoMock) ListByCreatedAtDesc(
 	next := args.Get(1)
 
 	if cs != nil && next != nil {
-		return cs.([]list_companies.CompanySummary), next.(*list_companies.CreatedAtCursor), args.Error(2)
+		return cs.([]list.CompanySummary), next.(*list.CreatedAtCursor), args.Error(2)
 	}
 
 	if cs != nil {
-		return cs.([]list_companies.CompanySummary), nil, args.Error(2)
+		return cs.([]list.CompanySummary), nil, args.Error(2)
 	}
 
 	return nil, nil, args.Error(2)
@@ -40,9 +40,9 @@ func (m *companyRepoMock) ListByCreatedAtDesc(
 
 func (m *companyRepoMock) ListByName(
 	ctx context.Context,
-	cursor *list_companies.NameCursor,
+	cursor *list.NameCursor,
 	limit int,
-) ([]list_companies.CompanySummary, *list_companies.NameCursor, error) {
+) ([]list.CompanySummary, *list.NameCursor, error) {
 
 	args := m.Called(ctx, cursor, limit)
 
@@ -50,11 +50,11 @@ func (m *companyRepoMock) ListByName(
 	next := args.Get(1)
 
 	if cs != nil && next != nil {
-		return cs.([]list_companies.CompanySummary), next.(*list_companies.NameCursor), args.Error(2)
+		return cs.([]list.CompanySummary), next.(*list.NameCursor), args.Error(2)
 	}
 
 	if cs != nil {
-		return cs.([]list_companies.CompanySummary), nil, args.Error(2)
+		return cs.([]list.CompanySummary), nil, args.Error(2)
 	}
 
 	return nil, nil, args.Error(2)
@@ -62,9 +62,9 @@ func (m *companyRepoMock) ListByName(
 
 func (m *companyRepoMock) ListByVacanciesCnt(
 	ctx context.Context,
-	cursor *list_companies.VacanciesCntCursor,
+	cursor *list.VacanciesCntCursor,
 	limit int,
-) ([]list_companies.CompanySummary, *list_companies.VacanciesCntCursor, error) {
+) ([]list.CompanySummary, *list.VacanciesCntCursor, error) {
 
 	args := m.Called(ctx, cursor, limit)
 
@@ -72,11 +72,11 @@ func (m *companyRepoMock) ListByVacanciesCnt(
 	next := args.Get(1)
 
 	if cs != nil && next != nil {
-		return cs.([]list_companies.CompanySummary), next.(*list_companies.VacanciesCntCursor), args.Error(2)
+		return cs.([]list.CompanySummary), next.(*list.VacanciesCntCursor), args.Error(2)
 	}
 
 	if cs != nil {
-		return cs.([]list_companies.CompanySummary), nil, args.Error(2)
+		return cs.([]list.CompanySummary), nil, args.Error(2)
 	}
 
 	return nil, nil, args.Error(2)
@@ -86,17 +86,17 @@ type responseCacheRepoMock struct {
 	mock.Mock
 }
 
-func (m *responseCacheRepoMock) Get(ctx context.Context, key string) *list_companies.Response {
+func (m *responseCacheRepoMock) Get(ctx context.Context, key string) *list.Response {
 	args := m.Called(ctx, key)
 
 	if resp := args.Get(0); resp != nil {
-		return resp.(*list_companies.Response)
+		return resp.(*list.Response)
 	}
 
 	return nil
 }
 
-func (m *responseCacheRepoMock) Put(ctx context.Context, key string, response *list_companies.Response, exp time.Duration) {
+func (m *responseCacheRepoMock) Put(ctx context.Context, key string, response *list.Response, exp time.Duration) {
 	m.Called(ctx, key, response, exp)
 }
 
@@ -104,19 +104,19 @@ func TestExecute_CacheHit(t *testing.T) {
 	repo := new(companyRepoMock)
 	cache := new(responseCacheRepoMock)
 
-	req := &list_companies.Request{
-		Order:  list_companies.OrderVacanciesDesc,
+	req := &list.Request{
+		Order:  list.OrderVacanciesDesc,
 		Cursor: "curs",
 		Limit:  10,
 	}
 
-	expectedResp := &list_companies.Response{}
+	expectedResp := &list.Response{}
 
 	cache.
 		On("Get", mock.Anything, mock.Anything).
 		Return(expectedResp).Once()
 
-	uc := list_companies.NewUsecase(repo, cache)
+	uc := list.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -131,8 +131,8 @@ func TestExecute_CacheMiss(t *testing.T) {
 	repo := new(companyRepoMock)
 	cache := new(responseCacheRepoMock)
 
-	req := &list_companies.Request{
-		Order:  list_companies.OrderVacanciesDesc,
+	req := &list.Request{
+		Order:  list.OrderVacanciesDesc,
 		Cursor: "",
 		Limit:  10,
 	}
@@ -143,12 +143,12 @@ func TestExecute_CacheMiss(t *testing.T) {
 
 	repo.
 		On("ListByVacanciesCnt", mock.Anything, mock.Anything, mock.Anything).
-		Return([]list_companies.CompanySummary{}, nil, nil).Once()
+		Return([]list.CompanySummary{}, nil, nil).Once()
 
 	cache.
 		On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
-	uc := list_companies.NewUsecase(repo, cache)
+	uc := list.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -160,19 +160,19 @@ func TestExecute_CacheMiss(t *testing.T) {
 }
 
 func TestListByCreatedAt_OK(t *testing.T) {
-	req := &list_companies.Request{
-		Order:  list_companies.OrderCreatedAtDesc,
+	req := &list.Request{
+		Order:  list.OrderCreatedAtDesc,
 		Cursor: "",
 		Limit:  10,
 	}
 
-	comps := []list_companies.CompanySummary{{}}
+	comps := []list.CompanySummary{{}}
 
 	t.Run("ok: has next page", func(t *testing.T) {
 		repo := new(companyRepoMock)
-		uc := list_companies.NewUsecase(repo, nil)
+		uc := list.NewUsecase(repo, nil)
 
-		nextCursor := list_companies.CreatedAtCursor{
+		nextCursor := list.CreatedAtCursor{
 			CreatedAt: time.Now(),
 			Name:      "Acme",
 		}
@@ -190,7 +190,7 @@ func TestListByCreatedAt_OK(t *testing.T) {
 
 	t.Run("ok: no next page", func(t *testing.T) {
 		repo := new(companyRepoMock)
-		uc := list_companies.NewUsecase(repo, nil)
+		uc := list.NewUsecase(repo, nil)
 
 		repo.
 			On("ListByCreatedAtDesc", mock.Anything, mock.Anything, 10).

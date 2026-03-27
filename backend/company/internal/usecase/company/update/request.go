@@ -1,10 +1,9 @@
-package update_company
+package update
 
 import (
 	"github.com/google/uuid"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 )
 
 type Request struct {
@@ -15,12 +14,12 @@ type Request struct {
 }
 
 func (c *Request) Validate() error {
-	if c.Name != nil && (len(*c.Name) == 0 || len(*c.Name) > domain.MaxCompanyNameLen) {
-		return domain_errors.ErrCompanyInvalidNameLen
+	if c.Name != nil && (len(*c.Name) == 0 || len(*c.Name) > company.MaxCompanyNameLen) {
+		return company.ErrCompanyInvalidNameLen
 	}
 
-	if c.Description != nil && len(*c.Description) > domain.MaxCompanyDescriptionLen {
-		return domain_errors.ErrCompanyInvalidDescriptionLen
+	if c.Description != nil && len(*c.Description) > company.MaxCompanyDescriptionLen {
+		return company.ErrCompanyInvalidDescriptionLen
 	}
 
 	return nil

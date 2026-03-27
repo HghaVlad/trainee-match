@@ -1,12 +1,9 @@
-package domain
+package vacancy
 
 import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 )
 
 type Vacancy struct {
@@ -16,15 +13,15 @@ type Vacancy struct {
 	Title       string `db:"title"`
 	Description string `db:"description"`
 
-	WorkFormat value_types.WorkFormat `db:"work_format"`
-	City       *string                `db:"city"`
+	WorkFormat WorkFormat `db:"work_format"`
+	City       *string    `db:"city"`
 
 	DurationFromDays *int `db:"duration_from_days"`
 	DurationToDays   *int `db:"duration_to_days"`
 
-	EmploymentType   value_types.EmploymentType `db:"employment_type"`
-	HoursPerWeekFrom *int                       `db:"hours_per_week_from"`
-	HoursPerWeekTo   *int                       `db:"hours_per_week_to"`
+	EmploymentType   EmploymentType `db:"employment_type"`
+	HoursPerWeekFrom *int           `db:"hours_per_week_from"`
+	HoursPerWeekTo   *int           `db:"hours_per_week_to"`
 
 	FlexibleSchedule bool `db:"flexible_schedule"`
 
@@ -34,8 +31,8 @@ type Vacancy struct {
 
 	InternshipToOffer bool `db:"internship_to_offer"`
 
-	Status      value_types.VacancyStatus `db:"status"`
-	PublishedAt *time.Time                `db:"published_at"`
+	Status      VacancyStatus `db:"status"`
+	PublishedAt *time.Time    `db:"published_at"`
 
 	CreatedBy   uuid.UUID `db:"created_by_user_id"`
 	CreatedAt   time.Time `db:"created_at"`
@@ -56,59 +53,61 @@ const (
 // Validate checks domain invariants
 func (v *Vacancy) Validate() error {
 	if !v.WorkFormat.IsValid() {
-		return domain_errors.ErrInvalidWorkFormat
+		return ErrInvalidWorkFormat
 	}
 
 	if !v.EmploymentType.IsValid() {
-		return domain_errors.ErrInvalidEmploymentType
+		return ErrInvalidEmploymentType
 	}
 
 	if v.DurationFromDays != nil && v.DurationToDays != nil {
 		if *v.DurationFromDays > *v.DurationToDays {
-			return domain_errors.ErrInvalidDurationRange
+			return ErrInvalidDurationRange
 		}
 	}
 
 	if v.HoursPerWeekFrom != nil && v.HoursPerWeekTo != nil {
 		if *v.HoursPerWeekFrom > *v.HoursPerWeekTo {
-			return domain_errors.ErrInvalidHoursRange
+			return ErrInvalidHoursRange
 		}
 	}
 
 	if v.SalaryFrom != nil && v.SalaryTo != nil {
 		if *v.SalaryFrom > *v.SalaryTo {
-			return domain_errors.ErrInvalidSalaryRange
+			return ErrInvalidSalaryRange
 		}
 	}
 
 	if !v.IsPaid {
 		if v.SalaryFrom != nil || v.SalaryTo != nil {
-			return domain_errors.ErrSalaryProvidedForUnpaid
+			return ErrSalaryProvidedForUnpaid
 		}
 	}
 
 	if v.SalaryTo != nil && *v.SalaryTo > MaxSalary {
-		return domain_errors.ErrSalaryTooLarge
+		return ErrSalaryTooLarge
 	}
 
 	if v.SalaryFrom != nil && *v.SalaryFrom < 0 {
-		return domain_errors.ErrNegativeSalary
+		return ErrNegativeSalary
 	}
 
-	if v.DurationFromDays != nil && (*v.DurationFromDays <= 0 || *v.DurationToDays > MaxDurationDays) {
-		return domain_errors.ErrInvalidDurationRange
+	if v.DurationFromDays != nil && *v.DurationFromDays <= 0 ||
+		v.DurationToDays != nil && *v.DurationToDays > MaxDurationDays {
+		return ErrInvalidDurationRange
 	}
 
-	if v.HoursPerWeekFrom != nil && (*v.HoursPerWeekFrom <= 0 || *v.HoursPerWeekTo > MaxHoursPerWeek) {
-		return domain_errors.ErrInvalidHoursRange
+	if v.HoursPerWeekFrom != nil && *v.HoursPerWeekFrom <= 0 ||
+		v.HoursPerWeekTo != nil && *v.HoursPerWeekTo > MaxHoursPerWeek {
+		return ErrInvalidHoursRange
 	}
 
-	if len(v.Title) == 0 || len(v.Title) > maxTitleLen {
-		return domain_errors.ErrInvalidTitleLength
+	if len([]rune(v.Title)) == 0 || len(v.Title) > maxTitleLen {
+		return ErrInvalidTitleLength
 	}
 
-	if len(v.Description) > maxDescriptionLen {
-		return domain_errors.ErrInvalidDescriptionLength
+	if len([]rune(v.Description)) > maxDescriptionLen {
+		return ErrInvalidDescriptionLength
 	}
 
 	return nil

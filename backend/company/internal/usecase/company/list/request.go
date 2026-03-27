@@ -1,4 +1,4 @@
-package list_companies
+package list
 
 type Request struct {
 	Order  Order

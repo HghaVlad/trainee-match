@@ -1,4 +1,4 @@
-package archive_vacancy
+package archive
 
 import (
 	"context"
@@ -7,9 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 // Usecase archive vacancy (hide from candidates)
@@ -17,7 +18,7 @@ type Usecase struct {
 	vacRepo     VacancyRepo
 	memberRepo  CompMemberRepo
 	compRepo    CompanyRepo
-	txManager   uc_common.TxManager
+	txManager   common.TxManager
 	vacCache    CacheRepo
 	pubVacCache CacheRepo
 	compCache   CacheRepo
@@ -27,7 +28,7 @@ func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
-	txManager uc_common.TxManager,
+	txManager common.TxManager,
 	vacCache CacheRepo,
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
@@ -49,7 +50,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	compID uuid.UUID,
 	vacID uuid.UUID,
-	identity uc_common.Identity,
+	identity identity.Identity,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
@@ -59,12 +60,12 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vacancy, err := u.vacRepo.GetByID(ctx, vacID, compID)
+		vac, err := u.vacRepo.GetByID(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}
 
-		if vacancy.Status == value_types.VacancyStatusArchived {
+		if vac.Status == vacancy.VacancyStatusArchived {
 			return nil
 		}
 
@@ -72,7 +73,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vacancy.Status == value_types.VacancyStatusPublished {
+		if vac.Status == vacancy.VacancyStatusPublished {
 			err := u.compRepo.DecrementOpenVacancies(ctx, compID)
 			if err != nil {
 				return err
@@ -87,14 +88,14 @@ func (u *Usecase) Execute(
 }
 
 // only member of company can archive vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, iden identity.Identity) error {
+	if iden.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	_, err := u.memberRepo.Get(ctx, iden.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 
 	return err

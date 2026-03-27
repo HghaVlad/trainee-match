@@ -1,9 +1,9 @@
-package my_middleware
+package middleware
 
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type ctxKey struct{}

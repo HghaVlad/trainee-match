@@ -1,4 +1,4 @@
-package domain_test
+package vacancy_test
 
 import (
 	"testing"
@@ -7,27 +7,25 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
-func validVacancy() *domain.Vacancy {
+func validVacancy() *vacancy.Vacancy {
 	now := time.Now()
 
-	return &domain.Vacancy{
+	return &vacancy.Vacancy{
 		ID:        uuid.New(),
 		CompanyID: uuid.New(),
 
 		Title:       "Backend Intern",
 		Description: "Some description",
 
-		WorkFormat:     value_types.WorkFormatRemote,
-		EmploymentType: value_types.EmploymentTypeFullTime,
+		WorkFormat:     vacancy.WorkFormatRemote,
+		EmploymentType: vacancy.EmploymentTypeFullTime,
 
 		IsPaid: false,
 
-		Status:      value_types.VacancyStatusPublished,
+		Status:      vacancy.VacancyStatusPublished,
 		PublishedAt: &now,
 		CreatedAt:   now,
 		UpdatedAtAt: time.Now(),
@@ -43,63 +41,63 @@ func TestVacancy_Validate_OK(t *testing.T) {
 func TestVacancy_Validate_Errors(t *testing.T) {
 	tests := []struct {
 		name string
-		mod  func(v *domain.Vacancy)
+		mod  func(v *vacancy.Vacancy)
 		err  error
 	}{
 		{
 			name: "invalid work format",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				v.WorkFormat = "invalid"
 			},
-			err: domain_errors.ErrInvalidWorkFormat,
+			err: vacancy.ErrInvalidWorkFormat,
 		},
 		{
 			name: "invalid employment type",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				v.EmploymentType = "invalid"
 			},
-			err: domain_errors.ErrInvalidEmploymentType,
+			err: vacancy.ErrInvalidEmploymentType,
 		},
 		{
 			name: "invalid duration range",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				from, to := 12, 6
 				v.DurationFromDays = &from
 				v.DurationToDays = &to
 			},
-			err: domain_errors.ErrInvalidDurationRange,
+			err: vacancy.ErrInvalidDurationRange,
 		},
 		{
 			name: "salary for unpaid vacancy",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				s := 1000
 				v.IsPaid = false
 				v.SalaryFrom = &s
 			},
-			err: domain_errors.ErrSalaryProvidedForUnpaid,
+			err: vacancy.ErrSalaryProvidedForUnpaid,
 		},
 		{
 			name: "salary too large",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				s := 1_000_000_000
 				v.IsPaid = true
 				v.SalaryTo = &s
 			},
-			err: domain_errors.ErrSalaryTooLarge,
+			err: vacancy.ErrSalaryTooLarge,
 		},
 		{
 			name: "empty title",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				v.Title = ""
 			},
-			err: domain_errors.ErrInvalidTitleLength,
+			err: vacancy.ErrInvalidTitleLength,
 		},
 		{
 			name: "description too long",
-			mod: func(v *domain.Vacancy) {
+			mod: func(v *vacancy.Vacancy) {
 				v.Description = string(make([]byte, 10000))
 			},
-			err: domain_errors.ErrInvalidDescriptionLength,
+			err: vacancy.ErrInvalidDescriptionLength,
 		},
 	}
 

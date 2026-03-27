@@ -1,11 +1,12 @@
-package list_vac_by_comp
+package listbycomp
 
 import (
 	"context"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type Usecase struct {
@@ -31,7 +32,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 	}
 
 	if !companyExists {
-		return nil, domain_errors.ErrCompanyNotFound
+		return nil, company.ErrCompanyNotFound
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
@@ -44,7 +45,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 		resp, err = uc.listByPublishedAt(ctx, req)
 
 	default:
-		return nil, domain_errors.ErrUnsupportedListOrder
+		return nil, common.ErrUnsupportedListOrder
 	}
 
 	if err != nil {

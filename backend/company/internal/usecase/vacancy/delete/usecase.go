@@ -1,4 +1,4 @@
-package delete_vacancy
+package delete
 
 import (
 	"context"
@@ -7,16 +7,17 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 // Usecase hard delete from db. Reckon using archive vacancy instead.
 type Usecase struct {
 	vacRepo     VacancyRepo
 	compRepo    CompanyRepo
-	txManager   uc_common.TxManager
+	txManager   common.TxManager
 	memberRepo  CompMemberRepo
 	vacCache    CacheRepo
 	pubVacCache CacheRepo
@@ -27,7 +28,7 @@ func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
-	txManager uc_common.TxManager,
+	txManager common.TxManager,
 	vacCache CacheRepo,
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
@@ -50,7 +51,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	vacancyID uuid.UUID,
 	companyID uuid.UUID,
-	identity uc_common.Identity,
+	identity identity.Identity,
 ) error {
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -61,7 +62,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vacancy, err := u.vacRepo.GetByID(ctx, vacancyID, companyID)
+		vac, err := u.vacRepo.GetByID(ctx, vacancyID, companyID)
 		if err != nil {
 			return err
 		}
@@ -70,7 +71,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vacancy.Status == value_types.VacancyStatusPublished {
+		if vac.Status == vacancy.VacancyStatusPublished {
 			if err := u.compRepo.DecrementOpenVacancies(ctx, companyID); err != nil {
 				return err
 			}
@@ -84,14 +85,14 @@ func (u *Usecase) Execute(
 }
 
 // only member of company can delete vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	_, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 
 	return err

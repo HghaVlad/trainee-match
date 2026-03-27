@@ -1,11 +1,11 @@
-package list_vacancy
+package list
 
 import (
 	"time"
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type VacancySummary struct {
@@ -14,11 +14,11 @@ type VacancySummary struct {
 
 	CompanyName string `db:"company_name"`
 
-	Title      string                 `db:"title"`
-	WorkFormat value_types.WorkFormat `db:"work_format"`
-	City       *string                `db:"city"`
+	Title      string             `db:"title"`
+	WorkFormat vacancy.WorkFormat `db:"work_format"`
+	City       *string            `db:"city"`
 
-	EmploymentType value_types.EmploymentType `db:"employment_type"`
+	EmploymentType vacancy.EmploymentType `db:"employment_type"`
 
 	IsPaid     bool `db:"is_paid"`
 	SalaryFrom *int `db:"salary_from"`

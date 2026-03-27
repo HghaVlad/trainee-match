@@ -15,41 +15,44 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_by_id"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 type VacancyHandler struct {
-	getByID          *get_vacancy.Usecase
-	getPublishedByID *get_published_vacancy.Usecase
-	list             *list_vacancy.Usecase
-	listByComp       *list_vac_by_comp.Usecase
-	create           *create_vacancy.Usecase
-	update           *update_vacancy.Usecase
-	publish          *publish_vacancy.Usecase
-	archive          *archive_vacancy.Usecase
-	delete           *delete_vacancy.Usecase
+	getByID          *get.Usecase
+	getPublishedByID *getpublished.Usecase
+	list             *list.Usecase
+	listByComp       *listbycomp.Usecase
+	create           *create.Usecase
+	update           *update.Usecase
+	publish          *publish.Usecase
+	archive          *archive.Usecase
+	delete           *delete.Usecase
 }
 
 func NewVacancyHandler(
-	getByID *get_vacancy.Usecase,
-	getPublishedByID *get_published_vacancy.Usecase,
-	list *list_vacancy.Usecase,
-	listByComp *list_vac_by_comp.Usecase,
-	create *create_vacancy.Usecase,
-	update *update_vacancy.Usecase,
-	publish *publish_vacancy.Usecase,
-	archive *archive_vacancy.Usecase,
-	delete *delete_vacancy.Usecase,
+	getByID *get.Usecase,
+	getPublishedByID *getpublished.Usecase,
+	list *list.Usecase,
+	listByComp *listbycomp.Usecase,
+	create *create.Usecase,
+	update *update.Usecase,
+	publish *publish.Usecase,
+	archive *archive.Usecase,
+	delete *delete.Usecase,
 ) *VacancyHandler {
 
 	return &VacancyHandler{
@@ -80,7 +83,7 @@ func NewVacancyHandler(
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [get]
 func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -92,13 +95,13 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vacancy, err := h.getByID.Execute(ctx, vacancyID, companyID, identity)
+	vac, err := h.getByID.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
 	}
 
-	resp := mapper.VacancyToDtoResponse(vacancy)
+	resp := mapper.VacancyToDtoResponse(vac)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -122,13 +125,13 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	vacancy, err := h.getPublishedByID.Execute(ctx, vacancyID)
+	vac, err := h.getPublishedByID.Execute(ctx, vacancyID)
 	if err != nil {
 		h.handleErr(w, err)
 		return
 	}
 
-	resp := mapper.VacancyPublicToDtoResponse(vacancy)
+	resp := mapper.VacancyPublicToDtoResponse(vac)
 	responds.RespondJSON(w, http.StatusOK, resp)
 }
 
@@ -150,7 +153,7 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	dtoReq, err := gmiddleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
 	if err != nil {
@@ -165,7 +168,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.VacancyCreateReqToUC(dtoReq, companyID)
 
-	resp, err := h.create.Execute(ctx, req, identity)
+	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -252,7 +255,7 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 	cursor := r.URL.Query().Get("cursor")
 	limit := helpers.ParseLimit(r, "limit", 20)
 
-	req := &list_vac_by_comp.Request{
+	req := &listbycomp.Request{
 		CompID: compID,
 		Limit:  limit,
 		Order:  order,
@@ -289,7 +292,7 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -309,7 +312,7 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	req := mapper.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
 
-	err = h.update.Execute(ctx, req, identity)
+	err = h.update.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -336,7 +339,7 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -348,7 +351,7 @@ func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.publish.Execute(ctx, companyID, vacancyID, identity)
+	err := h.publish.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -375,7 +378,7 @@ func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -387,7 +390,7 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.archive.Execute(ctx, companyID, vacancyID, identity)
+	err := h.archive.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -413,7 +416,7 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	identity := my_middleware.IdentityFromContext(ctx)
+	iden := middleware.IdentityFromContext(ctx)
 
 	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
 	if !ok {
@@ -425,7 +428,7 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.delete.Execute(ctx, vacancyID, companyID, identity)
+	err := h.delete.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -436,34 +439,34 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, domain_errors.ErrVacancyNotFound),
-		errors.Is(err, domain_errors.ErrCompanyNotFound):
+	case errors.Is(err, vacancy.ErrVacancyNotFound),
+		errors.Is(err, company.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
 
-	case errors.Is(err, domain_errors.ErrInvalidWorkFormat),
-		errors.Is(err, domain_errors.ErrInvalidEmploymentType),
-		errors.Is(err, domain_errors.ErrInvalidDurationRange),
-		errors.Is(err, domain_errors.ErrInvalidHoursRange),
-		errors.Is(err, domain_errors.ErrInvalidSalaryRange),
-		errors.Is(err, domain_errors.ErrSalaryProvidedForUnpaid),
-		errors.Is(err, domain_errors.ErrSalaryMissingForPaid),
-		errors.Is(err, domain_errors.ErrNegativeSalary),
-		errors.Is(err, domain_errors.ErrSalaryTooLarge),
-		errors.Is(err, domain_errors.ErrInvalidTitleLength),
-		errors.Is(err, domain_errors.ErrInvalidDescriptionLength),
-		errors.Is(err, domain_errors.ErrInvalidCursor),
-		errors.Is(err, domain_errors.ErrCursorOrderMismatch),
-		errors.Is(err, domain_errors.ErrUnsupportedListOrder),
-		errors.Is(err, domain_errors.ErrEmptyCityFilter),
-		errors.Is(err, domain_errors.ErrEmptyCompaniesFilter),
-		errors.Is(err, domain_errors.ErrInvalidSalaryOrderForUnpaid),
-		errors.Is(err, domain_errors.ErrLimitTooLarge):
+	case errors.Is(err, vacancy.ErrInvalidWorkFormat),
+		errors.Is(err, vacancy.ErrInvalidEmploymentType),
+		errors.Is(err, vacancy.ErrInvalidDurationRange),
+		errors.Is(err, vacancy.ErrInvalidHoursRange),
+		errors.Is(err, vacancy.ErrInvalidSalaryRange),
+		errors.Is(err, vacancy.ErrSalaryProvidedForUnpaid),
+		errors.Is(err, vacancy.ErrSalaryMissingForPaid),
+		errors.Is(err, vacancy.ErrNegativeSalary),
+		errors.Is(err, vacancy.ErrSalaryTooLarge),
+		errors.Is(err, vacancy.ErrInvalidTitleLength),
+		errors.Is(err, vacancy.ErrInvalidDescriptionLength),
+		errors.Is(err, vacancy.ErrEmptyCityFilter),
+		errors.Is(err, vacancy.ErrEmptyCompaniesFilter),
+		errors.Is(err, vacancy.ErrInvalidSalaryOrderForUnpaid),
+		errors.Is(err, common.ErrInvalidCursor),
+		errors.Is(err, common.ErrCursorOrderMismatch),
+		errors.Is(err, common.ErrUnsupportedListOrder),
+		errors.Is(err, common.ErrLimitTooLarge):
 		responds.RespondError(w, http.StatusBadRequest, err)
 
-	case errors.Is(err, domain_errors.ErrInsufficientRole),
-		errors.Is(err, domain_errors.ErrHrRoleRequired),
-		errors.Is(err, domain_errors.ErrCompanyMemberRequired),
-		errors.Is(err, domain_errors.ErrInsufficientRoleInCompany):
+	case errors.Is(err, identity.ErrInsufficientRole),
+		errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, member.ErrCompanyMemberRequired),
+		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		responds.RespondError(w, http.StatusForbidden, err)
 
 	default:
@@ -471,7 +474,7 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	}
 }
 
-func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list_vacancy.Request, error) {
+func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list.Request, error) {
 	q := r.URL.Query()
 
 	limit := helpers.ParseLimit(r, "limit", 20)
@@ -481,11 +484,11 @@ func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list_vacancy
 	}
 	cursor := q.Get("cursor")
 
-	req := &list_vacancy.Request{
+	req := &list.Request{
 		Limit:         limit,
 		Order:         order,
 		EncodedCursor: cursor,
-		Requirements:  new(list_vacancy.Requirements),
+		Requirements:  new(list.Requirements),
 	}
 
 	req.Requirements.Salary = parseRangeInt(q, "salary_min", "salary_max")
@@ -511,9 +514,9 @@ func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list_vacancy
 	}
 
 	if workFormats, ok := q["work_format"]; ok && len(workFormats) > 0 {
-		var wfs []value_types.WorkFormat
+		var wfs []vacancy.WorkFormat
 		for _, str := range workFormats {
-			wf := value_types.WorkFormat(str)
+			wf := vacancy.WorkFormat(str)
 			if wf.IsValid() {
 				wfs = append(wfs, wf)
 			}
@@ -541,8 +544,8 @@ func (h *VacancyHandler) listVacRequestFromQuery(r *http.Request) (*list_vacancy
 	return req, nil
 }
 
-func parseRangeInt(q url.Values, minKey, maxKey string) *list_vacancy.RangeInt {
-	var r list_vacancy.RangeInt
+func parseRangeInt(q url.Values, minKey, maxKey string) *list.RangeInt {
+	var r list.RangeInt
 	var hasValue bool
 
 	if minStr := q.Get(minKey); minStr != "" {
@@ -566,32 +569,32 @@ func parseRangeInt(q url.Values, minKey, maxKey string) *list_vacancy.RangeInt {
 	return &r
 }
 
-func (h *VacancyHandler) parseListOrderQuery(r *http.Request) (list_vacancy.Order, error) {
+func (h *VacancyHandler) parseListOrderQuery(r *http.Request) (list.Order, error) {
 	str := r.URL.Query().Get("order")
 	if str == "" {
-		return list_vacancy.OrderPublishedAtDesc, nil
+		return list.OrderPublishedAtDesc, nil
 	}
 
-	ord := list_vacancy.Order(strings.Trim(str, " "))
+	ord := list.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case list_vacancy.OrderPublishedAtDesc,
-		list_vacancy.OrderSalaryDesc,
-		list_vacancy.OrderSalaryAsc:
+	case list.OrderPublishedAtDesc,
+		list.OrderSalaryDesc,
+		list.OrderSalaryAsc:
 		return ord, nil
 	default:
-		return "", domain_errors.ErrUnsupportedListOrder
+		return "", common.ErrUnsupportedListOrder
 	}
 }
 
-func (h *VacancyHandler) parseVacByCompListOrderQuery(r *http.Request) list_vac_by_comp.Order {
+func (h *VacancyHandler) parseVacByCompListOrderQuery(r *http.Request) listbycomp.Order {
 	str := r.URL.Query().Get("order")
-	ord := list_vac_by_comp.Order(strings.Trim(str, " "))
+	ord := listbycomp.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case list_vac_by_comp.OrderPublishedAtDesc:
+	case listbycomp.OrderPublishedAtDesc:
 		return ord
 	default:
-		return list_vac_by_comp.OrderPublishedAtDesc
+		return listbycomp.OrderPublishedAtDesc
 	}
 }

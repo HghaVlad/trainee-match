@@ -1,11 +1,11 @@
-package update_company
+package update
 
 import (
 	"context"
 
 	"github.com/google/uuid"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
 type CompanyRepo interface {

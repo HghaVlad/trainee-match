@@ -1,4 +1,4 @@
-package infra_redis
+package redis
 
 import "github.com/HghaVlad/trainee-match/backend/company/internal/config"
 

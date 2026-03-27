@@ -1,4 +1,4 @@
-package value_types
+package member
 
 type CompanyRole string
 

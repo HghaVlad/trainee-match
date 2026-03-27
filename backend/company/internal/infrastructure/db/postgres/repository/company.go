@@ -11,8 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
@@ -26,31 +25,31 @@ func NewCompanyRepository(db *sqlx.DB) *CompanyRepository {
 	return &CompanyRepository{db: db}
 }
 
-func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Company, error) {
-	var company domain.Company
-	err := repo.db.GetContext(ctx, &company, "SELECT * FROM companies WHERE id = $1", id)
+func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*company.Company, error) {
+	var comp company.Company
+	err := repo.db.GetContext(ctx, &comp, "SELECT * FROM companies WHERE id = $1", id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("%w: id=%s", domain_errors.ErrCompanyNotFound, id)
+		return nil, fmt.Errorf("%w: id=%s", company.ErrCompanyNotFound, id)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &company, err
+	return &comp, err
 }
 
-func (repo *CompanyRepository) Create(ctx context.Context, company *domain.Company) error {
+func (repo *CompanyRepository) Create(ctx context.Context, comp *company.Company) error {
 	exec := repo.getExec(ctx)
 
 	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website) VALUES ($1, $2, $3, $4)",
-		company.ID, company.Name, company.Description, company.Website)
+		comp.ID, comp.Name, comp.Description, comp.Website)
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.Code == "23505" {
-			return domain_errors.ErrCompanyAlreadyExists
+			return company.ErrCompanyAlreadyExists
 		}
 	}
 
@@ -71,11 +70,11 @@ func (repo *CompanyRepository) Exists(ctx context.Context, id uuid.UUID) (bool, 
 
 func (repo *CompanyRepository) ListByVacanciesCnt(
 	ctx context.Context,
-	cursor *list_companies.VacanciesCntCursor,
+	cursor *list.VacanciesCntCursor,
 	limit int,
 ) (
-	[]list_companies.CompanySummary,
-	*list_companies.VacanciesCntCursor,
+	[]list.CompanySummary,
+	*list.VacanciesCntCursor,
 	error,
 ) {
 	var query string
@@ -96,7 +95,7 @@ func (repo *CompanyRepository) ListByVacanciesCnt(
 		args = []any{cursor.Count, cursor.Name, limit}
 	}
 
-	var companies []list_companies.CompanySummary
+	var companies []list.CompanySummary
 
 	err := repo.db.SelectContext(ctx, &companies, query, args...)
 
@@ -109,7 +108,7 @@ func (repo *CompanyRepository) ListByVacanciesCnt(
 	}
 
 	last := companies[len(companies)-1]
-	nextCursor := list_companies.VacanciesCntCursor{
+	nextCursor := list.VacanciesCntCursor{
 		Count: last.OpenVacanciesCnt,
 		Name:  last.Name,
 	}
@@ -120,11 +119,11 @@ func (repo *CompanyRepository) ListByVacanciesCnt(
 // ListByCreatedAtDesc takes companies "after" cursor, returns them with next cursor
 func (repo *CompanyRepository) ListByCreatedAtDesc(
 	ctx context.Context,
-	cursor *list_companies.CreatedAtCursor,
+	cursor *list.CreatedAtCursor,
 	limit int,
 ) (
-	[]list_companies.CompanySummary,
-	*list_companies.CreatedAtCursor,
+	[]list.CompanySummary,
+	*list.CreatedAtCursor,
 	error,
 ) {
 	var query string
@@ -145,7 +144,7 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 		args = []any{cursor.CreatedAt, cursor.Name, limit}
 	}
 
-	var companies []list_companies.CompanySummary
+	var companies []list.CompanySummary
 
 	err := repo.db.SelectContext(ctx, &companies, query, args...)
 
@@ -158,7 +157,7 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 	}
 
 	last := companies[len(companies)-1]
-	nextCursor := list_companies.CreatedAtCursor{
+	nextCursor := list.CreatedAtCursor{
 		CreatedAt: last.CreatedAt,
 		Name:      last.Name,
 	}
@@ -168,11 +167,11 @@ func (repo *CompanyRepository) ListByCreatedAtDesc(
 
 func (repo *CompanyRepository) ListByName(
 	ctx context.Context,
-	cursor *list_companies.NameCursor,
+	cursor *list.NameCursor,
 	limit int,
 ) (
-	[]list_companies.CompanySummary,
-	*list_companies.NameCursor,
+	[]list.CompanySummary,
+	*list.NameCursor,
 	error,
 ) {
 	var query string
@@ -193,7 +192,7 @@ func (repo *CompanyRepository) ListByName(
 		args = []any{cursor.Name, limit}
 	}
 
-	var companies []list_companies.CompanySummary
+	var companies []list.CompanySummary
 
 	err := repo.db.SelectContext(ctx, &companies, query, args...)
 
@@ -206,7 +205,7 @@ func (repo *CompanyRepository) ListByName(
 	}
 
 	last := companies[len(companies)-1]
-	nextCursor := list_companies.NameCursor{
+	nextCursor := list.NameCursor{
 		Name: last.Name,
 	}
 
@@ -214,7 +213,7 @@ func (repo *CompanyRepository) ListByName(
 }
 
 // Update updates only req's non-nil fields
-func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.Request) error {
+func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) error {
 	exec := repo.getExec(ctx)
 	setParts := make([]string, 0)
 	args := make([]any, 0)
@@ -254,14 +253,14 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update_company.R
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return domain_errors.ErrCompanyAlreadyExists
+			return company.ErrCompanyAlreadyExists
 		}
 		return err
 	}
 
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return domain_errors.ErrCompanyNotFound
+		return company.ErrCompanyNotFound
 	}
 
 	return nil
@@ -279,7 +278,7 @@ func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uu
 
 	affected, _ := res.RowsAffected()
 	if affected == 0 {
-		return domain_errors.ErrCompanyNotFound
+		return company.ErrCompanyNotFound
 	}
 
 	return nil
@@ -297,7 +296,7 @@ func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uu
 
 	affected, _ := res.RowsAffected()
 	if affected == 0 {
-		return domain_errors.ErrCompanyNotFound
+		return company.ErrCompanyNotFound
 	}
 
 	return nil
@@ -314,7 +313,7 @@ func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return domain_errors.ErrCompanyNotFound
+		return company.ErrCompanyNotFound
 	}
 
 	return nil
@@ -322,7 +321,7 @@ func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // returns sqlx.TX if we're in transaction or r.db if not
 func (repo *CompanyRepository) getExec(ctx context.Context) sqlx.ExtContext {
-	tx, ok := ctx.Value(infra_postgres.TxKey{}).(*sqlx.Tx)
+	tx, ok := ctx.Value(postgres.TxKey{}).(*sqlx.Tx)
 	if ok {
 		return tx
 	}

@@ -1,4 +1,4 @@
-package list_companies
+package list
 
 import (
 	"context"

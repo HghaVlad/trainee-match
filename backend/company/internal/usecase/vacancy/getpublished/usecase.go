@@ -1,4 +1,4 @@
-package get_published_vacancy
+package getpublished
 
 import (
 	"context"

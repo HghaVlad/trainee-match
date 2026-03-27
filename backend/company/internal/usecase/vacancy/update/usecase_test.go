@@ -1,4 +1,4 @@
-package update_vacancy_test
+package update_test
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
@@ -20,16 +20,16 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error) {
+func (m *repoMock) GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*vacancy.Vacancy, error) {
 	args := m.Called(ctx, vacancyID, companyID)
 
 	if v := args.Get(0); v != nil {
-		return v.(*domain.Vacancy), args.Error(1)
+		return v.(*vacancy.Vacancy), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
 
-func (m *repoMock) Update(ctx context.Context, v *domain.Vacancy) error {
+func (m *repoMock) Update(ctx context.Context, v *vacancy.Vacancy) error {
 	return m.Called(ctx, v).Error(0)
 }
 
@@ -45,11 +45,11 @@ type memRepoMock struct {
 	mock.Mock
 }
 
-func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	res := m.Called(ctx, userID, companyID)
 
 	if c := res.Get(0); c != nil {
-		return c.(*domain.CompanyMember), res.Error(1)
+		return c.(*member.CompanyMember), res.Error(1)
 	}
 
 	return nil, res.Error(1)
@@ -73,23 +73,23 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 	vID := uuid.New()
 	cID := uuid.New()
 
-	req := &update_vacancy.Request{
+	req := &update.Request{
 		VacancyID: vID,
 		CompanyID: cID,
 		Title:     ptr("New Title"),
 	}
 
-	vac := domain.Vacancy{
+	vac := vacancy.Vacancy{
 		ID:             vID,
 		CompanyID:      cID,
 		Title:          "Go dev",
 		Description:    "Go back dev",
-		WorkFormat:     value_types.WorkFormatHybrid,
-		EmploymentType: value_types.EmploymentTypeInternship,
+		WorkFormat:     vacancy.WorkFormatHybrid,
+		EmploymentType: vacancy.EmploymentTypeInternship,
 	}
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("GetByID", mock.Anything, vID, cID).
 		Return(&vac, nil).Once()
@@ -99,11 +99,11 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := update_vacancy.NewUsecase(repo, memRepo, cache, txManager)
+	uc := update.NewUsecase(repo, memRepo, cache, txManager)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	err := uc.Execute(context.Background(), req, identity)
+	err := uc.Execute(context.Background(), req, ident)
 
 	require.NoError(t, err)
 	assert.Equal(t, vac.ID, req.VacancyID)
@@ -123,23 +123,23 @@ func TestUsecase_Execute_GetErr(t *testing.T) {
 	vID := uuid.New()
 	cID := uuid.New()
 
-	req := &update_vacancy.Request{
+	req := &update.Request{
 		VacancyID: vID,
 		CompanyID: cID,
 		Title:     ptr("New Title"),
 	}
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("GetByID", mock.Anything, vID, cID).
 		Return(nil, errors.New("repo get err")).Once()
 
-	uc := update_vacancy.NewUsecase(repo, memRepo, cache, txManager)
+	uc := update.NewUsecase(repo, memRepo, cache, txManager)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	err := uc.Execute(context.Background(), req, identity)
+	err := uc.Execute(context.Background(), req, ident)
 
 	require.Error(t, err)
 

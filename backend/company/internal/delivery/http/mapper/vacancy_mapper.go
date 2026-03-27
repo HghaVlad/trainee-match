@@ -4,13 +4,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	createvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	getpublishedvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
+	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	update_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
@@ -48,7 +47,7 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
 	}
 }
 
-func VacancyPublicToDtoResponse(v *get_published_vacancy.Response) *dto.VacancyPublicResponse {
+func VacancyPublicToDtoResponse(v *getpublishedvacancy.Response) *dto.VacancyPublicResponse {
 	return &dto.VacancyPublicResponse{
 		ID:        v.ID,
 		CompanyID: v.CompanyID,
@@ -79,14 +78,14 @@ func VacancyPublicToDtoResponse(v *get_published_vacancy.Response) *dto.VacancyP
 	}
 }
 
-func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID) *create_vacancy.Request {
-	req := &create_vacancy.Request{
+func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID) *createvacancy.Request {
+	req := &createvacancy.Request{
 		CompanyID: companyID,
 
 		Title:       dtoReq.Title,
 		Description: dtoReq.Description,
 
-		WorkFormat: value_types.WorkFormat(dtoReq.WorkFormat),
+		WorkFormat: domain.WorkFormat(dtoReq.WorkFormat),
 		City:       dtoReq.City,
 
 		DurationFromDays: dtoReq.DurationFromDays,
@@ -105,7 +104,7 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 	}
 
 	if dtoReq.EmploymentType != nil {
-		et := value_types.EmploymentType(*dtoReq.EmploymentType)
+		et := domain.EmploymentType(*dtoReq.EmploymentType)
 		req.EmploymentType = &et
 	}
 
@@ -172,7 +171,7 @@ func ListVacByCompRespToDto(resp *list_vac_by_comp.Response) *dto.VacancyByCompL
 	}
 }
 
-func VacancyCreateRespToDto(resp *create_vacancy.Response) *dto.VacancyCreatedResponse {
+func VacancyCreateRespToDto(resp *createvacancy.Response) *dto.VacancyCreatedResponse {
 	return &dto.VacancyCreatedResponse{
 		ID: resp.ID,
 	}
@@ -209,12 +208,12 @@ func VacancyUpdateReqToUC(
 	}
 
 	if dtoReq.WorkFormat != nil {
-		wf := value_types.WorkFormat(*dtoReq.WorkFormat)
+		wf := domain.WorkFormat(*dtoReq.WorkFormat)
 		req.WorkFormat = &wf
 	}
 
 	if dtoReq.EmploymentType != nil {
-		et := value_types.EmploymentType(*dtoReq.EmploymentType)
+		et := domain.EmploymentType(*dtoReq.EmploymentType)
 		req.EmploymentType = &et
 	}
 

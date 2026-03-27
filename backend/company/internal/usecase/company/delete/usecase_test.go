@@ -1,4 +1,4 @@
-package delete_company_test
+package delete_test
 
 import (
 	"context"
@@ -9,9 +9,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 )
 
@@ -35,11 +34,11 @@ type memRepoMock struct {
 	mock.Mock
 }
 
-func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	res := m.Called(ctx, userID, companyID)
 
 	if c := res.Get(0); c != nil {
-		return c.(*domain.CompanyMember), res.Error(1)
+		return c.(*member.CompanyMember), res.Error(1)
 	}
 
 	return nil, res.Error(1)
@@ -54,13 +53,13 @@ func TestUsecase_Execute_OK(t *testing.T) {
 		Return(nil).Once()
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := delete_company.NewUsecase(repo, memRepo, cache)
+	uc := delete.NewUsecase(repo, memRepo, cache)
 
-	idenity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	idenity := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), uuid.New(), idenity)
 
@@ -75,16 +74,16 @@ func TestUsecase_Execute_CompanyRepoErr(t *testing.T) {
 	memRepo := new(memRepoMock)
 
 	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 
 	repo.On("Delete", mock.Anything, mock.Anything).
-		Return(errors.New("some domain err")).Once()
+		Return(errors.New("some member err")).Once()
 
-	uc := delete_company.NewUsecase(repo, memRepo, cache)
+	uc := delete.NewUsecase(repo, memRepo, cache)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	err := uc.Execute(context.Background(), uuid.New(), identity)
+	err := uc.Execute(context.Background(), uuid.New(), ident)
 
 	require.Error(t, err)
 	repo.AssertExpectations(t)

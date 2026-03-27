@@ -1,11 +1,11 @@
-package list_vacancy
+package list
 
 import (
 	"context"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 // Usecase of vacancy listing, uses cursor pagination.
@@ -46,7 +46,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 		resp, err = list[SalaryCursor](ctx, uc, req)
 
 	default:
-		return nil, domain_errors.ErrUnsupportedListOrder
+		return nil, common.ErrUnsupportedListOrder
 	}
 
 	if err != nil {

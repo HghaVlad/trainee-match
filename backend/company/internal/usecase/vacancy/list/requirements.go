@@ -1,13 +1,11 @@
-package list_vacancy
+package list
 
 import (
 	"errors"
 
 	"github.com/google/uuid"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type RangeInt struct {
@@ -19,7 +17,7 @@ type Requirements struct {
 	Salary            *RangeInt
 	HoursPerWeek      *RangeInt
 	Duration          *RangeInt
-	WorkFormat        *[]value_types.WorkFormat
+	WorkFormat        *[]vacancy.WorkFormat
 	Companies         *[]uuid.UUID
 	City              *[]string
 	IsPaid            *bool
@@ -29,37 +27,37 @@ type Requirements struct {
 
 func (r *Requirements) Validate() error {
 	if r.Salary != nil {
-		if err := validateRange(r.Salary, 0, domain.MaxSalary); err != nil {
-			return domain_errors.ErrInvalidSalaryRange
+		if err := validateRange(r.Salary, 0, vacancy.MaxSalary); err != nil {
+			return vacancy.ErrInvalidSalaryRange
 		}
 	}
 
 	if r.HoursPerWeek != nil {
-		if err := validateRange(r.HoursPerWeek, 1, domain.MaxHoursPerWeek); err != nil {
-			return domain_errors.ErrInvalidHoursRange
+		if err := validateRange(r.HoursPerWeek, 1, vacancy.MaxHoursPerWeek); err != nil {
+			return vacancy.ErrInvalidHoursRange
 		}
 	}
 
 	if r.Duration != nil {
-		if err := validateRange(r.Duration, 1, domain.MaxDurationDays); err != nil {
-			return domain_errors.ErrInvalidDurationRange
+		if err := validateRange(r.Duration, 1, vacancy.MaxDurationDays); err != nil {
+			return vacancy.ErrInvalidDurationRange
 		}
 	}
 
 	if r.WorkFormat != nil {
 		for _, wf := range *r.WorkFormat {
 			if !wf.IsValid() {
-				return domain_errors.ErrInvalidWorkFormat
+				return vacancy.ErrInvalidWorkFormat
 			}
 		}
 	}
 
 	if r.Companies != nil && len(*r.Companies) == 0 {
-		return domain_errors.ErrEmptyCompaniesFilter
+		return vacancy.ErrEmptyCompaniesFilter
 	}
 
 	if r.City != nil && len(*r.City) == 0 {
-		return domain_errors.ErrEmptyCityFilter
+		return vacancy.ErrEmptyCityFilter
 	}
 
 	return nil

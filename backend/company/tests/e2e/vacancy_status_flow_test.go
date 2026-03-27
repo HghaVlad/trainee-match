@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/tests/e2e/helpers"
 )
 
@@ -21,12 +21,12 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 		helpers.CreateVacancyParams{
 			Description:    "desc",
 			Title:          "title",
-			WorkFormat:     value_types.WorkFormatHybrid,
-			EmploymentType: value_types.EmploymentTypeInternship,
+			WorkFormat:     vacancy.WorkFormatHybrid,
+			EmploymentType: vacancy.EmploymentTypeInternship,
 		}).ID
 
 	vacD := api.GetVacancy(t, compID, vacID1)
-	assert.Equal(t, vacD.Status, string(value_types.VacancyStatusDraft))
+	assert.Equal(t, vacD.Status, string(vacancy.VacancyStatusDraft))
 
 	comp0 := api.GetCompany(t, compID)
 	assert.Equal(t, comp0.OpenVacanciesCnt, 0)
@@ -34,7 +34,7 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 	api.PublishVacancy(t, compID, vacID1)
 
 	vacP := api.GetVacancy(t, compID, vacID1)
-	assert.Equal(t, vacP.Status, string(value_types.VacancyStatusPublished))
+	assert.Equal(t, vacP.Status, string(vacancy.VacancyStatusPublished))
 
 	comp1 := api.GetCompany(t, compID)
 	assert.Equal(t, comp1.OpenVacanciesCnt, 1)
@@ -49,8 +49,8 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 		helpers.CreateVacancyParams{
 			Description:    "desc2",
 			Title:          "title2",
-			WorkFormat:     value_types.WorkFormatHybrid,
-			EmploymentType: value_types.EmploymentTypeInternship,
+			WorkFormat:     vacancy.WorkFormatHybrid,
+			EmploymentType: vacancy.EmploymentTypeInternship,
 		}).ID
 
 	comp111 := api.GetCompany(t, compID)
@@ -64,7 +64,7 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 	api.ArchiveVacancy(t, compID, vacID1)
 
 	vacA := api.GetVacancy(t, compID, vacID1)
-	assert.Equal(t, vacA.Status, string(value_types.VacancyStatusArchived))
+	assert.Equal(t, vacA.Status, string(vacancy.VacancyStatusArchived))
 
 	// check that can't get published
 	api.RequirePublishedVacancyNotFound(t, vacID1)

@@ -1,4 +1,4 @@
-package archive_vacancy_test
+package archive_test
 
 import (
 	"context"
@@ -10,21 +10,20 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	domain_errors "github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	uc_common "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	archive_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 )
 
 type vacancyRepoMock struct {
 	mock.Mock
 }
 
-func (m *vacancyRepoMock) GetByID(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) (*domain.Vacancy, error) {
+func (m *vacancyRepoMock) GetByID(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) (*vacancy.Vacancy, error) {
 	args := m.Called(ctx, vacID, compID)
 	if vac := args.Get(0); vac != nil {
-		return vac.(*domain.Vacancy), args.Error(1)
+		return vac.(*vacancy.Vacancy), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -45,10 +44,10 @@ type memberRepoMock struct {
 	mock.Mock
 }
 
-func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	args := m.Called(ctx, userID, companyID)
-	if member := args.Get(0); member != nil {
-		return member.(*domain.CompanyMember), args.Error(1)
+	if mem := args.Get(0); mem != nil {
+		return mem.(*member.CompanyMember), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -79,14 +78,14 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
-	memRepo.On("Get", mock.Anything, identity.UserID, compID).
-		Return(&domain.CompanyMember{}, nil).Once()
+	memRepo.On("Get", mock.Anything, ident.UserID, compID).
+		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&domain.Vacancy{ID: vacID, CompanyID: compID, Status: value_types.VacancyStatusPublished}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusPublished}, nil).Once()
 	vacRepo.On("Archive", mock.Anything, vacID, compID).
 		Return(nil).Once()
 	compRepo.On("DecrementOpenVacancies", mock.Anything, compID).
@@ -95,9 +94,9 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	pubVacCache.On("Del", mock.Anything, vacID).Once()
 	compCache.On("Del", mock.Anything, compID).Once()
 
-	uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+	uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-	err := uc.Execute(context.Background(), compID, vacID, identity)
+	err := uc.Execute(context.Background(), compID, vacID, ident)
 
 	require.NoError(t, err)
 	assert.True(t, txManager.called)
@@ -118,23 +117,23 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
-	memRepo.On("Get", mock.Anything, identity.UserID, compID).
-		Return(&domain.CompanyMember{}, nil).Once()
+	memRepo.On("Get", mock.Anything, ident.UserID, compID).
+		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&domain.Vacancy{ID: vacID, CompanyID: compID, Status: value_types.VacancyStatusDraft}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusDraft}, nil).Once()
 	vacRepo.On("Archive", mock.Anything, vacID, compID).
 		Return(nil).Once()
 	vacCache.On("Del", mock.Anything, vacID).Once()
 	pubVacCache.On("Del", mock.Anything, vacID).Once()
 	compCache.On("Del", mock.Anything, compID).Once()
 
-	uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+	uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-	err := uc.Execute(context.Background(), compID, vacID, identity)
+	err := uc.Execute(context.Background(), compID, vacID, ident)
 
 	require.NoError(t, err)
 	compRepo.AssertNotCalled(t, "DecrementOpenVacancies", mock.Anything, mock.Anything)
@@ -149,18 +148,18 @@ func TestUsecase_Execute_AlreadyArchived_NoOp(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
-	memRepo.On("Get", mock.Anything, identity.UserID, compID).
-		Return(&domain.CompanyMember{}, nil).Once()
+	memRepo.On("Get", mock.Anything, ident.UserID, compID).
+		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&domain.Vacancy{ID: vacID, CompanyID: compID, Status: value_types.VacancyStatusArchived}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusArchived}, nil).Once()
 
-	uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+	uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-	err := uc.Execute(context.Background(), compID, vacID, identity)
+	err := uc.Execute(context.Background(), compID, vacID, ident)
 
 	require.NoError(t, err)
 	vacRepo.AssertNotCalled(t, "Archive", mock.Anything, mock.Anything, mock.Anything)
@@ -183,12 +182,12 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleCandidate}
-		err := uc.Execute(context.Background(), compID, vacID, identity)
+		iden := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+		err := uc.Execute(context.Background(), compID, vacID, iden)
 
-		assert.ErrorIs(t, err, domain_errors.ErrHrRoleRequired)
+		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -201,15 +200,15 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
-		memRepo.On("Get", mock.Anything, identity.UserID, compID).
-			Return(nil, domain_errors.ErrCompanyMemberNotFound).Once()
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		memRepo.On("Get", mock.Anything, ident.UserID, compID).
+			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
-		uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		err := uc.Execute(context.Background(), compID, vacID, identity)
+		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrCompanyMemberRequired)
+		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
@@ -217,7 +216,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 func TestUsecase_Execute_RepoErr(t *testing.T) {
 	compID := uuid.New()
 	vacID := uuid.New()
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	t.Run("get vacancy", func(t *testing.T) {
 		vacRepo := new(vacancyRepoMock)
@@ -228,14 +227,14 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		memRepo.On("Get", mock.Anything, identity.UserID, compID).
-			Return(&domain.CompanyMember{}, nil).Once()
+		memRepo.On("Get", mock.Anything, ident.UserID, compID).
+			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
 			Return(nil, errors.New("db err")).Once()
 
-		uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		err := uc.Execute(context.Background(), compID, vacID, identity)
+		err := uc.Execute(context.Background(), compID, vacID, ident)
 
 		assert.EqualError(t, err, "db err")
 	})
@@ -249,16 +248,16 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		memRepo.On("Get", mock.Anything, identity.UserID, compID).
-			Return(&domain.CompanyMember{}, nil).Once()
+		memRepo.On("Get", mock.Anything, ident.UserID, compID).
+			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&domain.Vacancy{Status: value_types.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
 		vacRepo.On("Archive", mock.Anything, vacID, compID).
 			Return(errors.New("db err")).Once()
 
-		uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		err := uc.Execute(context.Background(), compID, vacID, identity)
+		err := uc.Execute(context.Background(), compID, vacID, ident)
 
 		assert.EqualError(t, err, "db err")
 		compRepo.AssertNotCalled(t, "DecrementOpenVacancies", mock.Anything, mock.Anything)
@@ -273,18 +272,18 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		memRepo.On("Get", mock.Anything, identity.UserID, compID).
-			Return(&domain.CompanyMember{}, nil).Once()
+		memRepo.On("Get", mock.Anything, ident.UserID, compID).
+			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&domain.Vacancy{Status: value_types.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
 		vacRepo.On("Archive", mock.Anything, vacID, compID).
 			Return(nil).Once()
 		compRepo.On("DecrementOpenVacancies", mock.Anything, compID).
 			Return(errors.New("db err")).Once()
 
-		uc := archive_vacancy.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		err := uc.Execute(context.Background(), compID, vacID, identity)
+		err := uc.Execute(context.Background(), compID, vacID, ident)
 
 		assert.EqualError(t, err, "db err")
 		vacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)

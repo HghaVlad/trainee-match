@@ -4,16 +4,13 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
-func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
+func GetCompRespToDto(company *get.Response) *dto.CompanyResponse {
 	return &dto.CompanyResponse{
 		ID:               company.ID,
 		Name:             company.Name,
@@ -27,7 +24,7 @@ func GetCompRespToDto(company *get_company.Response) *dto.CompanyResponse {
 }
 
 func CompanyListRespToDto(
-	resp *list_companies.Response,
+	resp *list.Response,
 ) *dto.CompanyListResponse {
 
 	items := make([]dto.CompanyListItemResponse, 0, len(resp.Companies))
@@ -47,15 +44,15 @@ func CompanyListRespToDto(
 	}
 }
 
-func CompanyCreateReqToUC(dtoReq *dto.CompanyCreateRequest) *create_company.Request {
-	return &create_company.Request{
+func CompanyCreateReqToUC(dtoReq *dto.CompanyCreateRequest) *create.Request {
+	return &create.Request{
 		Name:        dtoReq.Name,
 		Description: dtoReq.Description,
 		Website:     dtoReq.Website,
 	}
 }
 
-func CompanyCreateRespToDto(resp *create_company.Response) *dto.CompanyCreatedResponse {
+func CompanyCreateRespToDto(resp *create.Response) *dto.CompanyCreatedResponse {
 	return &dto.CompanyCreatedResponse{
 		ID: resp.ID,
 	}
@@ -64,34 +61,11 @@ func CompanyCreateRespToDto(resp *create_company.Response) *dto.CompanyCreatedRe
 func CompanyUpdateReqToUC(
 	id uuid.UUID,
 	dtoReq *dto.CompanyUpdateRequest,
-) *update_company.Request {
-	return &update_company.Request{
+) *update.Request {
+	return &update.Request{
 		ID:          id,
 		Name:        dtoReq.Name,
 		Description: dtoReq.Description,
 		Website:     dtoReq.Website,
-	}
-}
-
-func CompanyAddHrReqToUC(
-	companyID uuid.UUID,
-	dtoReq *dto.CompanyAddHrRequest,
-) *add_member.Request {
-	return &add_member.Request{
-		CompanyID: companyID,
-		UserID:    dtoReq.UserID,
-		Role:      value_types.CompanyRole(dtoReq.Role),
-	}
-}
-
-func CompanyUpdateMemberReqToUC(
-	companyID uuid.UUID,
-	userID uuid.UUID,
-	dtoReq *dto.CompanyUpdateMemberRequest,
-) *update_member.Request {
-	return &update_member.Request{
-		CompanyID: companyID,
-		UserID:    userID,
-		Role:      value_types.CompanyRole(dtoReq.Role),
 	}
 }

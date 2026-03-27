@@ -1,15 +1,16 @@
-package delete_vacancy
+package delete
 
 import (
 	"context"
 
 	"github.com/google/uuid"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type VacancyRepo interface {
-	GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error)
+	GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*vacancy.Vacancy, error)
 	Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error
 }
 

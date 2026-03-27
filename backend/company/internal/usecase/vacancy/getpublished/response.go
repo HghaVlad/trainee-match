@@ -1,11 +1,11 @@
-package get_published_vacancy
+package getpublished
 
 import (
 	"time"
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type Response struct {
@@ -14,17 +14,17 @@ type Response struct {
 
 	CompanyName string `db:"company_name"`
 
-	Title       string                 `db:"title"`
-	Description string                 `db:"description"`
-	WorkFormat  value_types.WorkFormat `db:"work_format"`
-	City        *string                `db:"city"`
+	Title       string             `db:"title"`
+	Description string             `db:"description"`
+	WorkFormat  vacancy.WorkFormat `db:"work_format"`
+	City        *string            `db:"city"`
 
 	DurationFromDays *int `db:"duration_from_days"`
 	DurationToDays   *int `db:"duration_to_days"`
 
-	EmploymentType   value_types.EmploymentType `db:"employment_type"`
-	HoursPerWeekFrom *int                       `db:"hours_per_week_from"`
-	HoursPerWeekTo   *int                       `db:"hours_per_week_to"`
+	EmploymentType   vacancy.EmploymentType `db:"employment_type"`
+	HoursPerWeekFrom *int                   `db:"hours_per_week_from"`
+	HoursPerWeekTo   *int                   `db:"hours_per_week_to"`
 
 	FlexibleSchedule bool `db:"flexible_schedule"`
 

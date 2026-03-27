@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
 type CursorWrapper[OrderT comparable] struct {
@@ -20,16 +20,16 @@ func DecodeCursor[T any, OrderT comparable](raw string, expectedOrder OrderT) (*
 
 	b, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
-		return nil, errors.Join(domain_errors.ErrInvalidCursor, err)
+		return nil, errors.Join(common.ErrInvalidCursor, err)
 	}
 
 	var wrapper CursorWrapper[OrderT]
 	if err := json.Unmarshal(b, &wrapper); err != nil {
-		return nil, errors.Join(domain_errors.ErrInvalidCursor, err)
+		return nil, errors.Join(common.ErrInvalidCursor, err)
 	}
 
 	if wrapper.Order != expectedOrder {
-		return nil, domain_errors.ErrCursorOrderMismatch
+		return nil, common.ErrCursorOrderMismatch
 	}
 
 	var result T

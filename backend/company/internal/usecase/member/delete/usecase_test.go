@@ -1,4 +1,4 @@
-package delete_member_test
+package delete_test
 
 import (
 	"context"
@@ -10,10 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/value_types"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
 )
 
@@ -21,11 +19,11 @@ type memberRepoMock struct {
 	mock.Mock
 }
 
-func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error) {
+func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
 	args := m.Called(ctx, userID, companyID)
 
-	if member := args.Get(0); member != nil {
-		return member.(*domain.CompanyMember), args.Error(1)
+	if memb := args.Get(0); memb != nil {
+		return memb.(*member.CompanyMember), args.Error(1)
 	}
 
 	return nil, args.Error(1)
@@ -37,18 +35,18 @@ func (m *memberRepoMock) Delete(ctx context.Context, userID, companyID uuid.UUID
 
 func TestUsecase_ExecuteOK(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete_member.NewUsecase(repo)
+	uc := delete.NewUsecase(repo)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	userID := uuid.New()
 
-	repo.On("Get", mock.Anything, identity.UserID, companyID).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+	repo.On("Get", mock.Anything, ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 	repo.On("Delete", mock.Anything, userID, companyID).
 		Return(nil).Once()
 
-	err := uc.Execute(context.Background(), companyID, userID, identity)
+	err := uc.Execute(context.Background(), companyID, userID, ident)
 
 	require.NoError(t, err)
 	repo.AssertExpectations(t)
@@ -56,60 +54,60 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete_member.NewUsecase(repo)
+	uc := delete.NewUsecase(repo)
 
 	companyID := uuid.New()
 	userID := uuid.New()
 
 	t.Run("global role required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleCandidate}
+		iden := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
-		err := uc.Execute(context.Background(), companyID, userID, identity)
+		err := uc.Execute(context.Background(), companyID, userID, iden)
 
-		assert.ErrorIs(t, err, domain_errors.ErrHrRoleRequired)
+		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("company member required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, identity.UserID, companyID).
-			Return(nil, domain_errors.ErrCompanyMemberNotFound).Once()
+		repo.On("Get", mock.Anything, ident.UserID, companyID).
+			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
-		err := uc.Execute(context.Background(), companyID, userID, identity)
+		err := uc.Execute(context.Background(), companyID, userID, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrCompanyMemberRequired)
+		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("admin company role required", func(t *testing.T) {
-		identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, identity.UserID, companyID).
-			Return(&domain.CompanyMember{Role: value_types.CompanyRoleRecruiter}, nil).Once()
+		repo.On("Get", mock.Anything, ident.UserID, companyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
 
-		err := uc.Execute(context.Background(), companyID, userID, identity)
+		err := uc.Execute(context.Background(), companyID, userID, ident)
 
-		assert.ErrorIs(t, err, domain_errors.ErrInsufficientRoleInCompany)
+		assert.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 
 func TestUsecase_ExecuteRepoErr(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete_member.NewUsecase(repo)
+	uc := delete.NewUsecase(repo)
 
-	identity := uc_common.Identity{UserID: uuid.New(), Role: uc_common.RoleHR}
+	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	userID := uuid.New()
 
-	repo.On("Get", mock.Anything, identity.UserID, companyID).
-		Return(&domain.CompanyMember{Role: value_types.CompanyRoleAdmin}, nil).Once()
+	repo.On("Get", mock.Anything, ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
 	repo.On("Delete", mock.Anything, userID, companyID).
 		Return(errors.New("db err")).Once()
 
-	err := uc.Execute(context.Background(), companyID, userID, identity)
+	err := uc.Execute(context.Background(), companyID, userID, ident)
 
 	assert.EqualError(t, err, "db err")
 	repo.AssertExpectations(t)

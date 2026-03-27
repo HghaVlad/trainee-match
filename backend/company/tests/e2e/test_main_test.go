@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +34,8 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
+
+	// Postgres
 
 	dbName := "test_db"
 	dbUser := "test_user"
@@ -80,6 +85,8 @@ func TestMain(m *testing.M) {
 		log.Fatalln(errors.Unwrap(migErr))
 	}
 
+	// Redis
+
 	redisC, err := testcontainers.Run(
 		ctx, "redis:latest",
 		testcontainers.WithExposedPorts("6379/tcp"),
@@ -109,11 +116,63 @@ func TestMain(m *testing.M) {
 
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
-	log.Println(redisAddr)
+	log.Println("redis:", redisAddr)
+
+	// Keycloak
+
+	keycloakRealmImport, err := filepath.Abs("../../../auth/import/trainee-match-realm.json")
+	if err != nil {
+		log.Fatalf("resolve keycloak realm import path: %v", err)
+	}
+
+	keycloakContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "quay.io/keycloak/keycloak:26.5",
+			Env:          map[string]string{"KEYCLOAK_ADMIN": "admin", "KEYCLOAK_ADMIN_PASSWORD": "admin"},
+			ExposedPorts: []string{"8080/tcp"},
+			Cmd:          []string{"start-dev", "--import-realm"},
+			Files: []testcontainers.ContainerFile{
+				{
+					HostFilePath:      keycloakRealmImport,
+					ContainerFilePath: "/opt/keycloak/data/import/trainee-match-realm.json",
+					FileMode:          0o644,
+				},
+			},
+			WaitingFor: wait.ForAll(
+				wait.ForHTTP("/realms/trainee-match").WithPort("8080/tcp").WithStartupTimeout(6*time.Minute),
+				wait.ForLog("Running the server").WithStartupTimeout(6*time.Minute),
+			),
+		},
+		Started: true,
+		Logger:  log.New(os.Stdout, "", log.LstdFlags),
+	})
+	if err != nil {
+		log.Fatalf("Error creating keycloak container: %v", err)
+	}
+
+	defer func() {
+		if err := keycloakContainer.Terminate(ctx); err != nil {
+			log.Printf("failed to terminate keycloak container: %s", err)
+		}
+	}()
+
+	keycloakHost, err := keycloakContainer.Host(ctx)
+	if err != nil {
+		log.Fatalf("Error getting keycloak host: %v", err)
+	}
+	keycloakPort, err := keycloakContainer.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		log.Fatalf("Error getting keycloak port: %v", err)
+	}
+	keycloakExternalURL := "http://" + net.JoinHostPort(keycloakHost, keycloakPort.Port())
+
+	// Config
+
+	jwkURL := strings.TrimRight(keycloakExternalURL, "/") + "/realms/trainee-match/protocol/openid-connect/certs"
 
 	conf := &config.Config{
 		HTTP: config.HTTPConfig{
-			JWKUrl: "http://localhost:8080/realms/trainee-match/protocol/openid-connect/certs",
+			JWKUrl: jwkURL,
 		},
 		CompanyDB: config.DBConfig{
 			Host:            pgHost,
@@ -134,7 +193,7 @@ func TestMain(m *testing.M) {
 
 	app, err = appl.Build(conf)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("couldn't build app:", err)
 	}
 
 	AuthClient = helpers.GetAuthClient()

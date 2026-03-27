@@ -19,7 +19,7 @@ const (
 	andSalaryNotNull string = " AND v.salary_from IS NOT NULL AND v.salary_to IS NOT NULL"
 )
 
-func listVacRequirementsToSQL(requirements *list_vacancy.Requirements) (string, []any) {
+func listVacRequirementsToSQL(requirements *list.Requirements) (string, []any) {
 	if requirements == nil {
 		return "1=1", nil
 	}
@@ -118,18 +118,18 @@ func listVacRequirementsToSQL(requirements *list_vacancy.Requirements) (string, 
 	return strings.Join(conditions, " AND "), args
 }
 
-func listVacCursorToSQL(order list_vacancy.Order, cursor any, args []any) (condition string, newArgs []any) {
+func listVacCursorToSQL(order list.Order, cursor any, args []any) (condition string, newArgs []any) {
 	switch c := cursor.(type) {
-	case *list_vacancy.PublishedAtCursor:
+	case *list.PublishedAtCursor:
 		return publishedAtCursorToSQL(*c, args)
-	case *list_vacancy.SalaryCursor:
+	case *list.SalaryCursor:
 		return salaryCursorToSQL(order, *c, args)
 	}
 
 	return
 }
 
-func publishedAtCursorToSQL(cursor list_vacancy.PublishedAtCursor, args []any) (string, []any) {
+func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
 		"(v.published_at, v.id) < ($%d, $%d)",
 		len(args)+1, len(args)+2)
@@ -138,10 +138,10 @@ func publishedAtCursorToSQL(cursor list_vacancy.PublishedAtCursor, args []any) (
 	return condition, args
 }
 
-func salaryCursorToSQL(order list_vacancy.Order, cursor list_vacancy.SalaryCursor, args []any) (string, []any) {
+func salaryCursorToSQL(order list.Order, cursor list.SalaryCursor, args []any) (string, []any) {
 	var condition string
 
-	if order == list_vacancy.OrderSalaryDesc {
+	if order == list.OrderSalaryDesc {
 		condition = fmt.Sprintf(
 			"(v.salary_from, v.salary_to, v.id) < ($%d, $%d, $%d)",
 			len(args)+1, len(args)+2, len(args)+3)
@@ -155,13 +155,13 @@ func salaryCursorToSQL(order list_vacancy.Order, cursor list_vacancy.SalaryCurso
 	return condition, args
 }
 
-func listVacOrderToSQL(order list_vacancy.Order) string {
+func listVacOrderToSQL(order list.Order) string {
 	switch order {
-	case list_vacancy.OrderPublishedAtDesc:
+	case list.OrderPublishedAtDesc:
 		return publishedAtDescOrderBy
-	case list_vacancy.OrderSalaryDesc:
+	case list.OrderSalaryDesc:
 		return salaryDescOrderBy
-	case list_vacancy.OrderSalaryAsc:
+	case list.OrderSalaryAsc:
 		return salaryAscOrderBy
 	}
 

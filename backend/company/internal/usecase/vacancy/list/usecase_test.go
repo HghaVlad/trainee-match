@@ -1,4 +1,4 @@
-package list_vacancy_test
+package list_test
 
 import (
 	"context"
@@ -17,15 +17,15 @@ type cacheMock struct {
 	mock.Mock
 }
 
-func (m *cacheMock) Get(ctx context.Context, key string) *list_vacancy.Response {
+func (m *cacheMock) Get(ctx context.Context, key string) *list.Response {
 	args := m.Called(ctx, key)
 	if args.Get(0) != nil {
-		return args.Get(0).(*list_vacancy.Response)
+		return args.Get(0).(*list.Response)
 	}
 	return nil
 }
 
-func (m *cacheMock) Put(ctx context.Context, key string, response *list_vacancy.Response, exp time.Duration) {
+func (m *cacheMock) Put(ctx context.Context, key string, response *list.Response, exp time.Duration) {
 	m.Called(ctx, key, response, exp)
 }
 
@@ -33,13 +33,19 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) ListPublished(ctx context.Context, requirements *list_vacancy.Requirements, order list_vacancy.Order, cursor any, limit int) ([]list_vacancy.VacancySummary, error) {
+func (m *repoMock) ListPublished(
+	ctx context.Context,
+	requirements *list.Requirements,
+	order list.Order,
+	cursor any,
+	limit int,
+) ([]list.VacancySummary, error) {
 	args := m.Called(ctx, requirements, order, cursor, limit)
 
 	vcs := args.Get(0)
 
 	if vcs != nil {
-		return vcs.([]list_vacancy.VacancySummary), args.Error(1)
+		return vcs.([]list.VacancySummary), args.Error(1)
 	}
 
 	return nil, args.Error(1)
@@ -49,16 +55,16 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list_vacancy.Request{
-		Order:         list_vacancy.OrderPublishedAtDesc,
+	req := &list.Request{
+		Order:         list.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
-		Return(&list_vacancy.Response{Vacancies: []list_vacancy.VacancySummary{{}}}).Once()
+		Return(&list.Response{Vacancies: []list.VacancySummary{{}}}).Once()
 
-	uc := list_vacancy.NewUsecase(repo, cache)
+	uc := list.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -72,15 +78,15 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list_vacancy.Request{
-		Order:         list_vacancy.OrderPublishedAtDesc,
+	req := &list.Request{
+		Order:         list.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
 
-	vcs := make([]list_vacancy.VacancySummary, req.Limit+1)
+	vcs := make([]list.VacancySummary, req.Limit+1)
 	for i := range vcs {
-		vcs[i] = list_vacancy.VacancySummary{
+		vcs[i] = list.VacancySummary{
 			ID:          uuid.New(),
 			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
 		}
@@ -94,7 +100,7 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
-	uc := list_vacancy.NewUsecase(repo, cache)
+	uc := list.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -109,15 +115,15 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list_vacancy.Request{
-		Order:         list_vacancy.OrderPublishedAtDesc,
+	req := &list.Request{
+		Order:         list.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
 
-	vcs := make([]list_vacancy.VacancySummary, req.Limit)
+	vcs := make([]list.VacancySummary, req.Limit)
 	for i := range vcs {
-		vcs[i] = list_vacancy.VacancySummary{
+		vcs[i] = list.VacancySummary{
 			ID:          uuid.New(),
 			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
 		}
@@ -131,7 +137,7 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
-	uc := list_vacancy.NewUsecase(repo, cache)
+	uc := list.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 

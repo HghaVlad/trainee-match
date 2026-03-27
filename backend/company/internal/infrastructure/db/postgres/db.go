@@ -1,4 +1,4 @@
-package infra_postgres
+package postgres
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package update_vacancy
+package update
 
 import (
 	"context"
@@ -7,23 +7,24 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type Usecase struct {
 	repo       VacancyRepo
 	memberRepo CompMemberRepo
 	cache      CacheRepo
-	txManager  uc_common.TxManager
+	txManager  common.TxManager
 }
 
 func NewUsecase(
 	repo VacancyRepo,
 	memberRepo CompMemberRepo,
 	cacheRepo CacheRepo,
-	txManager uc_common.TxManager,
+	txManager common.TxManager,
 ) *Usecase {
 
 	return &Usecase{
@@ -36,7 +37,7 @@ func NewUsecase(
 
 // Execute updates vacancy. All nil fields of vacancy in request won't be applied.
 // Deletes vacancy from cache.
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -46,18 +47,18 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.
 			return err
 		}
 
-		vacancy, err := u.repo.GetByID(ctx, req.VacancyID, req.CompanyID)
+		vac, err := u.repo.GetByID(ctx, req.VacancyID, req.CompanyID)
 		if err != nil {
 			return err
 		}
 
-		applyPatch(vacancy, req)
+		applyPatch(vac, req)
 
-		if vErr := vacancy.Validate(); vErr != nil {
+		if vErr := vac.Validate(); vErr != nil {
 			return vErr
 		}
 
-		return u.repo.Update(ctx, vacancy)
+		return u.repo.Update(ctx, vac)
 	})
 	if err != nil {
 		return err
@@ -68,21 +69,21 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity uc_common.
 }
 
 // only member of company can update vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, identity uc_common.Identity) error {
-	if identity.Role != uc_common.RoleHR {
-		return domain_errors.ErrHrRoleRequired
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
 	}
 
-	_, err := u.memberRepo.Get(ctx, identity.UserID, companyID)
-	if errors.Is(err, domain_errors.ErrCompanyMemberNotFound) {
-		return domain_errors.ErrCompanyMemberRequired
+	_, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
+	if errors.Is(err, member.ErrCompanyMemberNotFound) {
+		return member.ErrCompanyMemberRequired
 	}
 
 	return err
 }
 
 // Applies not-nil only
-func applyPatch(v *domain.Vacancy, r *Request) {
+func applyPatch(v *vacancy.Vacancy, r *Request) {
 	if r.Title != nil {
 		v.Title = *r.Title
 	}

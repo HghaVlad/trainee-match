@@ -1,4 +1,4 @@
-package delivery_http
+package http
 
 import (
 	"net/http"
@@ -7,19 +7,19 @@ import (
 	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/swaggo/http-swagger"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
+	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 )
 
 type RouterDeps struct {
 	CompanyHandler *handlers.CompanyHandler
 	MemberHandler  *handlers.MemberHandler
 	VacancyHandler *handlers.VacancyHandler
-	AuthMiddleware *my_middleware.AuthMiddleware
+	AuthMiddleware *compmiddleware.AuthMiddleware
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
@@ -31,7 +31,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		middleware.Logger,
 	)
 
-	router.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/companies", func(r chi.Router) {
 
 			extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
@@ -60,7 +60,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+			r.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 				With(deps.AuthMiddleware.Handler).
 				With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest]()).
 				Post("/", deps.CompanyHandler.Create)
@@ -97,7 +97,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 		})
 
-	router.With(my_middleware.TimeoutMiddleware(10*time.Second)).
+	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/vacancies", func(r chi.Router) {
 
 			r.Get("/", deps.VacancyHandler.List)

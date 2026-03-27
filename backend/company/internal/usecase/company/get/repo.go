@@ -1,4 +1,4 @@
-package get_company
+package get
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 )
 
 type CompanyRepo interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Company, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*company.Company, error)
 }
 
 type CacheRepo interface {
-	Get(ctx context.Context, key uuid.UUID) *domain.Company
-	Put(ctx context.Context, key uuid.UUID, val *domain.Company, exp time.Duration)
+	Get(ctx context.Context, key uuid.UUID) *company.Company
+	Put(ctx context.Context, key uuid.UUID, val *company.Company, exp time.Duration)
 }

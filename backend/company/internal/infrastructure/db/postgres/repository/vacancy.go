@@ -11,12 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 
-	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/entities"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/errors"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get_published_by_id"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list_by_company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 )
 
 type VacancyRepo struct {
@@ -28,26 +28,31 @@ func NewVacancyRepo(db *sqlx.DB) *VacancyRepo {
 }
 
 // GetByID returns ErrVacancyNotFound if vacancy's company_id != companyID
-func (repo *VacancyRepo) GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*domain.Vacancy, error) {
-	var vacancy domain.Vacancy
-	err := repo.db.GetContext(ctx, &vacancy,
+func (repo *VacancyRepo) GetByID(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	companyID uuid.UUID,
+) (*vacancy.Vacancy, error) {
+
+	var vac vacancy.Vacancy
+	err := repo.db.GetContext(ctx, &vac,
 		"SELECT * FROM vacancies WHERE id = $1 AND company_id = $2",
 		vacancyID, companyID)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("%w: id=%s", domain_errors.ErrVacancyNotFound, vacancyID)
+		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &vacancy, err
+	return &vac, err
 }
 
-func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UUID) (*get_published_vacancy.Response, error) {
-	var vacancy get_published_vacancy.Response
-	err := repo.db.GetContext(ctx, &vacancy, `
+func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UUID) (*getpublished.Response, error) {
+	var vac getpublished.Response
+	err := repo.db.GetContext(ctx, &vac, `
 		SELECT v.id, v.company_id, c.name AS company_name,
 		       v.title, v.description, v.work_format, v.city,
 		       v.duration_from_days, v.duration_to_days,
@@ -60,17 +65,17 @@ func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UU
 	`, vacancyID)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("%w: id=%s", domain_errors.ErrVacancyNotFound, vacancyID)
+		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &vacancy, nil
+	return &vac, nil
 }
 
-func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) error {
+func (repo *VacancyRepo) Create(ctx context.Context, vacancy *vacancy.Vacancy) error {
 	exec := repo.getExec(ctx)
 
 	_, err := exec.ExecContext(ctx, `
@@ -98,7 +103,7 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.Code == "23503" {
-			return domain_errors.ErrCompanyNotFound
+			return company.ErrCompanyNotFound
 		}
 	}
 
@@ -109,12 +114,12 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *domain.Vacancy) er
 // Pass cursor as a pointer
 func (repo *VacancyRepo) ListPublished(
 	ctx context.Context,
-	requirements *list_vacancy.Requirements,
-	order list_vacancy.Order,
+	requirements *list.Requirements,
+	order list.Order,
 	cursor any,
 	limit int,
 ) (
-	[]list_vacancy.VacancySummary, error) {
+	[]list.VacancySummary, error) {
 
 	requireFilters, args := listVacRequirementsToSQL(requirements)
 
@@ -124,7 +129,7 @@ func (repo *VacancyRepo) ListPublished(
 		cursorCondition = "AND " + cursorCondition
 	}
 
-	if order == list_vacancy.OrderSalaryDesc || order == list_vacancy.OrderSalaryAsc {
+	if order == list.OrderSalaryDesc || order == list.OrderSalaryAsc {
 		requireFilters += andSalaryNotNull
 	}
 
@@ -140,7 +145,7 @@ func (repo *VacancyRepo) ListPublished(
 		%s 
 		LIMIT $%d`, requireFilters, cursorCondition, orderBy, len(args))
 
-	var vacancies []list_vacancy.VacancySummary
+	var vacancies []list.VacancySummary
 
 	err := repo.db.SelectContext(ctx, &vacancies, query, args...)
 	return vacancies, err
@@ -149,10 +154,10 @@ func (repo *VacancyRepo) ListPublished(
 func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 	ctx context.Context,
 	compID uuid.UUID,
-	cursor *list_vac_by_comp.PublishedAtCursor,
+	cursor *listbycomp.PublishedAtCursor,
 	limit int,
 ) (
-	[]list_vac_by_comp.VacancySummary, error) {
+	[]listbycomp.VacancySummary, error) {
 
 	var query string
 	var args []any
@@ -180,13 +185,13 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 		args = []any{compID, cursor.PublishedAt, cursor.Id, limit}
 	}
 
-	var vacancies []list_vac_by_comp.VacancySummary
+	var vacancies []listbycomp.VacancySummary
 
 	err := repo.db.SelectContext(ctx, &vacancies, query, args...)
 	return vacancies, err
 }
 
-func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
+func (repo *VacancyRepo) Update(ctx context.Context, v *vacancy.Vacancy) error {
 	exec := repo.getExec(ctx)
 
 	res, err := exec.ExecContext(ctx,
@@ -242,7 +247,7 @@ func (repo *VacancyRepo) Update(ctx context.Context, v *domain.Vacancy) error {
 	}
 
 	if affected == 0 {
-		return domain_errors.ErrVacancyNotFound
+		return vacancy.ErrVacancyNotFound
 	}
 
 	return nil
@@ -267,7 +272,7 @@ func (repo *VacancyRepo) Publish(ctx context.Context, vacID uuid.UUID, compID uu
 	}
 
 	if affected == 0 {
-		return domain_errors.ErrVacancyNotFound
+		return vacancy.ErrVacancyNotFound
 	}
 
 	return nil
@@ -292,7 +297,7 @@ func (repo *VacancyRepo) Archive(ctx context.Context, vacID uuid.UUID, compID uu
 	}
 
 	if affected == 0 {
-		return domain_errors.ErrVacancyNotFound
+		return vacancy.ErrVacancyNotFound
 	}
 
 	return nil
@@ -309,7 +314,7 @@ func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, compan
 
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
-		return domain_errors.ErrVacancyNotFound
+		return vacancy.ErrVacancyNotFound
 	}
 
 	return nil
@@ -317,7 +322,7 @@ func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, compan
 
 // returns sqlx.TX if we're in transaction or r.db if not
 func (repo *VacancyRepo) getExec(ctx context.Context) sqlx.ExtContext {
-	tx, ok := ctx.Value(infra_postgres.TxKey{}).(*sqlx.Tx)
+	tx, ok := ctx.Value(postgres.TxKey{}).(*sqlx.Tx)
 	if ok {
 		return tx
 	}

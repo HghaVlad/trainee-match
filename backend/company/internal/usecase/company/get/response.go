@@ -1,4 +1,4 @@
-package get_company
+package get
 
 import (
 	"time"

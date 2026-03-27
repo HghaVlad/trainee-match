@@ -1,4 +1,4 @@
-package create_vacancy
+package create
 
 import "github.com/google/uuid"
 
