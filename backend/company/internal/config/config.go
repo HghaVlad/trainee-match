@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	HTTP      HTTPConfig
-	CompanyDB DBConfig
-	Broker    BrokerConfig
-	Redis     RedisConfig
+	HTTP     HTTPConfig
+	Postgres Postgres
+	Broker   BrokerConfig
+	Redis    RedisConfig
 }
 
 func Load() (*Config, error) {
@@ -20,17 +20,16 @@ func Load() (*Config, error) {
 			Addr:   getEnv("HTTP_ADDR", ":8088"),
 			JWKUrl: getEnv("JWK_URL", ""),
 		},
-		CompanyDB: DBConfig{
-			Host:     os.Getenv("DB_HOST"),
-			Port:     os.Getenv("DB_PORT"),
-			Name:     os.Getenv("DB_NAME"),
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		Postgres: Postgres{
+			Host:     os.Getenv("POSTGRES_HOST"),
+			Port:     os.Getenv("POSTGRES_PORT"),
+			Name:     os.Getenv("POSTGRES_DB"),
+			User:     os.Getenv("POSTGRES_USER"),
+			Password: os.Getenv("POSTGRES_PASSWORD"),
+			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 
-			MaxOpenConns:    getEnvInt("DB_MAX_OPEN_CONNS", 10),
-			MaxIdleConns:    getEnvInt("DB_MAX_IDLE_CONNS", 5),
-			ConnMaxLifetime: getEnvDuration("DB_CONN_MAX_LIFETIME", 30*time.Second),
+			MaxPoolConns: getEnvInt("POSTGRES_MAX_POOL_CONNS", 10),
+			MinPoolConns: getEnvInt("POSTGRES_MIN_POOL_CONNS", 2),
 		},
 		Broker: BrokerConfig{
 			Brokers:       strings.Split(os.Getenv("BROKER_HOST"), ","),

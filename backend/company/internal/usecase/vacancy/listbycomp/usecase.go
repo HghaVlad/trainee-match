@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/encoding"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 

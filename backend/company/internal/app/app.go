@@ -9,18 +9,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
-	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
-	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/logger"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
+	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
+	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	deletecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
@@ -43,14 +43,13 @@ import (
 type App struct {
 	conf    *config.Config
 	HttpSrv *http.Server
-	compDB  *sqlx.DB
+	pgDB    *pgxpool.Pool
 	logger  *slog.Logger
 }
 
-func Build(conf *config.Config) (*App, error) {
-	psgConf := postgres.NewConfig(conf)
+func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	lgr := logger.NewSlogLogger()
-	compDB, err := postgres.New(psgConf, lgr)
+	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, conf.Postgres, lgr)
 	if err != nil {
 		return nil, err
 	}
@@ -61,10 +60,10 @@ func Build(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	compRepo := repository.NewCompanyRepository(compDB)
-	vacRepo := repository.NewVacancyRepo(compDB)
-	memRepo := repository.NewCompanyMemberRepo(compDB)
-	txManager := postgres.NewTxManager(compDB)
+	compRepo := repository.NewCompanyRepository(pgDB)
+	vacRepo := repository.NewVacancyRepo(pgDB)
+	memRepo := repository.NewCompanyMemberRepo(pgDB)
+	txManager := postgres.NewTxManager(pgDB)
 
 	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company")
 	vacCache := redis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy")
@@ -136,7 +135,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	return &App{
 		HttpSrv: httpServer,
-		compDB:  compDB,
+		pgDB:    pgDB,
 		conf:    conf,
 		logger:  lgr,
 	}, nil
@@ -156,8 +155,5 @@ func (app *App) Shutdown(shutdownCtx context.Context) {
 		app.logger.Warn("shutdown error", "err", err)
 	}
 
-	dbErr := app.compDB.Close()
-	if dbErr != nil {
-		app.logger.Warn("db close error", "err", dbErr)
-	}
+	app.pgDB.Close()
 }

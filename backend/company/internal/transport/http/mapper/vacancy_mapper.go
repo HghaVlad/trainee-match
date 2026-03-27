@@ -3,8 +3,8 @@ package mapper
 import (
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	createvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getpublishedvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
@@ -43,7 +43,7 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
 		PublishedAt: v.PublishedAt,
 
 		CreatedAt:   v.CreatedAt,
-		UpdatedAtAt: v.UpdatedAtAt,
+		UpdatedAtAt: v.UpdatedAt,
 	}
 }
 

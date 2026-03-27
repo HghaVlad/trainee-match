@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	publishedAtDescOrderBy string = "ORDER BY v.published_at DESC, v.id DESC"
-	salaryDescOrderBy      string = "ORDER BY v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
-	salaryAscOrderBy       string = "ORDER BY v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
+	publishedAtDescOrderBy string = "v.published_at DESC, v.id DESC"
+	salaryDescOrderBy      string = "v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
+	salaryAscOrderBy       string = "v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
 )
 
 const (
@@ -126,7 +126,7 @@ func listVacCursorToSQL(order list.Order, cursor any, args []any) (condition str
 		return salaryCursorToSQL(order, *c, args)
 	}
 
-	return
+	return condition, args
 }
 
 func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, []any) {

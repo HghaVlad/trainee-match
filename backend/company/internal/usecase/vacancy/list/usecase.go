@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/services/encoding"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/encoding"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
@@ -66,7 +66,7 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 	}
 
 	// limit + 1 strat
-	vacancies, err := uc.repo.ListPublished(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
+	vacancies, err := uc.repo.ListPublishedSummaries(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
 	if err != nil {
 		return nil, err
 	}

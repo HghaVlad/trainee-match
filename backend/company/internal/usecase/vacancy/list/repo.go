@@ -5,7 +5,7 @@ import (
 )
 
 type VacancyRepo interface {
-	ListPublished(
+	ListPublishedSummaries(
 		ctx context.Context,
 		requirements *Requirements,
 		order Order,

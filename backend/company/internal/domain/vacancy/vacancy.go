@@ -7,36 +7,36 @@ import (
 )
 
 type Vacancy struct {
-	ID        uuid.UUID `db:"id"`
-	CompanyID uuid.UUID `db:"company_id"`
+	ID        uuid.UUID
+	CompanyID uuid.UUID
 
-	Title       string `db:"title"`
-	Description string `db:"description"`
+	Title       string
+	Description string
 
-	WorkFormat WorkFormat `db:"work_format"`
-	City       *string    `db:"city"`
+	WorkFormat WorkFormat
+	City       *string
 
-	DurationFromDays *int `db:"duration_from_days"`
-	DurationToDays   *int `db:"duration_to_days"`
+	DurationFromDays *int
+	DurationToDays   *int
 
-	EmploymentType   EmploymentType `db:"employment_type"`
-	HoursPerWeekFrom *int           `db:"hours_per_week_from"`
-	HoursPerWeekTo   *int           `db:"hours_per_week_to"`
+	EmploymentType   EmploymentType
+	HoursPerWeekFrom *int
+	HoursPerWeekTo   *int
 
-	FlexibleSchedule bool `db:"flexible_schedule"`
+	FlexibleSchedule bool
 
-	IsPaid     bool `db:"is_paid"`
-	SalaryFrom *int `db:"salary_from"`
-	SalaryTo   *int `db:"salary_to"`
+	IsPaid     bool
+	SalaryFrom *int
+	SalaryTo   *int
 
-	InternshipToOffer bool `db:"internship_to_offer"`
+	InternshipToOffer bool
 
-	Status      VacancyStatus `db:"status"`
-	PublishedAt *time.Time    `db:"published_at"`
+	Status      VacancyStatus
+	PublishedAt *time.Time
 
-	CreatedBy   uuid.UUID `db:"created_by_user_id"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAtAt time.Time `db:"updated_at"`
+	CreatedBy uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 const (

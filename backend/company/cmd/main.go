@@ -27,7 +27,7 @@ func main() {
 		log.Fatal("config load err: ", err)
 	}
 
-	myApp, err := app.Build(conf)
+	myApp, err := app.Build(ctx, conf)
 	if err != nil {
 		log.Fatal("app build err: ", err)
 	}

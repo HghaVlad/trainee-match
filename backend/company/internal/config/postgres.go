@@ -1,8 +1,6 @@
 package config
 
-import "time"
-
-type DBConfig struct {
+type Postgres struct {
 	Host     string
 	Port     string
 	Name     string
@@ -10,7 +8,6 @@ type DBConfig struct {
 	Password string
 	SSLMode  string
 
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
+	MaxPoolConns int
+	MinPoolConns int
 }

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -16,70 +15,19 @@ type companyRepoMock struct {
 	mock.Mock
 }
 
-func (m *companyRepoMock) ListByCreatedAtDesc(
+func (c *companyRepoMock) ListSummaries(
 	ctx context.Context,
-	cursor *list.CreatedAtCursor,
+	order list.Order,
+	cursor any,
 	limit int,
-) ([]list.CompanySummary, *list.CreatedAtCursor, error) {
+) ([]list.CompanySummary, error) {
+	args := c.Called(ctx, order, cursor, limit)
 
-	args := m.Called(ctx, cursor, limit)
-
-	cs := args.Get(0)
-	next := args.Get(1)
-
-	if cs != nil && next != nil {
-		return cs.([]list.CompanySummary), next.(*list.CreatedAtCursor), args.Error(2)
+	if comps := args.Get(0); comps != nil {
+		return comps.([]list.CompanySummary), nil
 	}
 
-	if cs != nil {
-		return cs.([]list.CompanySummary), nil, args.Error(2)
-	}
-
-	return nil, nil, args.Error(2)
-}
-
-func (m *companyRepoMock) ListByName(
-	ctx context.Context,
-	cursor *list.NameCursor,
-	limit int,
-) ([]list.CompanySummary, *list.NameCursor, error) {
-
-	args := m.Called(ctx, cursor, limit)
-
-	cs := args.Get(0)
-	next := args.Get(1)
-
-	if cs != nil && next != nil {
-		return cs.([]list.CompanySummary), next.(*list.NameCursor), args.Error(2)
-	}
-
-	if cs != nil {
-		return cs.([]list.CompanySummary), nil, args.Error(2)
-	}
-
-	return nil, nil, args.Error(2)
-}
-
-func (m *companyRepoMock) ListByVacanciesCnt(
-	ctx context.Context,
-	cursor *list.VacanciesCntCursor,
-	limit int,
-) ([]list.CompanySummary, *list.VacanciesCntCursor, error) {
-
-	args := m.Called(ctx, cursor, limit)
-
-	cs := args.Get(0)
-	next := args.Get(1)
-
-	if cs != nil && next != nil {
-		return cs.([]list.CompanySummary), next.(*list.VacanciesCntCursor), args.Error(2)
-	}
-
-	if cs != nil {
-		return cs.([]list.CompanySummary), nil, args.Error(2)
-	}
-
-	return nil, nil, args.Error(2)
+	return nil, args.Error(1)
 }
 
 type responseCacheRepoMock struct {
@@ -105,9 +53,9 @@ func TestExecute_CacheHit(t *testing.T) {
 	cache := new(responseCacheRepoMock)
 
 	req := &list.Request{
-		Order:  list.OrderVacanciesDesc,
-		Cursor: "curs",
-		Limit:  10,
+		Order:         list.OrderVacanciesDesc,
+		EncodedCursor: "curs",
+		Limit:         10,
 	}
 
 	expectedResp := &list.Response{}
@@ -132,9 +80,9 @@ func TestExecute_CacheMiss(t *testing.T) {
 	cache := new(responseCacheRepoMock)
 
 	req := &list.Request{
-		Order:  list.OrderVacanciesDesc,
-		Cursor: "",
-		Limit:  10,
+		Order:         list.OrderVacanciesDesc,
+		EncodedCursor: "",
+		Limit:         10,
 	}
 
 	cache.
@@ -157,49 +105,4 @@ func TestExecute_CacheMiss(t *testing.T) {
 
 	cache.AssertExpectations(t)
 	repo.AssertExpectations(t)
-}
-
-func TestListByCreatedAt_OK(t *testing.T) {
-	req := &list.Request{
-		Order:  list.OrderCreatedAtDesc,
-		Cursor: "",
-		Limit:  10,
-	}
-
-	comps := []list.CompanySummary{{}}
-
-	t.Run("ok: has next page", func(t *testing.T) {
-		repo := new(companyRepoMock)
-		uc := list.NewUsecase(repo, nil)
-
-		nextCursor := list.CreatedAtCursor{
-			CreatedAt: time.Now(),
-			Name:      "Acme",
-		}
-
-		repo.
-			On("ListByCreatedAtDesc", mock.Anything, mock.Anything, 10).
-			Return(comps, &nextCursor, nil)
-
-		resp, err := uc.ListByCreatedAt(context.Background(), req)
-
-		require.NoError(t, err)
-		assert.Len(t, resp.Companies, 1)
-		assert.NotEmpty(t, resp.NextCursor)
-	})
-
-	t.Run("ok: no next page", func(t *testing.T) {
-		repo := new(companyRepoMock)
-		uc := list.NewUsecase(repo, nil)
-
-		repo.
-			On("ListByCreatedAtDesc", mock.Anything, mock.Anything, 10).
-			Return(comps, nil, nil)
-
-		resp, err := uc.ListByCreatedAt(context.Background(), req)
-
-		require.NoError(t, err)
-		assert.Len(t, resp.Companies, 1)
-		assert.Empty(t, resp.NextCursor)
-	})
 }

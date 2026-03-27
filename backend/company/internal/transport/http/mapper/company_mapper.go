@@ -3,7 +3,7 @@ package mapper
 import (
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"

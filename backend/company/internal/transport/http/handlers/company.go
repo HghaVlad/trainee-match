@@ -8,12 +8,12 @@ import (
 	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
 	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/helpers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/mapper"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mapper"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
@@ -99,9 +99,9 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 	cursor := r.URL.Query().Get("cursor")
 
 	req := &list.Request{
-		Limit:  limit,
-		Order:  order,
-		Cursor: cursor,
+		Limit:         limit,
+		Order:         order,
+		EncodedCursor: cursor,
 	}
 
 	res, err := h.list.Execute(ctx, req)

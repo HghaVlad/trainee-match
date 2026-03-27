@@ -7,14 +7,14 @@ import (
 )
 
 type Company struct {
-	ID               uuid.UUID `db:"id"`
-	Name             string    `db:"name"`
-	OpenVacanciesCnt int       `db:"open_vacancies_count"`
-	Description      *string   `db:"description"`
-	Website          *string   `db:"website"`
-	LogoKey          *string   `db:"logo_key"`
-	CreatedAt        time.Time `db:"created_at"`
-	UpdatedAt        time.Time `db:"updated_at"`
+	ID               uuid.UUID
+	Name             string
+	OpenVacanciesCnt int
+	Description      *string
+	Website          *string
+	LogoKey          *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 const (

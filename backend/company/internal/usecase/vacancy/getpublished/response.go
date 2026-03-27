@@ -9,29 +9,29 @@ import (
 )
 
 type Response struct {
-	ID        uuid.UUID `db:"id"`
-	CompanyID uuid.UUID `db:"company_id"`
+	ID        uuid.UUID
+	CompanyID uuid.UUID
 
-	CompanyName string `db:"company_name"`
+	CompanyName string
 
-	Title       string             `db:"title"`
-	Description string             `db:"description"`
-	WorkFormat  vacancy.WorkFormat `db:"work_format"`
-	City        *string            `db:"city"`
+	Title       string
+	Description string
+	WorkFormat  vacancy.WorkFormat
+	City        *string
 
-	DurationFromDays *int `db:"duration_from_days"`
-	DurationToDays   *int `db:"duration_to_days"`
+	DurationFromDays *int
+	DurationToDays   *int
 
-	EmploymentType   vacancy.EmploymentType `db:"employment_type"`
-	HoursPerWeekFrom *int                   `db:"hours_per_week_from"`
-	HoursPerWeekTo   *int                   `db:"hours_per_week_to"`
+	EmploymentType   vacancy.EmploymentType
+	HoursPerWeekFrom *int
+	HoursPerWeekTo   *int
 
-	FlexibleSchedule bool `db:"flexible_schedule"`
+	FlexibleSchedule bool
 
-	IsPaid     bool `db:"is_paid"`
-	SalaryFrom *int `db:"salary_from"`
-	SalaryTo   *int `db:"salary_to"`
+	IsPaid     bool
+	SalaryFrom *int
+	SalaryTo   *int
 
-	InternshipToOffer bool      `db:"internship_to_offer"`
-	PublishedAt       time.Time `db:"published_at"`
+	InternshipToOffer bool
+	PublishedAt       time.Time
 }

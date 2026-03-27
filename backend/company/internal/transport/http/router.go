@@ -10,9 +10,9 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/handlers"
-	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/delivery/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
+	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 )
 
 type RouterDeps struct {

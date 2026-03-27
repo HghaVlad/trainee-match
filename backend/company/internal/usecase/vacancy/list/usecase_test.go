@@ -33,7 +33,7 @@ type repoMock struct {
 	mock.Mock
 }
 
-func (m *repoMock) ListPublished(
+func (m *repoMock) ListPublishedSummaries(
 	ctx context.Context,
 	requirements *list.Requirements,
 	order list.Order,
@@ -71,7 +71,15 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(resp.Vacancies), 1)
 	cache.AssertExpectations(t)
-	repo.AssertNotCalled(t, "ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertNotCalled(
+		t,
+		"ListPublishedSummaries",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	)
 }
 
 func TestUsecase_Execute_NextCursor(t *testing.T) {
@@ -95,7 +103,7 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	repo.On("ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+	repo.On("ListPublishedSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
 		Return(vcs, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
@@ -132,7 +140,7 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 	cache.On("Get", mock.Anything, mock.Anything).
 		Return(nil).Once()
 
-	repo.On("ListPublished", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
+	repo.On("ListPublishedSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
 		Return(vcs, nil).Once()
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()

@@ -2,45 +2,73 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
+	"errors"
+	"fmt"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type TxKey struct{}
-
 type TxManager struct {
-	db *sqlx.DB
+	db *pgxpool.Pool
 }
 
-func NewTxManager(db *sqlx.DB) *TxManager {
-	return &TxManager{db: db}
+func NewTxManager(pool *pgxpool.Pool) *TxManager {
+	return &TxManager{pool}
 }
 
-func (m *TxManager) WithinTx(
-	ctx context.Context,
-	fn func(ctx context.Context) error,
-) error {
+type txKeyT struct{}
 
-	tx, err := m.db.BeginTxx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-	})
-	if err != nil {
-		return err
+var txKey = txKeyT{}
+
+func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	// if already in tx - just execute
+	if _, ok := ctx.Value(txKey).(pgx.Tx); ok {
+		return fn(ctx)
 	}
 
-	// rollback by default - if commit() - no changes
+	tx, err := m.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+
+	ctx = context.WithValue(ctx, txKey, tx)
+
 	defer func() {
-		_ = tx.Rollback()
+		if p := recover(); p != nil {
+			_ = tx.Rollback(context.WithoutCancel(ctx))
+			panic(p)
+		}
 	}()
 
-	ctx = context.WithValue(ctx, TxKey{}, tx)
-
 	err = fn(ctx)
-
 	if err != nil {
+		rollErr := tx.Rollback(context.WithoutCancel(ctx))
+		if rollErr != nil {
+			return errors.Join(err, rollErr)
+		}
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+
+	return nil
+}
+
+type Querier interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (commandTag pgconn.CommandTag, err error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func GetQuerier(ctx context.Context, defaultQuerier Querier) Querier {
+	if tx, ok := ctx.Value(txKey).(pgx.Tx); ok {
+		return tx
+	}
+
+	return defaultQuerier
 }

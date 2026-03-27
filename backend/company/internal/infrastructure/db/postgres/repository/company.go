@@ -2,14 +2,15 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
@@ -18,33 +19,43 @@ import (
 )
 
 type CompanyRepository struct {
-	db *sqlx.DB
+	db *pgxpool.Pool
 }
 
-func NewCompanyRepository(db *sqlx.DB) *CompanyRepository {
+func NewCompanyRepository(db *pgxpool.Pool) *CompanyRepository {
 	return &CompanyRepository{db: db}
 }
 
 func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*company.Company, error) {
-	var comp company.Company
-	err := repo.db.GetContext(ctx, &comp, "SELECT * FROM companies WHERE id = $1", id)
+	q := postgres.GetQuerier(ctx, repo.db)
 
-	if errors.Is(err, sql.ErrNoRows) {
+	const query = `SELECT id, name, description, website,
+    	logo_key, open_vacancies_count, created_at, updated_at
+		FROM companies WHERE id = $1`
+
+	var comp company.Company
+	err := q.QueryRow(ctx, query, id).
+		Scan(&comp.ID, &comp.Name, &comp.Description,
+			&comp.Website, &comp.LogoKey, &comp.OpenVacanciesCnt,
+			&comp.CreatedAt, &comp.UpdatedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("%w: id=%s", company.ErrCompanyNotFound, id)
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get company: %w", err)
 	}
 
-	return &comp, err
+	return &comp, nil
 }
 
 func (repo *CompanyRepository) Create(ctx context.Context, comp *company.Company) error {
-	exec := repo.getExec(ctx)
+	q := postgres.GetQuerier(ctx, repo.db)
 
-	_, err := exec.ExecContext(ctx, "INSERT INTO companies (id, name, description, website) VALUES ($1, $2, $3, $4)",
-		comp.ID, comp.Name, comp.Description, comp.Website)
+	const query = "INSERT INTO companies (id, name, description, website) VALUES ($1, $2, $3, $4)"
+
+	_, err := q.Exec(ctx, query, comp.ID, comp.Name, comp.Description, comp.Website)
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
@@ -53,168 +64,91 @@ func (repo *CompanyRepository) Create(ctx context.Context, comp *company.Company
 		}
 	}
 
-	return err
+	if err != nil {
+		return fmt.Errorf("create company: %w", err)
+	}
+
+	return nil
+}
+
+// ListSummaries lists company summaries by order after the cursor using dynamic SQL.
+// Pass cursor as a pointer
+func (repo *CompanyRepository) ListSummaries(
+	ctx context.Context,
+	order list.Order,
+	cursor any,
+	limit int,
+) ([]list.CompanySummary, error) {
+	args := make([]any, 0)
+
+	cursorCondition := "1=1"
+	if cursor != nil && !reflect.ValueOf(cursor).IsNil() {
+		cursorCondition, args = listCompCursorToSQL(cursor, args)
+	}
+
+	orderBy := listCompanySummariesOrderToSQL(order)
+
+	args = append(args, limit)
+
+	const query = `SELECT id, name, open_vacancies_count, logo_key, created_at
+		FROM companies
+		WHERE %s
+		ORDER BY %s
+		LIMIT $%d`
+
+	filledQuery := fmt.Sprintf(query, cursorCondition, orderBy, len(args))
+
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	rows, err := q.Query(ctx, filledQuery, args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("list company summary: %w", err)
+	}
+
+	defer rows.Close()
+
+	var companies []list.CompanySummary
+
+	for rows.Next() {
+		var comp list.CompanySummary
+
+		err := rows.Scan(&comp.ID, &comp.Name, &comp.OpenVacanciesCnt, &comp.LogoKey, &comp.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("list company summary scan: %w", err)
+		}
+
+		companies = append(companies, comp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return companies, nil
 }
 
 func (repo *CompanyRepository) Exists(ctx context.Context, id uuid.UUID) (bool, error) {
-	query := `SELECT EXISTS (SELECT 1 FROM companies WHERE id = $1)`
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT EXISTS (SELECT 1 FROM companies WHERE id = $1)`
 
 	var exists bool
-	err := repo.db.GetContext(ctx, &exists, query, id)
+	err := q.QueryRow(ctx, query, id).Scan(&exists)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("company exists: %w", err)
 	}
 
 	return exists, nil
 }
 
-func (repo *CompanyRepository) ListByVacanciesCnt(
-	ctx context.Context,
-	cursor *list.VacanciesCntCursor,
-	limit int,
-) (
-	[]list.CompanySummary,
-	*list.VacanciesCntCursor,
-	error,
-) {
-	var query string
-	var args []any
-
-	if cursor == nil {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		ORDER BY open_vacancies_count DESC, name
-		LIMIT $1`
-		args = []any{limit}
-	} else {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		WHERE open_vacancies_count < $1 OR (open_vacancies_count = $1 AND name > $2)
-		ORDER BY open_vacancies_count DESC, name
-		LIMIT $3`
-		args = []any{cursor.Count, cursor.Name, limit}
-	}
-
-	var companies []list.CompanySummary
-
-	err := repo.db.SelectContext(ctx, &companies, query, args...)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(companies) < limit {
-		return companies, nil, nil
-	}
-
-	last := companies[len(companies)-1]
-	nextCursor := list.VacanciesCntCursor{
-		Count: last.OpenVacanciesCnt,
-		Name:  last.Name,
-	}
-
-	return companies, &nextCursor, nil
-}
-
-// ListByCreatedAtDesc takes companies "after" cursor, returns them with next cursor
-func (repo *CompanyRepository) ListByCreatedAtDesc(
-	ctx context.Context,
-	cursor *list.CreatedAtCursor,
-	limit int,
-) (
-	[]list.CompanySummary,
-	*list.CreatedAtCursor,
-	error,
-) {
-	var query string
-	var args []any
-
-	if cursor == nil {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		ORDER BY created_at DESC, name
-		LIMIT $1`
-		args = []any{limit}
-	} else {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		WHERE created_at < $1 OR (created_at = $1 AND name > $2)
-		ORDER BY created_at DESC, name
-		LIMIT $3`
-		args = []any{cursor.CreatedAt, cursor.Name, limit}
-	}
-
-	var companies []list.CompanySummary
-
-	err := repo.db.SelectContext(ctx, &companies, query, args...)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(companies) < limit {
-		return companies, nil, nil
-	}
-
-	last := companies[len(companies)-1]
-	nextCursor := list.CreatedAtCursor{
-		CreatedAt: last.CreatedAt,
-		Name:      last.Name,
-	}
-
-	return companies, &nextCursor, nil
-}
-
-func (repo *CompanyRepository) ListByName(
-	ctx context.Context,
-	cursor *list.NameCursor,
-	limit int,
-) (
-	[]list.CompanySummary,
-	*list.NameCursor,
-	error,
-) {
-	var query string
-	var args []any
-
-	if cursor == nil {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		ORDER BY name
-		LIMIT $1`
-		args = []any{limit}
-	} else {
-		query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		WHERE name > $1
-		ORDER BY name
-		LIMIT $2`
-		args = []any{cursor.Name, limit}
-	}
-
-	var companies []list.CompanySummary
-
-	err := repo.db.SelectContext(ctx, &companies, query, args...)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(companies) < limit {
-		return companies, nil, nil
-	}
-
-	last := companies[len(companies)-1]
-	nextCursor := list.NameCursor{
-		Name: last.Name,
-	}
-
-	return companies, &nextCursor, nil
-}
-
 // Update updates only req's non-nil fields
 func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) error {
-	exec := repo.getExec(ctx)
 	setParts := make([]string, 0)
 	args := make([]any, 0)
 	argID := 1
@@ -227,18 +161,18 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) 
 
 	if req.Description != nil {
 		setParts = append(setParts, fmt.Sprintf("description = $%d", argID))
-		args = append(args, req.Description)
+		args = append(args, *req.Description)
 		argID++
 	}
 
 	if req.Website != nil {
 		setParts = append(setParts, fmt.Sprintf("website = $%d", argID))
-		args = append(args, req.Website)
+		args = append(args, *req.Website)
 		argID++
 	}
 
 	if len(setParts) == 0 {
-		return nil // ничего не обновляем
+		return nil // no update
 	}
 
 	query := fmt.Sprintf(
@@ -249,17 +183,19 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) 
 
 	args = append(args, req.ID)
 
-	res, err := exec.ExecContext(ctx, query, args...)
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	cmd, err := q.Exec(ctx, query, args...)
+
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return company.ErrCompanyAlreadyExists
 		}
-		return err
+		return fmt.Errorf("update company: %w", err)
 	}
 
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
+	if cmd.RowsAffected() == 0 {
 		return company.ErrCompanyNotFound
 	}
 
@@ -267,17 +203,17 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) 
 }
 
 func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uuid.UUID) error {
-	exec := repo.getExec(ctx)
+	q := postgres.GetQuerier(ctx, repo.db)
 
-	res, err := exec.ExecContext(ctx,
-		`UPDATE companies SET open_vacancies_count = open_vacancies_count+1 WHERE id = $1`, id)
+	const query = "UPDATE companies SET open_vacancies_count = open_vacancies_count+1 WHERE id = $1"
+
+	cmd, err := q.Exec(ctx, query, id)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("increment open_vacancies_count: %w", err)
 	}
 
-	affected, _ := res.RowsAffected()
-	if affected == 0 {
+	if cmd.RowsAffected() == 0 {
 		return company.ErrCompanyNotFound
 	}
 
@@ -285,17 +221,17 @@ func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uu
 }
 
 func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uuid.UUID) error {
-	exec := repo.getExec(ctx)
+	q := postgres.GetQuerier(ctx, repo.db)
 
-	res, err := exec.ExecContext(ctx,
-		`UPDATE companies SET open_vacancies_count = open_vacancies_count-1 WHERE id = $1`, id)
+	const query = "UPDATE companies SET open_vacancies_count = GREATEST(open_vacancies_count - 1, 0) WHERE id = $1"
+
+	cmd, err := q.Exec(ctx, query, id)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("decrement open_vacancies_count: %w", err)
 	}
 
-	affected, _ := res.RowsAffected()
-	if affected == 0 {
+	if cmd.RowsAffected() == 0 {
 		return company.ErrCompanyNotFound
 	}
 
@@ -303,27 +239,72 @@ func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uu
 }
 
 func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	exec := repo.getExec(ctx)
+	q := postgres.GetQuerier(ctx, repo.db)
 
-	res, err := exec.ExecContext(ctx,
-		`DELETE FROM companies WHERE id = $1`, id)
+	const query = "DELETE FROM companies WHERE id = $1"
+
+	cmd, err := q.Exec(ctx, query, id)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("delete company: %w", err)
 	}
 
-	rows, _ := res.RowsAffected()
-	if rows == 0 {
+	if cmd.RowsAffected() == 0 {
 		return company.ErrCompanyNotFound
 	}
 
 	return nil
 }
 
-// returns sqlx.TX if we're in transaction or r.db if not
-func (repo *CompanyRepository) getExec(ctx context.Context) sqlx.ExtContext {
-	tx, ok := ctx.Value(postgres.TxKey{}).(*sqlx.Tx)
-	if ok {
-		return tx
+func listCompCursorToSQL(cursor any, args []any) (condition string, newArgs []any) {
+	switch c := cursor.(type) {
+	case *list.VacanciesCntCursor:
+		return compVacanciesCntCursorToSQL(*c, args)
+	case *list.CreatedAtCursor:
+		return compCreatedAtCursorToSQL(*c, args)
+	case *list.NameCursor:
+		return compNameCursorToSQL(*c, args)
 	}
-	return repo.db
+
+	return "", args
+}
+
+func compVacanciesCntCursorToSQL(cursor list.VacanciesCntCursor, args []any) (string, []any) {
+	condition := fmt.Sprintf(
+		"open_vacancies_count < $%d OR (open_vacancies_count = $%d AND name > $%d)",
+		len(args)+1, len(args)+1, len(args)+2)
+
+	args = append(args, cursor.Count, cursor.Name)
+	return condition, args
+}
+
+func compCreatedAtCursorToSQL(cursor list.CreatedAtCursor, args []any) (string, []any) {
+	condition := fmt.Sprintf(
+		"created_at < $%d OR (created_at = $%d AND name > $%d)",
+		len(args)+1, len(args)+1, len(args)+2)
+
+	args = append(args, cursor.CreatedAt, cursor.Name)
+	return condition, args
+}
+
+func compNameCursorToSQL(cursor list.NameCursor, args []any) (string, []any) {
+	condition := fmt.Sprintf(
+		"name > $%d",
+		len(args)+1)
+
+	args = append(args, cursor.Name)
+	return condition, args
+}
+
+func listCompanySummariesOrderToSQL(order list.Order) string {
+	switch order {
+	case list.OrderVacanciesDesc:
+		return "open_vacancies_count DESC, name"
+	case list.OrderCreatedAtDesc:
+		return "created_at DESC, name"
+	case list.OrderNameAsc:
+		return "name"
+	}
+
+	return ""
 }

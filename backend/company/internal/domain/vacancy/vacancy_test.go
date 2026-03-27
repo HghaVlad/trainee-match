@@ -28,7 +28,7 @@ func validVacancy() *vacancy.Vacancy {
 		Status:      vacancy.VacancyStatusPublished,
 		PublishedAt: &now,
 		CreatedAt:   now,
-		UpdatedAtAt: time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 }
 

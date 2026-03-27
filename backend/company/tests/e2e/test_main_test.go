@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -35,16 +35,28 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	code := run(m)
+	os.Exit(code)
+}
+
+func run(m *testing.M) int {
 	ctx := context.Background()
+
+	logger := slog.Default()
+
+	// --------
+	// Network
+	// --------
 
 	netwrk, err := network.New(ctx)
 	if err != nil {
-		log.Fatalf("Failed to create docker network: %v", err)
+		logger.Error("failed to create docker network", "err", err)
+		return 1
 	}
 
 	defer func() {
 		if err := netwrk.Remove(ctx); err != nil {
-			log.Fatalf("Failed to remove network: %v", err)
+			logger.Error("failed to remove docker network", "err", err)
 		}
 	}()
 
@@ -64,41 +76,41 @@ func TestMain(m *testing.M) {
 		postgres.BasicWaitStrategies(),
 		network.WithNetwork([]string{"company-postgres"}, netwrk),
 	)
-
 	if err != nil {
-		log.Fatalf("Error creating postgres container: %v", err)
+		logger.Error("failed to start company postgres container", "err", err)
+		return 1
 	}
 
 	defer func() {
 		if err := postgresContainer.Terminate(ctx); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logger.Warn("failed to terminate company postgres container", "err", err)
 		}
 	}()
 
 	pgHost, err := postgresContainer.Host(ctx)
 	if err != nil {
-		log.Fatalf("Error getting postgres host: %v", err)
+		logger.Error("failed to get company postgres host", "err", err)
+		return 1
 	}
+
 	pgPort, err := postgresContainer.MappedPort(ctx, "5432/tcp")
 	if err != nil {
-		log.Fatalf("Error getting postgres port: %v", err)
+		logger.Error("failed to get company postgres port", "err", err)
+		return 1
 	}
+
 	pgSPort := pgPort.Port()
 
-	log.Printf("postgres host: %s, port: %s", pgHost, pgSPort)
+	logger.Info("company postgres ready", "host", pgHost, "port", pgSPort)
 
 	dbURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		dbUser,
-		dbPass,
-		pgHost,
-		pgSPort,
-		dbName,
+		"postgres://%s:%s@%s/%s?sslmode=disable",
+		dbUser, dbPass, net.JoinHostPort(pgHost, pgSPort), dbName,
 	)
 
-	migErr := runMigrations(dbURL)
-	if migErr != nil {
-		log.Fatalln(errors.Unwrap(migErr))
+	if err := runMigrations(dbURL); err != nil {
+		logger.Error("failed to run company postgres migrations", "err", err)
+		return 1
 	}
 
 	// -----
@@ -114,35 +126,40 @@ func TestMain(m *testing.M) {
 		),
 	)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed to start redis container", "err", err)
+		return 1
 	}
 
 	defer func() {
 		if err := redisC.Terminate(ctx); err != nil {
-			log.Printf("failed to terminate redis container: %s", err)
+			logger.Warn("failed to terminate redis container", "err", err)
 		}
 	}()
 
 	redisHost, err := redisC.Host(ctx)
 	if err != nil {
-		log.Fatalf("Error getting redis host: %v", err)
+		logger.Error("failed to get redis host", "err", err)
+		return 1
 	}
+
 	redisPort, err := redisC.MappedPort(ctx, "6379/tcp")
 	if err != nil {
-		log.Fatalf("Error getting redis port: %v", err)
+		logger.Error("failed to get redis port", "err", err)
+		return 1
 	}
 
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
-	log.Println("redis:", redisAddr)
+	logger.Info("redis ready", "addr", redisAddr)
 
 	// ---------------------------
-	// Keycloak (No Postgres Mode)
+	// Keycloak
 	// ---------------------------
 
 	keycloakRealmImport, err := filepath.Abs("../../../auth/import/trainee-match-realm.json")
 	if err != nil {
-		log.Fatalf("resolve keycloak realm import path: %v", err)
+		logger.Error("failed to resolve keycloak realm import path", "err", err)
+		return 1
 	}
 
 	keycloakContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -168,31 +185,37 @@ func TestMain(m *testing.M) {
 			},
 		},
 		Started: true,
-		Logger:  log.New(os.Stdout, "", log.LstdFlags),
 	})
 	if err != nil {
-		log.Fatalf("Error creating keycloak container: %v", err)
+		logger.Error("failed to start keycloak container", "err", err)
+		return 1
 	}
 
 	defer func() {
 		if err := keycloakContainer.Terminate(ctx); err != nil {
-			log.Printf("failed to terminate keycloak container: %s", err)
+			logger.Warn("failed to terminate keycloak container", "err", err)
 		}
 	}()
 
 	keycloakHost, err := keycloakContainer.Host(ctx)
 	if err != nil {
-		log.Fatalf("Error getting keycloak host: %v", err)
+		logger.Error("failed to get keycloak host", "err", err)
+		return 1
 	}
+
 	keycloakPort, err := keycloakContainer.MappedPort(ctx, "8080/tcp")
 	if err != nil {
-		log.Fatalf("Error getting keycloak port: %v", err)
+		logger.Error("failed to get keycloak port", "err", err)
+		return 1
 	}
-	log.Printf("keycloak host: %s, port: %s", keycloakHost, keycloakPort.Port())
 
 	keycloakExternalURL := "http://" + net.JoinHostPort(keycloakHost, keycloakPort.Port())
 	keycloakInternalURL := "http://keycloak:8080"
-	log.Println(keycloakExternalURL)
+
+	logger.Info("keycloak ready",
+		"external_url", keycloakExternalURL,
+		"internal_url", keycloakInternalURL,
+	)
 
 	// ------------
 	// Auth Service
@@ -204,35 +227,36 @@ func TestMain(m *testing.M) {
 			Env:          map[string]string{"KC_URL": keycloakInternalURL},
 			ExposedPorts: []string{"8000/tcp"},
 			Networks:     []string{netwrk.Name},
-			WaitingFor: wait.ForLog("Service is starting").
-				WithStartupTimeout(1 * time.Minute),
+			WaitingFor:   wait.ForLog("Service is starting").WithStartupTimeout(1 * time.Minute),
 		},
 		Started: true,
-		Logger:  log.New(os.Stdout, "", log.LstdFlags),
 	})
-
 	if err != nil {
-		log.Fatalf("Error creating auth service: %v", err)
+		logger.Error("failed to start auth service", "err", err)
+		return 1
 	}
 
 	defer func() {
 		if err := authContainer.Terminate(ctx); err != nil {
-			log.Printf("failed to terminate auth container: %s", err)
+			logger.Warn("failed to terminate auth container", "err", err)
 		}
 	}()
 
-	// temporary, because no real health check for auth
 	time.Sleep(30 * time.Second)
 
 	authHost, err := authContainer.Host(ctx)
 	if err != nil {
-		log.Fatalf("Error getting auth host: %v", err)
+		logger.Error("failed to get auth host", "err", err)
+		return 1
 	}
+
 	authPort, err := authContainer.MappedPort(ctx, "8000/tcp")
 	if err != nil {
-		log.Fatalf("Error getting auth port: %v", err)
+		logger.Error("failed to get auth port", "err", err)
+		return 1
 	}
-	log.Printf("auth service host: %s, port: %s", authHost, authPort.Port())
+
+	logger.Info("auth service ready", "host", authHost, "port", authPort.Port())
 
 	// --------------------
 	// Build App, Run Tests
@@ -246,16 +270,15 @@ func TestMain(m *testing.M) {
 		HTTP: config.HTTPConfig{
 			JWKUrl: jwkURL,
 		},
-		CompanyDB: config.DBConfig{
+		Postgres: config.Postgres{
 			Host:            pgHost,
 			Port:            pgSPort,
 			Name:            dbName,
 			User:            dbUser,
 			Password:        dbPass,
 			SSLMode:         "disable",
-			MaxOpenConns:    10,
-			MaxIdleConns:    5,
-			ConnMaxLifetime: 30 * time.Second,
+			MaxPoolConns:    10,
+			MinPoolConns:    2,
 		},
 		Redis: config.RedisConfig{
 			Host: redisHost,
@@ -263,9 +286,10 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	app, err = appl.Build(conf)
+	app, err = appl.Build(ctx, conf)
 	if err != nil {
-		log.Fatal("couldn't build app:", err)
+		logger.Error("failed to build app", "err", err)
+		return 1
 	}
 
 	AuthClient = helpers.GetAuthClient(authServiceBaseURL)
@@ -273,10 +297,12 @@ func TestMain(m *testing.M) {
 	server := httptest.NewServer(app.HttpSrv.Handler)
 	baseURL = server.URL
 
+	logger.Info("test environment ready")
+
 	code := m.Run()
 
 	server.Close()
-	os.Exit(code)
+	return code
 }
 
 func runMigrations(dbURL string) error {
