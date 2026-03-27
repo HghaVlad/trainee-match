@@ -3,8 +3,9 @@ package app
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,12 +44,13 @@ type App struct {
 	conf    *config.Config
 	HttpSrv *http.Server
 	compDB  *sqlx.DB
+	logger  *slog.Logger
 }
 
 func Build(conf *config.Config) (*App, error) {
 	psgConf := postgres.NewConfig(conf)
-	logger := logger.NewSlogLogger()
-	compDB, err := postgres.New(psgConf, logger)
+	lgr := logger.NewSlogLogger()
+	compDB, err := postgres.New(psgConf, lgr)
 	if err != nil {
 		return nil, err
 	}
@@ -136,24 +138,26 @@ func Build(conf *config.Config) (*App, error) {
 		HttpSrv: httpServer,
 		compDB:  compDB,
 		conf:    conf,
+		logger:  lgr,
 	}, nil
 }
 
 func (app *App) Run() {
 	err := app.HttpSrv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("http listening server err: %s\n", err)
+		app.logger.Error("http listening server err", "err", err)
+		os.Exit(1)
 	}
 }
 
 func (app *App) Shutdown(shutdownCtx context.Context) {
 	err := app.HttpSrv.Shutdown(shutdownCtx)
 	if err != nil {
-		log.Printf("shutdown error: %v", err)
+		app.logger.Warn("shutdown error", "err", err)
 	}
 
 	dbErr := app.compDB.Close()
 	if dbErr != nil {
-		log.Printf("db close error: %v", dbErr)
+		app.logger.Warn("db close error", "err", dbErr)
 	}
 }

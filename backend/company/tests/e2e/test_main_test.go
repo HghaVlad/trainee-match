@@ -19,6 +19,7 @@ import (
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	appl "github.com/HghaVlad/trainee-match/backend/company/internal/app"
@@ -27,15 +28,29 @@ import (
 )
 
 var (
-	AuthClient *http.Client // logged in client
-	app        *appl.App
-	baseURL    string
+	AuthClient         *http.Client // logged in client
+	app                *appl.App
+	baseURL            string
+	authServiceBaseURL string
 )
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
+	netwrk, err := network.New(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create docker network: %v", err)
+	}
+
+	defer func() {
+		if err := netwrk.Remove(ctx); err != nil {
+			log.Fatalf("Failed to remove network: %v", err)
+		}
+	}()
+
+	// --------
 	// Postgres
+	// --------
 
 	dbName := "test_db"
 	dbUser := "test_user"
@@ -47,6 +62,7 @@ func TestMain(m *testing.M) {
 		postgres.WithUsername(dbUser),
 		postgres.WithPassword(dbPass),
 		postgres.BasicWaitStrategies(),
+		network.WithNetwork([]string{"company-postgres"}, netwrk),
 	)
 
 	if err != nil {
@@ -85,7 +101,9 @@ func TestMain(m *testing.M) {
 		log.Fatalln(errors.Unwrap(migErr))
 	}
 
+	// -----
 	// Redis
+	// -----
 
 	redisC, err := testcontainers.Run(
 		ctx, "redis:latest",
@@ -118,7 +136,9 @@ func TestMain(m *testing.M) {
 
 	log.Println("redis:", redisAddr)
 
-	// Keycloak
+	// ---------------------------
+	// Keycloak (No Postgres Mode)
+	// ---------------------------
 
 	keycloakRealmImport, err := filepath.Abs("../../../auth/import/trainee-match-realm.json")
 	if err != nil {
@@ -142,6 +162,10 @@ func TestMain(m *testing.M) {
 				wait.ForHTTP("/realms/trainee-match").WithPort("8080/tcp").WithStartupTimeout(6*time.Minute),
 				wait.ForLog("Running the server").WithStartupTimeout(6*time.Minute),
 			),
+			Networks: []string{netwrk.Name},
+			NetworkAliases: map[string][]string{
+				netwrk.Name: {"keycloak"},
+			},
 		},
 		Started: true,
 		Logger:  log.New(os.Stdout, "", log.LstdFlags),
@@ -164,9 +188,57 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Error getting keycloak port: %v", err)
 	}
-	keycloakExternalURL := "http://" + net.JoinHostPort(keycloakHost, keycloakPort.Port())
+	log.Printf("keycloak host: %s, port: %s", keycloakHost, keycloakPort.Port())
 
-	// Config
+	keycloakExternalURL := "http://" + net.JoinHostPort(keycloakHost, keycloakPort.Port())
+	keycloakInternalURL := "http://keycloak:8080"
+	log.Println(keycloakExternalURL)
+
+	// ------------
+	// Auth Service
+	// ------------
+
+	authContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "ghcr.io/m0s1ck/backend-auth-service:1.0",
+			Env:          map[string]string{"KC_URL": keycloakInternalURL},
+			ExposedPorts: []string{"8000/tcp"},
+			Networks:     []string{netwrk.Name},
+			WaitingFor: wait.ForLog("Service is starting").
+				WithStartupTimeout(1 * time.Minute),
+		},
+		Started: true,
+		Logger:  log.New(os.Stdout, "", log.LstdFlags),
+	})
+
+	if err != nil {
+		log.Fatalf("Error creating auth service: %v", err)
+	}
+
+	defer func() {
+		if err := authContainer.Terminate(ctx); err != nil {
+			log.Printf("failed to terminate auth container: %s", err)
+		}
+	}()
+
+	// temporary, because no real health check for auth
+	time.Sleep(30 * time.Second)
+
+	authHost, err := authContainer.Host(ctx)
+	if err != nil {
+		log.Fatalf("Error getting auth host: %v", err)
+	}
+	authPort, err := authContainer.MappedPort(ctx, "8000/tcp")
+	if err != nil {
+		log.Fatalf("Error getting auth port: %v", err)
+	}
+	log.Printf("auth service host: %s, port: %s", authHost, authPort.Port())
+
+	// --------------------
+	// Build App, Run Tests
+	// --------------------
+
+	authServiceBaseURL = fmt.Sprintf("http://%s/api/v1", net.JoinHostPort(authHost, authPort.Port()))
 
 	jwkURL := strings.TrimRight(keycloakExternalURL, "/") + "/realms/trainee-match/protocol/openid-connect/certs"
 
@@ -196,7 +268,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("couldn't build app:", err)
 	}
 
-	AuthClient = helpers.GetAuthClient()
+	AuthClient = helpers.GetAuthClient(authServiceBaseURL)
 
 	server := httptest.NewServer(app.HttpSrv.Handler)
 	baseURL = server.URL

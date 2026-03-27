@@ -20,7 +20,7 @@ type publishedVacancySeed struct {
 }
 
 func Test_Vacancy_List(t *testing.T) {
-	api := helpers.NewCompanyAPI(baseURL, AuthClient)
+	api := helpers.NewCompanyAPI(baseURL, authServiceBaseURL, AuthClient)
 
 	compA := api.CreateCompany(t, helpers.CreateCompanyParams{
 		Name: "list-comp-a-" + uuid.NewString(),

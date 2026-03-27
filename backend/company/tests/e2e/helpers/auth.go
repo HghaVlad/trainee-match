@@ -12,9 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const authServiceBaseUrl string = "http://localhost:8000/api/v1"
-
-func GetAuthClient() *http.Client {
+func GetAuthClient(authServiceBaseUrl string) *http.Client {
 	jar, _ := cookiejar.New(nil)
 
 	client := &http.Client{

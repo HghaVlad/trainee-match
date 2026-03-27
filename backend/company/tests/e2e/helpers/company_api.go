@@ -24,8 +24,8 @@ type CompanyAPI struct {
 	authClient *http.Client
 }
 
-func NewCompanyAPI(baseURL string, authClient *http.Client) *CompanyAPI {
-	syncAuthCookies(baseURL, authClient)
+func NewCompanyAPI(baseURL, authServiceBaseURL string, authClient *http.Client) *CompanyAPI {
+	syncAuthCookies(baseURL, authServiceBaseURL, authClient)
 
 	return &CompanyAPI{
 		baseURL:    strings.TrimRight(baseURL, "/"),
@@ -37,12 +37,12 @@ func Ptr[T any](v T) *T {
 	return &v
 }
 
-func syncAuthCookies(baseURL string, authClient *http.Client) {
+func syncAuthCookies(baseURL, authServiceBaseURL string, authClient *http.Client) {
 	if authClient == nil || authClient.Jar == nil {
 		return
 	}
 
-	authURL, err := url.Parse(authServiceBaseUrl)
+	authURL, err := url.Parse(authServiceBaseURL)
 	if err != nil {
 		return
 	}

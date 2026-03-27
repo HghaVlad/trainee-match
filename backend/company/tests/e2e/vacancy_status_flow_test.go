@@ -11,7 +11,7 @@ import (
 )
 
 func Test_Vacancy_StatusFlow(t *testing.T) {
-	api := helpers.NewCompanyAPI(baseURL, AuthClient)
+	api := helpers.NewCompanyAPI(baseURL, authServiceBaseURL, AuthClient)
 
 	compID := api.CreateCompany(t,
 		helpers.CreateCompanyParams{Name: "1comp" + uuid.New().String()},
