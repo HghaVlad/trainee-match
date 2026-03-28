@@ -88,7 +88,7 @@ func getAccessTokenFromCookies(cookies []*http.Cookie) string {
 	return ""
 }
 
-func getIdentityFromToken(token jwt.Token, claims *CustomClaims) (*identity.Identity, error) {
+func getIdentityFromToken(token jwt.Token, _ *CustomClaims) (*identity.Identity, error) {
 	ident := new(identity.Identity)
 
 	sub, ok := token.Subject()

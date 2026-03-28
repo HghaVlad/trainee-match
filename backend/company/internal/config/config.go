@@ -4,7 +4,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Config struct {
@@ -59,17 +58,5 @@ func getEnvInt(key string, def int) int {
 		}
 		return num
 	}
-	return def
-}
-
-func getEnvDuration(key string, def time.Duration) time.Duration {
-	if str := os.Getenv(key); str != "" {
-		num, err := strconv.Atoi(str)
-		if err != nil {
-			return def
-		}
-		return time.Duration(num) * time.Second
-	}
-
 	return def
 }

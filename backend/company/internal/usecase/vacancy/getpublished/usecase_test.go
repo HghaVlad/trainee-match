@@ -57,7 +57,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, id)
-	assert.Equal(t, resp.Title, "Title")
+	assert.Equal(t, "Title", resp.Title)
 	cache.AssertExpectations(t)
 	repo.AssertNotCalled(t, "GetPublishedByID", mock.Anything, mock.Anything)
 }
@@ -82,7 +82,7 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, id)
-	assert.Equal(t, resp.Title, "Title")
+	assert.Equal(t, "Title", resp.Title)
 	cache.AssertExpectations(t)
 	repo.AssertExpectations(t)
 }

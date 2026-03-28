@@ -1,4 +1,4 @@
-package delete_test
+package remove_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 )
 
 type repoMock struct {
@@ -57,7 +57,7 @@ func TestUsecase_Execute_OK(t *testing.T) {
 
 	cache.On("Del", mock.Anything, mock.Anything).Once()
 
-	uc := delete.NewUsecase(repo, memRepo, cache)
+	uc := remove.NewUsecase(repo, memRepo, cache)
 
 	idenity := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
@@ -79,7 +79,7 @@ func TestUsecase_Execute_CompanyRepoErr(t *testing.T) {
 	repo.On("Delete", mock.Anything, mock.Anything).
 		Return(errors.New("some member err")).Once()
 
-	uc := delete.NewUsecase(repo, memRepo, cache)
+	uc := remove.NewUsecase(repo, memRepo, cache)
 
 	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 

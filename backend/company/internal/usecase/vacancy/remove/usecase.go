@@ -1,4 +1,4 @@
-package delete
+package remove
 
 import (
 	"context"
@@ -33,7 +33,6 @@ func NewUsecase(
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
-
 	return &Usecase{
 		vacRepo:     vacRepo,
 		memberRepo:  memberRepo,
@@ -53,7 +52,6 @@ func (u *Usecase) Execute(
 	companyID uuid.UUID,
 	identity identity.Identity,
 ) error {
-
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
@@ -71,7 +69,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vac.Status == vacancy.VacancyStatusPublished {
+		if vac.Status == vacancy.StatusPublished {
 			if err := u.compRepo.DecrementOpenVacancies(ctx, companyID); err != nil {
 				return err
 			}

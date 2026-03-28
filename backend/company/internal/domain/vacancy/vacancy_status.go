@@ -1,18 +1,18 @@
 package vacancy
 
-type VacancyStatus string
+type Status string
 
 const (
-	VacancyStatusDraft     VacancyStatus = "draft"
-	VacancyStatusPublished VacancyStatus = "published"
-	VacancyStatusArchived  VacancyStatus = "archived"
+	StatusDraft     Status = "draft"
+	StatusPublished Status = "published"
+	StatusArchived  Status = "archived"
 )
 
-func (vs VacancyStatus) IsValid() bool {
+func (vs Status) IsValid() bool {
 	switch vs {
-	case VacancyStatusDraft,
-		VacancyStatusPublished,
-		VacancyStatusArchived:
+	case StatusDraft,
+		StatusPublished,
+		StatusArchived:
 		return true
 	}
 

@@ -19,16 +19,18 @@ import (
 func main() {
 	log.Println("Service is starting...")
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	conf, err := config.Load()
 	if err != nil {
 		log.Fatal("config load err: ", err)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	myApp, err := app.Build(ctx, conf)
 	if err != nil {
+		stop()
+		//nolint:gocritic // stop() is called right above
 		log.Fatal("app build err: ", err)
 	}
 

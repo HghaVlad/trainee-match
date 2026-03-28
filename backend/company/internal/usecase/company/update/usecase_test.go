@@ -98,7 +98,7 @@ func TestUsecase_DbErr(t *testing.T) {
 
 	err := uc.Execute(context.Background(), req, ident)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	repo.AssertExpectations(t)
 	cache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 }

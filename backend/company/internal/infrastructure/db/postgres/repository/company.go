@@ -256,7 +256,8 @@ func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func listCompCursorToSQL(cursor any, args []any) (condition string, newArgs []any) {
+// returns sql condition, updated slice of args
+func listCompCursorToSQL(cursor any, args []any) (string, []any) {
 	switch c := cursor.(type) {
 	case *list.VacanciesCntCursor:
 		return compVacanciesCntCursorToSQL(*c, args)

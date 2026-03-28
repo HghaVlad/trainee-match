@@ -78,7 +78,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, id)
-	assert.Equal(t, resp.Title, "Title")
+	assert.Equal(t, "Title", resp.Title)
 	memberRepo.AssertExpectations(t)
 	cache.AssertExpectations(t)
 	repo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything)
@@ -110,7 +110,7 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, id)
-	assert.Equal(t, resp.Title, "Title")
+	assert.Equal(t, "Title", resp.Title)
 	memberRepo.AssertExpectations(t)
 	cache.AssertExpectations(t)
 	repo.AssertExpectations(t)
@@ -159,7 +159,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		_, err := uc.Execute(context.Background(), id, compID, ident)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		memberRepo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		cache.AssertNotCalled(t, "Get", mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
@@ -173,7 +173,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		_, err := uc.Execute(context.Background(), id, compID, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		memberRepo.AssertExpectations(t)
 		cache.AssertNotCalled(t, "Get", mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)

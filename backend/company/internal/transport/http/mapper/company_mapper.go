@@ -26,7 +26,6 @@ func GetCompRespToDto(company *get.Response) *dto.CompanyResponse {
 func CompanyListRespToDto(
 	resp *list.Response,
 ) *dto.CompanyListResponse {
-
 	items := make([]dto.CompanyListItemResponse, 0, len(resp.Companies))
 
 	for _, c := range resp.Companies {

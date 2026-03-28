@@ -96,30 +96,29 @@ func getNextCursor[CursorT any](companies []CompanySummary, limit int) (*CursorT
 	last := companies[len(companies)-1]
 
 	var zero CursorT
+	var cursor any
 
 	switch any(zero).(type) {
 	case VacanciesCntCursor:
-		cursor := VacanciesCntCursor{
+		cursor = &VacanciesCntCursor{
 			Count: last.OpenVacanciesCnt,
 			Name:  last.Name,
 		}
-		return any(&cursor).(*CursorT), companies
 
 	case CreatedAtCursor:
-		cursor := CreatedAtCursor{
+		cursor = &CreatedAtCursor{
 			CreatedAt: last.CreatedAt,
 			Name:      last.Name,
 		}
-		return any(&cursor).(*CursorT), companies
 
 	case NameCursor:
-		cursor := NameCursor{
+		cursor = &NameCursor{
 			Name: last.Name,
 		}
-		return any(&cursor).(*CursorT), companies
 	}
 
-	return nil, nil
+	c, _ := cursor.(*CursorT)
+	return c, companies
 }
 
 func buildResponse[CursorT any](companies []CompanySummary, nextCursor *CursorT, order Order) (*Response, error) {

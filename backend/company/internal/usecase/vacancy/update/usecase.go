@@ -26,7 +26,6 @@ func NewUsecase(
 	cacheRepo CacheRepo,
 	txManager common.TxManager,
 ) *Usecase {
-
 	return &Usecase{
 		repo:       repo,
 		memberRepo: memberRepo,
@@ -42,7 +41,6 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.I
 	defer cancel()
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-
 		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
 			return err
 		}

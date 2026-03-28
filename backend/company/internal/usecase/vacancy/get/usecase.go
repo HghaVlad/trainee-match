@@ -34,7 +34,6 @@ func (u *Usecase) Execute(
 	companyID uuid.UUID,
 	ident identity.Identity,
 ) (*vacancy.Vacancy, error) {
-
 	if err := u.authorize(ctx, companyID, ident); err != nil {
 		return nil, err
 	}

@@ -88,7 +88,7 @@ func TestUsecase_Execute_PublishesDraftVacancy(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusDraft}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil).Once()
 	vacRepo.On("Publish", mock.Anything, vacID, compID).
 		Return(nil).Once()
 	compRepo.On("IncrementOpenVacancies", mock.Anything, compID).
@@ -124,7 +124,7 @@ func TestUsecase_Execute_Alreadypublish_NoOp(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusPublished}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil).Once()
 
 	uc := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
 
@@ -157,7 +157,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -177,7 +177,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		memRepo.AssertExpectations(t)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
@@ -205,7 +205,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		vacRepo.AssertExpectations(t)
 		compRepo.AssertNotCalled(t, "IncrementOpenVacancies", mock.Anything, mock.Anything)
 	})
@@ -225,7 +225,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusDraft}, nil).Once()
+			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil).Once()
 		vacRepo.On("Publish", mock.Anything, vacID, compID).
 			Return(errors.New("db err")).Once()
 
@@ -233,7 +233,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		vacRepo.AssertExpectations(t)
 		compRepo.AssertNotCalled(t, "IncrementOpenVacancies", mock.Anything, mock.Anything)
 	})
@@ -253,7 +253,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusDraft}, nil).Once()
+			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil).Once()
 		vacRepo.On("Publish", mock.Anything, vacID, compID).
 			Return(nil).Once()
 		compRepo.On("IncrementOpenVacancies", mock.Anything, compID).
@@ -263,7 +263,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		compRepo.AssertExpectations(t)
 		compCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 		vacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)

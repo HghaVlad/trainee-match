@@ -69,7 +69,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	resp, err := uc.Execute(context.Background(), req)
 
 	require.NoError(t, err)
-	assert.Equal(t, len(resp.Vacancies), 1)
+	assert.Len(t, resp.Vacancies, 1)
 	cache.AssertExpectations(t)
 	repo.AssertNotCalled(
 		t,

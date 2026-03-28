@@ -22,7 +22,6 @@ func NewUsecase(
 	vacancyRepo VacancyRepo,
 	memberRepo CompMemberRepo,
 ) *Usecase {
-
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
 		memberRepo:  memberRepo,
@@ -76,7 +75,7 @@ func vacancyFromReq(request *Request, ident identity.Identity) *vacancy.Vacancy 
 		Title:       request.Title,
 		Description: request.Description,
 
-		Status: vacancy.VacancyStatusDraft,
+		Status: vacancy.StatusDraft,
 
 		WorkFormat: request.WorkFormat,
 		City:       request.City,

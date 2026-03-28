@@ -90,29 +90,28 @@ func getNextCursor[CursorT any](vacancies []VacancySummary, limit int) (*CursorT
 	last := vacancies[len(vacancies)-1]
 
 	var zero CursorT
+	var cursor any
 
 	switch any(zero).(type) {
-
 	case PublishedAtCursor:
-		cursor := PublishedAtCursor{
+		cursor = &PublishedAtCursor{
 			PublishedAt: last.PublishedAt,
-			Id:          last.ID,
+			ID:          last.ID,
 		}
-		return any(&cursor).(*CursorT), vacancies
 
 	case SalaryCursor:
 		if last.SalaryFrom == nil || last.SalaryTo == nil {
 			return nil, vacancies
 		}
-		cursor := SalaryCursor{
+		cursor = &SalaryCursor{
 			SalaryFrom: *last.SalaryFrom,
 			SalaryTo:   *last.SalaryTo,
-			Id:         last.ID,
+			ID:         last.ID,
 		}
-		return any(&cursor).(*CursorT), vacancies
 	}
 
-	return nil, nil
+	c, _ := cursor.(*CursorT)
+	return c, vacancies
 }
 
 func buildResponse[CursorT any](vacancies []VacancySummary, nextCursor *CursorT, order Order) (*Response, error) {

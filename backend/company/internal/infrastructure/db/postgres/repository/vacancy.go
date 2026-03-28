@@ -153,7 +153,10 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 	[]list.VacancySummary, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
-	requireFilters, args := listVacRequirementsToSQL(requirements)
+	filtersCondition, args := listVacRequirementsToSQL(requirements)
+	if filtersCondition != "" {
+		filtersCondition = "AND " + filtersCondition
+	}
 
 	cursorCondition := ""
 	if cursor != nil && !reflect.ValueOf(cursor).IsNil() {
@@ -162,7 +165,7 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 	}
 
 	if order == list.OrderSalaryDesc || order == list.OrderSalaryAsc {
-		requireFilters += andSalaryNotNull
+		filtersCondition += andSalaryNotNull
 	}
 
 	orderBy := listVacOrderToSQL(order)
@@ -175,11 +178,11 @@ func (repo *VacancyRepo) ListPublishedSummaries(
     v.salary_from, v.salary_to, v.published_at
 	FROM vacancies v
 	JOIN companies c ON v.company_id = c.id
-	WHERE %s %s AND v.status = 'published'
+	WHERE v.status = 'published' %s %s
 	ORDER BY %s
 	LIMIT $%d`
 
-	filledQuery := fmt.Sprintf(query, requireFilters, cursorCondition, orderBy, len(args))
+	filledQuery := fmt.Sprintf(query, filtersCondition, cursorCondition, orderBy, len(args))
 
 	rows, err := q.Query(ctx, filledQuery, args...)
 
@@ -218,7 +221,6 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 	limit int,
 ) (
 	[]listbycomp.VacancySummary, error) {
-
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	var query string
@@ -245,7 +247,7 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 		  		AND v.status = 'published'
 		ORDER BY v.published_at DESC, v.id DESC
 		LIMIT $4`
-		args = []any{compID, cursor.PublishedAt, cursor.Id, limit}
+		args = []any{compID, cursor.PublishedAt, cursor.ID, limit}
 	}
 
 	rows, err := q.Query(ctx, query, args...)

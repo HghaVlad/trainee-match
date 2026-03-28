@@ -32,7 +32,6 @@ func NewUsecase(
 	vacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
-
 	return &Usecase{
 		vacRepo:     vacRepo,
 		memberRepo:  memberRepo,
@@ -65,7 +64,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vac.Status == vacancy.VacancyStatusPublished {
+		if vac.Status == vacancy.StatusPublished {
 			return nil
 		}
 

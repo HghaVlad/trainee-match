@@ -114,7 +114,6 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 func VacancyListRespToDto(
 	resp *list_vacancy.Response,
 ) *dto.VacancyListResponse {
-
 	items := make([]dto.VacancyListItemResponse, 0, len(resp.Vacancies))
 
 	for _, v := range resp.Vacancies {
@@ -182,7 +181,6 @@ func VacancyUpdateReqToUC(
 	companyID uuid.UUID,
 	vacancyID uuid.UUID,
 ) *update_vacancy.Request {
-
 	req := &update_vacancy.Request{
 		CompanyID: companyID,
 		VacancyID: vacancyID,

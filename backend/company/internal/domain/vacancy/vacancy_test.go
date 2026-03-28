@@ -25,7 +25,7 @@ func validVacancy() *vacancy.Vacancy {
 
 		IsPaid: false,
 
-		Status:      vacancy.VacancyStatusPublished,
+		Status:      vacancy.StatusPublished,
 		PublishedAt: &now,
 		CreatedAt:   now,
 		UpdatedAt:   time.Now(),

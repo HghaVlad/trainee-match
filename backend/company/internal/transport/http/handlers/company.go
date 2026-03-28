@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -17,9 +18,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
@@ -28,7 +29,8 @@ type CompanyHandler struct {
 	create  *create.Usecase
 	list    *list.Usecase
 	update  *update.Usecase
-	delete  *delete.Usecase
+	delete  *remove.Usecase
+	log     *slog.Logger
 }
 
 func NewCompanyHandler(
@@ -36,9 +38,8 @@ func NewCompanyHandler(
 	create *create.Usecase,
 	list *list.Usecase,
 	upd *update.Usecase,
-	del *delete.Usecase,
+	del *remove.Usecase,
 ) *CompanyHandler {
-
 	return &CompanyHandler{
 		getByID: get,
 		create:  create,
@@ -48,7 +49,7 @@ func NewCompanyHandler(
 	}
 }
 
-// GetById godoc
+// GetByID godoc
 // @Summary Get profile by id
 // @Description Returns company profile by UUID
 // @Tags company
@@ -60,7 +61,7 @@ func NewCompanyHandler(
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
 // @Router /companies/{id} [get]
-func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
+func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, ok := helpers.ParseUuidFromPathOr400(r, w, "id")
@@ -70,7 +71,12 @@ func (h *CompanyHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 	comp, err := h.getByID.Execute(ctx, id)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			// TODO: add logging for 500 everywhere
+			h.log.ErrorContext(ctx, "get company failed", "err", err)
+			responds.RespondError(w, http.StatusInternalServerError, errors.New("unexpected error"))
+		}
 		return
 	}
 
@@ -207,7 +213,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
-// @Router /companies/{id} [delete]
+// @Router /companies/{id} [remove]
 func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -228,14 +234,16 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
+func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound):
 		responds.RespondError(w, http.StatusNotFound, err)
+		return true
 
 	case errors.Is(err, company.ErrCompanyAlreadyExists),
 		errors.Is(err, member.ErrCompanyMemberAlreadyExists):
 		responds.RespondError(w, http.StatusConflict, err)
+		return true
 
 	case errors.Is(err, common.ErrInvalidCursor),
 		errors.Is(err, common.ErrCursorOrderMismatch),
@@ -244,18 +252,19 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole):
 		responds.RespondError(w, http.StatusBadRequest, err)
+		return true
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		responds.RespondError(w, http.StatusForbidden, err)
+		return true
 
 	default:
-		responds.RespondError(w, http.StatusInternalServerError, err)
+		return false
 	}
 }
-
 func (h *CompanyHandler) parseOrderQuery(r *http.Request) list.Order {
 	str := r.URL.Query().Get("order")
 	ord := list.Order(strings.Trim(str, " "))

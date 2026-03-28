@@ -14,5 +14,5 @@ const (
 
 type PublishedAtCursor struct {
 	PublishedAt time.Time
-	Id          uuid.UUID
+	ID          uuid.UUID
 }

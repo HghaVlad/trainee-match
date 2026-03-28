@@ -15,12 +15,14 @@ import (
 type CacheRepo[KeyT, ValT any] struct {
 	rdb    *redis.Client
 	prefix string
+	logger *slog.Logger
 }
 
-func NewRepo[KeyT, ValT any](client *redis.Client, prefix string) *CacheRepo[KeyT, ValT] {
+func NewRepo[KeyT, ValT any](client *redis.Client, prefix string, logger *slog.Logger) *CacheRepo[KeyT, ValT] {
 	return &CacheRepo[KeyT, ValT]{
 		rdb:    client,
 		prefix: prefix,
+		logger: logger,
 	}
 }
 
@@ -37,14 +39,14 @@ func (repo *CacheRepo[KeyT, ValT]) Get(ctx context.Context, key KeyT) *ValT {
 		}
 
 		// if we have redis issue, we treat it as cache miss - instead of finishing api req with 500
-		slog.Warn("redis get error", "err", err)
+		repo.logger.WarnContext(ctx, "redis get error", "where", repo.prefix, "err", err)
 		return nil
 	}
 
 	var val ValT
 	err = json.Unmarshal(data, &val)
 	if err != nil {
-		slog.Warn("redis get: couldn't unmarshal", "where", repo.prefix, "err", err)
+		repo.logger.WarnContext(ctx, "redis get: couldn't unmarshal", "where", repo.prefix, "err", err)
 		return nil
 	}
 
@@ -57,7 +59,7 @@ func (repo *CacheRepo[KeyT, ValT]) Put(ctx context.Context, key KeyT, val *ValT,
 
 	data, mErr := json.Marshal(val)
 	if mErr != nil {
-		slog.Warn("redis put: couldn't marshal in", "where", repo.prefix, "err", mErr)
+		repo.logger.WarnContext(ctx, "redis put: couldn't marshal in", "where", repo.prefix, "err", mErr)
 		return
 	}
 
@@ -65,7 +67,7 @@ func (repo *CacheRepo[KeyT, ValT]) Put(ctx context.Context, key KeyT, val *ValT,
 	err := repo.rdb.Set(ctx, rKey, data, exp).Err()
 
 	if err != nil {
-		slog.Warn("redis set error", "err", err)
+		repo.logger.WarnContext(ctx, "redis set error", "where", repo.prefix, "err", err)
 	}
 }
 
@@ -77,7 +79,7 @@ func (repo *CacheRepo[KeyT, ValT]) Del(ctx context.Context, key KeyT) {
 	err := repo.rdb.Del(ctx, rKey).Err()
 
 	if err != nil {
-		slog.Warn("redis del error", "err", err)
+		repo.logger.WarnContext(ctx, "redis del error", "where", repo.prefix, "err", err)
 	}
 }
 

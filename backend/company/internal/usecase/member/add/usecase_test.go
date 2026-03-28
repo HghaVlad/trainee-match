@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -73,7 +72,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
@@ -86,7 +85,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 
@@ -98,7 +97,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
+		require.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
 		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 }
@@ -117,7 +116,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, member.ErrInvalidUserID)
+		require.ErrorIs(t, err, member.ErrInvalidUserID)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -134,7 +133,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, member.ErrInvalidCompanyMemberRole)
+		require.ErrorIs(t, err, member.ErrInvalidCompanyMemberRole)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -156,7 +155,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), req, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		repo.AssertExpectations(t)
 	})
 }

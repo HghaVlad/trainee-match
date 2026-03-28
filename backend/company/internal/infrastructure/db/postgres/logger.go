@@ -22,7 +22,6 @@ func (l *pgxSlogAdapter) Log(
 	msg string,
 	data map[string]any,
 ) {
-
 	// don't log polly unsent from outbox
 	if sql, ok := data["sql"].(string); ok {
 		if strings.Contains(sql, "FROM outbox") &&
@@ -46,12 +45,16 @@ func (l *pgxSlogAdapter) Log(
 
 	slogLevel := slog.LevelDebug
 	switch level {
+	case tracelog.LogLevelNone:
+		return
 	case tracelog.LogLevelError:
 		slogLevel = slog.LevelError
 	case tracelog.LogLevelWarn:
 		slogLevel = slog.LevelWarn
 	case tracelog.LogLevelInfo:
 		slogLevel = slog.LevelInfo
+	case tracelog.LogLevelDebug, tracelog.LogLevelTrace:
+		slogLevel = slog.LevelDebug
 	}
 
 	l.logger.LogAttrs(ctx, slogLevel, msg, attrs...)

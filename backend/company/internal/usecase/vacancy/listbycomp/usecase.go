@@ -70,12 +70,12 @@ func (uc *Usecase) listByPublishedAt(ctx context.Context, req *Request) (*Respon
 	}
 
 	// next cursor if full page
-	var nextCursor *PublishedAtCursor = nil
+	var nextCursor *PublishedAtCursor
 	if len(vacancies) == req.Limit {
 		last := vacancies[len(vacancies)-1]
 		nextCursor = &PublishedAtCursor{
 			PublishedAt: last.PublishedAt,
-			Id:          last.ID,
+			ID:          last.ID,
 		}
 	}
 

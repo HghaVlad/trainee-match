@@ -9,12 +9,13 @@ import (
 )
 
 type CursorWrapper[OrderT comparable] struct {
-	Order OrderT
-	Data  []byte
+	Order OrderT `json:"order"`
+	Data  []byte `json:"data"`
 }
 
 func DecodeCursor[T any, OrderT comparable](raw string, expectedOrder OrderT) (*T, error) {
 	if raw == "" {
+		//nolint:nilnil // empty encoded cursor -> no cursor (first page)
 		return nil, nil
 	}
 
@@ -42,6 +43,7 @@ func DecodeCursor[T any, OrderT comparable](raw string, expectedOrder OrderT) (*
 
 func EncodeCursor[T any, OrderT comparable](order OrderT, data *T) (*string, error) {
 	if data == nil {
+		//nolint:nilnil // no data -> no cursor (last page)
 		return nil, nil
 	}
 

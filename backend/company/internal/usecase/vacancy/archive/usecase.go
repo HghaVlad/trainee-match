@@ -65,7 +65,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vac.Status == vacancy.VacancyStatusArchived {
+		if vac.Status == vacancy.StatusArchived {
 			return nil
 		}
 
@@ -73,7 +73,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		if vac.Status == vacancy.VacancyStatusPublished {
+		if vac.Status == vacancy.StatusPublished {
 			err := u.compRepo.DecrementOpenVacancies(ctx, compID)
 			if err != nil {
 				return err

@@ -33,13 +33,11 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/companies", func(r chi.Router) {
-
 			extractIDFn := func(r *http.Request) string { return chi.URLParam(r, "id") }
 
 			r.With(gmiddleware.UUIDMiddleware(extractIDFn)).
 				Route("/{id}", func(r chi.Router) {
-
-					r.Get("/", deps.CompanyHandler.GetById)
+					r.Get("/", deps.CompanyHandler.GetByID)
 
 					r.With(deps.AuthMiddleware.Handler).
 						With(gmiddleware.BindJSONBodyMiddleware[dto.CompanyAddHrRequest]()).
@@ -68,11 +66,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.Get("/", deps.CompanyHandler.List)
 
 			r.Route("/{company-id}/vacancies", func(r chi.Router) {
-
 				r.Get("/", deps.VacancyHandler.ListByCompany)
 
 				r.Route("/{vacancy-id}", func(r chi.Router) {
-
 					r.With(deps.AuthMiddleware.Handler).
 						Get("/", deps.VacancyHandler.GetByID)
 
@@ -94,15 +90,13 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					With(gmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest]()).
 					Post("/", deps.VacancyHandler.Create)
 			})
-
 		})
 
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/vacancies", func(r chi.Router) {
-
 			r.Get("/", deps.VacancyHandler.List)
-			r.Get("/{vacancy-id}", deps.VacancyHandler.GetPublishedByID)
 
+			r.Get("/{vacancy-id}", deps.VacancyHandler.GetPublishedByID)
 		})
 
 	addHello(router)
@@ -113,7 +107,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 }
 
 func addHello(r *chi.Mux) {
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/", func(w http.ResponseWriter, _ *http.Request) {
 		_, err := w.Write([]byte("Hello World"))
 		if err != nil {
 			return

@@ -1,4 +1,4 @@
-package delete
+package remove
 
 import (
 	"context"

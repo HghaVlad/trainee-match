@@ -1,23 +1,27 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
-func GetAuthClient(authServiceBaseUrl string) *http.Client {
+func GetAuthClient(ctx context.Context, authServiceBaseURL string) (*http.Client, error) {
 	jar, _ := cookiejar.New(nil)
 
 	client := &http.Client{
 		Jar: jar,
 	}
+
+	logger := slog.Default()
 
 	username := "usertest" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	email := username + "@gmail.com"
@@ -31,14 +35,23 @@ func GetAuthClient(authServiceBaseUrl string) *http.Client {
 		"role":"%s"
 	}`, email, username, identity.RoleHR)
 
-	resp, err := client.Post(
-		authServiceBaseUrl+"/auth/register",
-		"application/json",
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		authServiceBaseURL+"/auth/register",
 		strings.NewReader(registerBody),
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.ErrorContext(ctx, "failed to create register user request", "err", err)
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to register user", "err", err)
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -46,7 +59,13 @@ func GetAuthClient(authServiceBaseUrl string) *http.Client {
 			Error string `json:"error"`
 		}
 		_ = json.NewDecoder(resp.Body).Decode(&errResp)
-		log.Fatalf("register error: %d %s %s", resp.StatusCode, resp.Status, errResp.Error)
+		logger.ErrorContext(ctx,
+			"negative register response",
+			"code", resp.StatusCode,
+			"status", resp.Status,
+			"err_msg", errResp.Error,
+		)
+		return nil, err
 	}
 
 	defer func() {
@@ -58,27 +77,41 @@ func GetAuthClient(authServiceBaseUrl string) *http.Client {
 		"password":"testpass"
 	}`, username)
 
-	resp, err = client.Post(
-		authServiceBaseUrl+"/auth/login",
-		"application/json",
+	req, err = http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		authServiceBaseURL+"/auth/login",
 		strings.NewReader(loginBody),
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.ErrorContext(ctx, "failed to create login user request", "err", err)
+		return nil, err
+	}
+
+	resp, err = client.Do(req)
+
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to login user", "err", err)
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("status code error: %d %s", resp.StatusCode, resp.Status)
+		logger.ErrorContext(ctx,
+			"negative login response",
+			"code", resp.StatusCode,
+			"status", resp.Status,
+		)
+		return nil, err
 	}
 
 	for _, c := range resp.Cookies() {
-		log.Println("cookie:", c.Name, c.Value)
+		logger.InfoContext(ctx, "cookie:", "name", c.Name, "val", c.Value)
 	}
 
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
-	return client
+	return client, nil
 }

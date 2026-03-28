@@ -341,7 +341,7 @@ func doRequest(
 		bodyReader = bytes.NewReader(payload)
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequestWithContext(t.Context(), method, url, bodyReader)
 	if err != nil {
 		t.Fatalf("build request %s %s: %v", method, url, err)
 	}

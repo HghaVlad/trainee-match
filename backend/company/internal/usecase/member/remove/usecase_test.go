@@ -1,4 +1,4 @@
-package delete_test
+package remove_test
 
 import (
 	"context"
@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 )
 
 type memberRepoMock struct {
@@ -35,7 +34,7 @@ func (m *memberRepoMock) Delete(ctx context.Context, userID, companyID uuid.UUID
 
 func TestUsecase_ExecuteOK(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete.NewUsecase(repo)
+	uc := remove.NewUsecase(repo)
 
 	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
@@ -54,7 +53,7 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete.NewUsecase(repo)
+	uc := remove.NewUsecase(repo)
 
 	companyID := uuid.New()
 	userID := uuid.New()
@@ -64,7 +63,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), companyID, userID, iden)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
@@ -77,7 +76,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), companyID, userID, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -89,14 +88,14 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), companyID, userID, ident)
 
-		assert.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
+		require.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
 		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 
 func TestUsecase_ExecuteRepoErr(t *testing.T) {
 	repo := new(memberRepoMock)
-	uc := delete.NewUsecase(repo)
+	uc := remove.NewUsecase(repo)
 
 	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
@@ -109,6 +108,6 @@ func TestUsecase_ExecuteRepoErr(t *testing.T) {
 
 	err := uc.Execute(context.Background(), companyID, userID, ident)
 
-	assert.EqualError(t, err, "db err")
+	require.EqualError(t, err, "db err")
 	repo.AssertExpectations(t)
 }

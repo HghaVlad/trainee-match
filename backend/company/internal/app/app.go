@@ -22,27 +22,27 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
-	deletecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/delete"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
-	deletemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
+	removemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	updatemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
-	deletevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
 	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
+	removevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 	updatevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
 type App struct {
 	conf    *config.Config
-	HttpSrv *http.Server
+	HTTPSrv *http.Server
 	pgDB    *pgxpool.Pool
 	logger  *slog.Logger
 }
@@ -65,21 +65,21 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
 
-	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company")
-	vacCache := redis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy")
-	publicVacCache := redis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public")
-	compListCache := redis.NewRepo[string, listcomp.Response](rediss, "companies:list")
-	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list")
-	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list")
+	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
+	vacCache := redis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy", lgr)
+	publicVacCache := redis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public", lgr)
+	compListCache := redis.NewRepo[string, listcomp.Response](rediss, "companies:list", lgr)
+	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
+	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
 	compAddHrUc := addmember.NewUsecase(memRepo)
-	compDeleteMemberUc := deletemember.NewUsecase(memRepo)
+	compDeleteMemberUc := removemember.NewUsecase(memRepo)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, compCache)
-	compDeleteUc := deletecomp.NewUsecase(compRepo, memRepo, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, compCache)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
@@ -89,7 +89,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
 	vacArchive := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
-	vacDelete := deletevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
+	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,
@@ -134,7 +134,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	}
 
 	return &App{
-		HttpSrv: httpServer,
+		HTTPSrv: httpServer,
 		pgDB:    pgDB,
 		conf:    conf,
 		logger:  lgr,
@@ -142,7 +142,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 }
 
 func (app *App) Run() {
-	err := app.HttpSrv.ListenAndServe()
+	err := app.HTTPSrv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		app.logger.Error("http listening server err", "err", err)
 		os.Exit(1)
@@ -150,9 +150,9 @@ func (app *App) Run() {
 }
 
 func (app *App) Shutdown(shutdownCtx context.Context) {
-	err := app.HttpSrv.Shutdown(shutdownCtx)
+	err := app.HTTPSrv.Shutdown(shutdownCtx)
 	if err != nil {
-		app.logger.Warn("shutdown error", "err", err)
+		app.logger.WarnContext(shutdownCtx, "shutdown error", "err", err)
 	}
 
 	app.pgDB.Close()

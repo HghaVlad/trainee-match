@@ -1,4 +1,4 @@
-package delete_test
+package remove_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 )
 
 type vacancyRepoMock struct {
@@ -89,7 +89,7 @@ func TestUsecase_Execute_DeletesPublishedVacancy(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacancyID, companyID).
-		Return(&vacancy.Vacancy{ID: vacancyID, CompanyID: companyID, Status: vacancy.VacancyStatusPublished}, nil).
+		Return(&vacancy.Vacancy{ID: vacancyID, CompanyID: companyID, Status: vacancy.StatusPublished}, nil).
 		Once()
 	vacRepo.On("Delete", mock.Anything, vacancyID, companyID).
 		Return(nil).Once()
@@ -99,7 +99,7 @@ func TestUsecase_Execute_DeletesPublishedVacancy(t *testing.T) {
 	pubVacCache.On("Del", mock.Anything, vacancyID).Once()
 	compCache.On("Del", mock.Anything, companyID).Once()
 
-	uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+	uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 	err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
@@ -129,14 +129,14 @@ func TestUsecase_Execute_DeletesDraftWithoutCounterUpdate(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacancyID, companyID).
-		Return(&vacancy.Vacancy{ID: vacancyID, CompanyID: companyID, Status: vacancy.VacancyStatusDraft}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacancyID, CompanyID: companyID, Status: vacancy.StatusDraft}, nil).Once()
 	vacRepo.On("Delete", mock.Anything, vacancyID, companyID).
 		Return(nil).Once()
 	vacCache.On("Del", mock.Anything, vacancyID).Once()
 	pubVacCache.On("Del", mock.Anything, vacancyID).Once()
 	compCache.On("Del", mock.Anything, companyID).Once()
 
-	uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+	uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 	err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
@@ -157,12 +157,12 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		memRepo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
@@ -180,11 +180,11 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
-		uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
@@ -208,11 +208,11 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		vacRepo.On("GetByID", mock.Anything, vacancyID, companyID).
 			Return(nil, errors.New("db err")).Once()
 
-		uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		vacRepo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -228,15 +228,15 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacancyID, companyID).
-			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.StatusPublished}, nil).Once()
 		vacRepo.On("Delete", mock.Anything, vacancyID, companyID).
 			Return(errors.New("db err")).Once()
 
-		uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		compRepo.AssertNotCalled(t, "DecrementOpenVacancies", mock.Anything, mock.Anything)
 	})
 
@@ -252,17 +252,17 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacancyID, companyID).
-			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.StatusPublished}, nil).Once()
 		vacRepo.On("Delete", mock.Anything, vacancyID, companyID).
 			Return(nil).Once()
 		compRepo.On("DecrementOpenVacancies", mock.Anything, companyID).
 			Return(errors.New("db err")).Once()
 
-		uc := delete.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
+		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		vacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 		pubVacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 		compCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)

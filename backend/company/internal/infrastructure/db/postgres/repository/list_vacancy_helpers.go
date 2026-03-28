@@ -10,115 +10,117 @@ import (
 )
 
 const (
-	publishedAtDescOrderBy string = "v.published_at DESC, v.id DESC"
-	salaryDescOrderBy      string = "v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
-	salaryAscOrderBy       string = "v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
-)
-
-const (
 	andSalaryNotNull string = " AND v.salary_from IS NOT NULL AND v.salary_to IS NOT NULL"
 )
 
 func listVacRequirementsToSQL(requirements *list.Requirements) (string, []any) {
 	if requirements == nil {
-		return "1=1", nil
+		return "", nil
 	}
 
 	conditions := make([]string, 0)
 	args := make([]any, 0)
 
-	// ---- Salary ----
-	if requirements.Salary != nil {
-		if requirements.Salary.Min != nil {
-			args = append(args, *requirements.Salary.Min)
-			conditions = append(conditions,
-				fmt.Sprintf("v.salary_to >= $%d", len(args)))
-		}
-		if requirements.Salary.Max != nil {
-			args = append(args, *requirements.Salary.Max)
-			conditions = append(conditions,
-				fmt.Sprintf("v.salary_from <= $%d", len(args)))
-		}
-	}
-
-	// ---- HoursPerWeek ----
-	if requirements.HoursPerWeek != nil {
-		if requirements.HoursPerWeek.Min != nil {
-			args = append(args, *requirements.HoursPerWeek.Min)
-			conditions = append(conditions,
-				fmt.Sprintf("v.hours_per_week_to >= $%d", len(args)))
-		}
-		if requirements.HoursPerWeek.Max != nil {
-			args = append(args, *requirements.HoursPerWeek.Max)
-			conditions = append(conditions,
-				fmt.Sprintf("v.hours_per_week_from <= $%d", len(args)))
-		}
-	}
-
-	// ---- Duration ----
-	if requirements.Duration != nil {
-		if requirements.Duration.Min != nil {
-			args = append(args, *requirements.Duration.Min)
-			conditions = append(conditions,
-				fmt.Sprintf("v.duration_to_days >= $%d", len(args)))
-		}
-		if requirements.Duration.Max != nil {
-			args = append(args, *requirements.Duration.Max)
-			conditions = append(conditions,
-				fmt.Sprintf("v.duration_from_days <= $%d", len(args)))
-		}
-	}
-
-	// ---- WorkFormat ----
-	if requirements.WorkFormat != nil && len(*requirements.WorkFormat) > 0 {
-		args = append(args, pq.Array(*requirements.WorkFormat))
-		conditions = append(conditions,
-			fmt.Sprintf("v.work_format = ANY($%d)", len(args)))
-	}
-
-	// ---- Companies ----
-	if requirements.Companies != nil && len(*requirements.Companies) > 0 {
-		args = append(args, pq.Array(*requirements.Companies))
-		conditions = append(conditions,
-			fmt.Sprintf("v.company_id = ANY($%d)", len(args)))
-	}
-
-	// ---- City ----
-	if requirements.City != nil && len(*requirements.City) > 0 {
-		args = append(args, pq.Array(*requirements.City))
-		conditions = append(conditions,
-			fmt.Sprintf("v.city = ANY($%d)", len(args)))
-	}
-
-	// ---- IsPaid ----
-	if requirements.IsPaid != nil {
-		args = append(args, *requirements.IsPaid)
-		conditions = append(conditions,
-			fmt.Sprintf("v.is_paid = $%d", len(args)))
-	}
-
-	// ---- InternshipToOffer ----
-	if requirements.InternshipToOffer != nil {
-		args = append(args, *requirements.InternshipToOffer)
-		conditions = append(conditions,
-			fmt.Sprintf("v.internship_to_offer = $%d", len(args)))
-	}
-
-	// ---- FlexibleSchedule ----
-	if requirements.FlexibleSchedule != nil {
-		args = append(args, *requirements.FlexibleSchedule)
-		conditions = append(conditions,
-			fmt.Sprintf("v.flexible_schedule = $%d", len(args)))
-	}
+	applySalary(requirements, &conditions, &args)
+	applyHours(requirements, &conditions, &args)
+	applyDuration(requirements, &conditions, &args)
+	applyWorkFormat(requirements, &conditions, &args)
+	applyCompanies(requirements, &conditions, &args)
+	applyCity(requirements, &conditions, &args)
+	applyFlags(requirements, &conditions, &args)
 
 	if len(conditions) == 0 {
-		return "1=1", args
+		return "", args
 	}
 
 	return strings.Join(conditions, " AND "), args
 }
 
-func listVacCursorToSQL(order list.Order, cursor any, args []any) (condition string, newArgs []any) {
+func applySalary(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.Salary == nil {
+		return
+	}
+
+	if r.Salary.Min != nil {
+		addCondition(conds, args, "v.salary_to >= $%d", *r.Salary.Min)
+	}
+
+	if r.Salary.Max != nil {
+		addCondition(conds, args, "v.salary_from <= $%d", *r.Salary.Max)
+	}
+}
+
+func applyHours(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.HoursPerWeek == nil {
+		return
+	}
+
+	if r.HoursPerWeek.Min != nil {
+		addCondition(conds, args, "v.hours_per_week_to >= $%d", *r.HoursPerWeek.Min)
+	}
+
+	if r.HoursPerWeek.Max != nil {
+		addCondition(conds, args, "v.hours_per_week_from <= $%d", *r.HoursPerWeek.Max)
+	}
+}
+
+func applyDuration(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.Duration == nil {
+		return
+	}
+
+	if r.Duration.Min != nil {
+		addCondition(conds, args, "v.duration_to_days >= $%d", *r.Duration.Min)
+	}
+
+	if r.Duration.Max != nil {
+		addCondition(conds, args, "v.duration_from_days <= $%d", *r.Duration.Max)
+	}
+}
+
+func applyWorkFormat(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.WorkFormat != nil && len(*r.WorkFormat) > 0 {
+		addCondition(conds, args, "v.work_format = ANY($%d)", pq.Array(*r.WorkFormat))
+	}
+}
+
+func applyCompanies(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.Companies != nil && len(*r.Companies) > 0 {
+		addCondition(conds, args, "v.company_id = ANY($%d)", pq.Array(*r.Companies))
+	}
+}
+
+func applyCity(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.City != nil && len(*r.City) > 0 {
+		addCondition(conds, args, "v.city = ANY($%d)", pq.Array(*r.City))
+	}
+}
+
+func applyFlags(r *list.Requirements, conds *[]string, args *[]any) {
+	if r.IsPaid != nil {
+		addCondition(conds, args, "v.is_paid = $%d", *r.IsPaid)
+	}
+
+	if r.InternshipToOffer != nil {
+		addCondition(conds, args, "v.internship_to_offer = $%d", *r.InternshipToOffer)
+	}
+
+	if r.FlexibleSchedule != nil {
+		addCondition(conds, args, "v.flexible_schedule = $%d", *r.FlexibleSchedule)
+	}
+}
+
+func addCondition(conditions *[]string, args *[]any, query string, arg any) {
+	*args = append(*args, arg)
+	*conditions = append(*conditions, fmt.Sprintf(query, len(*args)))
+}
+
+//--------------------------
+// Cursors conditions to SQL
+//--------------------------
+
+// returns SQL condition, updated slice of args
+func listVacCursorToSQL(order list.Order, cursor any, args []any) (string, []any) {
 	switch c := cursor.(type) {
 	case *list.PublishedAtCursor:
 		return publishedAtCursorToSQL(*c, args)
@@ -126,7 +128,7 @@ func listVacCursorToSQL(order list.Order, cursor any, args []any) (condition str
 		return salaryCursorToSQL(order, *c, args)
 	}
 
-	return condition, args
+	return "", args
 }
 
 func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, []any) {
@@ -134,7 +136,7 @@ func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, 
 		"(v.published_at, v.id) < ($%d, $%d)",
 		len(args)+1, len(args)+2)
 
-	args = append(args, cursor.PublishedAt, cursor.Id)
+	args = append(args, cursor.PublishedAt, cursor.ID)
 	return condition, args
 }
 
@@ -151,9 +153,19 @@ func salaryCursorToSQL(order list.Order, cursor list.SalaryCursor, args []any) (
 			len(args)+1, len(args)+2, len(args)+3)
 	}
 
-	args = append(args, cursor.SalaryFrom, cursor.SalaryTo, cursor.Id)
+	args = append(args, cursor.SalaryFrom, cursor.SalaryTo, cursor.ID)
 	return condition, args
 }
+
+//--------------
+// Orders to SQL
+//--------------
+
+const (
+	publishedAtDescOrderBy string = "v.published_at DESC, v.id DESC"
+	salaryDescOrderBy      string = "v.salary_from DESC NULLS LAST, v.salary_to DESC NULLS LAST, v.id DESC"
+	salaryAscOrderBy       string = "v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
+)
 
 func listVacOrderToSQL(order list.Order) string {
 	switch order {

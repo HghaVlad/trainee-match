@@ -27,6 +27,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/tests/e2e/helpers"
 )
 
+//nolint:gochecknoglobals // tests don't have params
 var (
 	AuthClient         *http.Client // logged in client
 	app                *appl.App
@@ -39,6 +40,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+//nolint:gocognit // setups up docker containers, uses them for tests, and terminates them
 func run(m *testing.M) int {
 	ctx := context.Background()
 
@@ -271,14 +273,14 @@ func run(m *testing.M) int {
 			JWKUrl: jwkURL,
 		},
 		Postgres: config.Postgres{
-			Host:            pgHost,
-			Port:            pgSPort,
-			Name:            dbName,
-			User:            dbUser,
-			Password:        dbPass,
-			SSLMode:         "disable",
-			MaxPoolConns:    10,
-			MinPoolConns:    2,
+			Host:         pgHost,
+			Port:         pgSPort,
+			Name:         dbName,
+			User:         dbUser,
+			Password:     dbPass,
+			SSLMode:      "disable",
+			MaxPoolConns: 10,
+			MinPoolConns: 2,
 		},
 		Redis: config.RedisConfig{
 			Host: redisHost,
@@ -292,9 +294,12 @@ func run(m *testing.M) int {
 		return 1
 	}
 
-	AuthClient = helpers.GetAuthClient(authServiceBaseURL)
+	AuthClient, err = helpers.GetAuthClient(ctx, authServiceBaseURL)
+	if err != nil {
+		return 1
+	}
 
-	server := httptest.NewServer(app.HttpSrv.Handler)
+	server := httptest.NewServer(app.HTTPSrv.Handler)
 	baseURL = server.URL
 
 	logger.Info("test environment ready")

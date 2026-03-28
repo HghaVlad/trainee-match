@@ -32,6 +32,7 @@ func requestToCacheKey(r *Request) string {
 		Requirements: normalized,
 	}
 
+	//nolint:musttag // marshal to inner cache, unmarshal by the same rules
 	b, _ := json.Marshal(payload)
 
 	sum := sha256.Sum256(b)

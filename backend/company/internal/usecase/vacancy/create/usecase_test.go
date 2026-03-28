@@ -60,7 +60,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 			v.Title == req.Title &&
 			v.Description == req.Description &&
 			v.WorkFormat == req.WorkFormat &&
-			v.Status == vacancy.VacancyStatusDraft &&
+			v.Status == vacancy.StatusDraft &&
 			v.EmploymentType == vacancy.EmploymentTypeInternship &&
 			v.ID != uuid.Nil
 	})).Return(nil).Once()
@@ -97,7 +97,7 @@ func TestUsecase_Execute_UsesProvidedEmploymentType(t *testing.T) {
 
 	vacRepo.On("Create", mock.Anything, mock.MatchedBy(func(v *vacancy.Vacancy) bool {
 		return v.EmploymentType == vacancy.EmploymentTypePartTime &&
-			v.Status == vacancy.VacancyStatusDraft &&
+			v.Status == vacancy.StatusDraft &&
 			v.InternshipToOffer
 	})).Return(nil).Once()
 
@@ -130,7 +130,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 			identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate},
 		)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		memRepo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 		vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
@@ -146,7 +146,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		_, err := uc.Execute(context.Background(), req, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		memRepo.AssertExpectations(t)
 		vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})

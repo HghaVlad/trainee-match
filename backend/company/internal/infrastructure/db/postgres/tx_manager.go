@@ -20,6 +20,7 @@ func NewTxManager(pool *pgxpool.Pool) *TxManager {
 
 type txKeyT struct{}
 
+//nolint:gochecknoglobals // ctx key
 var txKey = txKeyT{}
 
 func (m *TxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {

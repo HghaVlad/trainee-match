@@ -15,22 +15,21 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/delete"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 )
 
 type MemberHandler struct {
 	add    *add.Usecase
 	update *update.Usecase
-	delete *delete.Usecase
+	delete *remove.Usecase
 }
 
 func NewMemberHandler(
 	add *add.Usecase,
 	update *update.Usecase,
-	del *delete.Usecase,
+	del *remove.Usecase,
 ) *MemberHandler {
-
 	return &MemberHandler{
 		add:    add,
 		update: update,
@@ -144,7 +143,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} responds.ErrorResponse
 // @Failure 404 {object} responds.ErrorResponse
 // @Failure 500 {object} responds.ErrorResponse
-// @Router /companies/{id}/members/{user-id} [delete]
+// @Router /companies/{id}/members/{user-id} [remove]
 func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

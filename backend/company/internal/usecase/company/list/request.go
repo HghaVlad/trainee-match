@@ -5,7 +5,7 @@ import (
 )
 
 type Request struct {
-	Order  Order
+	Order         Order
 	Limit         int
 	EncodedCursor string
 }

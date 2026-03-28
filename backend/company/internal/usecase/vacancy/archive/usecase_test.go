@@ -85,7 +85,7 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusPublished}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil).Once()
 	vacRepo.On("Archive", mock.Anything, vacID, compID).
 		Return(nil).Once()
 	compRepo.On("DecrementOpenVacancies", mock.Anything, compID).
@@ -124,7 +124,7 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusDraft}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil).Once()
 	vacRepo.On("Archive", mock.Anything, vacID, compID).
 		Return(nil).Once()
 	vacCache.On("Del", mock.Anything, vacID).Once()
@@ -155,7 +155,7 @@ func TestUsecase_Execute_AlreadyArchived_NoOp(t *testing.T) {
 	memRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
 	vacRepo.On("GetByID", mock.Anything, vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.VacancyStatusArchived}, nil).Once()
+		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusArchived}, nil).Once()
 
 	uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
@@ -187,7 +187,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		iden := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 		err := uc.Execute(context.Background(), compID, vacID, iden)
 
-		assert.ErrorIs(t, err, identity.ErrHrRoleRequired)
+		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 
@@ -208,7 +208,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 		vacRepo.AssertNotCalled(t, "GetByID", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
@@ -236,7 +236,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 	})
 
 	t.Run("archive", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.StatusPublished}, nil).Once()
 		vacRepo.On("Archive", mock.Anything, vacID, compID).
 			Return(errors.New("db err")).Once()
 
@@ -259,7 +259,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		compRepo.AssertNotCalled(t, "DecrementOpenVacancies", mock.Anything, mock.Anything)
 	})
 
@@ -275,7 +275,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		memRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(&member.CompanyMember{}, nil).Once()
 		vacRepo.On("GetByID", mock.Anything, vacID, compID).
-			Return(&vacancy.Vacancy{Status: vacancy.VacancyStatusPublished}, nil).Once()
+			Return(&vacancy.Vacancy{Status: vacancy.StatusPublished}, nil).Once()
 		vacRepo.On("Archive", mock.Anything, vacID, compID).
 			Return(nil).Once()
 		compRepo.On("DecrementOpenVacancies", mock.Anything, compID).
@@ -285,7 +285,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 		err := uc.Execute(context.Background(), compID, vacID, ident)
 
-		assert.EqualError(t, err, "db err")
+		require.EqualError(t, err, "db err")
 		vacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 		pubVacCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
 		compCache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)

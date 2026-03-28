@@ -31,7 +31,7 @@ type Vacancy struct {
 
 	InternshipToOffer bool
 
-	Status      VacancyStatus
+	Status      Status
 	PublishedAt *time.Time
 
 	CreatedBy uuid.UUID
@@ -52,26 +52,26 @@ const (
 
 // Validate checks domain invariants
 func (v *Vacancy) Validate() error {
-	if !v.WorkFormat.IsValid() {
-		return ErrInvalidWorkFormat
+	validators := []func() error{
+		v.validateSalary,
+		v.validateDuration,
+		v.validateHoursPerWeek,
+		v.validateWorkFormat,
+		v.validateEmploymentType,
+		v.validateTitle,
+		v.validateDescription,
 	}
 
-	if !v.EmploymentType.IsValid() {
-		return ErrInvalidEmploymentType
-	}
-
-	if v.DurationFromDays != nil && v.DurationToDays != nil {
-		if *v.DurationFromDays > *v.DurationToDays {
-			return ErrInvalidDurationRange
+	for _, validate := range validators {
+		if err := validate(); err != nil {
+			return err
 		}
 	}
 
-	if v.HoursPerWeekFrom != nil && v.HoursPerWeekTo != nil {
-		if *v.HoursPerWeekFrom > *v.HoursPerWeekTo {
-			return ErrInvalidHoursRange
-		}
-	}
+	return nil
+}
 
+func (v *Vacancy) validateSalary() error {
 	if v.SalaryFrom != nil && v.SalaryTo != nil {
 		if *v.SalaryFrom > *v.SalaryTo {
 			return ErrInvalidSalaryRange
@@ -92,9 +92,29 @@ func (v *Vacancy) Validate() error {
 		return ErrNegativeSalary
 	}
 
+	return nil
+}
+
+func (v *Vacancy) validateDuration() error {
+	if v.DurationFromDays != nil && v.DurationToDays != nil {
+		if *v.DurationFromDays > *v.DurationToDays {
+			return ErrInvalidDurationRange
+		}
+	}
+
 	if v.DurationFromDays != nil && *v.DurationFromDays <= 0 ||
 		v.DurationToDays != nil && *v.DurationToDays > MaxDurationDays {
 		return ErrInvalidDurationRange
+	}
+
+	return nil
+}
+
+func (v *Vacancy) validateHoursPerWeek() error {
+	if v.HoursPerWeekFrom != nil && v.HoursPerWeekTo != nil {
+		if *v.HoursPerWeekFrom > *v.HoursPerWeekTo {
+			return ErrInvalidHoursRange
+		}
 	}
 
 	if v.HoursPerWeekFrom != nil && *v.HoursPerWeekFrom <= 0 ||
@@ -102,10 +122,34 @@ func (v *Vacancy) Validate() error {
 		return ErrInvalidHoursRange
 	}
 
-	if len([]rune(v.Title)) == 0 || len(v.Title) > maxTitleLen {
+	return nil
+}
+
+func (v *Vacancy) validateWorkFormat() error {
+	if !v.WorkFormat.IsValid() {
+		return ErrInvalidWorkFormat
+	}
+
+	return nil
+}
+
+func (v *Vacancy) validateEmploymentType() error {
+	if !v.EmploymentType.IsValid() {
+		return ErrInvalidEmploymentType
+	}
+
+	return nil
+}
+
+func (v *Vacancy) validateTitle() error {
+	if len([]rune(v.Title)) == 0 || len([]rune(v.Title)) > maxTitleLen {
 		return ErrInvalidTitleLength
 	}
 
+	return nil
+}
+
+func (v *Vacancy) validateDescription() error {
 	if len([]rune(v.Description)) > maxDescriptionLen {
 		return ErrInvalidDescriptionLength
 	}

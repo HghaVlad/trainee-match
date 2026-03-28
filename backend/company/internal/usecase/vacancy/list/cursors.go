@@ -16,13 +16,13 @@ const (
 
 type PublishedAtCursor struct {
 	PublishedAt time.Time
-	Id          uuid.UUID
+	ID          uuid.UUID
 }
 
 type SalaryCursor struct {
 	SalaryFrom int
 	SalaryTo   int
-	Id         uuid.UUID
+	ID         uuid.UUID
 }
 
 func (r Order) IsValid() bool {

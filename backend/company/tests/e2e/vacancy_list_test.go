@@ -228,12 +228,10 @@ func Test_Vacancy_List(t *testing.T) {
 		},
 	}
 
-	publishedIDs := make([]uuid.UUID, 0, len(seeds))
 	publishedTitles := make([]string, 0, len(seeds))
 	for _, seed := range seeds {
 		vacID := api.CreateVacancy(t, seed.CompanyID, seed.Params).ID
 		api.PublishVacancy(t, seed.CompanyID, vacID)
-		publishedIDs = append(publishedIDs, vacID)
 		publishedTitles = append(publishedTitles, seed.Title)
 
 		time.Sleep(5 * time.Millisecond)

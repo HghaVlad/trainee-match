@@ -14,6 +14,29 @@ import (
 )
 
 func ConnectPgxPoolWithLogger(ctx context.Context, cfg config.Postgres, logger *slog.Logger) (*pgxpool.Pool, error) {
+	pgxCfg, err := buildPgxConfFromAppConf(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	pgxCfg.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   newPgxSlogAdapter(logger),
+		LogLevel: tracelog.LogLevelDebug,
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, pgxCfg)
+	if err != nil {
+		return nil, fmt.Errorf("postgres pgx pool init: %w", err)
+	}
+
+	if err = pool.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("postgres pgx ping: %w", err)
+	}
+
+	return pool, nil
+}
+
+func buildPgxConfFromAppConf(cfg config.Postgres) (*pgxpool.Config, error) {
 	pgxCfg, err := pgxpool.ParseConfig("")
 	if err != nil {
 		return nil, err
@@ -38,22 +61,16 @@ func ConnectPgxPoolWithLogger(ctx context.Context, cfg config.Postgres, logger *
 		cc.TLSConfig = &tls.Config{}
 	}
 
+	if cfg.MaxPoolConns < 0 || cfg.MaxPoolConns > 200 {
+		return nil, fmt.Errorf("invalid max pool conns: %d", cfg.MaxPoolConns)
+	}
+
+	if cfg.MinPoolConns < 0 || cfg.MinPoolConns > cfg.MaxPoolConns || cfg.MinPoolConns > 200 {
+		return nil, fmt.Errorf("invalid min pool conns: %d", cfg.MinPoolConns)
+	}
+
 	pgxCfg.MaxConns = int32(cfg.MaxPoolConns)
 	pgxCfg.MinConns = int32(cfg.MinPoolConns)
 
-	pgxCfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   newPgxSlogAdapter(logger),
-		LogLevel: tracelog.LogLevelTrace,
-	}
-
-	pool, err := pgxpool.NewWithConfig(ctx, pgxCfg)
-	if err != nil {
-		return nil, fmt.Errorf("postgres pgx pool init: %w", err)
-	}
-
-	if err = pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("postgres pgx ping: %w", err)
-	}
-
-	return pool, nil
+	return pgxCfg, nil
 }
