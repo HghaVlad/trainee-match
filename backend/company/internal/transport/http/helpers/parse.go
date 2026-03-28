@@ -1,14 +1,9 @@
 package helpers
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
@@ -47,20 +42,4 @@ func parseRangeInt(q url.Values, minKey, maxKey string) *list.RangeInt {
 	}
 
 	return &r
-}
-
-func ParseUuidFromPathOr400(r *http.Request, w http.ResponseWriter, key string) (uuid.UUID, bool) {
-	str := chi.URLParam(r, key)
-	if str == "" {
-		responds.RespondError(w, http.StatusBadRequest, errors.New("uuid parameter is required"))
-		return uuid.Nil, false
-	}
-
-	val, err := uuid.Parse(str)
-	if err != nil {
-		responds.RespondError(w, http.StatusBadRequest, err)
-		return uuid.Nil, false
-	}
-
-	return val, true
 }

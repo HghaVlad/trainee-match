@@ -36,7 +36,7 @@ func NewUsecase(
 
 // Execute updates vacancy. All nil fields of vacancy in request won't be applied.
 // Deletes vacancy from cache.
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -67,7 +67,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.I
 }
 
 // only member of company can update vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

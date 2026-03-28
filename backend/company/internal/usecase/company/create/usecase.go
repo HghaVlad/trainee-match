@@ -30,7 +30,7 @@ func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager co
 
 // Execute create company.
 // Adds creator as an admin member of company.
-func (u *Usecase) Execute(ctx context.Context, request *Request, ident identity.Identity) (*Response, error) {
+func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity.Identity) (*Response, error) {
 	if ident.Role != identity.RoleHR {
 		return nil, identity.ErrHrRoleRequired
 	}

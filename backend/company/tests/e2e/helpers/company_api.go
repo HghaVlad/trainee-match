@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -359,7 +358,7 @@ func doRequest(
 			_ = resp.Body.Close()
 		}()
 
-		var errResp responds.ErrorResponse
+		var errResp dto.ErrorResponse
 		if err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil && errResp.Error != "" {
 			t.Fatalf(
 				"unexpected status for %s %s: got %d, want %d, error: %s",

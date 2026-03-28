@@ -19,7 +19,7 @@ func NewUsecase(memberRepo CompanyMemberRepo) *Usecase {
 	return &Usecase{memberRepo: memberRepo}
 }
 
-func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, identity identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, identity *identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
@@ -30,7 +30,7 @@ func (u *Usecase) Execute(ctx context.Context, companyID, userID uuid.UUID, iden
 	return u.memberRepo.Delete(ctx, userID, companyID)
 }
 
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

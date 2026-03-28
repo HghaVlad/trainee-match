@@ -5,12 +5,12 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
@@ -36,13 +36,13 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookies := r.Cookies()
 		if cookies == nil {
-			responds.RespondError(w, http.StatusUnauthorized, errors.New("missing cookies"))
+			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "missing cookies")
 			return
 		}
 
 		tokenString := getAccessTokenFromCookies(cookies)
 		if tokenString == "" {
-			responds.RespondError(w, http.StatusUnauthorized, errors.New("couldn't get jwt from cookies"))
+			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "couldn't get jwt from cookies")
 			return
 		}
 
@@ -54,17 +54,17 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			jwt.WithTypedClaim("realm_access", &claims.RealmAccess),
 		)
 		if err != nil {
-			responds.RespondError(w, http.StatusUnauthorized, err)
+			helpers.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
 		ident, err := getIdentityFromToken(token, &claims)
 		if err != nil {
-			responds.RespondError(w, http.StatusUnauthorized, err)
+			helpers.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
-		ctx := WithIdentity(r.Context(), *ident)
+		ctx := context.WithValue(r.Context(), identityKey, ident)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -77,6 +77,19 @@ func (m *AuthMiddleware) getPublicKey() error {
 
 	m.keys = keys
 	return nil
+}
+
+type ctxIdentityKeyT struct{}
+
+//nolint:gochecknoglobals // ctx key
+var identityKey = ctxIdentityKeyT{}
+
+func IdentityFromContext(ctx context.Context) *identity.Identity {
+	id, ok := ctx.Value(identityKey).(*identity.Identity)
+	if !ok {
+		panic("identity not found in context: auth middleware is not applied")
+	}
+	return id
 }
 
 func getAccessTokenFromCookies(cookies []*http.Cookie) string {

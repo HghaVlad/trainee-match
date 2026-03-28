@@ -29,7 +29,7 @@ func NewUsecase(
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity *identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
@@ -48,7 +48,7 @@ func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity identity.I
 }
 
 // only admin of company can delete or admin of the platform
-func (u *Usecase) authorize(ctx context.Context, id uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, id uuid.UUID, ident *identity.Identity) error {
 	if ident.Role == identity.RoleAdmin {
 		return nil
 	}

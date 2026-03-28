@@ -50,7 +50,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	compID uuid.UUID,
 	vacID uuid.UUID,
-	identity identity.Identity,
+	identity *identity.Identity,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
@@ -88,7 +88,7 @@ func (u *Usecase) Execute(
 }
 
 // only member of company can archive vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, iden identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, iden *identity.Identity) error {
 	if iden.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

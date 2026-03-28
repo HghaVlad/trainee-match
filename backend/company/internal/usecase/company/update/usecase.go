@@ -29,7 +29,7 @@ func NewUsecase(
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.I
 }
 
 // only admin of company can update
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

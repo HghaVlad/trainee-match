@@ -32,7 +32,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	vacancyID uuid.UUID,
 	companyID uuid.UUID,
-	ident identity.Identity,
+	ident *identity.Identity,
 ) (*vacancy.Vacancy, error) {
 	if err := u.authorize(ctx, companyID, ident); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (u *Usecase) Execute(
 }
 
 // only member of company has access
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

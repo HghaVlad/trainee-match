@@ -6,14 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mapper"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
@@ -57,31 +54,28 @@ func NewCompanyHandler(
 // @Produce json
 // @Param id path string true "Company ID (UUID)"
 // @Success 200 {object} dto.CompanyResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id} [get]
 func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	id, ok := helpers.ParseUuidFromPathOr400(r, w, "id")
-	if !ok {
-		return
-	}
+	id := middleware.UUIDFromContext(ctx, "id")
 
 	comp, err := h.getByID.Execute(ctx, id)
+
 	if err != nil {
 		expected := h.handleErr(w, err)
 		if !expected {
 			// TODO: add logging for 500 everywhere
 			h.log.ErrorContext(ctx, "get company failed", "err", err)
-			responds.RespondError(w, http.StatusInternalServerError, errors.New("unexpected error"))
+			helpers.RespondErrorMsg(w, http.StatusInternalServerError, "unexpected error")
 		}
 		return
 	}
 
-	resp := mapper.GetCompRespToDto(comp)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.GetCompRespToDto(comp)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // List godoc
@@ -94,12 +88,11 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Param cursor query string false "Items per page"
 // @Param limit query int false "Items per page" default(20)
 // @Success 200 {object} dto.CompanyListResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies [get]
 func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	limit := helpers.ParseLimit(r, "limit", 20)
 	order := h.parseOrderQuery(r)
 	cursor := r.URL.Query().Get("cursor")
@@ -116,8 +109,8 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := mapper.CompanyListRespToDto(res)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.CompanyListRespToDto(res)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // Create godoc
@@ -128,24 +121,18 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param company_request body dto.CompanyCreateRequest true "Request to create a company"
 // @Success 201 {object} dto.CompanyCreatedResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 409 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies [post]
 func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
+	dtoReq := middleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
 
-	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyCreateRequest](ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	req := mapper.CompanyCreateReqToUC(dtoReq)
+	req := mappers.CompanyCreateReqToUC(dtoReq)
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
@@ -153,8 +140,8 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtoResp := mapper.CompanyCreateRespToDto(resp)
-	responds.RespondJSON(w, http.StatusCreated, dtoResp)
+	dtoResp := mappers.CompanyCreateRespToDto(resp)
+	helpers.RespondJSON(w, http.StatusCreated, dtoResp)
 }
 
 // Update godoc
@@ -166,33 +153,22 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "Company ID"
 // @Param company_request body dto.CompanyUpdateRequest true "Request to update company"
 // @Success 204
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 409 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id} [patch]
 func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
+	id := middleware.UUIDFromContext(ctx, "id")
+	dtoReq := middleware.BodyFromContext[dto.CompanyUpdateRequest](ctx)
 
-	id, err := gmiddleware.UUIDFromContext(ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
-		return
-	}
+	req := mappers.CompanyUpdateReqToUC(id, dtoReq)
 
-	dtoReq, err := gmiddleware.BodyFromContext[dto.CompanyUpdateRequest](ctx)
-	if err != nil {
-		h.handleErr(w, err)
-		return
-	}
-
-	req := mapper.CompanyUpdateReqToUC(id, dtoReq)
-
-	err = h.update.Execute(ctx, req, iden)
+	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -208,24 +184,18 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "Company ID"
 // @Success 204
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id} [remove]
 func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
+	id := middleware.UUIDFromContext(ctx, "id")
 
-	id, err := gmiddleware.UUIDFromContext(ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	err = h.delete.Execute(ctx, id, iden)
+	err := h.delete.Execute(ctx, id, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -237,12 +207,12 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound):
-		responds.RespondError(w, http.StatusNotFound, err)
+		helpers.RespondError(w, http.StatusNotFound, err)
 		return true
 
 	case errors.Is(err, company.ErrCompanyAlreadyExists),
 		errors.Is(err, member.ErrCompanyMemberAlreadyExists):
-		responds.RespondError(w, http.StatusConflict, err)
+		helpers.RespondError(w, http.StatusConflict, err)
 		return true
 
 	case errors.Is(err, common.ErrInvalidCursor),
@@ -251,14 +221,14 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 		errors.Is(err, company.ErrCompanyInvalidNameLen),
 		errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole):
-		responds.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(w, http.StatusBadRequest, err)
 		return true
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
-		responds.RespondError(w, http.StatusForbidden, err)
+		helpers.RespondError(w, http.StatusForbidden, err)
 		return true
 
 	default:

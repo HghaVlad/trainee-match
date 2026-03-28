@@ -29,7 +29,7 @@ func NewUsecase(
 }
 
 // Execute creates vacancy in draft status
-func (u *Usecase) Execute(ctx context.Context, request *Request, ident identity.Identity) (*Response, error) {
+func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity.Identity) (*Response, error) {
 	vac := vacancyFromReq(request, ident)
 
 	if err := vac.Validate(); err != nil {
@@ -52,7 +52,7 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident identity.
 }
 
 // only member of company can create vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}
@@ -66,7 +66,7 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident iden
 }
 
 // user of identity is the creator of the vacancy
-func vacancyFromReq(request *Request, ident identity.Identity) *vacancy.Vacancy {
+func vacancyFromReq(request *Request, ident *identity.Identity) *vacancy.Vacancy {
 	vac := &vacancy.Vacancy{
 		ID:        uuid.New(),
 		CompanyID: request.CompanyID,

@@ -4,15 +4,12 @@ import (
 	"errors"
 	"net/http"
 
-	gmiddleware "github.com/M0s1ck/g-store/src/pkg/http/middleware"
-	"github.com/M0s1ck/g-store/src/pkg/http/responds"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mapper"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
@@ -72,23 +69,15 @@ func NewVacancyHandler(
 // @Param company-id path string true "Company ID (UUID)"
 // @Param vacancy-id path string true "Vacancy ID (UUID)"
 // @Success 200 {object} dto.VacancyFullResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [get]
 func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	iden := middleware.IdentityFromContext(ctx)
-
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
-
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
 
 	vac, err := h.getByID.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
@@ -96,8 +85,8 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := mapper.VacancyToDtoResponse(vac)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.VacancyToDtoResponse(vac)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // GetPublishedByID godoc
@@ -108,17 +97,13 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param vacancy-id path string true "Vacancy ID (UUID)"
 // @Success 200 {object} dto.VacancyPublicResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /vacancies/{vacancy-id} [get]
 func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
 
 	vac, err := h.getPublishedByID.Execute(ctx, vacancyID)
 	if err != nil {
@@ -126,8 +111,8 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := mapper.VacancyPublicToDtoResponse(vac)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.VacancyPublicToDtoResponse(vac)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // Create godoc
@@ -139,29 +124,19 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 // @Param company-id path string true "Company ID (UUID)"
 // @Param vacancy_request body dto.VacancyCreateRequest true "Request to create vacancy"
 // @Success 201 {object} dto.VacancyCreatedResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies [post]
 func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	dtoReq := middleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
 
-	dtoReq, err := gmiddleware.BodyFromContext[dto.VacancyCreateRequest](ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
-
-	req := mapper.VacancyCreateReqToUC(dtoReq, companyID)
+	req := mappers.VacancyCreateReqToUC(dtoReq, companyID)
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
@@ -169,8 +144,8 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtoResp := mapper.VacancyCreateRespToDto(resp)
-	responds.RespondJSON(w, http.StatusCreated, dtoResp)
+	dtoResp := mappers.VacancyCreateRespToDto(resp)
+	helpers.RespondJSON(w, http.StatusCreated, dtoResp)
 }
 
 // List godoc
@@ -201,15 +176,15 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
 // @Param company_id query []string false "Company filter (repeat param)" collectionFormat(multi)
 // @Success 200 {object} dto.VacancyListResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /vacancies [get]
 func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	req, err := helpers.ListVacRequestFromQuery(r)
 	if err != nil {
-		responds.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -219,8 +194,8 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := mapper.VacancyListRespToDto(res)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.VacancyListRespToDto(res)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // ListByCompany godoc
@@ -234,17 +209,13 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
 // @Success 200 {object} dto.VacancyByCompListResponse
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies [get]
 func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	compID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
+	compID := middleware.UUIDFromContext(ctx, "company-id")
 
 	order := helpers.ParseVacByCompListOrderQuery(r)
 	cursor := r.URL.Query().Get("cursor")
@@ -263,8 +234,8 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := mapper.ListVacByCompRespToDto(res)
-	responds.RespondJSON(w, http.StatusOK, resp)
+	resp := mappers.ListVacByCompRespToDto(res)
+	helpers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // Update godoc
@@ -277,37 +248,23 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 // @Param vacancy-id path string true "Vacancy ID"
 // @Param vacancy_request body dto.VacancyUpdateRequest true "Vacancy update payload"
 // @Success 204 "Vacancy updated successfully"
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 409 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id} [patch]
 func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
+	dtoReq := middleware.BodyFromContext[dto.VacancyUpdateRequest](ctx)
 
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
+	req := mappers.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
 
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
-
-	dtoReq, err := gmiddleware.BodyFromContext[dto.VacancyUpdateRequest](ctx)
-	if err != nil {
-		responds.RespondError(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	req := mapper.VacancyUpdateReqToUC(dtoReq, companyID, vacancyID)
-
-	err = h.update.Execute(ctx, req, iden)
+	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
 		h.handleErr(w, err)
 		return
@@ -325,26 +282,17 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Param company-id path string true "Company ID"
 // @Param vacancy-id path string true "Vacancy ID"
 // @Success 204 "Vacancy published successfully"
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id}/publish [post]
 func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
-
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
-
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
 
 	err := h.publish.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
@@ -364,26 +312,17 @@ func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 // @Param company-id path string true "Company ID"
 // @Param vacancy-id path string true "Vacancy ID"
 // @Success 204 "Vacancy archived successfully"
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies/{vacancy-id}/archive [post]
 func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
-
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
-
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
 
 	err := h.archive.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
@@ -402,26 +341,17 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 // @Param vacancy-id path string true "Vacancy ID"
 // @Param company-id path string true "Company ID"
 // @Success 204
-// @Failure 400 {object} responds.ErrorResponse
-// @Failure 401 {object} responds.ErrorResponse
-// @Failure 403 {object} responds.ErrorResponse
-// @Failure 404 {object} responds.ErrorResponse
-// @Failure 500 {object} responds.ErrorResponse
-// @Router /companies/{company-id}/vacancies/{vacancy-id} [remove]
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{company-id}/vacancies/{vacancy-id} [delete]
 func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
-
-	companyID, ok := helpers.ParseUuidFromPathOr400(r, w, "company-id")
-	if !ok {
-		return
-	}
-
-	vacancyID, ok := helpers.ParseUuidFromPathOr400(r, w, "vacancy-id")
-	if !ok {
-		return
-	}
+	companyID := middleware.UUIDFromContext(ctx, "company-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
 
 	err := h.del.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
@@ -436,7 +366,7 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, vacancy.ErrVacancyNotFound),
 		errors.Is(err, company.ErrCompanyNotFound):
-		responds.RespondError(w, http.StatusNotFound, err)
+		helpers.RespondError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, vacancy.ErrInvalidWorkFormat),
 		errors.Is(err, vacancy.ErrInvalidEmploymentType),
@@ -456,15 +386,15 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, common.ErrCursorOrderMismatch),
 		errors.Is(err, common.ErrUnsupportedListOrder),
 		errors.Is(err, common.ErrLimitTooLarge):
-		responds.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
-		responds.RespondError(w, http.StatusForbidden, err)
+		helpers.RespondError(w, http.StatusForbidden, err)
 
 	default:
-		responds.RespondError(w, http.StatusInternalServerError, err)
+		helpers.RespondError(w, http.StatusInternalServerError, err)
 	}
 }

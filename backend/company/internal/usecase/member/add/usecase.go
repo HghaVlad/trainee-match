@@ -19,7 +19,7 @@ func NewUsecase(memberRepo CompanyMemberRepo) *Usecase {
 	return &Usecase{memberRepo: memberRepo}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
 	if err := req.Validate(); err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity identity.I
 	return u.memberRepo.Create(ctx, memb)
 }
 
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}

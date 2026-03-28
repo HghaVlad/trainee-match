@@ -72,7 +72,7 @@ func TestExecute_CacheHit(t *testing.T) {
 	require.Equal(t, expectedResp, resp)
 
 	cache.AssertExpectations(t)
-	repo.AssertNotCalled(t, "ListByVacanciesCnt", mock.Anything)
+	repo.AssertNotCalled(t, "ListSummaries", mock.Anything)
 }
 
 func TestExecute_CacheMiss(t *testing.T) {
@@ -90,8 +90,8 @@ func TestExecute_CacheMiss(t *testing.T) {
 		Return(nil).Once()
 
 	repo.
-		On("ListByVacanciesCnt", mock.Anything, mock.Anything, mock.Anything).
-		Return([]list.CompanySummary{}, nil, nil).Once()
+		On("ListSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return([]list.CompanySummary{}, nil).Once()
 
 	cache.
 		On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()

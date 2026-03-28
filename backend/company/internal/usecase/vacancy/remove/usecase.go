@@ -50,7 +50,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	vacancyID uuid.UUID,
 	companyID uuid.UUID,
-	identity identity.Identity,
+	identity *identity.Identity,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
@@ -83,7 +83,7 @@ func (u *Usecase) Execute(
 }
 
 // only member of company can delete vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident identity.Identity) error {
+func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
 	if ident.Role != identity.RoleHR {
 		return identity.ErrHrRoleRequired
 	}
