@@ -81,7 +81,11 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	vac, err := h.getByID.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to get vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
@@ -103,11 +107,15 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Router /vacancies/{vacancy-id} [get]
 func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	vacancyID := middleware.UUIDFromContext(ctx, "vacancy-id")
+	vacancyID := middleware.UUIDFromContext(ctx, "id")
 
 	vac, err := h.getPublishedByID.Execute(ctx, vacancyID)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to get vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
@@ -140,7 +148,11 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to create vacancy",
+				"company_id", companyID)
+		}
 		return
 	}
 
@@ -190,7 +202,10 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy")
+		}
 		return
 	}
 
@@ -230,7 +245,10 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.listByComp.Execute(ctx, req)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy by company")
+		}
 		return
 	}
 
@@ -266,7 +284,11 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
@@ -296,7 +318,11 @@ func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 
 	err := h.publish.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to publish vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
@@ -326,7 +352,11 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 
 	err := h.archive.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to archive vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
@@ -355,18 +385,23 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.del.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to delete vacancy",
+				"id", vacancyID)
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
+func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, vacancy.ErrVacancyNotFound),
 		errors.Is(err, company.ErrCompanyNotFound):
 		helpers.RespondError(w, http.StatusNotFound, err)
+		return true
 
 	case errors.Is(err, vacancy.ErrInvalidWorkFormat),
 		errors.Is(err, vacancy.ErrInvalidEmploymentType),
@@ -387,14 +422,16 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) {
 		errors.Is(err, common.ErrUnsupportedListOrder),
 		errors.Is(err, common.ErrLimitTooLarge):
 		helpers.RespondError(w, http.StatusBadRequest, err)
+		return true
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		helpers.RespondError(w, http.StatusForbidden, err)
+		return true
 
 	default:
-		helpers.RespondError(w, http.StatusInternalServerError, err)
+		return false
 	}
 }

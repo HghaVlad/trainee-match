@@ -78,7 +78,7 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
@@ -117,7 +117,7 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
@@ -148,7 +148,7 @@ func TestUsecase_Execute_AlreadyArchived_NoOp(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
@@ -184,7 +184,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		uc := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		iden := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+		iden := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 		err := uc.Execute(context.Background(), compID, vacID, iden)
 
 		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
@@ -200,7 +200,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 		memRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
@@ -216,7 +216,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 func TestUsecase_Execute_RepoErr(t *testing.T) {
 	compID := uuid.New()
 	vacID := uuid.New()
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	t.Run("get vacancy", func(t *testing.T) {
 		vacRepo := new(vacancyRepoMock)

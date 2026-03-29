@@ -64,7 +64,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 
 	id := uuid.New()
 	compID := uuid.New()
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memberRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
@@ -91,7 +91,7 @@ func TestUsecase_Execute_CacheMiss(t *testing.T) {
 
 	id := uuid.New()
 	compID := uuid.New()
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memberRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
@@ -123,7 +123,7 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 
 	id := uuid.New()
 	compID := uuid.New()
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memberRepo.On("Get", mock.Anything, ident.UserID, compID).
 		Return(&member.CompanyMember{}, nil).Once()
@@ -155,7 +155,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 	compID := uuid.New()
 
 	t.Run("hr role required", func(t *testing.T) {
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
 		_, err := uc.Execute(context.Background(), id, compID, ident)
 
@@ -166,7 +166,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 	})
 
 	t.Run("company member required", func(t *testing.T) {
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		memberRepo.On("Get", mock.Anything, ident.UserID, compID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()

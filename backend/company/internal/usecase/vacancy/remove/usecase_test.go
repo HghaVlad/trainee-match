@@ -82,7 +82,7 @@ func TestUsecase_Execute_DeletesPublishedVacancy(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	vacancyID := uuid.New()
 
@@ -122,7 +122,7 @@ func TestUsecase_Execute_DeletesDraftWithoutCounterUpdate(t *testing.T) {
 	compCache := new(cacheRepoMock)
 	txManager := new(fakeTxManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	vacancyID := uuid.New()
 
@@ -159,7 +159,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 		uc := remove.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, pubVacCache, compCache)
 
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 		err := uc.Execute(context.Background(), vacancyID, companyID, ident)
 
 		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
@@ -176,7 +176,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		compCache := new(cacheRepoMock)
 		txManager := new(fakeTxManager)
 
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 		memRepo.On("Get", mock.Anything, ident.UserID, companyID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()
 
@@ -192,7 +192,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 func TestUsecase_Execute_RepoErr(t *testing.T) {
 	companyID := uuid.New()
 	vacancyID := uuid.New()
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	t.Run("get vacancy", func(t *testing.T) {
 		vacRepo := new(vacancyRepoMock)

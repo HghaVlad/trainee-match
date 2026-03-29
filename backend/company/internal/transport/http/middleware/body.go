@@ -19,23 +19,27 @@ var ctxBodyKey = ctxBodyKeyT{}
 func BindJSONBodyMiddleware[T any]() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
 			defer func() {
 				_ = r.Body.Close()
 			}()
 
 			var body T
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				logger := LoggerFromContext(ctx)
+				logger.InfoContext(ctx, "invalid JSON body",
+					"status", http.StatusBadRequest, "err", err)
+
 				helpers.RespondErrorMsg(w, http.StatusBadRequest, "invalid JSON body")
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), ctxBodyKey, &body)
+			ctx = context.WithValue(ctx, ctxBodyKey, &body)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
-
-// TODO: test behaviour with pointers
 
 // BodyFromContext retrieves typed object from the context.
 // It implies that BodyFromContext was used

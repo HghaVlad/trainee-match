@@ -66,6 +66,8 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 	vacA := api.GetVacancy(t, compID, vacID1)
 	assert.Equal(t, vacA.Status, string(vacancy.StatusArchived))
 
+	// TODO: find error
+
 	// check that can't get published
 	api.RequirePublishedVacancyNotFound(t, vacID1)
 

@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strings"
 
@@ -27,7 +27,6 @@ type CompanyHandler struct {
 	list    *list.Usecase
 	update  *update.Usecase
 	delete  *remove.Usecase
-	log     *slog.Logger
 }
 
 func NewCompanyHandler(
@@ -67,9 +66,7 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		expected := h.handleErr(w, err)
 		if !expected {
-			// TODO: add logging for 500 everywhere
-			h.log.ErrorContext(ctx, "get company failed", "err", err)
-			helpers.RespondErrorMsg(w, http.StatusInternalServerError, "unexpected error")
+			handleUnexpectedErr(ctx, w, err, "failed to get company", "id", id)
 		}
 		return
 	}
@@ -105,7 +102,10 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list companies")
+		}
 		return
 	}
 
@@ -136,7 +136,10 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to create company", "name", req.Name)
+		}
 		return
 	}
 
@@ -170,7 +173,10 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update company", "id", id)
+		}
 		return
 	}
 
@@ -197,7 +203,10 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.delete.Execute(ctx, id, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to delete company", "id", id)
+		}
 		return
 	}
 
@@ -235,6 +244,14 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 		return false
 	}
 }
+
+func handleUnexpectedErr(ctx context.Context, w http.ResponseWriter, err error, ctxMsg string, logArgs ...any) {
+	logger := middleware.LoggerFromContext(ctx)
+	logArgs = append(logArgs, "err", err)
+	logger.ErrorContext(ctx, ctxMsg, logArgs...)
+	helpers.RespondErrorMsg(w, http.StatusInternalServerError, "unexpected error")
+}
+
 func (h *CompanyHandler) parseOrderQuery(r *http.Request) list.Order {
 	str := r.URL.Query().Get("order")
 	ord := list.Order(strings.Trim(str, " "))

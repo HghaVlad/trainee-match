@@ -49,7 +49,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 		WorkFormat:  vacancy.WorkFormatHybrid,
 	}
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
@@ -90,7 +90,7 @@ func TestUsecase_Execute_UsesProvidedEmploymentType(t *testing.T) {
 		InternshipToOffer: true,
 	}
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
@@ -127,7 +127,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		_, err := uc.Execute(
 			context.Background(),
 			req,
-			identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate},
+			&identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate},
 		)
 
 		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
@@ -137,7 +137,7 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 
 	t.Run("hr is not member of company", func(t *testing.T) {
 		memRepo := new(memRepoMock)
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()
@@ -163,7 +163,7 @@ func TestUsecase_Execute_VacCreateFail(t *testing.T) {
 		WorkFormat:  vacancy.WorkFormatHybrid,
 	}
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
@@ -190,7 +190,7 @@ func TestUsecase_Execute_ValidateErr(t *testing.T) {
 
 	uc := create.NewUsecase(vacRepo, memRepo)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	_, err := uc.Execute(context.Background(), invalidReq, ident)
 

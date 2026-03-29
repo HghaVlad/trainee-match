@@ -36,7 +36,7 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 	repo := new(memberRepoMock)
 	uc := update.NewUsecase(repo)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	req := &update.Request{
 		CompanyID: uuid.New(),
 		UserID:    uuid.New(),
@@ -65,7 +65,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	}
 
 	t.Run("global role required", func(t *testing.T) {
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
 		err := uc.Execute(context.Background(), req, ident)
 
@@ -75,7 +75,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	})
 
 	t.Run("company member required", func(t *testing.T) {
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 			Return(nil, member.ErrCompanyMemberNotFound).Once()
@@ -87,7 +87,7 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 	})
 
 	t.Run("admin company role required", func(t *testing.T) {
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
 			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
@@ -109,7 +109,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 			UserID:    uuid.Nil,
 			Role:      member.CompanyRoleRecruiter,
 		}
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		err := uc.Execute(context.Background(), req, ident)
 
@@ -126,7 +126,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 			UserID:    uuid.New(),
 			Role:      "owner",
 		}
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 		err := uc.Execute(context.Background(), req, ident)
 
@@ -138,7 +138,7 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 		repo := new(memberRepoMock)
 		uc := update.NewUsecase(repo)
 
-		ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 		req := &update.Request{
 			CompanyID: uuid.New(),
 			UserID:    uuid.New(),

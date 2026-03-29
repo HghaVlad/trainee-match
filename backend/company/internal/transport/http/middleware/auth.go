@@ -34,14 +34,23 @@ func NewAuthMiddleware(conf *config.Config) (*AuthMiddleware, error) {
 
 func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logger := LoggerFromContext(ctx)
+
 		cookies := r.Cookies()
 		if cookies == nil {
+			logger.InfoContext(ctx, "http request unauthorized: missing cookies",
+				"status", http.StatusUnauthorized)
+
 			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "missing cookies")
 			return
 		}
 
 		tokenString := getAccessTokenFromCookies(cookies)
 		if tokenString == "" {
+			logger.InfoContext(ctx, "http request unauthorized: couldn't get jwt from cookies",
+				"status", http.StatusUnauthorized)
+
 			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "couldn't get jwt from cookies")
 			return
 		}
@@ -54,17 +63,29 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			jwt.WithTypedClaim("realm_access", &claims.RealmAccess),
 		)
 		if err != nil {
+			logger.InfoContext(ctx, "http request unauthorized: invalid keys or realm",
+				"status", http.StatusUnauthorized)
+
 			helpers.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
 		ident, err := getIdentityFromToken(token, &claims)
 		if err != nil {
+			logger.InfoContext(ctx, "http request unauthorized",
+				"status", http.StatusUnauthorized, "err", err)
+
 			helpers.RespondError(w, http.StatusUnauthorized, err)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), identityKey, ident)
+		logger = logger.With(
+			"user_id", ident.UserID,
+			"role", ident.Role,
+		)
+
+		ctx = context.WithValue(ctx, identityKey, ident)
+		ctx = context.WithValue(ctx, loggerCtxKey, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

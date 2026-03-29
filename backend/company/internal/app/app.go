@@ -122,6 +122,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		MemberHandler:  memberHandler,
 		VacancyHandler: vacancyHandler,
 		AuthMiddleware: authMiddleware,
+		Logger:         lgr,
 	}
 
 	httpRouter := httpapp.NewRouter(routerDeps)

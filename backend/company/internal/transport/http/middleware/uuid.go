@@ -21,17 +21,19 @@ type uuidCtxKey struct {
 func UUIDMiddleware(key string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
 			raw := chi.URLParam(r, key)
 
 			id, err := uuid.Parse(raw)
 			if err != nil {
+				logger := LoggerFromContext(ctx)
+				logger.InfoContext(ctx, "Invalid UUID: "+raw)
 				helpers.RespondErrorMsg(w, http.StatusBadRequest, "Invalid UUID: "+raw)
 				return
 			}
 
 			ctxKey := uuidCtxKey{key: key}
-			ctx := context.WithValue(r.Context(), ctxKey, id)
-
+			ctx = context.WithValue(ctx, ctxKey, id)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

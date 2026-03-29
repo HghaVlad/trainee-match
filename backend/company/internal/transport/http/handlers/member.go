@@ -60,7 +60,11 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	err := h.add.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to add company member",
+				"member_id", dtoReq.UserID)
+		}
 		return
 	}
 
@@ -94,7 +98,11 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update company member",
+				"member_id", userID)
+		}
 		return
 	}
 
@@ -123,32 +131,40 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.delete.Execute(ctx, companyID, userID, iden)
 	if err != nil {
-		h.handleErr(w, err)
+		expected := h.handleErr(w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to delete company member",
+				"member_id", userID)
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *MemberHandler) handleErr(w http.ResponseWriter, err error) {
+func (h *MemberHandler) handleErr(w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound),
 		errors.Is(err, member.ErrCompanyMemberNotFound):
 		helpers.RespondError(w, http.StatusNotFound, err)
+		return true
 
 	case errors.Is(err, member.ErrCompanyMemberAlreadyExists):
 		helpers.RespondError(w, http.StatusConflict, err)
+		return true
 
 	case errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole):
 		helpers.RespondError(w, http.StatusBadRequest, err)
+		return true
 
 	case errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		helpers.RespondError(w, http.StatusForbidden, err)
+		return true
 
 	default:
-		helpers.RespondError(w, http.StatusInternalServerError, err)
+		return false
 	}
 }

@@ -101,7 +101,7 @@ func TestUsecase_Execute_HappyPath(t *testing.T) {
 
 	uc := update.NewUsecase(repo, memRepo, cache, txManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), req, ident)
 
@@ -137,7 +137,7 @@ func TestUsecase_Execute_GetErr(t *testing.T) {
 
 	uc := update.NewUsecase(repo, memRepo, cache, txManager)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), req, ident)
 

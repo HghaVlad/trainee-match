@@ -67,7 +67,7 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 		Name: ptr("Acme"),
 	}
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), req, ident)
 
@@ -94,7 +94,7 @@ func TestUsecase_DbErr(t *testing.T) {
 		Name: ptr("Acme"),
 	}
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), req, ident)
 
@@ -108,7 +108,7 @@ func TestUsecase_ValidateErr(t *testing.T) {
 	repo := new(companyRepoMock)
 	memRepo := new(memRepoMock)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	uc := update.NewUsecase(repo, memRepo, cache)
 

@@ -58,7 +58,7 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 	uc := create.NewUsecase(repo, memRepo, txManager)
 
-	iden := identity.Identity{
+	iden := &identity.Identity{
 		UserID: uuid.New(),
 		Role:   identity.RoleHR,
 	}
@@ -75,7 +75,7 @@ func TestUsecase_ExecuteValidateErr(t *testing.T) {
 	memRepo := new(companyMemberRepoMock)
 	txManager := new(FakeTxManager)
 
-	iden := identity.Identity{
+	iden := &identity.Identity{
 		UserID: uuid.New(),
 		Role:   identity.RoleHR,
 	}

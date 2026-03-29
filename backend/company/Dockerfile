@@ -10,6 +10,5 @@ RUN go build -o main ./cmd/
 FROM alpine:3.23 AS release
 WORKDIR /
 COPY --from=build app/main .
-USER nonroot:nonroot
 
 CMD ["./main"]

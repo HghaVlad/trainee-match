@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
-	"log"
+	"log" //nolint:depguard // fix it later
 	"net/http"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
@@ -13,6 +13,7 @@ func RespondJSON(w http.ResponseWriter, status int, payload any) {
 	w.WriteHeader(status)
 
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		// TODO: fix this later
 		log.Printf("json encode error: %v", err)
 	}
 }

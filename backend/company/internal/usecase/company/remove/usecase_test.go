@@ -59,7 +59,7 @@ func TestUsecase_Execute_OK(t *testing.T) {
 
 	uc := remove.NewUsecase(repo, memRepo, cache)
 
-	idenity := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	idenity := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), uuid.New(), idenity)
 
@@ -81,7 +81,7 @@ func TestUsecase_Execute_CompanyRepoErr(t *testing.T) {
 
 	uc := remove.NewUsecase(repo, memRepo, cache)
 
-	ident := identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
 	err := uc.Execute(context.Background(), uuid.New(), ident)
 
