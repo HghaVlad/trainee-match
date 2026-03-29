@@ -26,7 +26,7 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 		}).ID
 
 	vacD := api.GetVacancy(t, compID, vacID1)
-	assert.Equal(t, vacD.Status, string(vacancy.StatusDraft))
+	assert.Equal(t, string(vacancy.StatusDraft), vacD.Status)
 
 	comp0 := api.GetCompany(t, compID)
 	assert.Equal(t, 0, comp0.OpenVacanciesCnt)
@@ -65,8 +65,6 @@ func Test_Vacancy_StatusFlow(t *testing.T) {
 
 	vacA := api.GetVacancy(t, compID, vacID1)
 	assert.Equal(t, vacA.Status, string(vacancy.StatusArchived))
-
-	// TODO: find error
 
 	// check that can't get published
 	api.RequirePublishedVacancyNotFound(t, vacID1)

@@ -54,6 +54,10 @@ func GetAuthClient(ctx context.Context, authServiceBaseURL string) (*http.Client
 		return nil, err
 	}
 
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	if resp.StatusCode != http.StatusOK {
 		var errResp struct {
 			Error string `json:"error"`
@@ -65,12 +69,8 @@ func GetAuthClient(ctx context.Context, authServiceBaseURL string) (*http.Client
 			"status", resp.Status,
 			"err_msg", errResp.Error,
 		)
-		return nil, err
+		return nil, fmt.Errorf("register user status 200 expected, returned %d", resp.StatusCode)
 	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	loginBody := fmt.Sprintf(`{
 		"username":"%s",

@@ -112,7 +112,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		vacDelete,
 	)
 
-	authMiddleware, err := compmiddleware.NewAuthMiddleware(conf)
+	authMiddleware, err := compmiddleware.NewAuthMiddleware(ctx, conf)
 	if err != nil {
 		return nil, err
 	}

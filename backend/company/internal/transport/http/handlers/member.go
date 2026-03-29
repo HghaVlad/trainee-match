@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -60,7 +61,7 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 
 	err := h.add.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to add company member",
 				"member_id", dtoReq.UserID)
@@ -98,7 +99,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to update company member",
 				"member_id", userID)
@@ -122,7 +123,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /companies/{id}/members/{user-id} [remove]
+// @Router /companies/{id}/members/{user-id} [delete]
 func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	iden := middleware.IdentityFromContext(ctx)
@@ -131,7 +132,7 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.delete.Execute(ctx, companyID, userID, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to delete company member",
 				"member_id", userID)
@@ -142,26 +143,30 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *MemberHandler) handleErr(w http.ResponseWriter, err error) bool {
+func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound),
 		errors.Is(err, member.ErrCompanyMemberNotFound):
-		helpers.RespondError(w, http.StatusNotFound, err)
+		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
 	case errors.Is(err, member.ErrCompanyMemberAlreadyExists):
-		helpers.RespondError(w, http.StatusConflict, err)
+		helpers.RespondError(ctx, w, http.StatusConflict, err)
 		return true
 
 	case errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole):
-		helpers.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 
 	case errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
-		helpers.RespondError(w, http.StatusForbidden, err)
+		helpers.RespondError(ctx, w, http.StatusForbidden, err)
+		return true
+
+	case errors.Is(err, context.DeadlineExceeded):
+		helpers.RespondErrorMsg(ctx, w, http.StatusGatewayTimeout, "timeout: operation took too long")
 		return true
 
 	default:

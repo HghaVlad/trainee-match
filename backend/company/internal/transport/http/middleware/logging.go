@@ -1,10 +1,14 @@
 package middleware
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 )
 
 // LoggingMiddleware logs info about served request.
@@ -18,11 +22,22 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(ww, r)
 
-		logger := LoggerFromContext(r.Context())
+		ctx := r.Context()
+		logger := utilslog.FromContext(ctx)
+
+		duration := time.Since(start)
+
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			logger.Error("request timeout",
+				"status", ww.Status(),
+				"duration", duration,
+			)
+			return
+		}
 
 		logger.Info("http request",
 			"status", ww.Status(),
-			"duration", time.Since(start),
+			"duration", duration,
 			"size", ww.BytesWritten(),
 		)
 	})

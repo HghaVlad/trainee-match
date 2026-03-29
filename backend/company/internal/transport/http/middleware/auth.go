@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
@@ -19,12 +21,15 @@ type AuthMiddleware struct {
 	keys   jwk.Set
 }
 
-func NewAuthMiddleware(conf *config.Config) (*AuthMiddleware, error) {
+func NewAuthMiddleware(ctx context.Context, conf *config.Config) (*AuthMiddleware, error) {
 	m := &AuthMiddleware{
 		JWKUrl: conf.HTTP.JWKUrl,
 	}
 
-	err := m.getPublicKey()
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+
+	err := m.getPublicKey(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,14 +40,14 @@ func NewAuthMiddleware(conf *config.Config) (*AuthMiddleware, error) {
 func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		logger := LoggerFromContext(ctx)
+		logger := utilslog.FromContext(ctx)
 
 		cookies := r.Cookies()
 		if cookies == nil {
 			logger.InfoContext(ctx, "http request unauthorized: missing cookies",
 				"status", http.StatusUnauthorized)
 
-			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "missing cookies")
+			helpers.RespondErrorMsg(ctx, w, http.StatusUnauthorized, "missing cookies")
 			return
 		}
 
@@ -51,7 +56,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			logger.InfoContext(ctx, "http request unauthorized: couldn't get jwt from cookies",
 				"status", http.StatusUnauthorized)
 
-			helpers.RespondErrorMsg(w, http.StatusUnauthorized, "couldn't get jwt from cookies")
+			helpers.RespondErrorMsg(ctx, w, http.StatusUnauthorized, "couldn't get jwt from cookies")
 			return
 		}
 
@@ -66,7 +71,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			logger.InfoContext(ctx, "http request unauthorized: invalid keys or realm",
 				"status", http.StatusUnauthorized)
 
-			helpers.RespondError(w, http.StatusUnauthorized, err)
+			helpers.RespondError(ctx, w, http.StatusUnauthorized, err)
 			return
 		}
 
@@ -75,7 +80,7 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 			logger.InfoContext(ctx, "http request unauthorized",
 				"status", http.StatusUnauthorized, "err", err)
 
-			helpers.RespondError(w, http.StatusUnauthorized, err)
+			helpers.RespondError(ctx, w, http.StatusUnauthorized, err)
 			return
 		}
 
@@ -85,13 +90,13 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 		)
 
 		ctx = context.WithValue(ctx, identityKey, ident)
-		ctx = context.WithValue(ctx, loggerCtxKey, logger)
+		ctx = utilslog.WithLoggerContext(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (m *AuthMiddleware) getPublicKey() error {
-	keys, err := jwk.Fetch(context.Background(), m.JWKUrl)
+func (m *AuthMiddleware) getPublicKey(ctx context.Context) error {
+	keys, err := jwk.Fetch(ctx, m.JWKUrl)
 	if err != nil {
 		return err
 	}
@@ -141,22 +146,46 @@ func getIdentityFromToken(token jwt.Token, _ *CustomClaims) (*identity.Identity,
 		return nil, errors.New("invalid jwt: realm_access invalid")
 	}
 
-	for _, role := range realmAccess.Roles {
+	bestRole, err := getBestRole(realmAccess.Roles)
+	if err != nil {
+		return nil, err
+	}
+
+	ident.Role = bestRole
+	return ident, nil
+}
+
+// in case there are multiple roles in claims, we take
+// Admin > HR > Candidate
+func getBestRole(roles []string) (identity.GlobalRole, error) {
+	var rolePriority = map[identity.GlobalRole]int{
+		identity.RoleCandidate: 1,
+		identity.RoleHR:        2,
+		identity.RoleAdmin:     3,
+	}
+
+	var bestRole identity.GlobalRole
+	var bestPriority int
+
+	for _, role := range roles {
 		grole := identity.GlobalRole(role)
 
-		switch grole {
-		case identity.RoleCandidate,
-			identity.RoleHR,
-			identity.RoleAdmin:
-			ident.Role = grole
+		p, ok := rolePriority[grole]
+		if !ok {
+			continue
+		}
+
+		if p > bestPriority {
+			bestPriority = p
+			bestRole = grole
 		}
 	}
 
-	if ident.Role == "" {
-		return nil, errors.New("invalid jwt: no valid role was found")
+	if bestRole == "" {
+		return "", errors.New("no valid role")
 	}
 
-	return ident, nil
+	return bestRole, nil
 }
 
 type RealmAccess struct {

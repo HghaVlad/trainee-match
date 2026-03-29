@@ -1,31 +1,32 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
-	"log" //nolint:depguard // fix it later
 	"net/http"
 
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 )
 
-func RespondJSON(w http.ResponseWriter, status int, payload any) {
+func RespondJSON(ctx context.Context, w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		// TODO: fix this later
-		log.Printf("json encode error: %v", err)
+		logger := utilslog.FromContext(ctx)
+		logger.ErrorContext(ctx, "json encode error", "err", err)
 	}
 }
 
-func RespondError(w http.ResponseWriter, status int, err error) {
-	RespondJSON(w, status, dto.ErrorResponse{
+func RespondError(ctx context.Context, w http.ResponseWriter, status int, err error) {
+	RespondJSON(ctx, w, status, dto.ErrorResponse{
 		Error: err.Error(),
 	})
 }
 
-func RespondErrorMsg(w http.ResponseWriter, status int, msg string) {
-	RespondJSON(w, status, dto.ErrorResponse{
+func RespondErrorMsg(ctx context.Context, w http.ResponseWriter, status int, msg string) {
+	RespondJSON(ctx, w, status, dto.ErrorResponse{
 		Error: msg,
 	})
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -81,7 +82,7 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	vac, err := h.getByID.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to get vacancy",
 				"id", vacancyID)
@@ -90,7 +91,7 @@ func (h *VacancyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.VacancyToDtoResponse(vac)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // GetPublishedByID godoc
@@ -111,7 +112,7 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 
 	vac, err := h.getPublishedByID.Execute(ctx, vacancyID)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to get vacancy",
 				"id", vacancyID)
@@ -120,7 +121,7 @@ func (h *VacancyHandler) GetPublishedByID(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := mappers.VacancyPublicToDtoResponse(vac)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Create godoc
@@ -148,7 +149,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to create vacancy",
 				"company_id", companyID)
@@ -157,7 +158,7 @@ func (h *VacancyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dtoResp := mappers.VacancyCreateRespToDto(resp)
-	helpers.RespondJSON(w, http.StatusCreated, dtoResp)
+	helpers.RespondJSON(ctx, w, http.StatusCreated, dtoResp)
 }
 
 // List godoc
@@ -196,13 +197,13 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	req, err := helpers.ListVacRequestFromQuery(r)
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return
 	}
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to list vacancy")
 		}
@@ -210,7 +211,7 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.VacancyListRespToDto(res)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // ListByCompany godoc
@@ -245,7 +246,7 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.listByComp.Execute(ctx, req)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to list vacancy by company")
 		}
@@ -253,7 +254,7 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.ListVacByCompRespToDto(res)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Update godoc
@@ -284,7 +285,7 @@ func (h *VacancyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to update vacancy",
 				"id", vacancyID)
@@ -318,7 +319,7 @@ func (h *VacancyHandler) Publish(w http.ResponseWriter, r *http.Request) {
 
 	err := h.publish.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to publish vacancy",
 				"id", vacancyID)
@@ -352,7 +353,7 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 
 	err := h.archive.Execute(ctx, companyID, vacancyID, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to archive vacancy",
 				"id", vacancyID)
@@ -385,7 +386,7 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.del.Execute(ctx, vacancyID, companyID, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to delete vacancy",
 				"id", vacancyID)
@@ -396,11 +397,11 @@ func (h *VacancyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) bool {
+func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, vacancy.ErrVacancyNotFound),
 		errors.Is(err, company.ErrCompanyNotFound):
-		helpers.RespondError(w, http.StatusNotFound, err)
+		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
 	case errors.Is(err, vacancy.ErrInvalidWorkFormat),
@@ -421,14 +422,18 @@ func (h *VacancyHandler) handleErr(w http.ResponseWriter, err error) bool {
 		errors.Is(err, common.ErrCursorOrderMismatch),
 		errors.Is(err, common.ErrUnsupportedListOrder),
 		errors.Is(err, common.ErrLimitTooLarge):
-		helpers.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
-		helpers.RespondError(w, http.StatusForbidden, err)
+		helpers.RespondError(ctx, w, http.StatusForbidden, err)
+		return true
+
+	case errors.Is(err, context.DeadlineExceeded):
+		helpers.RespondErrorMsg(ctx, w, http.StatusGatewayTimeout, "timeout: operation took too long")
 		return true
 
 	default:

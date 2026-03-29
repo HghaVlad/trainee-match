@@ -54,19 +54,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse"
+                            "$ref": "#/definitions/dto.CompanyListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -90,7 +90,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreateRequest"
+                            "$ref": "#/definitions/dto.CompanyCreateRequest"
                         }
                     }
                 ],
@@ -98,37 +98,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreatedResponse"
+                            "$ref": "#/definitions/dto.CompanyCreatedResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -180,25 +180,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyByCompListResponse"
+                            "$ref": "#/definitions/dto.VacancyByCompListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -229,7 +229,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreateRequest"
+                            "$ref": "#/definitions/dto.VacancyCreateRequest"
                         }
                     }
                 ],
@@ -237,37 +237,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreatedResponse"
+                            "$ref": "#/definitions/dto.VacancyCreatedResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -306,25 +306,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyFullResponse"
+                            "$ref": "#/definitions/dto.VacancyFullResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -361,31 +361,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -423,7 +423,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyUpdateRequest"
+                            "$ref": "#/definitions/dto.VacancyUpdateRequest"
                         }
                     }
                 ],
@@ -434,37 +434,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -506,31 +506,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -572,31 +572,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -628,25 +628,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse"
+                            "$ref": "#/definitions/dto.CompanyResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -676,31 +676,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -731,7 +731,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateRequest"
+                            "$ref": "#/definitions/dto.CompanyUpdateRequest"
                         }
                     }
                 ],
@@ -742,37 +742,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -805,7 +805,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyAddHrRequest"
+                            "$ref": "#/definitions/dto.CompanyAddHrRequest"
                         }
                     }
                 ],
@@ -816,37 +816,37 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -885,31 +885,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -947,7 +947,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateMemberRequest"
+                            "$ref": "#/definitions/dto.CompanyUpdateMemberRequest"
                         }
                     }
                 ],
@@ -958,31 +958,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -1111,19 +1111,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListResponse"
+                            "$ref": "#/definitions/dto.VacancyListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -1155,25 +1155,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyPublicResponse"
+                            "$ref": "#/definitions/dto.VacancyPublicResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/responds.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -1181,7 +1181,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyAddHrRequest": {
+        "dto.CompanyAddHrRequest": {
             "type": "object",
             "properties": {
                 "role": {
@@ -1198,7 +1198,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreateRequest": {
+        "dto.CompanyCreateRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -1215,7 +1215,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyCreatedResponse": {
+        "dto.CompanyCreatedResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1224,7 +1224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse": {
+        "dto.CompanyListItemResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1241,13 +1241,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListResponse": {
+        "dto.CompanyListResponse": {
             "type": "object",
             "properties": {
                 "companies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyListItemResponse"
+                        "$ref": "#/definitions/dto.CompanyListItemResponse"
                     }
                 },
                 "nextCursor": {
@@ -1255,7 +1255,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyResponse": {
+        "dto.CompanyResponse": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -1292,7 +1292,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateMemberRequest": {
+        "dto.CompanyUpdateMemberRequest": {
             "type": "object",
             "properties": {
                 "role": {
@@ -1305,7 +1305,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.CompanyUpdateRequest": {
+        "dto.CompanyUpdateRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -1322,7 +1322,15 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyByCompListItemResponse": {
+        "dto.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VacancyByCompListItemResponse": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1363,7 +1371,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyByCompListResponse": {
+        "dto.VacancyByCompListResponse": {
             "type": "object",
             "properties": {
                 "nextCursor": {
@@ -1372,22 +1380,14 @@ const docTemplate = `{
                 "vacancies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyByCompListItemResponse"
+                        "$ref": "#/definitions/dto.VacancyByCompListItemResponse"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreateRequest": {
+        "dto.VacancyCreateRequest": {
             "type": "object",
             "properties": {
-                "DurationFromDays": {
-                    "type": "integer",
-                    "example": 60
-                },
-                "DurationToDays": {
-                    "type": "integer",
-                    "example": 90
-                },
                 "city": {
                     "type": "string",
                     "example": "Mountain View"
@@ -1395,6 +1395,14 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "example": "Join Google's backend team to build scalable services in Go."
+                },
+                "durationFromDays": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "durationToDays": {
+                    "type": "integer",
+                    "example": 90
                 },
                 "employmentType": {
                     "type": "string",
@@ -1440,7 +1448,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyCreatedResponse": {
+        "dto.VacancyCreatedResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1449,7 +1457,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyFullResponse": {
+        "dto.VacancyFullResponse": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1553,7 +1561,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListItemResponse": {
+        "dto.VacancyListItemResponse": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1602,7 +1610,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListResponse": {
+        "dto.VacancyListResponse": {
             "type": "object",
             "properties": {
                 "nextCursor": {
@@ -1611,12 +1619,12 @@ const docTemplate = `{
                 "vacancies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyListItemResponse"
+                        "$ref": "#/definitions/dto.VacancyListItemResponse"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyPublicResponse": {
+        "dto.VacancyPublicResponse": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1703,7 +1711,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_company_internal_delivery_http_dto.VacancyUpdateRequest": {
+        "dto.VacancyUpdateRequest": {
             "type": "object",
             "properties": {
                 "city": {
@@ -1773,22 +1781,13 @@ const docTemplate = `{
                     "example": "remote"
                 }
             }
-        },
-        "responds.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "order not found: id=550e8400-e29b-41d4-a716-446655440000"
-                }
-            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
-
-//nolint:gochecknoglobals // gen
+//
+//nolint:gochecknoglobals // generated
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
@@ -1802,7 +1801,7 @@ var SwaggerInfo = &swag.Spec{
 	RightDelim:       "}}",
 }
 
-//nolint:gochecknoinits // gen
+//nolint:gochecknoinits // generated
 func init() {
 	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
 }

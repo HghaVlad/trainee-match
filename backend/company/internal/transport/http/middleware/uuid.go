@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 )
 
@@ -26,9 +27,9 @@ func UUIDMiddleware(key string) func(http.Handler) http.Handler {
 
 			id, err := uuid.Parse(raw)
 			if err != nil {
-				logger := LoggerFromContext(ctx)
+				logger := utilslog.FromContext(ctx)
 				logger.InfoContext(ctx, "Invalid UUID: "+raw)
-				helpers.RespondErrorMsg(w, http.StatusBadRequest, "Invalid UUID: "+raw)
+				helpers.RespondErrorMsg(ctx, w, http.StatusBadRequest, "Invalid UUID: "+raw)
 				return
 			}
 

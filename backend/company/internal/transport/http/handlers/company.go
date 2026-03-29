@@ -8,6 +8,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mappers"
@@ -64,7 +65,7 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	comp, err := h.getByID.Execute(ctx, id)
 
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to get company", "id", id)
 		}
@@ -72,7 +73,7 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.GetCompRespToDto(comp)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // List godoc
@@ -102,7 +103,7 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to list companies")
 		}
@@ -110,7 +111,7 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.CompanyListRespToDto(res)
-	helpers.RespondJSON(w, http.StatusOK, resp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Create godoc
@@ -136,7 +137,7 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.create.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to create company", "name", req.Name)
 		}
@@ -144,7 +145,7 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dtoResp := mappers.CompanyCreateRespToDto(resp)
-	helpers.RespondJSON(w, http.StatusCreated, dtoResp)
+	helpers.RespondJSON(ctx, w, http.StatusCreated, dtoResp)
 }
 
 // Update godoc
@@ -173,7 +174,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	err := h.update.Execute(ctx, req, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to update company", "id", id)
 		}
@@ -195,7 +196,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /companies/{id} [remove]
+// @Router /companies/{id} [delete]
 func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	iden := middleware.IdentityFromContext(ctx)
@@ -203,7 +204,7 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.delete.Execute(ctx, id, iden)
 	if err != nil {
-		expected := h.handleErr(w, err)
+		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to delete company", "id", id)
 		}
@@ -213,15 +214,15 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
+func (h *CompanyHandler) handleErr(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound):
-		helpers.RespondError(w, http.StatusNotFound, err)
+		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
 	case errors.Is(err, company.ErrCompanyAlreadyExists),
 		errors.Is(err, member.ErrCompanyMemberAlreadyExists):
-		helpers.RespondError(w, http.StatusConflict, err)
+		helpers.RespondError(ctx, w, http.StatusConflict, err)
 		return true
 
 	case errors.Is(err, common.ErrInvalidCursor),
@@ -230,14 +231,18 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 		errors.Is(err, company.ErrCompanyInvalidNameLen),
 		errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole):
-		helpers.RespondError(w, http.StatusBadRequest, err)
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
-		helpers.RespondError(w, http.StatusForbidden, err)
+		helpers.RespondError(ctx, w, http.StatusForbidden, err)
+		return true
+
+	case errors.Is(err, context.DeadlineExceeded):
+		helpers.RespondErrorMsg(ctx, w, http.StatusGatewayTimeout, "timeout: operation took too long")
 		return true
 
 	default:
@@ -246,10 +251,10 @@ func (h *CompanyHandler) handleErr(w http.ResponseWriter, err error) bool {
 }
 
 func handleUnexpectedErr(ctx context.Context, w http.ResponseWriter, err error, ctxMsg string, logArgs ...any) {
-	logger := middleware.LoggerFromContext(ctx)
+	logger := utilslog.FromContext(ctx)
 	logArgs = append(logArgs, "err", err)
 	logger.ErrorContext(ctx, ctxMsg, logArgs...)
-	helpers.RespondErrorMsg(w, http.StatusInternalServerError, "unexpected error")
+	helpers.RespondErrorMsg(ctx, w, http.StatusInternalServerError, "unexpected error")
 }
 
 func (h *CompanyHandler) parseOrderQuery(r *http.Request) list.Order {

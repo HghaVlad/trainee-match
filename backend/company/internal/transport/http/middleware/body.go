@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	utilslog "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 )
 
@@ -27,11 +28,11 @@ func BindJSONBodyMiddleware[T any]() func(http.Handler) http.Handler {
 
 			var body T
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				logger := LoggerFromContext(ctx)
+				logger := utilslog.FromContext(ctx)
 				logger.InfoContext(ctx, "invalid JSON body",
 					"status", http.StatusBadRequest, "err", err)
 
-				helpers.RespondErrorMsg(w, http.StatusBadRequest, "invalid JSON body")
+				helpers.RespondErrorMsg(ctx, w, http.StatusBadRequest, "invalid JSON body")
 				return
 			}
 
