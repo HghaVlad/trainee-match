@@ -79,6 +79,65 @@ services:
       - candidate-db
       - auth-service
 
+  company-postgres:
+    image: postgres:17
+    env_file:
+      - company/.env
+    ports:
+      - "5433:5432"
+    volumes:
+      - company-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${COMPANY_PGS_USER} -d ${COMPANY_PGS_NAME}" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  company-postgres-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./company/internal/infrastructure/db/postgres/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://${COMPANY_PGS_USER}:${COMPANY_PGS_PASS}@company-postgres:5432/${COMPANY_PGS_NAME}?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      company-postgres:
+        condition: service_healthy
+
+  redis-cache:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  company-service:
+    build:
+      context: ./company
+    env_file:
+      - company/.env
+    ports:
+      - "8088:8080"
+    depends_on:
+      company-postgres:
+        condition: service_healthy
+      company-postgres-migrate:
+        condition: service_completed_successfully
+      redis-cache:
+        condition: service_healthy
+
 volumes:
   keycloak-db-data:
   candidate-db-data:
+  company-pg-data:
+  redis_data:
