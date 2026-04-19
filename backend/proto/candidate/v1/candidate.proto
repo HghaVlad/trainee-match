@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package candidate.v1;
+
+option go_package = "github.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1;candidatev1";
+
+service CandidateService {
+  rpc GetCandidate (GetCandidateByUserIdRequest) returns (GetCandidateResponse);
+  rpc GetResumeById(GetResumeByIdRequest) returns (GetResumeResponse);
+}
+
+message GetCandidateByUserIdRequest {
+  string user_id = 1;
+}
+
+message GetResumeByIdRequest {
+  string resume_id = 1;
+  string user_id = 2;
+}
+
+message GetCandidateResponse {
+  string id = 1;
+  string user_id = 2;
+  string phone = 3;
+  string telegram = 4;
+  string city = 5;
+  string birthday = 6;
+}
+
+message GetResumeResponse {
+  string id = 1;
+  string candidate_id = 2;
+  string name = 3;
+  string status = 4;
+}
