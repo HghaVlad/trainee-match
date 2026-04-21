@@ -4,8 +4,16 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/grpc"
+
+	grpc2 "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/grpc"
+
+	candidatev1 "github.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
@@ -20,12 +28,13 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
-	server *http.Server
-	Db     *pgxpool.Pool
+	httpServer   *http.Server
+	grpcServer   *grpc.Server
+	grpcListener net.Listener
+	Db           *pgxpool.Pool
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -66,27 +75,77 @@ func Build(conf *config.Config) (*App, error) {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	grpcServer := grpc.NewServer()
+	candidateService := grpc2.NewCandidateService(getCandidateByUserIdUC, getResumeUC)
+	candidatev1.RegisterCandidateServiceServer(grpcServer, candidateService)
+	grpcLis, err := net.Listen("tcp", conf.GrpcAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
-		server: httpServer,
-		Db:     pgPool,
+		httpServer:   httpServer,
+		Db:           pgPool,
+		grpcServer:   grpcServer,
+		grpcListener: grpcLis,
 	}, nil
 }
 
 func (app *App) Run() error {
+	errCh := make(chan error, 2)
 
-	slog.Info("Server started")
-	err := app.server.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("http listening server err", "error", err)
+	go func() {
+		err := app.httpServer.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+	go func() {
+		if err := app.grpcServer.Serve(app.grpcListener); err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- nil
+	}()
+
+	for {
+		err := <-errCh
+		if err != nil {
+			return err
+		}
 	}
-	return err
 }
 
 func (app *App) Shutdown(ctx context.Context) {
-	err := app.server.Shutdown(ctx)
-	if err != nil {
-		slog.Error("shutdown error", "error", err)
+	if app.httpServer != nil {
+		if err := app.httpServer.Shutdown(ctx); err != nil {
+			slog.Error("http shutdown error", "error", err)
+		}
 	}
-	slog.Info("Server stopped")
-	app.Db.Close()
+
+	if app.grpcServer != nil {
+		done := make(chan struct{})
+		go func() {
+			app.grpcServer.GracefulStop()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-ctx.Done():
+			app.grpcServer.Stop()
+		}
+	}
+
+	if app.grpcListener != nil {
+		if err := app.grpcListener.Close(); err != nil {
+			slog.Error("grpc listener close error", "error", err)
+		}
+	}
+
+	if app.Db != nil {
+		app.Db.Close()
+	}
 }

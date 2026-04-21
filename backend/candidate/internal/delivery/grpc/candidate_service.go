@@ -16,18 +16,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type Server struct {
+type CandidateService struct {
 	candidatepb.UnimplementedCandidateServiceServer
 
 	getByUserUC *get_candidate_by_user_id.UseCase
 	getResumeUC *get_resume.UseCase
 }
 
-func New(getByUser *get_candidate_by_user_id.UseCase, getResume *get_resume.UseCase) *Server {
-	return &Server{getByUserUC: getByUser, getResumeUC: getResume}
+func NewCandidateService(getByUser *get_candidate_by_user_id.UseCase, getResume *get_resume.UseCase) *CandidateService {
+	return &CandidateService{getByUserUC: getByUser, getResumeUC: getResume}
 }
 
-func (s *Server) GetCandidateByUserId(
+func (s *CandidateService) GetCandidate(
 	ctx context.Context,
 	req *candidatepb.GetCandidateByUserIdRequest,
 ) (*candidatepb.GetCandidateResponse, error) {
@@ -58,7 +58,7 @@ func (s *Server) GetCandidateByUserId(
 	}, nil
 }
 
-func (s *Server) GetResumeById(
+func (s *CandidateService) GetResumeById(
 	ctx context.Context,
 	req *candidatepb.GetResumeByIdRequest,
 ) (*candidatepb.GetResumeResponse, error) {
