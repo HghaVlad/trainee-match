@@ -1,0 +1,58 @@
+package get
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+)
+
+type Usecase struct {
+	repo  CompanyRepo
+	cache CacheRepo
+}
+
+func NewGetByIDUsecase(repo CompanyRepo, cache CacheRepo) *Usecase {
+	return &Usecase{
+		repo:  repo,
+		cache: cache,
+	}
+}
+
+func (u *Usecase) Execute(ctx context.Context, id uuid.UUID) (*Response, error) {
+	// TODO: think about retrieving logo from minio (via presigned or nah)
+	company := u.cache.Get(ctx, id)
+
+	if company != nil {
+		resp := toResponse(company, company.LogoKey)
+		return resp, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	company, err := u.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	u.cache.Put(ctx, id, company, time.Second*300)
+
+	resp := toResponse(company, company.LogoKey)
+	return resp, nil
+}
+
+func toResponse(company *domain.Company, logoURL *string) *Response {
+	return &Response{
+		ID:               company.ID,
+		Name:             company.Name,
+		OpenVacanciesCnt: company.OpenVacanciesCnt,
+		Description:      company.Description,
+		Website:          company.Website,
+		LogoURL:          logoURL,
+		CreatedAt:        company.CreatedAt,
+		UpdatedAt:        company.UpdatedAt,
+	}
+}

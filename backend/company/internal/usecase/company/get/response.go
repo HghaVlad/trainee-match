@@ -1,0 +1,18 @@
+package get
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type Response struct {
+	ID               uuid.UUID
+	Name             string
+	OpenVacanciesCnt int
+	Description      *string
+	Website          *string
+	LogoURL          *string // TODO: resolve this
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
