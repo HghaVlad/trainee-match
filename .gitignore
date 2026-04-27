@@ -35,3 +35,7 @@ go.work.sum
 # swag generated docs
 **/swagger.json
 **/swagger.yaml
+
+.sisyphus/
+opencode.json
+*opencode*
