@@ -1,7 +1,10 @@
 import { z } from 'zod'
 
 const envSchema = z.object({
-  VITE_API_URL: z.string().url('VITE_API_URL must be a valid URL'),
+  VITE_API_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : undefined)),
   VITE_USE_MSW: z.string().optional().transform((v) => v === 'true'),
   VITE_APP_ENV: z
     .enum(['development', 'staging', 'production'])
