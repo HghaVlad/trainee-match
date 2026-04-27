@@ -1,9 +1,8 @@
 import { httpClient } from '@/shared/api/http/client'
-import { eventBus } from '@/shared/api/http/eventBus'
 import { useSessionStore } from './sessionStore'
 import type { SessionUser } from './sessionStore'
 import { env } from '@/shared/config/env'
-import { AppError } from '@/shared/api/http/errors'
+import { AppError } from '@/shared/api/http/client'
 
 interface AuthMeResponse {
   id: number
@@ -79,6 +78,8 @@ export async function bootstrap(): Promise<void> {
   }
 }
 
-eventBus.on('session:expired', () => {
-  useSessionStore.getState().setAnon()
-})
+if (typeof window !== 'undefined') {
+  window.addEventListener('session:expired', () => {
+    useSessionStore.getState().setAnon()
+  })
+}
