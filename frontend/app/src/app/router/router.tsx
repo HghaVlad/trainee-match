@@ -15,6 +15,7 @@ const LoginPage = lazy(() => import('@/pages/login'))
 const RegisterPage = lazy(() => import('@/pages/register'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const ForbiddenPage = lazy(() => import('@/pages/Forbidden'))
+const CandidateProfilePage = lazy(() => import('@/pages/me/profile'))
 
 const router = createBrowserRouter([
   {
@@ -47,7 +48,11 @@ const router = createBrowserRouter([
         path: '/me',
         loader: requireAuth,
         children: [
-          { path: 'profile', element: <Placeholder name="Candidate Profile" /> },
+          { path: 'profile', element: (
+            <Suspense fallback={null}>
+              <CandidateProfilePage />
+            </Suspense>
+          ) },
           { path: 'resumes', element: <Placeholder name="Resumes" /> },
           { path: 'resumes/:id', element: <Placeholder name="Resume Edit" /> },
         ],
