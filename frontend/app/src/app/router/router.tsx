@@ -16,6 +16,18 @@ const RegisterPage = lazy(() => import('@/pages/register'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const ForbiddenPage = lazy(() => import('@/pages/Forbidden'))
 const CandidateProfilePage = lazy(() => import('@/pages/me/profile'))
+const CompaniesPage = lazy(() => import('@/pages/companies'))
+const CompanyDetailPage = lazy(() => import('@/pages/companies/detail'))
+const VacanciesPage = lazy(() => import('@/pages/vacancies'))
+const VacancyDetailPage = lazy(() => import('@/pages/vacancies/detail'))
+
+function lazyEl(El: React.LazyExoticComponent<() => React.JSX.Element>) {
+  return (
+    <Suspense fallback={null}>
+      <El />
+    </Suspense>
+  )
+}
 
 const router = createBrowserRouter([
   {
@@ -40,19 +52,15 @@ const router = createBrowserRouter([
         ),
       },
       { path: '/', element: <Placeholder name="Home / Vacancies" /> },
-      { path: '/vacancies', element: <Placeholder name="Vacancy List" /> },
-      { path: '/vacancies/:id', element: <Placeholder name="Vacancy Detail" /> },
-      { path: '/companies', element: <Placeholder name="Companies" /> },
-      { path: '/companies/:id', element: <Placeholder name="Company Detail" /> },
+      { path: '/vacancies', element: lazyEl(VacanciesPage) },
+      { path: '/vacancies/:id', element: lazyEl(VacancyDetailPage) },
+      { path: '/companies', element: lazyEl(CompaniesPage) },
+      { path: '/companies/:id', element: lazyEl(CompanyDetailPage) },
       {
         path: '/me',
         loader: requireAuth,
         children: [
-          { path: 'profile', element: (
-            <Suspense fallback={null}>
-              <CandidateProfilePage />
-            </Suspense>
-          ) },
+          { path: 'profile', element: lazyEl(CandidateProfilePage) },
           { path: 'resumes', element: <Placeholder name="Resumes" /> },
           { path: 'resumes/:id', element: <Placeholder name="Resume Edit" /> },
         ],
