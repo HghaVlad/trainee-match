@@ -1,73 +1,72 @@
-# React + TypeScript + Vite
+# trainee-match — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web client for trainee/company matching. React 19 + Vite + TypeScript with auto-generated API client from Swagger.
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Build**: Vite 7, TypeScript 5
+- **UI**: React 19, Tailwind CSS, shadcn/ui (Radix primitives)
+- **Routing**: React Router v7
+- **Data**: TanStack Query 5 (server state) + Zustand (session/UI state only)
+- **Forms**: React Hook Form + Zod
+- **API**: Axios via Orval-generated React Query hooks
+- **Tests**: Vitest + Testing Library + MSW; Playwright for e2e
+- **Lint**: ESLint (boundaries) + Prettier
 
-## React Compiler
+## Quick start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm codegen     # generate API client from swagger specs
+pnpm dev         # http://localhost:5173 (MSW enabled in dev when VITE_USE_MSW=true)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Quality gates:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm typecheck   # tsc --noEmit
+pnpm lint        # eslint
+pnpm test        # vitest (unit + integration with MSW)
+pnpm test:e2e    # playwright (smoke)
+pnpm build       # production bundle
 ```
+
+## Project structure (Feature-Sliced Design)
+
+```
+src/
+  app/        composition root: providers, router, global styles
+  pages/      route components — thin shells that compose widgets/features
+  widgets/    composite blocks (RootLayout, Header, ...)
+  features/   user-facing features (auth, candidate-profile, ...)
+  entities/   domain models without a feature surface (rare)
+  shared/     cross-cutting code: ui-kit, http client, session, hooks
+  api/
+    generated/  Orval output — DO NOT EDIT
+  test/       MSW handlers + vitest setup
+e2e/          Playwright specs
+```
+
+ESLint `boundaries` plugin enforces upward-only imports. `shared/` may not import from any other layer.
+
+## Environment variables
+
+Defined in `.env`, prefixed `VITE_` to be exposed to the browser:
+
+| Var | Purpose |
+|-----|---------|
+| `VITE_API_URL` | Backend base URL. Empty = same-origin (proxy via Vite in dev). |
+| `VITE_USE_MSW` | `true` enables MSW in browser; used for dev-without-backend and Playwright. |
+
+## Backend integration
+
+API client is generated from Swagger 2.0 specs. The pipeline converts Swagger → OpenAPI 3 → Orval (axios + react-query). See [`docs/codegen.md`](./docs/codegen.md).
+
+Auth is cookie-based. Tokens are NEVER stored client-side. See [`docs/auth.md`](./docs/auth.md).
+
+## Documentation
+
+- [`docs/architecture.md`](./docs/architecture.md) — FSD layers, data flow, state strategy
+- [`docs/codegen.md`](./docs/codegen.md) — Orval pipeline and rules
+- [`docs/auth.md`](./docs/auth.md) — Cookie auth, refresh interceptor, role guards
+- [`docs/conventions.md`](./docs/conventions.md) — Code conventions and forbidden patterns
