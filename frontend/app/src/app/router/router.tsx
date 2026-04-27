@@ -16,10 +16,18 @@ const RegisterPage = lazy(() => import('@/pages/register'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const ForbiddenPage = lazy(() => import('@/pages/Forbidden'))
 const CandidateProfilePage = lazy(() => import('@/pages/me/profile'))
+const ResumesPage = lazy(() => import('@/pages/me/resumes'))
+const ResumeEditPage = lazy(() => import('@/pages/me/resumes/edit'))
 const CompaniesPage = lazy(() => import('@/pages/companies'))
 const CompanyDetailPage = lazy(() => import('@/pages/companies/detail'))
 const VacanciesPage = lazy(() => import('@/pages/vacancies'))
 const VacancyDetailPage = lazy(() => import('@/pages/vacancies/detail'))
+const CompanyMePage = lazy(() => import('@/pages/company/me'))
+const CompanyVacanciesPage = lazy(() => import('@/pages/company/vacancies'))
+const CompanyVacancyEditPage = lazy(() => import('@/pages/company/vacancies/edit'))
+const ApplicationsStub = lazy(() => import('@/pages/stubs/Applications'))
+const InterviewsStub = lazy(() => import('@/pages/stubs/Interviews'))
+const OffersStub = lazy(() => import('@/pages/stubs/Offers'))
 
 function lazyEl(El: React.LazyExoticComponent<() => React.JSX.Element>) {
   return (
@@ -61,23 +69,23 @@ const router = createBrowserRouter([
         loader: requireAuth,
         children: [
           { path: 'profile', element: lazyEl(CandidateProfilePage) },
-          { path: 'resumes', element: <Placeholder name="Resumes" /> },
-          { path: 'resumes/:id', element: <Placeholder name="Resume Edit" /> },
+          { path: 'resumes', element: lazyEl(ResumesPage) },
+          { path: 'resumes/:id', element: lazyEl(ResumeEditPage) },
         ],
       },
       {
         path: '/company',
         loader: requireRole('Company'),
         children: [
-          { path: 'me', element: <Placeholder name="Company Profile" /> },
-          { path: 'members', element: <Placeholder name="Company Members" /> },
-          { path: 'vacancies', element: <Placeholder name="Company Vacancies" /> },
-          { path: 'vacancies/:id', element: <Placeholder name="Vacancy Edit" /> },
+          { path: 'me', element: lazyEl(CompanyMePage) },
+          { path: 'members', element: lazyEl(CompanyMePage) },
+          { path: 'vacancies', element: lazyEl(CompanyVacanciesPage) },
+          { path: 'vacancies/:id', element: lazyEl(CompanyVacancyEditPage) },
         ],
       },
-      { path: '/applications', element: <Placeholder name="Applications (Coming Soon)" /> },
-      { path: '/interviews', element: <Placeholder name="Interviews (Coming Soon)" /> },
-      { path: '/offers', element: <Placeholder name="Offers (Coming Soon)" /> },
+      { path: '/applications', element: lazyEl(ApplicationsStub) },
+      { path: '/interviews', element: lazyEl(InterviewsStub) },
+      { path: '/offers', element: lazyEl(OffersStub) },
       {
         path: '/403',
         element: (
