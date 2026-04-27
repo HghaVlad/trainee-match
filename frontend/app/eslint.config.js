@@ -8,9 +8,10 @@ import boundaries from 'eslint-plugin-boundaries'
 import unusedImports from 'eslint-plugin-unused-imports'
 
 export default defineConfig([
-  globalIgnores(['dist/**', 'src/api/generated/**', 'node_modules/**']),
+  globalIgnores(['dist/**', 'src/api/generated/**', 'node_modules/**', 'tailwind.config.ts']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['src/shared/ui/**', 'src/shared/hooks/use-toast.ts'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,

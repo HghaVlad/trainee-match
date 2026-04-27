@@ -63,13 +63,9 @@ async function bootstrapViaProbe(): Promise<SessionUser | null> {
 export async function bootstrap(): Promise<void> {
   const { setAuthed, setAnon } = useSessionStore.getState()
 
-  let user: SessionUser | null = null
-
-  if (env.VITE_AUTH_ME_AVAILABLE) {
-    user = await bootstrapViaAuthMe()
-  } else {
-    user = await bootstrapViaProbe()
-  }
+  const user = env.VITE_AUTH_ME_AVAILABLE
+    ? await bootstrapViaAuthMe()
+    : await bootstrapViaProbe()
 
   if (user) {
     setAuthed(user)
