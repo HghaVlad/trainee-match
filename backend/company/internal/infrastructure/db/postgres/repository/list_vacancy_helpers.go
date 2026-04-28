@@ -6,7 +6,9 @@ import (
 
 	"github.com/lib/pq"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 )
 
 const (
@@ -154,6 +156,25 @@ func salaryCursorToSQL(order list.Order, cursor list.SalaryCursor, args []any) (
 	}
 
 	args = append(args, cursor.SalaryFrom, cursor.SalaryTo, cursor.ID)
+	return condition, args
+}
+
+func listByCompStatusToSQL(status *vacancy.Status, args []any) (string, []any) {
+	if status == nil {
+		return "", args
+	}
+
+	condition := fmt.Sprintf("v.status = $%d", len(args)+1)
+	args = append(args, *status)
+	return condition, args
+}
+
+func listByCompCreatedAtCursorToSQL(cursor listbycomp.CreatedAtCursor, args []any) (string, []any) {
+	condition := fmt.Sprintf(
+		"(v.created_at, v.id) < ($%d, $%d)",
+		len(args)+1, len(args)+2)
+
+	args = append(args, cursor.CreatedAt, cursor.ID)
 	return condition, args
 }
 

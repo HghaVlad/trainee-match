@@ -9,10 +9,19 @@ import (
 type Order string
 
 const (
-	OrderPublishedAtDesc Order = "published_at_desc"
+	OrderCreatedAtDesc Order = "created_at_desc"
 )
 
-type PublishedAtCursor struct {
-	PublishedAt time.Time
-	ID          uuid.UUID
+type CreatedAtCursor struct {
+	CreatedAt time.Time
+	ID        uuid.UUID
+}
+
+func (r Order) IsValid() bool {
+	switch r {
+	case OrderCreatedAtDesc:
+		return true
+	}
+
+	return false
 }

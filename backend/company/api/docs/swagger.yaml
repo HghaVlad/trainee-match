@@ -108,6 +108,9 @@ definitions:
       city:
         example: Mountain View
         type: string
+      createdAt:
+        example: "2026-01-18T09:30:00Z"
+        type: string
       employmentType:
         example: internship,full_time,part_time
         type: string
@@ -117,15 +120,19 @@ definitions:
       isPaid:
         example: true
         type: boolean
-      publishedAt:
-        example: "2026-01-18T09:30:00Z"
-        type: string
       salaryFrom:
         example: 3500
         type: integer
       salaryTo:
         example: 5000
         type: integer
+      status:
+        enum:
+        - draft
+        - published
+        - archived
+        example: published
+        type: string
       title:
         example: Go Backend Developer Intern
         type: string
@@ -526,14 +533,14 @@ paths:
       consumes:
       - application/json
       description: Uses cursor pagination, returns next cursor if there's more. Supports
-        order by published_at_desc
+        filters and status.
       parameters:
       - description: Company ID (UUID)
         in: path
         name: company-id
         required: true
         type: string
-      - default: published_at_desc
+      - default: created_at_desc
         description: Order attribute
         in: query
         name: order
@@ -547,6 +554,60 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: Vacancy status filter
+        in: query
+        name: status
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
       produces:
       - application/json
       responses:
@@ -566,8 +627,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Lists company's vacancy summaries. Outdated, needs update if needed.
-        Rn u can use list with company_id param
+      summary: Lists company's vacancy summaries
       tags:
       - vacancy
     post:

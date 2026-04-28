@@ -86,7 +86,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
-	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
+	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)

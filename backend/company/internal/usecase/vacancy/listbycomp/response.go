@@ -21,7 +21,8 @@ type VacancySummary struct {
 	SalaryFrom *int
 	SalaryTo   *int
 
-	PublishedAt time.Time
+	Status    vacancy.Status
+	CreatedAt time.Time
 }
 
 type Response struct {

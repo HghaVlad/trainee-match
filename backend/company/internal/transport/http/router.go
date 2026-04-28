@@ -82,6 +82,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				Route("/{company-id}/vacancies", func(r chi.Router) {
 					r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.ListByCompany)
 
+					r.With(compmiddleware.LoggingMiddleware).
+						Get("/", deps.VacancyHandler.ListByCompany)
+
 					r.With(compmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Post("/", deps.VacancyHandler.Create)

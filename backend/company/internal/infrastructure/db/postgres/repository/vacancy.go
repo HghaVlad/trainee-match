@@ -214,43 +214,47 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 	return vacancies, nil
 }
 
-func (repo *VacancyRepo) ListByCompanyByPublishedAt(
+func (repo *VacancyRepo) ListByCompanySummaries(
 	ctx context.Context,
 	compID uuid.UUID,
-	cursor *listbycomp.PublishedAtCursor,
+	requirements *list.Requirements,
+	status *vacancy.Status,
+	cursor *listbycomp.CreatedAtCursor,
 	limit int,
-) (
-	[]listbycomp.VacancySummary, error) {
+) ([]listbycomp.VacancySummary, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
-	var query string
-	var args []any
-
-	if cursor == nil {
-		query = `SELECT
-    	v.id, v.title, v.work_format,
-    	v.city, v.employment_type, v.is_paid,
-    	v.salary_from, v.salary_to, v.published_at
-		FROM vacancies v
-		WHERE v.company_id = $1 AND v.status = 'published'
-		ORDER BY v.published_at DESC, v.id DESC
-		LIMIT $2`
-		args = []any{compID, limit}
-	} else {
-		query = `SELECT
-    	v.id, v.title, v.work_format,
-    	v.city, v.employment_type, v.is_paid,
-    	v.salary_from, v.salary_to, v.published_at
-		FROM vacancies v
-		WHERE v.company_id = $1 AND 
-		      (v.published_at < $2 OR (v.published_at = $2 AND v.id < $3))
-		  		AND v.status = 'published'
-		ORDER BY v.published_at DESC, v.id DESC
-		LIMIT $4`
-		args = []any{compID, cursor.PublishedAt, cursor.ID, limit}
+	filtersCondition, args := listVacRequirementsToSQL(requirements)
+	if filtersCondition != "" {
+		filtersCondition = "AND " + filtersCondition
 	}
 
-	rows, err := q.Query(ctx, query, args...)
+	statusCondition, args := listByCompStatusToSQL(status, args)
+	if statusCondition != "" {
+		statusCondition = "AND " + statusCondition
+	}
+
+	cursorCondition := ""
+	if cursor != nil {
+		cursorCondition, args = listByCompCreatedAtCursorToSQL(*cursor, args)
+		cursorCondition = "AND " + cursorCondition
+	}
+
+	args = append(args, compID, limit)
+
+	const query = `SELECT
+    v.id, v.title, v.work_format,
+    v.city, v.employment_type, v.is_paid,
+    v.salary_from, v.salary_to, v.status, v.created_at
+	FROM vacancies v
+	WHERE 1=1 %s %s %s
+		AND v.company_id = $%d
+	ORDER BY v.created_at DESC, v.id DESC
+	LIMIT $%d`
+
+	filledQuery := fmt.Sprintf(query, filtersCondition, statusCondition, cursorCondition, len(args)-1, len(args))
+
+	rows, err := q.Query(ctx, filledQuery, args...)
 
 	if err != nil {
 		return nil, fmt.Errorf("list vacancy by company: %w", err)
@@ -264,7 +268,7 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 		err := rows.Scan(
 			&vac.ID, &vac.Title, &vac.WorkFormat,
 			&vac.City, &vac.EmploymentType, &vac.IsPaid,
-			&vac.SalaryFrom, &vac.SalaryTo, &vac.PublishedAt,
+			&vac.SalaryFrom, &vac.SalaryTo, &vac.Status, &vac.CreatedAt,
 		)
 
 		if err != nil {

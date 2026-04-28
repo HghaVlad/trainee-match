@@ -199,7 +199,7 @@ const docTemplate = `{
         },
         "/companies/{company-id}/vacancies": {
             "get": {
-                "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc",
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports filters and status.",
                 "consumes": [
                     "application/json"
                 ],
@@ -209,7 +209,7 @@ const docTemplate = `{
                 "tags": [
                     "vacancy"
                 ],
-                "summary": "Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param",
+                "summary": "Lists company's vacancy summaries",
                 "parameters": [
                     {
                         "type": "string",
@@ -220,7 +220,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "default": "published_at_desc",
+                        "default": "created_at_desc",
                         "description": "Order attribute",
                         "name": "order",
                         "in": "query"
@@ -236,6 +236,86 @@ const docTemplate = `{
                         "default": 20,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy status filter",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in days",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in days",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
                         "in": "query"
                     }
                 ],
@@ -1400,6 +1480,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Mountain View"
                 },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2026-01-18T09:30:00Z"
+                },
                 "employmentType": {
                     "type": "string",
                     "example": "internship,full_time,part_time"
@@ -1412,10 +1496,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "publishedAt": {
-                    "type": "string",
-                    "example": "2026-01-18T09:30:00Z"
-                },
                 "salaryFrom": {
                     "type": "integer",
                     "example": 3500
@@ -1423,6 +1503,15 @@ const docTemplate = `{
                 "salaryTo": {
                     "type": "integer",
                     "example": 5000
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published",
+                        "archived"
+                    ],
+                    "example": "published"
                 },
                 "title": {
                     "type": "string",
