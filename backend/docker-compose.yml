@@ -41,6 +41,11 @@ services:
       context: auth
     environment:
       KC_URL: http://keycloak:8080
+      KC_REALM: trainee-match
+      KC_CLIENT_ID: auth_backend
+      KC_CLIENT_SECRET: UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8
+      KC_ADMIN_USERNAME: admin
+      KC_ADMIN_PASSWORD: admin
     ports:
       - "8000:8000"
 

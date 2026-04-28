@@ -71,11 +71,10 @@ func (repo *CompanyRepository) Create(ctx context.Context, comp *company.Company
 	return nil
 }
 
-// ListSummaries lists company summaries by order after the cursor using dynamic SQL.
-// Pass cursor as a pointer
 func (repo *CompanyRepository) ListSummaries(
 	ctx context.Context,
 	order list.Order,
+	filter list.Filter,
 	cursor any,
 	limit int,
 ) ([]list.CompanySummary, error) {
@@ -86,26 +85,32 @@ func (repo *CompanyRepository) ListSummaries(
 		cursorCondition, args = listCompCursorToSQL(cursor, args)
 	}
 
+	fromClause, filterCondition, args := addFilter(filter, args)
 	orderBy := listCompanySummariesOrderToSQL(order)
 
 	args = append(args, limit)
 
-	const query = `SELECT id, name, open_vacancies_count, logo_key, created_at
-		FROM companies
-		WHERE %s
+	const query = `SELECT c.id, c.name, c.open_vacancies_count, c.logo_key, c.created_at
+		FROM %s
+		WHERE %s AND %s
 		ORDER BY %s
 		LIMIT $%d`
 
-	filledQuery := fmt.Sprintf(query, cursorCondition, orderBy, len(args))
+	filledQuery := fmt.Sprintf(
+		query,
+		fromClause,
+		filterCondition,
+		cursorCondition,
+		orderBy,
+		len(args),
+	)
 
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	rows, err := q.Query(ctx, filledQuery, args...)
-
 	if err != nil {
 		return nil, fmt.Errorf("list company summary: %w", err)
 	}
-
 	defer rows.Close()
 
 	var companies []list.CompanySummary
@@ -113,7 +118,13 @@ func (repo *CompanyRepository) ListSummaries(
 	for rows.Next() {
 		var comp list.CompanySummary
 
-		err := rows.Scan(&comp.ID, &comp.Name, &comp.OpenVacanciesCnt, &comp.LogoKey, &comp.CreatedAt)
+		err := rows.Scan(
+			&comp.ID,
+			&comp.Name,
+			&comp.OpenVacanciesCnt,
+			&comp.LogoKey,
+			&comp.CreatedAt,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("list company summary scan: %w", err)
 		}
@@ -256,7 +267,19 @@ func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// returns sql condition, updated slice of args
+func addFilter(filter list.Filter, args []any) (string, string, []any) {
+	if filter.CompanyMemberID == nil {
+		return "companies c", "1=1", args
+	}
+
+	args = append(args, *filter.CompanyMemberID)
+
+	return `
+		company_members cm
+		JOIN companies c ON c.id = cm.company_id
+	`, fmt.Sprintf("cm.user_id = $%d", len(args)), args
+}
+
 func listCompCursorToSQL(cursor any, args []any) (string, []any) {
 	switch c := cursor.(type) {
 	case *list.VacanciesCntCursor:
@@ -272,8 +295,9 @@ func listCompCursorToSQL(cursor any, args []any) (string, []any) {
 
 func compVacanciesCntCursorToSQL(cursor list.VacanciesCntCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
-		"open_vacancies_count < $%d OR (open_vacancies_count = $%d AND name > $%d)",
-		len(args)+1, len(args)+1, len(args)+2)
+		"(c.open_vacancies_count < $%d OR (c.open_vacancies_count = $%d AND c.name > $%d))",
+		len(args)+1, len(args)+1, len(args)+2,
+	)
 
 	args = append(args, cursor.Count, cursor.Name)
 	return condition, args
@@ -281,8 +305,9 @@ func compVacanciesCntCursorToSQL(cursor list.VacanciesCntCursor, args []any) (st
 
 func compCreatedAtCursorToSQL(cursor list.CreatedAtCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
-		"created_at < $%d OR (created_at = $%d AND name > $%d)",
-		len(args)+1, len(args)+1, len(args)+2)
+		"(c.created_at < $%d OR (c.created_at = $%d AND c.name > $%d))",
+		len(args)+1, len(args)+1, len(args)+2,
+	)
 
 	args = append(args, cursor.CreatedAt, cursor.Name)
 	return condition, args
@@ -290,8 +315,9 @@ func compCreatedAtCursorToSQL(cursor list.CreatedAtCursor, args []any) (string, 
 
 func compNameCursorToSQL(cursor list.NameCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
-		"name > $%d",
-		len(args)+1)
+		"c.name > $%d",
+		len(args)+1,
+	)
 
 	args = append(args, cursor.Name)
 	return condition, args
@@ -300,11 +326,11 @@ func compNameCursorToSQL(cursor list.NameCursor, args []any) (string, []any) {
 func listCompanySummariesOrderToSQL(order list.Order) string {
 	switch order {
 	case list.OrderVacanciesDesc:
-		return "open_vacancies_count DESC, name"
+		return "c.open_vacancies_count DESC, c.name ASC"
 	case list.OrderCreatedAtDesc:
-		return "created_at DESC, name"
+		return "c.created_at DESC, c.name ASC"
 	case list.OrderNameAsc:
-		return "name"
+		return "c.name ASC"
 	}
 
 	return ""

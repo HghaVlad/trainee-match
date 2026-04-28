@@ -55,6 +55,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.CompanyHandler.List)
 
+			r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+				Get("/me", deps.CompanyHandler.ListMy)
+
 			// /company/{company-id}/members
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
 				With(deps.AuthMiddleware.Handler).

@@ -6,7 +6,7 @@ import (
 )
 
 type Repo interface {
-	ListSummaries(ctx context.Context, order Order, cursor any, limit int) ([]CompanySummary, error)
+	ListSummaries(ctx context.Context, order Order, filter Filter, cursor any, limit int) ([]CompanySummary, error)
 }
 
 type ResponseCacheRepo interface {

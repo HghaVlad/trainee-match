@@ -134,6 +134,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/me": {
+            "get": {
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Lists hr's company summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "vacancies_desc",
+                        "description": "Order attribute",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Items per page",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{company-id}/vacancies": {
             "get": {
                 "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc",
@@ -1786,8 +1849,6 @@ const docTemplate = `{
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
-//
-//nolint:gochecknoglobals // generated
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
@@ -1801,7 +1862,6 @@ var SwaggerInfo = &swag.Spec{
 	RightDelim:       "}}",
 }
 
-//nolint:gochecknoinits // generated
 func init() {
 	swag.Register(SwaggerInfo.InstanceName(), SwaggerInfo)
 }

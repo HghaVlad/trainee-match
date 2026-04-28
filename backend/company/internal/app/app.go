@@ -24,6 +24,7 @@ import (
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	listcompmy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
 	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
@@ -74,6 +75,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
+	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
 	compAddHrUc := addmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo)
@@ -95,6 +97,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		compGetByIDUc,
 		compCreateUc,
 		compListUc,
+		compListMy,
 		compUpdateUc,
 		compDeleteUc,
 	)

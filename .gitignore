@@ -34,4 +34,4 @@ go.work.sum
 
 # swag generated docs
 **/swagger.json
-**/swagger.yaml
+# **/swagger.yaml

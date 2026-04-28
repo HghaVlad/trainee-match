@@ -1,0 +1,1274 @@
+basePath: /api/v1
+definitions:
+  dto.CompanyAddHrRequest:
+    properties:
+      role:
+        enum:
+        - recruiter
+        - admin
+        example: recruiter
+        type: string
+      userID:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  dto.CompanyCreateRequest:
+    properties:
+      description:
+        example: We make the world a better place
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
+  dto.CompanyCreatedResponse:
+    properties:
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  dto.CompanyListItemResponse:
+    properties:
+      id:
+        type: string
+      logoUrl:
+        type: string
+      name:
+        type: string
+      openVacanciesCount:
+        type: integer
+    type: object
+  dto.CompanyListResponse:
+    properties:
+      companies:
+        items:
+          $ref: '#/definitions/dto.CompanyListItemResponse'
+        type: array
+      nextCursor:
+        type: string
+    type: object
+  dto.CompanyResponse:
+    properties:
+      createdAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      description:
+        example: We make the world a better place
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logoURL:
+        example: http://domain/minio/6icinimmck...mksk
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      openVacanciesCount:
+        example: 13
+        type: integer
+      updatedAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
+  dto.CompanyUpdateMemberRequest:
+    properties:
+      role:
+        enum:
+        - recruiter
+        - admin
+        example: admin
+        type: string
+    type: object
+  dto.CompanyUpdateRequest:
+    properties:
+      description:
+        example: New description
+        type: string
+      name:
+        example: Google LLC
+        type: string
+      website:
+        example: https://google.com
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.VacancyByCompListItemResponse:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      employmentType:
+        example: internship,full_time,part_time
+        type: string
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      isPaid:
+        example: true
+        type: boolean
+      publishedAt:
+        example: "2026-01-18T09:30:00Z"
+        type: string
+      salaryFrom:
+        example: 3500
+        type: integer
+      salaryTo:
+        example: 5000
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      workFormat:
+        example: hybrid
+        type: string
+    type: object
+  dto.VacancyByCompListResponse:
+    properties:
+      nextCursor:
+        type: string
+      vacancies:
+        items:
+          $ref: '#/definitions/dto.VacancyByCompListItemResponse'
+        type: array
+    type: object
+  dto.VacancyCreateRequest:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      description:
+        example: Join Google's backend team to build scalable services in Go.
+        type: string
+      durationFromDays:
+        example: 60
+        type: integer
+      durationToDays:
+        example: 90
+        type: integer
+      employmentType:
+        example: internship
+        type: string
+      flexibleSchedule:
+        type: boolean
+      hoursPerWeekFrom:
+        example: 20
+        type: integer
+      hoursPerWeekTo:
+        example: 40
+        type: integer
+      internshipToOffer:
+        type: boolean
+      isPaid:
+        type: boolean
+      salaryFrom:
+        example: 1000
+        type: integer
+      salaryTo:
+        example: 1500
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      workFormat:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: hybrid
+        type: string
+    type: object
+  dto.VacancyCreatedResponse:
+    properties:
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  dto.VacancyFullResponse:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      companyId:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        type: string
+      createdAt:
+        example: "2026-01-18T09:30:00Z"
+        type: string
+      createdBy:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        type: string
+      description:
+        example: Join Google's backend team to build scalable services in Go.
+        type: string
+      durationFromDays:
+        example: 60
+        type: integer
+      durationToDays:
+        example: 90
+        type: integer
+      employmentType:
+        enum:
+        - internship
+        - full_time
+        - part_time
+        example: internship
+        type: string
+      flexibleSchedule:
+        example: true
+        type: boolean
+      hoursPerWeekFrom:
+        example: 30
+        type: integer
+      hoursPerWeekTo:
+        example: 40
+        type: integer
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      internshipToOffer:
+        example: true
+        type: boolean
+      isPaid:
+        example: true
+        type: boolean
+      publishedAt:
+        example: "2026-01-20T10:00:00Z"
+        type: string
+      salaryFrom:
+        example: 3500
+        type: integer
+      salaryTo:
+        example: 5000
+        type: integer
+      status:
+        enum:
+        - draft
+        - published
+        - archived
+        example: published
+        type: string
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      updatedAt:
+        example: "2026-01-22T14:15:00Z"
+        type: string
+      workFormat:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: hybrid
+        type: string
+    type: object
+  dto.VacancyListItemResponse:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      companyId:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        type: string
+      companyName:
+        example: Google Inc.
+        type: string
+      employmentType:
+        example: internship,full_time,part_time
+        type: string
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      isPaid:
+        example: true
+        type: boolean
+      publishedAt:
+        example: "2026-01-18T09:30:00Z"
+        type: string
+      salaryFrom:
+        example: 3500
+        type: integer
+      salaryTo:
+        example: 5000
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      workFormat:
+        example: hybrid
+        type: string
+    type: object
+  dto.VacancyListResponse:
+    properties:
+      nextCursor:
+        type: string
+      vacancies:
+        items:
+          $ref: '#/definitions/dto.VacancyListItemResponse'
+        type: array
+    type: object
+  dto.VacancyPublicResponse:
+    properties:
+      city:
+        example: Mountain View
+        type: string
+      companyId:
+        example: d290f1ee-6c54-4b01-90e6-d701748f0851
+        type: string
+      companyName:
+        example: Google Inc.
+        type: string
+      description:
+        example: Join Google's backend team to build scalable services in Go.
+        type: string
+      durationFromDays:
+        example: 60
+        type: integer
+      durationToDays:
+        example: 90
+        type: integer
+      employmentType:
+        enum:
+        - internship
+        - full_time
+        - part_time
+        example: internship
+        type: string
+      flexibleSchedule:
+        example: true
+        type: boolean
+      hoursPerWeekFrom:
+        example: 30
+        type: integer
+      hoursPerWeekTo:
+        example: 40
+        type: integer
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      internshipToOffer:
+        example: true
+        type: boolean
+      isPaid:
+        example: true
+        type: boolean
+      publishedAt:
+        example: "2026-01-20T10:00:00Z"
+        type: string
+      salaryFrom:
+        example: 3500
+        type: integer
+      salaryTo:
+        example: 5000
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      workFormat:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: hybrid
+        type: string
+    type: object
+  dto.VacancyUpdateRequest:
+    properties:
+      city:
+        example: Berlin
+        type: string
+      description:
+        example: Work on high-load backend services using Go and PostgreSQL.
+        type: string
+      durationFromDays:
+        example: 3
+        type: integer
+      durationToDays:
+        example: 6
+        type: integer
+      employmentType:
+        enum:
+        - internship
+        - full_time
+        - part_time
+        example: internship
+        type: string
+      flexibleSchedule:
+        example: true
+        type: boolean
+      hoursPerWeekFrom:
+        example: 20
+        type: integer
+      hoursPerWeekTo:
+        example: 40
+        type: integer
+      internshipToOffer:
+        example: true
+        type: boolean
+      isPaid:
+        example: true
+        type: boolean
+      salaryFrom:
+        example: 1000
+        type: integer
+      salaryTo:
+        example: 1500
+        type: integer
+      title:
+        example: Go Backend Developer Intern
+        type: string
+      workFormat:
+        enum:
+        - onsite
+        - remote
+        - hybrid
+        example: remote
+        type: string
+    type: object
+info:
+  contact: {}
+  description: company microservice
+  title: 'Trainee Match: Company Service API'
+  version: "1.0"
+paths:
+  /companies:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        order by vacancies_desc, created_at_desc, name_asc
+      parameters:
+      - default: vacancies_desc
+        description: Order attribute
+        in: query
+        name: order
+        type: string
+      - description: Items per page
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List company summaries
+      tags:
+      - company
+    post:
+      consumes:
+      - application/json
+      description: Creates new company, returns id
+      parameters:
+      - description: Request to create a company
+        in: body
+        name: company_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CompanyCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create new company
+      tags:
+      - company
+  /companies/{company-id}/vacancies:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        order by published_at_desc
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - default: published_at_desc
+        description: Order attribute
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyByCompListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Lists company's vacancy summaries. Outdated, needs update if needed.
+        Rn u can use list with company_id param
+      tags:
+      - vacancy
+    post:
+      consumes:
+      - application/json
+      description: Creates new vacancy, returns id
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Request to create vacancy
+        in: body
+        name: vacancy_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.VacancyCreatedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create new vacancy
+      tags:
+      - vacancy
+  /companies/{company-id}/vacancies/{vacancy-id}:
+    delete:
+      description: Deletes vacancy by id
+      parameters:
+      - description: Vacancy ID
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      - description: Company ID
+        in: path
+        name: company-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete vacancy
+      tags:
+      - vacancy
+    get:
+      consumes:
+      - application/json
+      description: Returns vacancy by id, company id should be correct, otherwise
+        it's 404
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Vacancy ID (UUID)
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyFullResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get vacancy by id
+      tags:
+      - vacancy
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates vacancy fields. Nil fields are ignored (not updated).
+      parameters:
+      - description: Company ID
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Vacancy ID
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      - description: Vacancy update payload
+        in: body
+        name: vacancy_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Vacancy updated successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update vacancy
+      tags:
+      - vacancy
+  /companies/{company-id}/vacancies/{vacancy-id}/archive:
+    post:
+      consumes:
+      - application/json
+      description: Archive vacancy (deactivation for candidates)
+      parameters:
+      - description: Company ID
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Vacancy ID
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Vacancy archived successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Archive vacancy (deactivation for candidates)
+      tags:
+      - vacancy
+  /companies/{company-id}/vacancies/{vacancy-id}/publish:
+    post:
+      consumes:
+      - application/json
+      description: Publish vacancy for candidates
+      parameters:
+      - description: Company ID
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Vacancy ID
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Vacancy published successfully
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Publish vacancy
+      tags:
+      - vacancy
+  /companies/{id}:
+    delete:
+      description: Deletes company by id
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete company
+      tags:
+      - company
+    get:
+      consumes:
+      - application/json
+      description: Returns company profile by UUID
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get profile by id
+      tags:
+      - company
+    patch:
+      consumes:
+      - application/json
+      description: Partially updates company fields, if field not provided or null
+        - it won't be changed
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request to update company
+        in: body
+        name: company_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update company
+      tags:
+      - company
+  /companies/{id}/members:
+    post:
+      consumes:
+      - application/json
+      description: Adds member to company. Requires admin role in company
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request to add member
+        in: body
+        name: company_add_hr_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyAddHrRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Add member to company
+      tags:
+      - member
+  /companies/{id}/members/{user-id}:
+    delete:
+      description: Deletes company member. Requires admin role in company
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete company member
+      tags:
+      - member
+    patch:
+      consumes:
+      - application/json
+      description: Updates only company member role. Requires admin role in company
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: user-id
+        required: true
+        type: string
+      - description: Request to update member
+        in: body
+        name: company_update_member_request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyUpdateMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update company member
+      tags:
+      - member
+  /companies/me:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        order by vacancies_desc, created_at_desc, name_asc
+      parameters:
+      - default: vacancies_desc
+        description: Order attribute
+        in: query
+        name: order
+        type: string
+      - description: Items per page
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Lists hr's company summaries
+      tags:
+      - company
+  /vacancies:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        filters, orders.
+      parameters:
+      - default: published_at_desc
+        description: Order attribute, supports published_at_desc, salary_desc, salary_asc
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      - collectionFormat: multi
+        description: Company filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: company_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List vacancy summaries
+      tags:
+      - vacancy
+  /vacancies/{vacancy-id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns public vacancy view for candidates. Only published vacancies
+        are visible.
+      parameters:
+      - description: Vacancy ID (UUID)
+        in: path
+        name: vacancy-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyPublicResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get published vacancy by id
+      tags:
+      - vacancy
+schemes:
+- http
+- https
+swagger: "2.0"
