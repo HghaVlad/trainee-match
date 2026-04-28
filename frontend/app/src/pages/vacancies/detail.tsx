@@ -2,12 +2,12 @@ import { useParams, Link } from 'react-router'
 import { useGetVacanciesVacancyId } from '@/api/generated/company/vacancy/vacancy'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
-import { Button } from '@/shared/ui/button'
+import { ApplyVacancyButton } from '@/features/applications'
 
 export default function VacancyDetailPage() {
-  const { id = '' } = useParams<{ id: string }>()
-  const { data, isLoading, error, refetch } = useGetVacanciesVacancyId(id, {
-    query: { enabled: Boolean(id) },
+  const { vacancyId = '' } = useParams<{ vacancyId: string }>()
+  const { data, isLoading, error, refetch } = useGetVacanciesVacancyId(vacancyId, {
+    query: { enabled: Boolean(vacancyId) },
   })
 
   if (isLoading) return <LoadingState />
@@ -34,9 +34,7 @@ export default function VacancyDetailPage() {
           {data.description}
         </div>
       )}
-      <Button disabled title="Скоро будет доступно">
-        Откликнуться
-      </Button>
+      {vacancyId && <ApplyVacancyButton vacancyId={vacancyId} />}
     </div>
   )
 }

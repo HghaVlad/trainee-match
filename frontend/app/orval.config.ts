@@ -37,4 +37,12 @@ export default defineConfig({
       schemas: './src/api/generated/company/schemas',
     },
   },
+  application: {
+    input: { target: './.codegen-cache/openapi/application.yaml' },
+    output: {
+      ...sharedOutput,
+      target: './src/api/generated/application',
+      schemas: './src/api/generated/application/schemas',
+    },
+  },
 })

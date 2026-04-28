@@ -1,9 +1,11 @@
 import { Link } from 'react-router'
 import { useSession } from '@/shared/session/useSession'
 import { useSessionStore } from '@/shared/session/sessionStore'
+import { CompanySwitcher } from './CompanySwitcher'
 
 export function Header() {
-  const { isAuthed, role, user } = useSession()
+  const { isAuthed, role, user, activeCompanyId } = useSession()
+  const companyBase = activeCompanyId ? `/company/${activeCompanyId}` : '/company'
 
   function handleLogout() {
     useSessionStore.getState().setAnon()
@@ -27,18 +29,22 @@ export function Header() {
         <Link to="/companies">Companies</Link>
         {isAuthed && role === 'Candidate' && (
           <>
-            <Link to="/me/profile">My Profile</Link>
-            <Link to="/me/resumes">My Resumes</Link>
+            <Link to="/me/profile">Profile</Link>
+            <Link to="/me/resumes">Resumes</Link>
+            <Link to="/me/applications">Applications</Link>
           </>
         )}
         {isAuthed && role === 'Company' && (
           <>
-            <Link to="/company/me">Company</Link>
-            <Link to="/company/vacancies">My Vacancies</Link>
-            <Link to="/company/members">Members</Link>
+            <Link to={`${companyBase}/dashboard`}>Dashboard</Link>
+            <Link to={`${companyBase}/vacancies`}>Vacancies</Link>
+            <Link to={`${companyBase}/applications`}>Applications</Link>
+            <Link to={`${companyBase}/members`}>Members</Link>
+            <Link to={`${companyBase}/profile`}>Profile</Link>
           </>
         )}
       </nav>
+      {isAuthed && role === 'Company' && <CompanySwitcher />}
       {isAuthed ? (
         <>
           <span>{user?.username}</span>

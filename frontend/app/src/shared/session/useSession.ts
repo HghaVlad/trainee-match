@@ -1,5 +1,6 @@
 import { useShallow } from 'zustand/react/shallow'
 import { useSessionStore, type SessionStatus, type SessionUser } from './sessionStore'
+import type { CompanyMembership } from './types'
 
 export function useSession() {
   return useSessionStore(
@@ -10,6 +11,9 @@ export function useSession() {
       isAnon: s.status === 'anon',
       isLoading: s.status === 'unknown',
       role: s.user?.role,
+      companies: s.companies,
+      activeCompanyId: s.activeCompanyId,
+      activeCompany: s.companies.find((c) => c.id === s.activeCompanyId),
     })),
   )
 }
@@ -20,4 +24,12 @@ export function useSessionStatus(): SessionStatus {
 
 export function useSessionUser(): SessionUser | undefined {
   return useSessionStore((s) => s.user)
+}
+
+export function useCompanies(): CompanyMembership[] {
+  return useSessionStore((s) => s.companies)
+}
+
+export function useActiveCompanyId(): string | undefined {
+  return useSessionStore((s) => s.activeCompanyId)
 }
