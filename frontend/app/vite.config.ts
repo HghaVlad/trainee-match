@@ -12,19 +12,20 @@ export default defineConfig({
       ? {}
       : {
           '/auth': {
-            target: process.env['VITE_AUTH_URL'] ?? 'http://localhost:8080',
+            target: process.env['VITE_AUTH_URL'] ?? 'http://localhost:8000',
             changeOrigin: true,
+            rewrite: (path) => `/api/v1${path}`,
           },
           '/api/v1/candidate': {
             target: process.env['VITE_CANDIDATE_URL'] ?? 'http://localhost:8081',
             changeOrigin: true,
           },
           '/api/v1/companies': {
-            target: process.env['VITE_COMPANY_URL'] ?? 'http://localhost:8082',
+            target: process.env['VITE_COMPANY_URL'] ?? 'http://localhost:8088',
             changeOrigin: true,
           },
           '/api/v1/vacancies': {
-            target: process.env['VITE_COMPANY_URL'] ?? 'http://localhost:8082',
+            target: process.env['VITE_COMPANY_URL'] ?? 'http://localhost:8088',
             changeOrigin: true,
           },
         },
