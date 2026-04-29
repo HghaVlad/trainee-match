@@ -20,7 +20,7 @@ func TestExecute(t *testing.T) {
 	validReq := &Request{
 		UserId: userID,
 		Name:   "My Resume",
-		Status: domain.Draft,
+		Status: "draft",
 		Data: ResumeData{
 			LastName:        "Doe",
 			FirstName:       "John",

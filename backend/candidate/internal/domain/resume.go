@@ -9,11 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	Draft = iota
-	Published
-)
-
 var (
 	ErrResumeNotFound             = errors.New("resume not found")
 	ErrInvalidResumeName          = errors.New("name is required")
@@ -91,14 +86,10 @@ func (w WorkExperience) Validate() error {
 
 // Validate checks whole resume for domain-level business rules.
 func (r Resume) Validate() error {
-
 	if strings.TrimSpace(r.Name) == "" {
 		return ErrInvalidResumeName
 	}
 
-	if r.Status != Draft && r.Status != Published {
-		return ErrInvalidResumeStatus
-	}
 	if err := r.Data.Validate(); err != nil {
 		return err
 	}

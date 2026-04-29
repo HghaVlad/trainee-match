@@ -38,11 +38,16 @@ func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Re
 		return nil, err
 	}
 
+	status, err := domain.Format(resume.Status)
+	if err != nil {
+		return nil, err
+	}
+
 	response := &Response{
 		ID:          resume.ID,
 		CandidateID: resume.CandidateId,
 		Name:        resume.Name,
-		Status:      resume.Status,
+		Status:      string(status),
 		Data:        convertDomainDataToResponseData(resume.Data),
 	}
 
@@ -62,11 +67,16 @@ func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID) ([]*S
 
 	var result []*ShortResponse
 	for _, resume := range resumes {
+		status, err := domain.Format(resume.Status)
+		if err != nil {
+			return nil, err
+		}
+
 		item := &ShortResponse{
 			ID:          resume.ID,
 			CandidateId: resume.CandidateId,
 			Name:        resume.Name,
-			Status:      resume.Status,
+			Status:      string(status),
 		}
 		result = append(result, item)
 	}
