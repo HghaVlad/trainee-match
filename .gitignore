@@ -26,7 +26,7 @@ go.work
 go.work.sum
 
 # env file
-.env
+*.env
 
 # Editor/IDE
 .idea/
@@ -34,4 +34,4 @@ go.work.sum
 
 # swag generated docs
 **/swagger.json
-**/swagger.yaml
+#**/swagger.yaml

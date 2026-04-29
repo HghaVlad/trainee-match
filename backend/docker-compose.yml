@@ -6,11 +6,10 @@ services:
       POSTGRES_PASSWORD: keycloak
       POSTGRES_DB: keycloak
     healthcheck:
-      test: pg_isready -d postgres
+      test: [ "CMD-SHELL", "pg_isready -U keycloak -d keycloak" ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 5s
+      retries: 5
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
 
@@ -41,6 +40,11 @@ services:
       context: auth
     environment:
       KC_URL: http://keycloak:8080
+      KC_REALM: trainee-match
+      KC_CLIENT_ID: auth_backend
+      KC_CLIENT_SECRET: UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8
+      KC_ADMIN_USERNAME: admin
+      KC_ADMIN_PASSWORD: admin
     ports:
       - "8000:8000"
     depends_on:
@@ -126,6 +130,23 @@ services:
       timeout: 3s
       retries: 5
 
+  application-postgres:
+    image: postgres:17
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: application_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - application-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d application_db" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
   company-service:
     build:
       context: ./company
@@ -141,8 +162,28 @@ services:
       redis-cache:
         condition: service_healthy
 
+  application-service:
+    build:
+      context: ./application
+    environment:
+      DB_HOST: application-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: application_db
+      ADDR: 0.0.0.0:8086
+      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
+
+    ports:
+      - "8086:8086"
+    depends_on:
+      application-postgres:
+        condition: service_healthy
+
+
 volumes:
   keycloak-db-data:
   candidate-db-data:
   company-pg-data:
   redis_data:
+  application-pg-data:
