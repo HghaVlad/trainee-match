@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/msgbroker/schemaregistry"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -24,6 +26,7 @@ import (
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	listcompmy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
 	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
@@ -60,6 +63,13 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
+	scemaRegCl := schemaregistry.NewClient(conf.SchemaRegistry)
+	schemaLocalReg, err := schemaregistry.NewLocalRegistry(ctx, scemaRegCl)
+	if err != nil {
+		return nil, err
+	}
+	_ = schemaLocalReg
+
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
@@ -74,6 +84,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
+	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
 	compAddHrUc := addmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo)
@@ -84,7 +95,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
-	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, vacByCompListCache)
+	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
@@ -95,6 +106,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		compGetByIDUc,
 		compCreateUc,
 		compListUc,
+		compListMy,
 		compUpdateUc,
 		compDeleteUc,
 	)

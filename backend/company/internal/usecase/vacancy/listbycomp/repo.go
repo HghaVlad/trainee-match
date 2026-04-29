@@ -2,13 +2,23 @@ package listbycomp
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
+
+	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
 type VacancyRepo interface {
-	ListByCompanyByPublishedAt(ctx context.Context, compID uuid.UUID, cursor *PublishedAtCursor, limit int,
+	ListByCompanySummaries(
+		ctx context.Context,
+		compID uuid.UUID,
+		requirements *vaclist.Requirements,
+		status *vacancy.Status,
+		cursor *CreatedAtCursor,
+		limit int,
 	) ([]VacancySummary, error)
 }
 
@@ -16,7 +26,6 @@ type CompanyRepo interface {
 	Exists(ctx context.Context, id uuid.UUID) (bool, error)
 }
 
-type ResponseCacheRepo interface {
-	Get(ctx context.Context, key string) *Response
-	Put(ctx context.Context, key string, response *Response, exp time.Duration)
+type CompMemberRepo interface {
+	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
 }

@@ -11,17 +11,18 @@ import (
 type VacancySummary struct {
 	ID uuid.UUID `db:"id"`
 
-	Title      string             `db:"title"`
-	WorkFormat vacancy.WorkFormat `db:"work_format"`
-	City       *string            `db:"city"`
+	Title      string
+	WorkFormat vacancy.WorkFormat
+	City       *string
 
-	EmploymentType vacancy.EmploymentType `db:"employment_type"`
+	EmploymentType vacancy.EmploymentType
 
-	IsPaid     bool `db:"is_paid"`
-	SalaryFrom *int `db:"salary_from"`
-	SalaryTo   *int `db:"salary_to"`
+	IsPaid     bool
+	SalaryFrom *int
+	SalaryTo   *int
 
-	PublishedAt time.Time `db:"published_at"`
+	Status    vacancy.Status
+	CreatedAt time.Time
 }
 
 type Response struct {

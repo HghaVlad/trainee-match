@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "CompanyUpdated",
+  "namespace": "traineematch.company",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "company_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "company_name", "type": "string" },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}
