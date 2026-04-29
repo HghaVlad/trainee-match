@@ -79,6 +79,37 @@ test.describe('company flow', () => {
     await page.getByRole('button', { name: 'Отмена' }).click()
     await expect.poll(() => new URL(page.url()).pathname).not.toBe('/company/new')
   })
+
+  test('BUG #18: after creating company stay logged-in (no /403 redirect)', async ({ page }) => {
+    const u = makeUser('Company')
+    await registerAndLogin(page, u)
+
+    await page.goto('/company/new')
+    await expect(page.getByText('Создание компании')).toBeVisible()
+
+    await page.getByLabel('Название').fill(`E2E Co ${Date.now()}`)
+    await page.getByLabel('Описание (необязательно)').fill('e2e test company')
+    await page.getByRole('button', { name: 'Создать' }).click()
+
+    await page.waitForURL(/\/company\/[^/]+\/dashboard/, { timeout: 15_000 })
+    expect(new URL(page.url()).pathname).not.toBe('/403')
+  })
+
+  test('BUG #19: /company/me resolves to active company dashboard (no /403)', async ({ page }) => {
+    const u = makeUser('Company')
+    await registerAndLogin(page, u)
+
+    await page.goto('/company/new')
+    await page.getByLabel('Название').fill(`E2E Me ${Date.now()}`)
+    await page.getByRole('button', { name: 'Создать' }).click()
+    await page.waitForURL(/\/company\/[^/]+\/dashboard/, { timeout: 15_000 })
+
+    await page.goto('/company/me')
+    await page.waitForURL((url) => /\/company\/[^/]+\/dashboard/.test(url.pathname), {
+      timeout: 15_000,
+    })
+    expect(new URL(page.url()).pathname).not.toBe('/403')
+  })
 })
 
 test.describe('logout regression', () => {

@@ -57,7 +57,7 @@ export const createApplication = (
 
 
       return mutatorFn<CandidateApplicationDetailsResponse>(
-      {url: `/api/v1/applications`, method: 'POST',
+      {url: `/applications`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createApplicationRequest, signal
     },
@@ -120,7 +120,7 @@ export const listMyApplications = (
 
 
       return mutatorFn<CandidateApplicationListResponse>(
-      {url: `/api/v1/applications`, method: 'GET',
+      {url: `/applications`, method: 'GET',
         params, signal
     },
       );
@@ -131,7 +131,7 @@ export const listMyApplications = (
 
 export const getListMyApplicationsQueryKey = (params?: ListMyApplicationsParams,) => {
     return [
-    `/api/v1/applications`, ...(params ? [params] : [])
+    `/applications`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -213,7 +213,7 @@ export const getMyApplication = (
 
 
       return mutatorFn<CandidateApplicationDetailsResponse>(
-      {url: `/api/v1/applications/${applicationId}`, method: 'GET', signal
+      {url: `/applications/${applicationId}`, method: 'GET', signal
     },
       );
     }
@@ -223,7 +223,7 @@ export const getMyApplication = (
 
 export const getGetMyApplicationQueryKey = (applicationId: string,) => {
     return [
-    `/api/v1/applications/${applicationId}`
+    `/applications/${applicationId}`
     ] as const;
     }
 
@@ -305,7 +305,7 @@ export const getMyApplicationHistory = (
 
 
       return mutatorFn<CandidateApplicationHistoryResponse>(
-      {url: `/api/v1/applications/${applicationId}/history`, method: 'GET', signal
+      {url: `/applications/${applicationId}/history`, method: 'GET', signal
     },
       );
     }
@@ -315,7 +315,7 @@ export const getMyApplicationHistory = (
 
 export const getGetMyApplicationHistoryQueryKey = (applicationId: string,) => {
     return [
-    `/api/v1/applications/${applicationId}/history`
+    `/applications/${applicationId}/history`
     ] as const;
     }
 
@@ -403,7 +403,7 @@ export const withdrawApplication = (
 
 
       return mutatorFn<CandidateApplicationDetailsResponse>(
-      {url: `/api/v1/applications/${applicationId}/withdraw`, method: 'POST',
+      {url: `/applications/${applicationId}/withdraw`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: withdrawApplicationRequest, signal
     },

@@ -40,9 +40,19 @@ interface Props {
   mode: 'create' | 'edit'
   initial?: DtoCandidateResponse
   onSuccess?: () => void
+  onCancel?: () => void
 }
 
-export function CandidateProfileForm({ mode, initial, onSuccess }: Props) {
+function backendDateToInput(value?: string): string {
+  if (!value) return ''
+  const dotMatch = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value)
+  if (dotMatch) return `${dotMatch[3]}-${dotMatch[2]}-${dotMatch[1]}`
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
+  if (isoMatch) return value.slice(0, 10)
+  return ''
+}
+
+export function CandidateProfileForm({ mode, initial, onSuccess, onCancel }: Props) {
   const qc = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const createMut = usePostCandidate()
@@ -78,7 +88,7 @@ export function CandidateProfileForm({ mode, initial, onSuccess }: Props) {
         phone: initial?.phone ?? '',
         telegram: initial?.telegram ?? '',
         city: initial?.city ?? '',
-        birthday: initial?.birthday ?? '',
+        birthday: backendDateToInput(initial?.birthday),
       }}
       onSubmit={handleSubmit}
     >
@@ -141,9 +151,21 @@ export function CandidateProfileForm({ mode, initial, onSuccess }: Props) {
               </FormItem>
             )}
           />
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Сохранение...' : 'Сохранить'}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Сохранение...' : 'Сохранить'}
+            </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={form.formState.isSubmitting}
+              >
+                Отмена
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </FormWrapper>

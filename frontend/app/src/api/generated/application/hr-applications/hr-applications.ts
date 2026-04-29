@@ -58,7 +58,7 @@ export const listCompanyApplications = (
 
 
       return mutatorFn<HrApplicationListResponse>(
-      {url: `/api/v1/hr/companies/${companyId}/applications`, method: 'GET',
+      {url: `/hr/companies/${companyId}/applications`, method: 'GET',
         params, signal
     },
       );
@@ -70,7 +70,7 @@ export const listCompanyApplications = (
 export const getListCompanyApplicationsQueryKey = (companyId: string,
     params?: ListCompanyApplicationsParams,) => {
     return [
-    `/api/v1/hr/companies/${companyId}/applications`, ...(params ? [params] : [])
+    `/hr/companies/${companyId}/applications`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -158,7 +158,7 @@ export const listVacancyApplications = (
 
 
       return mutatorFn<HrApplicationListResponse>(
-      {url: `/api/v1/hr/vacancies/${vacancyId}/applications`, method: 'GET',
+      {url: `/hr/vacancies/${vacancyId}/applications`, method: 'GET',
         params, signal
     },
       );
@@ -170,7 +170,7 @@ export const listVacancyApplications = (
 export const getListVacancyApplicationsQueryKey = (vacancyId: string,
     params?: ListVacancyApplicationsParams,) => {
     return [
-    `/api/v1/hr/vacancies/${vacancyId}/applications`, ...(params ? [params] : [])
+    `/hr/vacancies/${vacancyId}/applications`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -257,7 +257,7 @@ export const getHrApplication = (
 
 
       return mutatorFn<HrApplicationDetailsResponse>(
-      {url: `/api/v1/hr/applications/${applicationId}`, method: 'GET', signal
+      {url: `/hr/applications/${applicationId}`, method: 'GET', signal
     },
       );
     }
@@ -267,7 +267,7 @@ export const getHrApplication = (
 
 export const getGetHrApplicationQueryKey = (applicationId: string,) => {
     return [
-    `/api/v1/hr/applications/${applicationId}`
+    `/hr/applications/${applicationId}`
     ] as const;
     }
 
@@ -349,7 +349,7 @@ export const getHrApplicationHistory = (
 
 
       return mutatorFn<HrApplicationHistoryResponse>(
-      {url: `/api/v1/hr/applications/${applicationId}/history`, method: 'GET', signal
+      {url: `/hr/applications/${applicationId}/history`, method: 'GET', signal
     },
       );
     }
@@ -359,7 +359,7 @@ export const getHrApplicationHistory = (
 
 export const getGetHrApplicationHistoryQueryKey = (applicationId: string,) => {
     return [
-    `/api/v1/hr/applications/${applicationId}/history`
+    `/hr/applications/${applicationId}/history`
     ] as const;
     }
 
@@ -451,7 +451,7 @@ export const changeApplicationStatus = (
 
 
       return mutatorFn<HrApplicationDetailsResponse>(
-      {url: `/api/v1/hr/applications/${applicationId}/status`, method: 'POST',
+      {url: `/hr/applications/${applicationId}/status`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: changeApplicationStatusRequest, signal
     },

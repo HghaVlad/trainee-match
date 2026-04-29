@@ -1,6 +1,7 @@
 import { redirect, type LoaderFunctionArgs } from 'react-router'
 import { useSessionStore } from '@/shared/session/sessionStore'
-import { writeActiveCompanyId } from '@/shared/session/types'
+import { readActiveCompanyId, writeActiveCompanyId } from '@/shared/session/types'
+import { refreshCompanies } from '@/shared/session/refreshCompanies'
 
 function loginRedirect(request: Request): Response {
   const url = new URL(request.url)
@@ -22,14 +23,27 @@ export function requireRole(role: 'Candidate' | 'Company') {
   }
 }
 
-export function requireCompanyMember({ request, params }: LoaderFunctionArgs) {
-  const { status, user, companies } = useSessionStore.getState()
-  if (status !== 'authed') return loginRedirect(request)
-  if (user?.role !== 'Company') return redirect('/403')
+export async function requireCompanyMember({ request, params }: LoaderFunctionArgs) {
+  const initial = useSessionStore.getState()
+  if (initial.status !== 'authed') return loginRedirect(request)
+  if (initial.user?.role !== 'Company') return redirect('/403')
   const companyId = params.companyId
-  if (!companyId) return redirect('/company')
+  if (!companyId || companyId === 'me') return redirect('/company')
+
+  let { companies, user } = useSessionStore.getState()
+  if (!companies.some((c) => c.id === companyId)) {
+    try {
+      await refreshCompanies()
+    } catch {
+      void 0
+    }
+    ;({ companies, user } = useSessionStore.getState())
+  }
   const membership = companies.find((c) => c.id === companyId)
-  if (!membership) return redirect('/403')
+  if (!membership) {
+    if (user && readActiveCompanyId(user.id) === companyId) return null
+    return redirect('/403')
+  }
   if (user) {
     useSessionStore.getState().setActiveCompany(companyId)
     writeActiveCompanyId(user.id, companyId)
@@ -37,8 +51,8 @@ export function requireCompanyMember({ request, params }: LoaderFunctionArgs) {
   return null
 }
 
-export function requireCompanyAdmin(args: LoaderFunctionArgs) {
-  const memberCheck = requireCompanyMember(args)
+export async function requireCompanyAdmin(args: LoaderFunctionArgs) {
+  const memberCheck = await requireCompanyMember(args)
   if (memberCheck) return memberCheck
   const { companies } = useSessionStore.getState()
   const membership = companies.find((c) => c.id === args.params.companyId)
@@ -46,10 +60,23 @@ export function requireCompanyAdmin(args: LoaderFunctionArgs) {
   return null
 }
 
-export function resolveActiveCompany({ request }: LoaderFunctionArgs) {
-  const { status, user, companies, activeCompanyId } = useSessionStore.getState()
-  if (status !== 'authed') return loginRedirect(request)
-  if (user?.role !== 'Company') return redirect('/403')
+export async function resolveActiveCompany({ request }: LoaderFunctionArgs) {
+  const initial = useSessionStore.getState()
+  if (initial.status !== 'authed') return loginRedirect(request)
+  if (initial.user?.role !== 'Company') return redirect('/403')
+
+  let { companies, activeCompanyId } = useSessionStore.getState()
+  const { user } = useSessionStore.getState()
+  const stored = user ? readActiveCompanyId(user.id) : undefined
+  if (stored) return redirect(`/company/${stored}/dashboard`)
+  if (companies.length === 0) {
+    try {
+      await refreshCompanies()
+    } catch {
+      void 0
+    }
+    ;({ companies, activeCompanyId } = useSessionStore.getState())
+  }
   if (companies.length === 0) return redirect('/company/new')
   const target =
     activeCompanyId && companies.some((c) => c.id === activeCompanyId)

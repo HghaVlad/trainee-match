@@ -1,5 +1,5 @@
 import { exec } from 'node:child_process'
-import { copyFileSync, mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -51,7 +51,9 @@ async function main(): Promise<void> {
   for (const spec of openapi3Specs) {
     const out = path.join(cacheDir, `${spec.name}.yaml`)
     console.log(`  ${spec.name}: ${spec.input} -> ${out}`)
-    copyFileSync(spec.input, out)
+    const raw = readFileSync(spec.input, 'utf8')
+    const stripped = raw.replace(/^(\s+)\/api\/v1\//gm, '$1/')
+    writeFileSync(out, stripped)
   }
   console.log('Running orval...')
   await runOrval()

@@ -56,7 +56,7 @@ export const getCompanyAnalyticsSummary = (
 
 
       return mutatorFn<CompanyAnalyticsSummaryResponse>(
-      {url: `/api/v1/hr/companies/${companyId}/analytics/summary`, method: 'GET',
+      {url: `/hr/companies/${companyId}/analytics/summary`, method: 'GET',
         params, signal
     },
       );
@@ -68,7 +68,7 @@ export const getCompanyAnalyticsSummary = (
 export const getGetCompanyAnalyticsSummaryQueryKey = (companyId: string,
     params?: GetCompanyAnalyticsSummaryParams,) => {
     return [
-    `/api/v1/hr/companies/${companyId}/analytics/summary`, ...(params ? [params] : [])
+    `/hr/companies/${companyId}/analytics/summary`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -156,7 +156,7 @@ export const getVacancyAnalyticsSummary = (
 
 
       return mutatorFn<VacancyAnalyticsSummaryResponse>(
-      {url: `/api/v1/hr/vacancies/${vacancyId}/analytics/summary`, method: 'GET',
+      {url: `/hr/vacancies/${vacancyId}/analytics/summary`, method: 'GET',
         params, signal
     },
       );
@@ -168,7 +168,7 @@ export const getVacancyAnalyticsSummary = (
 export const getGetVacancyAnalyticsSummaryQueryKey = (vacancyId: string,
     params?: GetVacancyAnalyticsSummaryParams,) => {
     return [
-    `/api/v1/hr/vacancies/${vacancyId}/analytics/summary`, ...(params ? [params] : [])
+    `/hr/vacancies/${vacancyId}/analytics/summary`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -256,7 +256,7 @@ export const getCompanyStatusFunnel = (
 
 
       return mutatorFn<StatusFunnelResponse>(
-      {url: `/api/v1/hr/companies/${companyId}/analytics/status-funnel`, method: 'GET',
+      {url: `/hr/companies/${companyId}/analytics/status-funnel`, method: 'GET',
         params, signal
     },
       );
@@ -268,7 +268,7 @@ export const getCompanyStatusFunnel = (
 export const getGetCompanyStatusFunnelQueryKey = (companyId: string,
     params?: GetCompanyStatusFunnelParams,) => {
     return [
-    `/api/v1/hr/companies/${companyId}/analytics/status-funnel`, ...(params ? [params] : [])
+    `/hr/companies/${companyId}/analytics/status-funnel`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -356,7 +356,7 @@ export const getVacancyStatusFunnel = (
 
 
       return mutatorFn<StatusFunnelResponse>(
-      {url: `/api/v1/hr/vacancies/${vacancyId}/analytics/status-funnel`, method: 'GET',
+      {url: `/hr/vacancies/${vacancyId}/analytics/status-funnel`, method: 'GET',
         params, signal
     },
       );
@@ -368,7 +368,7 @@ export const getVacancyStatusFunnel = (
 export const getGetVacancyStatusFunnelQueryKey = (vacancyId: string,
     params?: GetVacancyStatusFunnelParams,) => {
     return [
-    `/api/v1/hr/vacancies/${vacancyId}/analytics/status-funnel`, ...(params ? [params] : [])
+    `/hr/vacancies/${vacancyId}/analytics/status-funnel`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -456,7 +456,7 @@ export const getCompanyDynamics = (
 
 
       return mutatorFn<ApplicationDynamicsResponse>(
-      {url: `/api/v1/hr/companies/${companyId}/analytics/dynamics`, method: 'GET',
+      {url: `/hr/companies/${companyId}/analytics/dynamics`, method: 'GET',
         params, signal
     },
       );
@@ -468,7 +468,7 @@ export const getCompanyDynamics = (
 export const getGetCompanyDynamicsQueryKey = (companyId: string,
     params?: GetCompanyDynamicsParams,) => {
     return [
-    `/api/v1/hr/companies/${companyId}/analytics/dynamics`, ...(params ? [params] : [])
+    `/hr/companies/${companyId}/analytics/dynamics`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -556,7 +556,7 @@ export const getVacancyDynamics = (
 
 
       return mutatorFn<ApplicationDynamicsResponse>(
-      {url: `/api/v1/hr/vacancies/${vacancyId}/analytics/dynamics`, method: 'GET',
+      {url: `/hr/vacancies/${vacancyId}/analytics/dynamics`, method: 'GET',
         params, signal
     },
       );
@@ -568,7 +568,7 @@ export const getVacancyDynamics = (
 export const getGetVacancyDynamicsQueryKey = (vacancyId: string,
     params?: GetVacancyDynamicsParams,) => {
     return [
-    `/api/v1/hr/vacancies/${vacancyId}/analytics/dynamics`, ...(params ? [params] : [])
+    `/hr/vacancies/${vacancyId}/analytics/dynamics`, ...(params ? [params] : [])
     ] as const;
     }
 

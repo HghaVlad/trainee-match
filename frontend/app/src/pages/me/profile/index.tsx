@@ -6,9 +6,11 @@ import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Button } from '@/shared/ui/button'
 import { AppError } from '@/shared/api/http/client'
+import { useSession } from '@/shared/session/useSession'
 
 export default function CandidateProfilePage() {
   const [editing, setEditing] = useState(false)
+  const { user } = useSession()
   const { data, isLoading, error, refetch } = useGetCandidateMe({
     query: { retry: false },
   })
@@ -21,9 +23,13 @@ export default function CandidateProfilePage() {
     return <ErrorState message="Не удалось загрузить профиль" onRetry={() => refetch()} />
   }
 
+  const fullName = [user?.lastName, user?.firstName].filter(Boolean).join(' ')
+
   if (notFound || !data) {
     return (
       <div className="mx-auto max-w-xl p-6 space-y-4">
+        <h1 className="text-2xl font-bold">Мой профиль</h1>
+        <AccountFields fullName={fullName} email={user?.email} />
         <EmptyState
           title="Профиль ещё не создан"
           description="Заполните данные кандидата, чтобы откликаться на вакансии."
@@ -36,11 +42,13 @@ export default function CandidateProfilePage() {
   return (
     <div className="mx-auto max-w-xl p-6 space-y-4">
       <h1 className="text-2xl font-bold">Мой профиль</h1>
+      <AccountFields fullName={fullName} email={user?.email} />
       {editing ? (
         <CandidateProfileForm
           mode="edit"
           initial={data}
           onSuccess={() => setEditing(false)}
+          onCancel={() => setEditing(false)}
         />
       ) : (
         <div className="space-y-2 rounded-lg border bg-card p-4">
@@ -51,6 +59,19 @@ export default function CandidateProfilePage() {
           <Button onClick={() => setEditing(true)}>Редактировать</Button>
         </div>
       )}
+    </div>
+  )
+}
+
+function AccountFields({ fullName, email }: { fullName: string; email?: string }) {
+  if (!fullName && !email) return null
+  return (
+    <div className="space-y-2 rounded-lg border bg-muted/40 p-4">
+      {fullName && <Field label="ФИО" value={fullName} />}
+      {email && <Field label="Email" value={email} />}
+      <p className="text-xs text-muted-foreground">
+        Эти данные взяты из вашей учётной записи и используются при создании резюме.
+      </p>
     </div>
   )
 }

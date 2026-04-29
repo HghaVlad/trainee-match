@@ -101,6 +101,7 @@ const router = createBrowserRouter([
         loader: requireRole('Company'),
         children: [
           { index: true, loader: resolveActiveCompany, element: null },
+          { path: 'me', loader: resolveActiveCompany, element: null },
             { path: 'new', element: lazyEl(CompanyNewPage) },
           {
             path: ':companyId',

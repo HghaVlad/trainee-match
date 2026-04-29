@@ -19,6 +19,7 @@ interface RawCompaniesMeItem {
 }
 
 interface RawCompaniesMeResponse {
+  companies?: RawCompaniesMeItem[]
   data?: RawCompaniesMeItem[]
   items?: RawCompaniesMeItem[]
   nextCursor?: string | null
@@ -47,7 +48,7 @@ export async function fetchCompaniesMe(
       limit: params?.limit,
     },
   })
-  const items = (data.data ?? data.items ?? []).map(normalizeItem)
+  const items = (data.companies ?? data.data ?? data.items ?? []).map(normalizeItem)
   return {
     data: items,
     nextCursor: data.nextCursor ?? data.next_cursor ?? null,

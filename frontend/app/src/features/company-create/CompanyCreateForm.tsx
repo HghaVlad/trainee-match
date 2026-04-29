@@ -24,7 +24,7 @@ import {
 } from '@/shared/ui/form'
 import { usePostCompanies } from '@/api/generated/company/company/company'
 import { AppError } from '@/shared/api/http/client'
-import { refreshCompanies } from '@/shared/session/refreshCompanies'
+import { addLocalCompany, refreshCompanies } from '@/shared/session/refreshCompanies'
 
 const createSchema = z.object({
   name: z.string().min(1, 'Введите название').max(200, 'Максимум 200 символов'),
@@ -59,7 +59,17 @@ export function CompanyCreateForm() {
       if (!newId) {
         throw new AppError('NO_ID', 'Сервер не вернул id компании', 500)
       }
-      await refreshCompanies({ setActiveId: newId })
+      addLocalCompany(
+        {
+          id: newId,
+          name: values.name,
+          openVacanciesCount: 0,
+          createdAt: new Date().toISOString(),
+          role: 'admin',
+        },
+        true,
+      )
+      void refreshCompanies({ setActiveId: newId }).catch(() => undefined)
       toast({ title: 'Компания создана' })
       navigate(`/company/${newId}/dashboard`)
     } catch (e) {

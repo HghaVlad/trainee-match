@@ -34,12 +34,15 @@ async function loadCompaniesForUser(user: SessionUser): Promise<void> {
   try {
     const { data } = await fetchCompaniesMe({ limit: 100 })
     setCompanies(data)
+    const stored = readActiveCompanyId(user.id)
     if (data.length === 0) {
-      setActiveCompany(undefined)
-      writeActiveCompanyId(user.id, undefined)
+      if (stored) {
+        setActiveCompany(stored)
+      } else {
+        setActiveCompany(undefined)
+      }
       return
     }
-    const stored = readActiveCompanyId(user.id)
     const restored = stored && data.some((c) => c.id === stored) ? stored : data[0]!.id
     setActiveCompany(restored)
     writeActiveCompanyId(user.id, restored)
