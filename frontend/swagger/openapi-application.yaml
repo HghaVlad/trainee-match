@@ -1,0 +1,1069 @@
+openapi: 3.0.3
+info:
+  title: Application Service API
+  version: 1.3.0
+  description: |
+    External API for application management.
+
+    Business rules reflected by this API:
+    - a candidate can have only one active application per vacancy
+    - active statuses are: submitted, seen, interview
+    - resume/candidate data is snapshotted at apply time and immutable afterwards
+    - HR can access applications only for companies where they are members
+
+servers:
+  - url: https://api.example.com
+
+tags:
+  - name: Candidate Applications
+  - name: HR Applications
+  - name: Application Analytics
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/applications:
+    post:
+      tags: [Candidate Applications]
+      summary: Apply to vacancy
+      operationId: createApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApplicationRequest'
+      responses:
+        '201':
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Forbidden
+        '404':
+          description: Vacancy or resume not found
+        '409':
+          description: Active application for this vacancy already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Candidate Applications]
+      summary: List my applications
+      operationId: listMyApplications
+      parameters:
+        - $ref: '#/components/parameters/CandidateStatusesQuery'
+        - $ref: '#/components/parameters/CandidateCompanyIdQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/CandidateSortQuery'
+      responses:
+        '200':
+          description: Candidate applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationListResponse'
+
+  /api/v1/applications/{applicationId}:
+    get:
+      tags: [Candidate Applications]
+      summary: Get my application details
+      operationId: getMyApplication
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Candidate application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+
+  /api/v1/applications/{applicationId}/history:
+    get:
+      tags: [Candidate Applications]
+      summary: Get my application status history
+      operationId: getMyApplicationHistory
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Candidate-visible history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationHistoryResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+
+  /api/v1/applications/{applicationId}/withdraw:
+    post:
+      tags: [Candidate Applications]
+      summary: Withdraw my application
+      operationId: withdrawApplication
+      description: |
+        Allowed only from active statuses:
+        - submitted
+        - seen
+        - interview
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawApplicationRequest'
+      responses:
+        '200':
+          description: Application withdrawn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+        '409':
+          description: Transition is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/hr/companies/{companyId}/applications:
+    get:
+      tags: [HR Applications]
+      summary: List applications by company
+      operationId: listCompanyApplications
+      parameters:
+        - $ref: '#/components/parameters/CompanyId'
+        - $ref: '#/components/parameters/HrStatusesQuery'
+        - $ref: '#/components/parameters/HrVacancyIdQuery'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/HrSortQuery'
+      responses:
+        '200':
+          description: Company applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrApplicationListResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Company not found
+
+  /api/v1/hr/vacancies/{vacancyId}/applications:
+    get:
+      tags: [HR Applications]
+      summary: List applications by vacancy
+      operationId: listVacancyApplications
+      parameters:
+        - $ref: '#/components/parameters/VacancyId'
+        - $ref: '#/components/parameters/HrStatusesQuery'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+        - $ref: '#/components/parameters/CursorQuery'
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/HrSortQuery'
+      responses:
+        '200':
+          description: Vacancy applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrApplicationListResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Vacancy not found
+
+  /api/v1/hr/applications/{applicationId}:
+    get:
+      tags: [HR Applications]
+      summary: Get application details for HR
+      operationId: getHrApplication
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: HR application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrApplicationDetailsResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+
+  /api/v1/hr/applications/{applicationId}/history:
+    get:
+      tags: [HR Applications]
+      summary: Get application status history for HR
+      operationId: getHrApplicationHistory
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: HR-visible history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrApplicationHistoryResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+
+  /api/v1/hr/applications/{applicationId}/status:
+    post:
+      tags: [HR Applications]
+      summary: Change application status
+      operationId: changeApplicationStatus
+      description: |
+        Allowed transitions for HR:
+        - submitted -> seen
+        - submitted -> interview
+        - submitted -> rejected
+        - seen -> interview
+        - seen -> rejected
+        - interview -> offer
+        - interview -> rejected
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeApplicationStatusRequest'
+      responses:
+        '200':
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Forbidden
+        '404':
+          description: Application not found
+        '409':
+          description: Transition is not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/hr/companies/{companyId}/analytics/summary:
+    get:
+      tags: [Application Analytics]
+      summary: Get company application summary
+      operationId: getCompanyAnalyticsSummary
+      parameters:
+        - $ref: '#/components/parameters/CompanyId'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Company analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyAnalyticsSummaryResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Company not found
+
+  /api/v1/hr/vacancies/{vacancyId}/analytics/summary:
+    get:
+      tags: [Application Analytics]
+      summary: Get vacancy application summary
+      operationId: getVacancyAnalyticsSummary
+      parameters:
+        - $ref: '#/components/parameters/VacancyId'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Vacancy analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacancyAnalyticsSummaryResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Vacancy not found
+
+  /api/v1/hr/companies/{companyId}/analytics/status-funnel:
+    get:
+      tags: [Application Analytics]
+      summary: Get company funnel by statuses
+      operationId: getCompanyStatusFunnel
+      parameters:
+        - $ref: '#/components/parameters/CompanyId'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Company funnel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusFunnelResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Company not found
+
+  /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel:
+    get:
+      tags: [Application Analytics]
+      summary: Get vacancy funnel by statuses
+      operationId: getVacancyStatusFunnel
+      parameters:
+        - $ref: '#/components/parameters/VacancyId'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Vacancy funnel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusFunnelResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Vacancy not found
+
+  /api/v1/hr/companies/{companyId}/analytics/dynamics:
+    get:
+      tags: [Application Analytics]
+      summary: Get company application dynamics
+      operationId: getCompanyDynamics
+      parameters:
+        - $ref: '#/components/parameters/CompanyId'
+        - $ref: '#/components/parameters/IntervalQuery'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Company application dynamics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Company not found
+
+  /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics:
+    get:
+      tags: [Application Analytics]
+      summary: Get vacancy application dynamics
+      operationId: getVacancyDynamics
+      parameters:
+        - $ref: '#/components/parameters/VacancyId'
+        - $ref: '#/components/parameters/IntervalQuery'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+      responses:
+        '200':
+          description: Vacancy application dynamics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Vacancy not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ApplicationId:
+      in: path
+      name: applicationId
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CompanyId:
+      in: path
+      name: companyId
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    VacancyId:
+      in: path
+      name: vacancyId
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    CandidateCompanyIdQuery:
+      in: query
+      name: companyId
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+    HrVacancyIdQuery:
+      in: query
+      name: vacancyId
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+    CandidateStatusesQuery:
+      in: query
+      name: statuses
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/ApplicationStatus'
+      style: form
+      explode: false
+
+    HrStatusesQuery:
+      in: query
+      name: statuses
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/ApplicationStatus'
+      style: form
+      explode: false
+
+    CreatedFromQuery:
+      in: query
+      name: createdFrom
+      required: false
+      schema:
+        type: string
+        format: date-time
+
+    CreatedToQuery:
+      in: query
+      name: createdTo
+      required: false
+      schema:
+        type: string
+        format: date-time
+
+    IntervalQuery:
+      in: query
+      name: interval
+      required: false
+      schema:
+        type: string
+        enum: [day, week, month]
+        default: day
+
+    CursorQuery:
+      in: query
+      name: cursor
+      required: false
+      description: Opaque cursor returned by previous list response
+      schema:
+        type: string
+
+    LimitQuery:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    CandidateSortQuery:
+      in: query
+      name: sort
+      required: false
+      schema:
+        type: string
+        enum:
+          - createdAtDesc
+          - updatedAtDesc
+        default: createdAtDesc
+
+    HrSortQuery:
+      in: query
+      name: sort
+      required: false
+      schema:
+        type: string
+        enum:
+          - createdAtDesc
+          - updatedAtDesc
+        default: createdAtDesc
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ApplicationStatus:
+      type: string
+      enum:
+        - submitted
+        - seen
+        - interview
+        - rejected
+        - offer
+        - withdrawn
+
+    ActorType:
+      type: string
+      enum:
+        - candidate
+        - hr
+        - system
+
+    CandidateAllowedAction:
+      type: string
+      enum:
+        - withdraw
+
+    HrAllowedAction:
+      type: string
+      enum:
+        - markSeen
+        - moveToInterview
+        - reject
+        - makeOffer
+
+    CreateApplicationRequest:
+      type: object
+      required:
+        - vacancyId
+        - resumeId
+      properties:
+        vacancyId:
+          type: string
+          format: uuid
+        resumeId:
+          type: string
+          format: uuid
+        coverLetter:
+          type: string
+          maxLength: 2000
+          description: Optional short message from candidate to HR
+
+    WithdrawApplicationRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+          maxLength: 2000
+
+    ChangeApplicationStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - seen
+            - interview
+            - rejected
+            - offer
+        comment:
+          type: string
+          maxLength: 2000
+
+    CandidateApplicationListResponse:
+      type: object
+      required:
+        - data
+        - hasNext
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateApplicationListItem'
+        nextCursor:
+          type: string
+          nullable: true
+        hasNext:
+          type: boolean
+
+    HrApplicationListResponse:
+      type: object
+      required:
+        - data
+        - hasNext
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrApplicationListItem'
+        nextCursor:
+          type: string
+          nullable: true
+        hasNext:
+          type: boolean
+
+    CandidateApplicationDetailsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CandidateApplicationDetails'
+
+    HrApplicationDetailsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/HrApplicationDetails'
+
+    CandidateApplicationHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateApplicationStatusHistoryItem'
+
+    HrApplicationHistoryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrApplicationStatusHistoryItem'
+
+    CandidateApplicationListItem:
+      type: object
+      required:
+        - id
+        - status
+        - vacancyId
+        - vacancyTitle
+        - companyId
+        - companyName
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        vacancyId:
+          type: string
+          format: uuid
+        vacancyTitle:
+          type: string
+        companyId:
+          type: string
+          format: uuid
+        companyName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    HrApplicationListItem:
+      type: object
+      required:
+        - id
+        - status
+        - vacancyId
+        - vacancyTitle
+        - snapshot
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        vacancyId:
+          type: string
+          format: uuid
+        vacancyTitle:
+          type: string
+        snapshot:
+          $ref: '#/components/schemas/ApplicationSnapshotSummary'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CandidateApplicationDetails:
+      type: object
+      required:
+        - id
+        - status
+        - vacancyId
+        - vacancyTitle
+        - companyId
+        - companyName
+        - snapshot
+        - statusHistory
+        - allowedActions
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        vacancyId:
+          type: string
+          format: uuid
+        vacancyTitle:
+          type: string
+        companyId:
+          type: string
+          format: uuid
+        companyName:
+          type: string
+        coverLetter:
+          type: string
+          nullable: true
+        snapshot:
+          $ref: '#/components/schemas/ApplicationSnapshot'
+        statusHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateApplicationStatusHistoryItem'
+        allowedActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateAllowedAction'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    HrApplicationDetails:
+      type: object
+      required:
+        - id
+        - status
+        - vacancyId
+        - vacancyTitle
+        - snapshot
+        - statusHistory
+        - allowedActions
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        vacancyId:
+          type: string
+          format: uuid
+        vacancyTitle:
+          type: string
+        coverLetter:
+          type: string
+          nullable: true
+        snapshot:
+          $ref: '#/components/schemas/ApplicationSnapshot'
+        statusHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrApplicationStatusHistoryItem'
+        allowedActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrAllowedAction'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApplicationSnapshotSummary:
+      type: object
+      required:
+        - fullName
+        - createdAt
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ApplicationSnapshot:
+      type: object
+      required:
+        - fullName
+        - email
+        - resumeData
+        - createdAt
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        telegram:
+          type: string
+          nullable: true
+        resumeData:
+          type: object
+          additionalProperties: true
+          description: Immutable snapshot of resume payload at apply time
+        createdAt:
+          type: string
+          format: date-time
+
+    CandidateApplicationStatusHistoryItem:
+      type: object
+      required:
+        - status
+        - changedByRole
+        - createdAt
+      properties:
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        changedByRole:
+          type: string
+          enum:
+            - candidate
+            - hr
+            - system
+        createdAt:
+          type: string
+          format: date-time
+
+    HrApplicationStatusHistoryItem:
+      type: object
+      required:
+        - status
+        - changedByRole
+        - createdAt
+      properties:
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        changedByRole:
+          $ref: '#/components/schemas/ActorType'
+        changedByUserId:
+          type: string
+          format: uuid
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CompanyAnalyticsSummaryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AnalyticsSummary'
+
+    VacancyAnalyticsSummaryResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/AnalyticsSummary'
+
+    AnalyticsSummary:
+      type: object
+      required:
+        - totalApplications
+        - activeApplications
+        - submittedCount
+        - seenCount
+        - interviewCount
+        - rejectedCount
+        - offerCount
+        - withdrawnCount
+        - conversionToInterview
+        - conversionToOffer
+      properties:
+        totalApplications:
+          type: integer
+        activeApplications:
+          type: integer
+        submittedCount:
+          type: integer
+        seenCount:
+          type: integer
+        interviewCount:
+          type: integer
+        rejectedCount:
+          type: integer
+        offerCount:
+          type: integer
+        withdrawnCount:
+          type: integer
+        conversionToInterview:
+          type: number
+          format: float
+          description: Ratio in range [0,1]
+        conversionToOffer:
+          type: number
+          format: float
+          description: Ratio in range [0,1]
+
+    StatusFunnelResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/StatusFunnel'
+
+    StatusFunnel:
+      type: object
+      required:
+        - submitted
+        - seen
+        - interview
+        - rejected
+        - offer
+        - withdrawn
+      properties:
+        submitted:
+          type: integer
+        seen:
+          type: integer
+        interview:
+          type: integer
+        rejected:
+          type: integer
+        offer:
+          type: integer
+        withdrawn:
+          type: integer
+
+    ApplicationDynamicsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationDynamicsPoint'
+
+    ApplicationDynamicsPoint:
+      type: object
+      required:
+        - bucketStart
+        - createdCount
+        - withdrawnCount
+        - seenCount
+        - interviewCount
+        - rejectedCount
+        - offerCount
+      properties:
+        bucketStart:
+          type: string
+          format: date-time
+        createdCount:
+          type: integer
+        withdrawnCount:
+          type: integer
+        seenCount:
+          type: integer
+        interviewCount:
+          type: integer
+        rejectedCount:
+          type: integer
+        offerCount:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: conflict
+        message:
+          type: string
+          example: Active application already exists for this vacancy
+        details:
+          type: object
+          additionalProperties: true
