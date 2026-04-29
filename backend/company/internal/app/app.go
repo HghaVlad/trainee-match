@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/msgbroker/schemaregistry"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -60,6 +62,13 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	scemaRegCl := schemaregistry.NewClient(conf.SchemaRegistry)
+	schemaLocalReg, err := schemaregistry.NewLocalRegistry(ctx, scemaRegCl)
+	if err != nil {
+		return nil, err
+	}
+	_ = schemaLocalReg
 
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)

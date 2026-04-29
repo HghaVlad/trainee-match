@@ -11,6 +11,7 @@ type Config struct {
 	Postgres Postgres
 	Broker   BrokerConfig
 	Redis    RedisConfig
+	SchemaRegistry SchemaRegistry
 }
 
 func Load() (*Config, error) {
@@ -37,6 +38,9 @@ func Load() (*Config, error) {
 		Redis: RedisConfig{
 			Host: os.Getenv("REDIS_HOST"),
 			Port: os.Getenv("REDIS_PORT"),
+		},
+		SchemaRegistry: SchemaRegistry{
+			BaseURL: os.Getenv("SCHEMA_REGISTRY_BASE_URL"),
 		},
 	}
 
