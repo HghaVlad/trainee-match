@@ -18,7 +18,8 @@ import type {
   DtoErrorResponse,
   DtoLoginRequest,
   DtoMessageResponse,
-  DtoRegisterUserRequest
+  DtoRegisterUserRequest,
+  DtoUserResponse
 } from '../schemas';
 
 import { mutatorFn } from '../../../../shared/api/http/client';
@@ -88,6 +89,67 @@ export const usePostAuthLogin = <TError = DtoErrorResponse,
         TContext
       > => {
       return useMutation(getPostAuthLoginMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Get current user info
+ */
+export const postAuthMe = (
+
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoUserResponse>(
+      {url: `/auth/me`, method: 'POST', signal
+    },
+      );
+    }
+
+
+
+export const getPostAuthMeMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMe>>, TError,void, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAuthMe>>, TError,void, TContext> => {
+
+const mutationKey = ['postAuthMe'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAuthMe>>, void> = () => {
+
+
+          return  postAuthMe()
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAuthMeMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMe>>>
+
+    export type PostAuthMeMutationError = DtoErrorResponse
+
+    /**
+ * @summary Get current user info
+ */
+export const usePostAuthMe = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMe>>, TError,void, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postAuthMe>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPostAuthMeMutationOptions(options), queryClient);
     }
     /**
  * @summary Logout a user

@@ -68,7 +68,7 @@ function normalizeAxiosError(err: AxiosError): AppError {
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
 export const httpClient = axios.create({
-  baseURL: env.VITE_API_URL ?? '', // empty = relative URL on same origin
+  baseURL: env.VITE_API_URL || '/api/v1',
   withCredentials: true,
 })
 

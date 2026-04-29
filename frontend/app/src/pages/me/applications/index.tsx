@@ -4,6 +4,7 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { STATUS_LABEL } from '@/features/applications'
+import { AppError } from '@/shared/api/http/client'
 
 function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -12,12 +13,15 @@ function formatDate(iso: string): string {
 }
 
 export default function MyApplicationsPage() {
-  const { data, isLoading, error, refetch } = useListMyApplications()
+  const { data, isLoading, error, refetch } = useListMyApplications(undefined, {
+    query: { retry: false },
+  })
 
   if (isLoading) return <LoadingState />
-  if (error) return <ErrorState onRetry={() => refetch()} />
+  const notFound = error instanceof AppError && error.status === 404
+  if (error && !notFound) return <ErrorState onRetry={() => refetch()} />
 
-  const items = data?.data ?? []
+  const items = notFound ? [] : data?.data ?? []
 
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-4">

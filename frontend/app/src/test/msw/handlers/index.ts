@@ -1,18 +1,25 @@
 import { http, HttpResponse } from 'msw'
 
 let currentUser:
-  | { id: number; role: 'Candidate' | 'Company'; username: string; email: string; firstName: string; lastName: string }
+  | {
+      id: string
+      role: 'Candidate' | 'Company'
+      username: string
+      email: string
+      first_name: string
+      last_name: string
+    }
   | null = null
 
 function userFor(username: string): NonNullable<typeof currentUser> {
   const isCompany = username.toLowerCase().startsWith('company')
   return {
-    id: isCompany ? 2 : 1,
+    id: isCompany ? '2' : '1',
     role: isCompany ? 'Company' : 'Candidate',
     username,
     email: `${username}@example.com`,
-    firstName: 'Test',
-    lastName: 'User',
+    first_name: 'Test',
+    last_name: 'User',
   }
 }
 
@@ -34,7 +41,7 @@ export const handlers = [
   }),
   http.post('/auth/refresh', () => HttpResponse.json({ message: 'OK' })),
 
-  http.get('/auth/me', () => {
+  http.post('/auth/me', () => {
     if (!currentUser) return new HttpResponse(null, { status: 401 })
     return HttpResponse.json(currentUser)
   }),

@@ -40,7 +40,7 @@ export function LoginForm() {
         return
       }
       const role = useSessionStore.getState().user?.role
-      navigate(role === 'Company' ? '/company/me' : '/me/profile')
+      navigate(role === 'Company' ? '/company' : '/me/profile')
     } catch (e) {
       if (e instanceof AppError && e.status === 401) {
         setError('Неверные данные')

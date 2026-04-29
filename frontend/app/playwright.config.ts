@@ -21,10 +21,10 @@ export default defineConfig({
     command: 'pnpm dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env['CI'],
+    timeout: 120_000,
     env: {
-      VITE_USE_MSW: 'true',
-      VITE_API_URL: 'http://localhost:5173',
-      VITE_AUTH_ME_AVAILABLE: 'true',
+      VITE_USE_MSW: 'false',
+      VITE_API_URL: '',
     },
   },
 })

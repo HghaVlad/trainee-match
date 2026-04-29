@@ -10,3 +10,4 @@ export * from './dtoLoginRequest';
 export * from './dtoMessageResponse';
 export * from './dtoRegisterUserRequest';
 export * from './dtoRegisterUserRequestRole';
+export * from './dtoUserResponse';

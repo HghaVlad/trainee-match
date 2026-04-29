@@ -1,14 +1,22 @@
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useSession } from '@/shared/session/useSession'
 import { useSessionStore } from '@/shared/session/sessionStore'
+import { postAuthLogout } from '@/api/generated/auth/auth/auth'
 import { CompanySwitcher } from './CompanySwitcher'
 
 export function Header() {
   const { isAuthed, role, user, activeCompanyId } = useSession()
+  const navigate = useNavigate()
   const companyBase = activeCompanyId ? `/company/${activeCompanyId}` : '/company'
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await postAuthLogout()
+    } catch {
+      void 0
+    }
     useSessionStore.getState().setAnon()
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -34,7 +42,7 @@ export function Header() {
             <Link to="/me/applications">Applications</Link>
           </>
         )}
-        {isAuthed && role === 'Company' && (
+        {isAuthed && role === 'Company' && activeCompanyId && (
           <>
             <Link to={`${companyBase}/dashboard`}>Dashboard</Link>
             <Link to={`${companyBase}/vacancies`}>Vacancies</Link>
@@ -42,6 +50,9 @@ export function Header() {
             <Link to={`${companyBase}/members`}>Members</Link>
             <Link to={`${companyBase}/profile`}>Profile</Link>
           </>
+        )}
+        {isAuthed && role === 'Company' && !activeCompanyId && (
+          <Link to="/company/new">Создать компанию</Link>
         )}
       </nav>
       {isAuthed && role === 'Company' && <CompanySwitcher />}

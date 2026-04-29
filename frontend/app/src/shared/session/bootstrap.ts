@@ -1,63 +1,30 @@
-import { httpClient } from '@/shared/api/http/client'
 import { useSessionStore } from './sessionStore'
 import type { SessionUser } from './sessionStore'
-import { env } from '@/shared/config/env'
 import { AppError } from '@/shared/api/http/client'
 import { fetchCompaniesMe } from '@/shared/api/companies/companiesMe'
 import { readActiveCompanyId, writeActiveCompanyId } from './types'
+import { postAuthMe } from '@/api/generated/auth/auth/auth'
+import type { DtoUserResponse } from '@/api/generated/auth/schemas'
 
-interface AuthMeResponse {
-  id: number
-  role: 'Candidate' | 'Company'
-  username: string
-  email: string
-  firstName: string
-  lastName: string
-}
-
-interface CandidateMeResponse {
-  id: number
-  username: string
-  email?: string
-  firstName?: string
-  lastName?: string
-}
-
-async function bootstrapViaAuthMe(): Promise<SessionUser | null> {
-  try {
-    const data = await httpClient
-      .get<AuthMeResponse>('/auth/me')
-      .then((r) => r.data)
-    return {
-      id: data.id,
-      role: data.role,
-      username: data.username,
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-    }
-  } catch {
-    return null
+function toSessionUser(data: DtoUserResponse): SessionUser | null {
+  if (!data.id || !data.username || !data.role) return null
+  if (data.role !== 'Candidate' && data.role !== 'Company') return null
+  return {
+    id: data.id,
+    role: data.role,
+    username: data.username,
+    email: data.email,
+    firstName: data.first_name,
+    lastName: data.last_name,
   }
 }
 
-async function bootstrapViaProbe(): Promise<SessionUser | null> {
+async function fetchCurrentUser(): Promise<SessionUser | null> {
   try {
-    const data = await httpClient
-      .get<CandidateMeResponse>('/api/v1/candidate/me')
-      .then((r) => r.data)
-    return {
-      id: data.id,
-      role: 'Candidate',
-      username: data.username,
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-    }
+    const data = await postAuthMe()
+    return toSessionUser(data)
   } catch (e) {
-    if (e instanceof AppError && e.status === 401) {
-      return null
-    }
+    if (e instanceof AppError && e.status === 401) return null
     return null
   }
 }
@@ -85,9 +52,7 @@ async function loadCompaniesForUser(user: SessionUser): Promise<void> {
 export async function bootstrap(): Promise<void> {
   const { setAuthed, setAnon } = useSessionStore.getState()
 
-  const user = env.VITE_AUTH_ME_AVAILABLE
-    ? await bootstrapViaAuthMe()
-    : await bootstrapViaProbe()
+  const user = await fetchCurrentUser()
 
   if (!user) {
     setAnon()

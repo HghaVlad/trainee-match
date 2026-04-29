@@ -40,9 +40,10 @@ export default function ResumesPage() {
   }
 
   if (isLoading) return <LoadingState />
-  if (error) return <ErrorState onRetry={() => refetch()} />
+  const notFound = error instanceof AppError && error.status === 404
+  if (error && !notFound) return <ErrorState onRetry={() => refetch()} />
 
-  const items = data ?? []
+  const items = notFound ? [] : data ?? []
 
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-4">

@@ -23,7 +23,10 @@ const today = new Date().toISOString().slice(0, 10)
 
 const profileSchema = z.object({
   phone: z.string().min(1, 'Введите телефон').max(32),
-  telegram: z.string().max(64).optional().or(z.literal('')),
+  telegram: z
+    .string()
+    .min(1, 'Введите Telegram')
+    .regex(/^@[A-Za-z0-9_]{3,32}$/, 'Формат: @username (3–32 символа)'),
   city: z.string().min(1, 'Введите город').max(100),
   birthday: z
     .string()
@@ -48,11 +51,13 @@ export function CandidateProfileForm({ mode, initial, onSuccess }: Props) {
   async function handleSubmit(data: CandidateProfileFormData) {
     setError(null)
     try {
+      const [y, m, d] = data.birthday.split('-')
+      const birthdayApi = `${d}.${m}.${y}`
       const payload = {
         phone: data.phone,
-        telegram: data.telegram || undefined,
+        telegram: data.telegram,
         city: data.city,
-        birthday: data.birthday,
+        birthday: birthdayApi,
       }
       if (mode === 'create') {
         await createMut.mutateAsync({ data: payload })

@@ -10,7 +10,6 @@ const envSchema = z.object({
     .enum(['development', 'staging', 'production'])
     .optional()
     .default('development'),
-  VITE_AUTH_ME_AVAILABLE: z.string().optional().transform((v) => v === 'true'),
 })
 
 export type Env = z.infer<typeof envSchema>
