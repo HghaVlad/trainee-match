@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume/mocks"
 )
 
 // TODO: add more tests
@@ -29,7 +30,7 @@ func TestExecute(t *testing.T) {
 		ID:          resumeID,
 		CandidateId: candidateID,
 		Name:        "Old",
-		Status:      domain.Draft,
+		Status:      0,
 		Data: domain.ResumeData{
 			LastName: "Doe", FirstName: "John", DateOfBirth: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			Email: "john@example.com", Phone: "+1234567890", City: "City", Citizenship: "Country",
@@ -83,7 +84,9 @@ func TestExecute(t *testing.T) {
 		{name: "candidate not found",
 			req: Request{ID: resumeID, UserId: userId},
 			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
-				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				candidateRepo.On("GetByUserID", ctx, userId).
+					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
+					Once()
 			},
 			expectedError: domain.ErrCandidateNotFound,
 		},
