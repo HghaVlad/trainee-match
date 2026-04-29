@@ -45,9 +45,9 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Id
 	}
 
 	respCacheKey := requestToCacheKey(req)
-	resp := uc.respCache.Get(ctx, respCacheKey)
-	if resp != nil {
-		return resp, nil
+	res := uc.respCache.Get(ctx, respCacheKey)
+	if res != nil {
+		return res, nil
 	}
 
 	companyExists, exErr := uc.compRepo.Exists(ctx, req.CompID)
@@ -59,18 +59,23 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Id
 		return nil, company.ErrCompanyNotFound
 	}
 
+	var resp *Response
+	var err error
+
 	switch req.Order {
 	case OrderCreatedAtDesc:
-		resp, err := listByCreatedAt(ctx, uc, req)
-		if err != nil {
-			return nil, err
-		}
+		resp, err = listByCreatedAt(ctx, uc, req)
 
-		uc.respCache.Put(ctx, respCacheKey, resp, time.Second*20)
-		return resp, nil
+	default:
+		return nil, common.ErrUnsupportedListOrder
 	}
 
-	return nil, common.ErrUnsupportedListOrder
+	if err != nil {
+		return nil, err
+	}
+
+	uc.respCache.Put(ctx, respCacheKey, resp, time.Second*20)
+	return resp, nil
 }
 
 func listByCreatedAt(ctx context.Context, uc *Usecase, req *Request) (*Response, error) {

@@ -6,11 +6,14 @@ import (
 	"github.com/google/uuid"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
 type VacancyRepo interface {
-	GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*vacancy.Vacancy, error)
+	GetPublishedEventView(
+		ctx context.Context,
+		vacancyID uuid.UUID,
+		companyID uuid.UUID,
+	) (*PublishedEventView, error)
 	Publish(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) error
 }
 

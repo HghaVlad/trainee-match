@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/go-resty/resty/v2"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 )
 
 const (

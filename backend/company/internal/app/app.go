@@ -11,8 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/msgbroker/schemaregistry"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -20,9 +18,11 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/msgbroker/schemaregistry"
 	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
@@ -63,16 +63,21 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	scemaRegCl := schemaregistry.NewClient(conf.SchemaRegistry)
-	schemaLocalReg, err := schemaregistry.NewLocalRegistry(ctx, scemaRegCl)
+	schemaRegCl := schemaregistry.NewClient(conf.SchemaRegistry)
+	schemaLocalReg, err := schemaregistry.NewLocalRegistry(ctx, schemaRegCl)
 	if err != nil {
 		return nil, err
 	}
-	_ = schemaLocalReg
+
+	schemaEncoder, err := schemaregistry.NewEncoder(schemaLocalReg)
+	if err != nil {
+		return nil, err
+	}
 
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
+	outboxRepo := repository.NewOutboxRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
 
 	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
@@ -91,6 +96,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, compCache)
 	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, compCache)
+	outboxWriter := outbox.NewWriter(outboxRepo, schemaEncoder)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
@@ -98,8 +104,8 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
-	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, compCache)
-	vacArchive := archive.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
+	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
+	vacArchive := archive.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, publicVacCache, compCache)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	companyHandler := handlers.NewCompanyHandler(

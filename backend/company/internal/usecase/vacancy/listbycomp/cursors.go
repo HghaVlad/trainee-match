@@ -18,10 +18,5 @@ type CreatedAtCursor struct {
 }
 
 func (r Order) IsValid() bool {
-	switch r {
-	case OrderCreatedAtDesc:
-		return true
-	}
-
-	return false
+	return r == OrderCreatedAtDesc
 }

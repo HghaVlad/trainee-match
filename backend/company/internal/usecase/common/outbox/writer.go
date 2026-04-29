@@ -1,0 +1,243 @@
+package outbox
+
+import (
+	"context"
+	"encoding/binary"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+)
+
+type EventType string
+
+const (
+	EventTypeVacancyPublished EventType = "VacancyPublished"
+	EventTypeVacancyArchived  EventType = "VacancyArchived"
+	EventTypeVacancyUpdated   EventType = "VacancyUpdated"
+
+	EventTypeRecruiterAdded   EventType = "RecruiterAdded"
+	EventTypeRecruiterRemoved EventType = "RecruiterRemoved"
+
+	EventTypeCompanyDeleted EventType = "CompanyDeleted"
+	EventTypeCompanyUpdated EventType = "CompanyUpdated"
+)
+
+const (
+	VacancyTopic   = "vacancy.events"
+	RecruiterTopic = "recruiter.events"
+	CompanyTopic   = "company.events"
+)
+
+const defaultMaxAttempts = 5
+
+type Writer struct {
+	repo    WriterRepo
+	encoder Encoder
+}
+
+func NewWriter(repo WriterRepo, encoder Encoder) *Writer {
+	return &Writer{
+		repo:    repo,
+		encoder: encoder,
+	}
+}
+
+func (w *Writer) WriteVacancyPublished(ctx context.Context, ev vacancy.PublishedEvent) error {
+	payload, err := w.encoder.VacancyPublishedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy published outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		VacancyTopic,
+		EventTypeVacancyPublished,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy published outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteVacancyArchived(ctx context.Context, ev vacancy.ArchivedEvent) error {
+	payload, err := w.encoder.VacancyArchivedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy archived outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		VacancyTopic,
+		EventTypeVacancyArchived,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy archived outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEvent) error {
+	payload, err := w.encoder.VacancyUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy updated outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		VacancyTopic,
+		EventTypeVacancyUpdated,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy updated outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteRecruiterAdded(ctx context.Context, ev member.RecruiterAddedEvent) error {
+	payload, err := w.encoder.CompanyMemberAddedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write recruiter added outbox: %w ", err)
+	}
+
+	key := ev.CompanyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		RecruiterTopic,
+		EventTypeRecruiterAdded,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write recruiter added outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteRecruiterRemoved(ctx context.Context, ev member.RecruiterRemovedEvent) error {
+	payload, err := w.encoder.CompanyMemberRemovedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write recruiter removed outbox: %w ", err)
+	}
+
+	key := ev.CompanyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		RecruiterTopic,
+		EventTypeRecruiterRemoved,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write recruiter removed outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteCompanyUpdated(ctx context.Context, ev company.UpdatedEvent) error {
+	payload, err := w.encoder.CompanyUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write recruiter added outbox: %w ", err)
+	}
+
+	key := ev.CompanyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		CompanyTopic,
+		EventTypeCompanyUpdated,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write recruiter added outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEvent) error {
+	payload, err := w.encoder.CompanyDeletedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write company deleted outbox: %w ", err)
+	}
+
+	key := ev.CompanyID[:]
+	msg := w.createDefaultMsg(
+		payload,
+		key,
+		CompanyTopic,
+		EventTypeCompanyDeleted,
+		defaultMaxAttempts,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write company deleted outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) createDefaultMsg(
+	payload, key []byte,
+	topic string,
+	evType EventType,
+	maxAttempts int,
+	id uuid.UUID,
+	occurredAt time.Time,
+) Message {
+	return Message{
+		ID:            id,
+		Topic:         topic,
+		Key:           key,
+		Payload:       payload,
+		Headers:       make(map[string]string),
+		SchemaID:      schemaIDFromPayload(payload),
+		EventType:     evType,
+		Status:        StatusPending,
+		MaxAttempts:   maxAttempts,
+		CreatedAt:     occurredAt,
+		NextAttemptAt: occurredAt,
+	}
+}
+
+func schemaIDFromPayload(payload []byte) int {
+	return int(binary.BigEndian.Uint32(payload[1:]))
+}

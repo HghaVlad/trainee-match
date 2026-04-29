@@ -7,10 +7,10 @@ import (
 )
 
 type Config struct {
-	HTTP     HTTPConfig
-	Postgres Postgres
-	Broker   BrokerConfig
-	Redis    RedisConfig
+	HTTP           HTTPConfig
+	Postgres       Postgres
+	Broker         BrokerConfig
+	Redis          RedisConfig
 	SchemaRegistry SchemaRegistry
 }
 

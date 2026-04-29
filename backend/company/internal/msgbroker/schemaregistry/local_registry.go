@@ -8,7 +8,7 @@ import (
 )
 
 type LocalRegistry struct {
-	SchemaIDs map[string]int // subject -> schemaID
+	schemaIDs map[string]int // subject -> schemaID
 
 	schemas       map[string]string // subject -> raw schema string
 	realRegClient *RealRegistryClient
@@ -27,7 +27,7 @@ func NewLocalRegistry(ctx context.Context, client *RealRegistryClient) (*LocalRe
 	}
 
 	return &LocalRegistry{
-		SchemaIDs:     schemaIDs,
+		schemaIDs:     schemaIDs,
 		schemas:       schemas,
 		realRegClient: client,
 	}, nil
@@ -81,7 +81,7 @@ func loadLocalSchemas() (map[string]string, error) {
 }
 
 func subjectFromPath(path string) string {
-	// vacancy_published.avsc → vacancy_published-value
+	// vacancy-published.avsc → vacancy-published-value
 	base := path[strings.LastIndex(path, "/")+1:]
 	name := strings.TrimSuffix(base, ".avsc")
 	return name + "-value"

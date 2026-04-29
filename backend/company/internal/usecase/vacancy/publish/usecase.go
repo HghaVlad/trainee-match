@@ -15,30 +15,34 @@ import (
 
 // Usecase publishes vacancy, thus makes it available for candidates.
 // Increases company open vacancies count
+// Generates a vacancy.PublishedEvent if it isn't in published state now
 type Usecase struct {
-	vacRepo     VacancyRepo
-	companyRepo CompanyRepo
-	memberRepo  CompMemberRepo
-	txManager   common.TxManager
-	compCache   CacheRepo
-	vacCache    CacheRepo
+	vacRepo      VacancyRepo
+	companyRepo  CompanyRepo
+	memberRepo   CompMemberRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
+	compCache    CacheRepo
+	vacCache     CacheRepo
 }
 
 func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
+	outboxWriter outboxWriter,
 	txManager common.TxManager,
 	vacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		vacRepo:     vacRepo,
-		memberRepo:  memberRepo,
-		companyRepo: compRepo,
-		txManager:   txManager,
-		compCache:   compCache,
-		vacCache:    vacCache,
+		vacRepo:      vacRepo,
+		memberRepo:   memberRepo,
+		companyRepo:  compRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
+		compCache:    compCache,
+		vacCache:     vacCache,
 	}
 }
 
@@ -59,7 +63,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vac, err := u.vacRepo.GetByID(ctx, vacID, compID)
+		vac, err := u.vacRepo.GetPublishedEventView(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}
@@ -74,6 +78,11 @@ func (u *Usecase) Execute(
 		}
 
 		err = u.companyRepo.IncrementOpenVacancies(ctx, compID)
+		if err != nil {
+			return err
+		}
+
+		err = u.createPublishedEvent(ctx, vac)
 		if err != nil {
 			return err
 		}
@@ -96,4 +105,17 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *ide
 	}
 
 	return err
+}
+
+func (u *Usecase) createPublishedEvent(ctx context.Context, vac *PublishedEventView) error {
+	ev := vacancy.PublishedEvent{
+		EventID:     uuid.New(),
+		VacancyID:   vac.ID,
+		Title:       vac.Title,
+		CompanyID:   vac.CompanyID,
+		CompanyName: vac.CompanyName,
+		OccurredAt:  time.Now().UTC(),
+	}
+
+	return u.outboxWriter.WriteVacancyPublished(ctx, ev)
 }

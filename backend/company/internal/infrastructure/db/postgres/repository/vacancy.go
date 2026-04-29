@@ -17,6 +17,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 )
 
 type VacancyRepo struct {
@@ -97,6 +98,37 @@ func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UU
 
 	if err != nil {
 		return nil, fmt.Errorf("get published vacancy: %w", err)
+	}
+
+	return &vac, nil
+}
+
+func (repo *VacancyRepo) GetPublishedEventView(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	companyID uuid.UUID,
+) (*publish.PublishedEventView, error) {
+
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT 
+    v.id, v.company_id, v.title, v.status, c.name
+	FROM vacancies v
+	JOIN companies c ON v.company_id = c.id
+	WHERE v.id = $1 AND v.company_id = $2`
+
+	var vac publish.PublishedEventView
+
+	err := q.QueryRow(ctx, query, vacancyID, companyID).Scan(
+		&vac.ID, &vac.CompanyID, &vac.Title, &vac.Status, &vac.CompanyName,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get published event view: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get published event view: %w", err)
 	}
 
 	return &vac, nil

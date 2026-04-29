@@ -13,34 +13,39 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
-// Usecase archive vacancy (hide from candidates)
+// Usecase archive vacancy (hide from candidates).
+// Decreases company OpenVacanciesCount.
+// Generates vacancy archived event
 type Usecase struct {
-	vacRepo     VacancyRepo
-	memberRepo  CompMemberRepo
-	compRepo    CompanyRepo
-	txManager   common.TxManager
-	vacCache    CacheRepo
-	pubVacCache CacheRepo
-	compCache   CacheRepo
+	vacRepo      VacancyRepo
+	memberRepo   CompMemberRepo
+	compRepo     CompanyRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
+	vacCache     CacheRepo
+	pubVacCache  CacheRepo
+	compCache    CacheRepo
 }
 
 func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
+	outboxWriter outboxWriter,
 	txManager common.TxManager,
 	vacCache CacheRepo,
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		vacRepo:     vacRepo,
-		memberRepo:  memberRepo,
-		compRepo:    compRepo,
-		txManager:   txManager,
-		vacCache:    vacCache,
-		pubVacCache: pubVacCache,
-		compCache:   compCache,
+		vacRepo:      vacRepo,
+		memberRepo:   memberRepo,
+		compRepo:     compRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
+		vacCache:     vacCache,
+		pubVacCache:  pubVacCache,
+		compCache:    compCache,
 	}
 }
 
@@ -78,6 +83,11 @@ func (u *Usecase) Execute(
 			if err != nil {
 				return err
 			}
+
+			err = u.createArchivedEvent(ctx, vacID)
+			if err != nil {
+				return err
+			}
 		}
 
 		u.vacCache.Del(ctx, vacID)
@@ -99,4 +109,14 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, iden *iden
 	}
 
 	return err
+}
+
+func (u *Usecase) createArchivedEvent(ctx context.Context, vacID uuid.UUID) error {
+	ev := vacancy.ArchivedEvent{
+		EventID:    uuid.New(),
+		VacancyID:  vacID,
+		OccurredAt: time.Now(),
+	}
+
+	return u.outboxWriter.WriteVacancyArchived(ctx, ev)
 }
