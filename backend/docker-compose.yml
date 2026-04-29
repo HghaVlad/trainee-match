@@ -139,6 +139,10 @@ services:
         condition: service_completed_successfully
       redis-cache:
         condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+      schema-registry-init:
+        condition: service_completed_successfully
 
 
   kafka-1:

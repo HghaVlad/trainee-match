@@ -150,19 +150,13 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/logout [post]
 func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
-	token := helpers.GetAccessTokenFromCookies(r)
-	if token == "" {
+	refreshToken := helpers.GetRefreshTokenFromCookies(r)
+	helpers.SetTokenPairToCookies(w, "", "", 0, 0)
+	if refreshToken == "" {
 		helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 		return
 	}
-
-	err := h.authClient.Logout(r.Context(), token)
-	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	helpers.SetTokenPairToCookies(w, "", "", 0, 0)
-
+	_ = h.authClient.Logout(r.Context(), refreshToken)
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 }
 
