@@ -105,7 +105,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
-	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
+	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, outboxWriter, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
 	vacArchive := archive.NewUsecase(
 		vacRepo,

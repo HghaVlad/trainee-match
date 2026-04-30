@@ -47,13 +47,8 @@ func (repo *VacancyRepo) GetByID(
 
 	var vac vacancy.Vacancy
 
-	err := q.QueryRow(ctx, query, vacancyID, companyID).
-		Scan(&vac.ID, &vac.CompanyID, &vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
-			&vac.DurationFromDays, &vac.DurationToDays, &vac.EmploymentType,
-			&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
-			&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.CreatedBy,
-			&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
-		)
+	row := q.QueryRow(ctx, query, vacancyID, companyID)
+	err := scanVacancy(row, &vac)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
@@ -128,6 +123,39 @@ func (repo *VacancyRepo) GetPublishedEventView(
 
 	if err != nil {
 		return nil, fmt.Errorf("get published event view: %w", err)
+	}
+
+	return &vac, nil
+}
+
+func (repo *VacancyRepo) GetByIDForUpdate(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	companyID uuid.UUID,
+) (*vacancy.Vacancy, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT 
+    id, company_id, title, description, work_format, city,
+    duration_from_days, duration_to_days, employment_type,
+    hours_per_week_from, hours_per_week_to, flexible_schedule, is_paid,
+    salary_from, salary_to, internship_to_offer, status, created_by_user_id,
+    published_at, created_at, updated_at
+	FROM vacancies 
+	WHERE id = $1 AND company_id = $2
+	FOR UPDATE`
+
+	var vac vacancy.Vacancy
+
+	row := q.QueryRow(ctx, query, vacancyID, companyID)
+	err := scanVacancy(row, &vac)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get vacancy: %w", err)
 	}
 
 	return &vac, nil
@@ -405,4 +433,13 @@ func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, compan
 	}
 
 	return nil
+}
+
+func scanVacancy(row pgx.Row, vac *vacancy.Vacancy) error {
+	return row.Scan(&vac.ID, &vac.CompanyID, &vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
+		&vac.DurationFromDays, &vac.DurationToDays, &vac.EmploymentType,
+		&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
+		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.CreatedBy,
+		&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
+	)
 }

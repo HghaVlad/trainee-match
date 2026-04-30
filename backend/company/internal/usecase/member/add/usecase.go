@@ -83,7 +83,7 @@ func (u *Usecase) createCompMemAddedEvent(ctx context.Context, mem *member.Compa
 		UserID:     mem.UserID,
 		CompanyID:  mem.CompanyID,
 		Role:       mem.Role,
-		OccurredAt: time.Now(),
+		OccurredAt: time.Now().UTC(),
 	}
 
 	return u.outboxWriter.WriteCompanyMemberAdded(ctx, ev)

@@ -16,6 +16,7 @@ import (
 type Usecase struct {
 	repo       VacancyRepo
 	memberRepo CompMemberRepo
+	outbox     outboxWriter
 	cache      CacheRepo
 	txManager  common.TxManager
 }
@@ -23,12 +24,14 @@ type Usecase struct {
 func NewUsecase(
 	repo VacancyRepo,
 	memberRepo CompMemberRepo,
+	outbox outboxWriter,
 	cacheRepo CacheRepo,
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
 		repo:       repo,
 		memberRepo: memberRepo,
+		outbox:     outbox,
 		cache:      cacheRepo,
 		txManager:  txManager,
 	}
@@ -37,18 +40,24 @@ func NewUsecase(
 // Execute updates vacancy. All nil fields of vacancy in request won't be applied.
 // Deletes vacancy from cache.
 func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
+
+	if err := req.lightValidate(); err != nil {
+		return err
+	}
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
 			return err
 		}
 
-		vac, err := u.repo.GetByID(ctx, req.VacancyID, req.CompanyID)
+		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, req.CompanyID)
 		if err != nil {
 			return err
 		}
+
+		eventShouldBeCreated := checkIfEventShouldBeCreated(vac, req)
 
 		applyPatch(vac, req)
 
@@ -56,7 +65,16 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 			return vErr
 		}
 
-		return u.repo.Update(ctx, vac)
+		err = u.repo.Update(ctx, vac)
+		if err != nil {
+			return err
+		}
+
+		if eventShouldBeCreated {
+			return u.createdVacancyUpdatedEvent(ctx, vac)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err
@@ -78,6 +96,21 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *ide
 	}
 
 	return err
+}
+
+func (u *Usecase) createdVacancyUpdatedEvent(ctx context.Context, vac *vacancy.Vacancy) error {
+	ev := vacancy.UpdatedEvent{
+		EventID:    uuid.New(),
+		VacancyID:  vac.ID,
+		Title:      vac.Title,
+		OccurredAt: time.Now().UTC(),
+	}
+
+	return u.outbox.WriteVacancyUpdated(ctx, ev)
+}
+
+func checkIfEventShouldBeCreated(vac *vacancy.Vacancy, req *Request) bool {
+	return req.Title != nil && vac.Title != *req.Title
 }
 
 // Applies not-nil only

@@ -78,7 +78,7 @@ func (u *Usecase) createCompMemRemovedEvent(ctx context.Context, userID, company
 		EventID:    uuid.New(),
 		UserID:     userID,
 		CompanyID:  companyID,
-		OccurredAt: time.Now(),
+		OccurredAt: time.Now().UTC(),
 	}
 
 	return u.outboxWriter.WriteCompanyMemberRemoved(ctx, ev)
