@@ -37,33 +37,19 @@ func (m *MockVacancyRepo) EXPECT() *MockVacancyRepoMockRecorder {
 	return m.recorder
 }
 
-// GetPublishedEventView mocks base method.
-func (m *MockVacancyRepo) GetPublishedEventView(ctx context.Context, vacancyID, companyID uuid.UUID) (*publish.PublishedEventView, error) {
+// PublishIfNotPublished mocks base method.
+func (m *MockVacancyRepo) PublishIfNotPublished(ctx context.Context, vacID, compID uuid.UUID) (*publish.PublishedEventView, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPublishedEventView", ctx, vacancyID, companyID)
+	ret := m.ctrl.Call(m, "PublishIfNotPublished", ctx, vacID, compID)
 	ret0, _ := ret[0].(*publish.PublishedEventView)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPublishedEventView indicates an expected call of GetPublishedEventView.
-func (mr *MockVacancyRepoMockRecorder) GetPublishedEventView(ctx, vacancyID, companyID interface{}) *gomock.Call {
+// PublishIfNotPublished indicates an expected call of PublishIfNotPublished.
+func (mr *MockVacancyRepoMockRecorder) PublishIfNotPublished(ctx, vacID, compID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPublishedEventView", reflect.TypeOf((*MockVacancyRepo)(nil).GetPublishedEventView), ctx, vacancyID, companyID)
-}
-
-// Publish mocks base method.
-func (m *MockVacancyRepo) Publish(ctx context.Context, vacID, compID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Publish", ctx, vacID, compID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Publish indicates an expected call of Publish.
-func (mr *MockVacancyRepoMockRecorder) Publish(ctx, vacID, compID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockVacancyRepo)(nil).Publish), ctx, vacID, compID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishIfNotPublished", reflect.TypeOf((*MockVacancyRepo)(nil).PublishIfNotPublished), ctx, vacID, compID)
 }
 
 // MockCompanyRepo is a mock of CompanyRepo interface.

@@ -7,9 +7,10 @@ import (
 )
 
 type PublishedEventView struct {
-	ID          uuid.UUID
-	Title       string
-	CompanyID   uuid.UUID
-	CompanyName string
-	Status      vacancy.Status
+	ID                  uuid.UUID
+	Title               string
+	CompanyID           uuid.UUID
+	CompanyName         string
+	Status              vacancy.Status
+	WasAlreadyPublished bool
 }

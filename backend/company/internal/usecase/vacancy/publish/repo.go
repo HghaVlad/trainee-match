@@ -10,12 +10,12 @@ import (
 
 //go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
 type VacancyRepo interface {
-	GetPublishedEventView(
-		ctx context.Context,
-		vacancyID uuid.UUID,
-		companyID uuid.UUID,
-	) (*PublishedEventView, error)
-	Publish(ctx context.Context, vacID uuid.UUID, compID uuid.UUID) error
+	// PublishIfNotPublished if vacancy exists and is not published,
+	// marks it as published and returns view for the event.
+	// If it was already published, updates nothing and returns view WasAlreadyPublished = true.
+	// If vacancy doesn't exist, returns vacancy.ErrVacancyNotFound.
+	// Optimized to do a single round trip to db to be effective and avoid race conditions.
+	PublishIfNotPublished(ctx context.Context, vacID, compID uuid.UUID) (*PublishedEventView, error)
 }
 
 type CompanyRepo interface {

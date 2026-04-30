@@ -47,7 +47,8 @@ func NewUsecase(
 }
 
 // Execute publishes vacancy, thus makes it available for candidates.
-// Increases company open vacancies count if vacancy wasn't published.
+// Increases company open vacancies count and creates vacancy.PublishedEvent, if vacancy wasn't published.
+// Returns vacacny.ErrNotFound if it was.
 // Deletes company and vacancy from cache because of the updates.
 func (u *Usecase) Execute(
 	ctx context.Context,
@@ -63,18 +64,13 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vac, err := u.vacRepo.GetPublishedEventView(ctx, vacID, compID)
+		vac, err := u.vacRepo.PublishIfNotPublished(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}
 
-		if vac.Status == vacancy.StatusPublished {
+		if vac.WasAlreadyPublished {
 			return nil
-		}
-
-		err = u.vacRepo.Publish(ctx, vacID, compID)
-		if err != nil {
-			return err
 		}
 
 		err = u.companyRepo.IncrementOpenVacancies(ctx, compID)

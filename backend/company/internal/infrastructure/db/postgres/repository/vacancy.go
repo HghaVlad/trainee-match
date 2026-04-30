@@ -397,6 +397,48 @@ func (repo *VacancyRepo) Publish(ctx context.Context, vacID, compID uuid.UUID) e
 	return nil
 }
 
+// PublishIfNotPublished if vacancy exists and is not published,
+// marks it as published and returns view for the event.
+// If it was already published, updates nothing and returns view WasAlreadyPublished = true.
+// If vacancy doesn't exist, returns vacancy.ErrVacancyNotFound.
+// Optimized to do a single round trip to db to be effective and avoid race conditions.
+func (repo *VacancyRepo) PublishIfNotPublished(
+	ctx context.Context,
+	vacID, compID uuid.UUID,
+) (*publish.PublishedEventView, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `WITH existing AS (
+			SELECT v.id, v.company_id, v.title, v.status, c.name
+			FROM vacancies v
+			JOIN companies c ON v.company_id = c.id
+			WHERE v.id = $1 AND v.company_id = $2
+		), update AS (
+			UPDATE vacancies v
+			SET status = 'published', published_at = now()
+			WHERE v.id = $1 AND v.company_id = $2 AND status != 'published'
+			RETURNING v.id, v.status
+		)
+		SELECT e.id, e.company_id, e.title, COALESCE(u.status, e.status) AS status, e.name, (u.id IS NULL) as already_published
+		FROM existing e
+		LEFT JOIN update u ON u.id = e.id`
+
+	var view publish.PublishedEventView
+
+	err := q.QueryRow(ctx, query, vacID, compID).Scan(
+		&view.ID, &view.CompanyID, &view.Title, &view.Status, &view.CompanyName, &view.WasAlreadyPublished)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("publish vacancy if not published: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("publish vacancy if not published: %w", err)
+	}
+
+	return &view, nil
+}
+
 func (repo *VacancyRepo) Archive(ctx context.Context, vacID, compID uuid.UUID) error {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -415,6 +457,35 @@ func (repo *VacancyRepo) Archive(ctx context.Context, vacID, compID uuid.UUID) e
 	}
 
 	return nil
+}
+
+func (repo *VacancyRepo) ArchiveAndGetOldStatus(ctx context.Context, vacID, compID uuid.UUID) (vacancy.Status, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `WITH old AS (
+			SELECT status
+			FROM vacancies v
+			WHERE v.id = $1 AND v.company_id = $2
+		)
+		UPDATE vacancies v
+		SET status = 'archived', published_at = NULL
+		FROM old
+		WHERE v.id = $1 AND v.company_id = $2
+		RETURNING old.status;`
+
+	var status vacancy.Status
+
+	err := q.QueryRow(ctx, query, vacID, compID).Scan(&status)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", vacancy.ErrVacancyNotFound
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("archive vacancy get old status: %w", err)
+	}
+
+	return status, nil
 }
 
 func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error {

@@ -2,13 +2,13 @@ package archive_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
@@ -91,10 +91,8 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
-	deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil)
-
-	deps.vacRepo.EXPECT().Archive(gomock.Any(), vacID, compID).Return(nil)
+	deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
+		Return(vacancy.StatusPublished, nil)
 
 	deps.compRepo.EXPECT().DecrementOpenVacancies(gomock.Any(), compID).Return(nil)
 
@@ -124,10 +122,8 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
-	deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil)
-
-	deps.vacRepo.EXPECT().Archive(gomock.Any(), vacID, compID).Return(nil)
+	deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
+		Return(vacancy.StatusDraft, nil)
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vacID).Return()
 	deps.pubVacCache.EXPECT().Del(gomock.Any(), vacID).Return()
@@ -151,8 +147,8 @@ func TestUsecase_Execute_AlreadyArchived_NoOp(t *testing.T) {
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
-	deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-		Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusArchived}, nil)
+	deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
+		Return(vacancy.StatusArchived, nil)
 
 	uc := NewUC(deps)
 
@@ -200,15 +196,15 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 	vacID := uuid.New()
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-	t.Run("get vacancy", func(t *testing.T) {
+	t.Run("not found", func(t *testing.T) {
 		deps := setup(t)
 		ctx := t.Context()
 
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 			Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
-		deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-			Return(nil, vacancy.ErrVacancyNotFound)
+		deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
+			Return(vacancy.Status(""), vacancy.ErrVacancyNotFound)
 
 		uc := NewUC(deps)
 
@@ -217,43 +213,23 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		require.ErrorIs(t, err, vacancy.ErrVacancyNotFound)
 	})
 
-	t.Run("archive", func(t *testing.T) {
+	t.Run("decrement company vacancies company not found", func(t *testing.T) {
 		deps := setup(t)
 		ctx := t.Context()
 
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 			Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
-		deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil)
+		deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
+			Return(vacancy.StatusPublished, nil)
 
-		deps.vacRepo.EXPECT().Archive(gomock.Any(), vacID, compID).Return(errors.New("db err"))
-
-		uc := NewUC(deps)
-
-		err := uc.Execute(ctx, compID, vacID, ident)
-
-		require.EqualError(t, err, "db err")
-	})
-
-	t.Run("decrement company vacancies", func(t *testing.T) {
-		deps := setup(t)
-		ctx := t.Context()
-
-		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
-			Return(&member.CompanyMember{UserID: ident.UserID}, nil)
-
-		deps.vacRepo.EXPECT().GetByID(gomock.Any(), vacID, compID).
-			Return(&vacancy.Vacancy{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil)
-
-		deps.vacRepo.EXPECT().Archive(gomock.Any(), vacID, compID).Return(nil)
-
-		deps.compRepo.EXPECT().DecrementOpenVacancies(gomock.Any(), compID).Return(errors.New("db err"))
+		deps.compRepo.EXPECT().DecrementOpenVacancies(gomock.Any(), compID).
+			Return(company.ErrCompanyNotFound)
 
 		uc := NewUC(deps)
 
 		err := uc.Execute(ctx, compID, vacID, ident)
 
-		require.EqualError(t, err, "db err")
+		require.ErrorIs(t, err, company.ErrCompanyNotFound)
 	})
 }

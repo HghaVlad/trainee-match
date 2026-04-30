@@ -2,7 +2,6 @@ package publish_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -10,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
@@ -80,7 +80,7 @@ func (m pubEventMatcher) String() string {
 	return "matches vacancy.PublishedEvent"
 }
 
-func TestUsecase_Execute_PublishesDraftVacancy(t *testing.T) {
+func TestUsecase_Execute_OK_NotPublishedVacancy(t *testing.T) {
 	deps := setup(t)
 
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
@@ -88,11 +88,12 @@ func TestUsecase_Execute_PublishesDraftVacancy(t *testing.T) {
 	vacID := uuid.New()
 
 	eventView := publish.PublishedEventView{
-		ID:          vacID,
-		Title:       "title",
-		CompanyID:   compID,
-		CompanyName: "name",
-		Status:      vacancy.StatusDraft,
+		ID:                  vacID,
+		Title:               "title",
+		CompanyID:           compID,
+		CompanyName:         "name",
+		Status:              vacancy.StatusPublished,
+		WasAlreadyPublished: false,
 	}
 
 	event := vacancy.PublishedEvent{
@@ -105,11 +106,9 @@ func TestUsecase_Execute_PublishesDraftVacancy(t *testing.T) {
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID, CompanyID: compID, Role: member.CompanyRoleRecruiter}, nil)
 
-	deps.vacRepo.EXPECT().GetPublishedEventView(gomock.Any(), vacID, compID).Return(&eventView, nil)
+	deps.vacRepo.EXPECT().PublishIfNotPublished(gomock.Any(), vacID, compID).Return(&eventView, nil)
 
 	deps.compRepo.EXPECT().IncrementOpenVacancies(gomock.Any(), compID).Return(nil)
-
-	deps.vacRepo.EXPECT().Publish(gomock.Any(), vacID, compID).Return(nil)
 
 	deps.outboxWriter.EXPECT().WriteVacancyPublished(gomock.Any(), pubEventMatcher{expectedEv: event}).Return(nil)
 
@@ -124,18 +123,25 @@ func TestUsecase_Execute_PublishesDraftVacancy(t *testing.T) {
 	assert.True(t, deps.txManager.called)
 }
 
-func TestUsecase_Execute_Alreadypublish_NoOp(t *testing.T) {
+func TestUsecase_Execute_AlreadyPublished_NoOp(t *testing.T) {
 	deps := setup(t)
 
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	compID := uuid.New()
 	vacID := uuid.New()
 
+	pubEventVew := &publish.PublishedEventView{
+		ID:                  vacID,
+		CompanyID:           compID,
+		Status:              vacancy.StatusPublished,
+		WasAlreadyPublished: true,
+	}
+
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID, CompanyID: compID, Role: member.CompanyRoleRecruiter}, nil)
 
-	deps.vacRepo.EXPECT().GetPublishedEventView(gomock.Any(), vacID, compID).
-		Return(&publish.PublishedEventView{ID: vacID, CompanyID: compID, Status: vacancy.StatusPublished}, nil)
+	deps.vacRepo.EXPECT().PublishIfNotPublished(gomock.Any(), vacID, compID).
+		Return(pubEventVew, nil)
 
 	uc := NewUC(deps)
 
@@ -177,17 +183,17 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 }
 
 func TestUsecase_Execute_RepoErr(t *testing.T) {
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	compID := uuid.New()
+	vacID := uuid.New()
+
 	t.Run("get vacancy", func(t *testing.T) {
 		deps := setup(t)
-
-		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-		compID := uuid.New()
-		vacID := uuid.New()
 
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 			Return(&member.CompanyMember{UserID: ident.UserID, CompanyID: compID}, nil)
 
-		deps.vacRepo.EXPECT().GetPublishedEventView(gomock.Any(), vacID, compID).
+		deps.vacRepo.EXPECT().PublishIfNotPublished(gomock.Any(), vacID, compID).
 			Return(nil, vacancy.ErrVacancyNotFound)
 
 		uc := NewUC(deps)
@@ -197,26 +203,19 @@ func TestUsecase_Execute_RepoErr(t *testing.T) {
 		require.ErrorIs(t, err, vacancy.ErrVacancyNotFound)
 	})
 
-	t.Run("publish", func(t *testing.T) {
+	t.Run("increment company vacancies", func(t *testing.T) {
 		deps := setup(t)
 
-		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-		compID := uuid.New()
-		vacID := uuid.New()
-
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
-			Return(&member.CompanyMember{}, nil)
+			Return(&member.CompanyMember{UserID: ident.UserID, CompanyID: compID}, nil)
 
-		deps.vacRepo.EXPECT().GetPublishedEventView(gomock.Any(), vacID, compID).
-			Return(&publish.PublishedEventView{ID: vacID, CompanyID: compID, Status: vacancy.StatusDraft}, nil)
-
-		deps.vacRepo.EXPECT().Publish(gomock.Any(), vacID, compID).
-			Return(errors.New("db err"))
+		deps.vacRepo.EXPECT().PublishIfNotPublished(gomock.Any(), vacID, compID).
+			Return(nil, company.ErrCompanyNotFound)
 
 		uc := NewUC(deps)
 
-		err := uc.Execute(context.Background(), compID, vacID, ident)
+		err := uc.Execute(t.Context(), compID, vacID, ident)
 
-		require.Error(t, err)
+		require.ErrorIs(t, err, company.ErrCompanyNotFound)
 	})
 }

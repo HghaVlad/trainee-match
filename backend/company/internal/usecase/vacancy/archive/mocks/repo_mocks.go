@@ -37,33 +37,19 @@ func (m *MockVacancyRepo) EXPECT() *MockVacancyRepoMockRecorder {
 	return m.recorder
 }
 
-// Archive mocks base method.
-func (m *MockVacancyRepo) Archive(ctx context.Context, vacID, compID uuid.UUID) error {
+// ArchiveAndGetOldStatus mocks base method.
+func (m *MockVacancyRepo) ArchiveAndGetOldStatus(ctx context.Context, vacID, compID uuid.UUID) (vacancy.Status, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Archive", ctx, vacID, compID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Archive indicates an expected call of Archive.
-func (mr *MockVacancyRepoMockRecorder) Archive(ctx, vacID, compID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Archive", reflect.TypeOf((*MockVacancyRepo)(nil).Archive), ctx, vacID, compID)
-}
-
-// GetByID mocks base method.
-func (m *MockVacancyRepo) GetByID(ctx context.Context, vacID, compID uuid.UUID) (*vacancy.Vacancy, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", ctx, vacID, compID)
-	ret0, _ := ret[0].(*vacancy.Vacancy)
+	ret := m.ctrl.Call(m, "ArchiveAndGetOldStatus", ctx, vacID, compID)
+	ret0, _ := ret[0].(vacancy.Status)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetByID indicates an expected call of GetByID.
-func (mr *MockVacancyRepoMockRecorder) GetByID(ctx, vacID, compID interface{}) *gomock.Call {
+// ArchiveAndGetOldStatus indicates an expected call of ArchiveAndGetOldStatus.
+func (mr *MockVacancyRepoMockRecorder) ArchiveAndGetOldStatus(ctx, vacID, compID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockVacancyRepo)(nil).GetByID), ctx, vacID, compID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArchiveAndGetOldStatus", reflect.TypeOf((*MockVacancyRepo)(nil).ArchiveAndGetOldStatus), ctx, vacID, compID)
 }
 
 // MockCompanyRepo is a mock of CompanyRepo interface.
