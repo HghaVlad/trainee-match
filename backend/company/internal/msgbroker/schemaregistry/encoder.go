@@ -19,8 +19,8 @@ const (
 	companyUpdatedSubject = "company-updated-value"
 	companyDeletedSubject = "company-deleted-value"
 
-	recruiterAddedSubject   = "company-member-added-value"
-	recruiterRemovedSubject = "company-member-removed-value"
+	companyMemberAddedSubject   = "company-member-added-value"
+	companyMemberRemovedSubject = "company-member-removed-value"
 )
 
 type Encoder struct {
@@ -58,12 +58,12 @@ func (en *Encoder) VacancyUpdatedToBytes(ev vacancy.UpdatedEvent) ([]byte, error
 	return en.eventToBytes(ev, vacancyUpdatedSubject)
 }
 
-func (en *Encoder) CompanyMemberAddedToBytes(ev member.RecruiterAddedEvent) ([]byte, error) {
-	return en.eventToBytes(ev, recruiterAddedSubject)
+func (en *Encoder) CompanyMemberAddedToBytes(ev member.AddedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, companyMemberAddedSubject)
 }
 
-func (en *Encoder) CompanyMemberRemovedToBytes(ev member.RecruiterRemovedEvent) ([]byte, error) {
-	return en.eventToBytes(ev, recruiterRemovedSubject)
+func (en *Encoder) CompanyMemberRemovedToBytes(ev member.RemovedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, companyMemberRemovedSubject)
 }
 
 func (en *Encoder) CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error) {

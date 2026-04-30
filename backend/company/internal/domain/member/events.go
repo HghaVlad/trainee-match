@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type RecruiterAddedEvent struct {
+type AddedEvent struct {
 	EventID    uuid.UUID   `avro:"event_id"`
 	UserID     uuid.UUID   `avro:"user_id"`
 	CompanyID  uuid.UUID   `avro:"company_id"`
@@ -14,7 +14,7 @@ type RecruiterAddedEvent struct {
 	OccurredAt time.Time   `avro:"occurred_at"`
 }
 
-type RecruiterRemovedEvent struct {
+type RemovedEvent struct {
 	EventID    uuid.UUID `avro:"event_id"`
 	UserID     uuid.UUID `avro:"user_id"`
 	CompanyID  uuid.UUID `avro:"company_id"`

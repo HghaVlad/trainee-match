@@ -8,6 +8,7 @@ import (
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
+//go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
 type CompanyMemberRepo interface {
 	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
 	Create(ctx context.Context, member *domain.CompanyMember) error

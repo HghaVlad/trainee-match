@@ -110,9 +110,9 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Delete godoc
-// @Summary Delete company member
-// @Description Deletes company member. Requires admin role in company
+// Remove godoc
+// @Summary Remove company member
+// @Description removes company member. Requires admin role in company. Admin can't remove themselves if they are the only admin left.
 // @Tags member
 // @Produce json
 // @Param id path string true "Company ID"
@@ -124,7 +124,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id}/members/{user-id} [delete]
-func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	iden := middleware.IdentityFromContext(ctx)
 	companyID := middleware.UUIDFromContext(ctx, "company-id")
@@ -155,7 +155,8 @@ func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, er
 		return true
 
 	case errors.Is(err, member.ErrInvalidUserID),
-		errors.Is(err, member.ErrInvalidCompanyMemberRole):
+		errors.Is(err, member.ErrInvalidCompanyMemberRole),
+		errors.Is(err, member.ErrCantRemoveYourself):
 		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 

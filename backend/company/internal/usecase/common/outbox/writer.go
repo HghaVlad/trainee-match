@@ -116,10 +116,10 @@ func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEven
 	return nil
 }
 
-func (w *Writer) WriteRecruiterAdded(ctx context.Context, ev member.RecruiterAddedEvent) error {
+func (w *Writer) WriteCompanyMemberAdded(ctx context.Context, ev member.AddedEvent) error {
 	payload, err := w.encoder.CompanyMemberAddedToBytes(ev)
 	if err != nil {
-		return fmt.Errorf("write recruiter added outbox: %w ", err)
+		return fmt.Errorf("write company added outbox: %w ", err)
 	}
 
 	key := ev.CompanyID[:]
@@ -134,15 +134,15 @@ func (w *Writer) WriteRecruiterAdded(ctx context.Context, ev member.RecruiterAdd
 
 	err = w.repo.Create(ctx, msg)
 	if err != nil {
-		return fmt.Errorf("write recruiter added outbox: %w ", err)
+		return fmt.Errorf("write company member added outbox: %w ", err)
 	}
 	return nil
 }
 
-func (w *Writer) WriteRecruiterRemoved(ctx context.Context, ev member.RecruiterRemovedEvent) error {
+func (w *Writer) WriteCompanyMemberRemoved(ctx context.Context, ev member.RemovedEvent) error {
 	payload, err := w.encoder.CompanyMemberRemovedToBytes(ev)
 	if err != nil {
-		return fmt.Errorf("write recruiter removed outbox: %w ", err)
+		return fmt.Errorf("write company member removed outbox: %w ", err)
 	}
 
 	key := ev.CompanyID[:]
@@ -157,7 +157,7 @@ func (w *Writer) WriteRecruiterRemoved(ctx context.Context, ev member.RecruiterR
 
 	err = w.repo.Create(ctx, msg)
 	if err != nil {
-		return fmt.Errorf("write recruiter removed outbox: %w ", err)
+		return fmt.Errorf("write company member removed outbox: %w ", err)
 	}
 	return nil
 }

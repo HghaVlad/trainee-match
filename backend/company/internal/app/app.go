@@ -88,16 +88,17 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
 	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
 
+	outboxWriter := outbox.NewWriter(outboxRepo, schemaEncoder)
+
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
-	compAddHrUc := addmember.NewUsecase(memRepo)
-	compDeleteMemberUc := removemember.NewUsecase(memRepo)
+	compAddHrUc := addmember.NewUsecase(memRepo, outboxWriter, txManager)
+	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, compCache)
 	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, compCache)
-	outboxWriter := outbox.NewWriter(outboxRepo, schemaEncoder)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)

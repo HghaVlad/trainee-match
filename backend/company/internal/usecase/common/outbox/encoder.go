@@ -11,8 +11,8 @@ type Encoder interface {
 	VacancyArchivedToBytes(ev vacancy.ArchivedEvent) ([]byte, error)
 	VacancyUpdatedToBytes(ev vacancy.UpdatedEvent) ([]byte, error)
 
-	CompanyMemberAddedToBytes(ev member.RecruiterAddedEvent) ([]byte, error)
-	CompanyMemberRemovedToBytes(ev member.RecruiterRemovedEvent) ([]byte, error)
+	CompanyMemberAddedToBytes(ev member.AddedEvent) ([]byte, error)
+	CompanyMemberRemovedToBytes(ev member.RemovedEvent) ([]byte, error)
 
 	CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error)
 	CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error)

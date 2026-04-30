@@ -77,6 +77,28 @@ func (repo *CompanyMemberRepo) Create(ctx context.Context, memb *member.CompanyM
 	return nil
 }
 
+func (repo *CompanyMemberRepo) GetCompanyRoleCount(
+	ctx context.Context,
+	companyID uuid.UUID,
+	role member.CompanyRole,
+) (int, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT COUNT(user_id) 
+		FROM company_members
+		WHERE company_id = $1 AND role = $2`
+
+	var cnt int
+
+	err := q.QueryRow(ctx, query, companyID, role).Scan(&cnt)
+
+	if err != nil {
+		return 0, fmt.Errorf("get company member role count: %w", err)
+	}
+
+	return cnt, nil
+}
+
 func (repo *CompanyMemberRepo) UpdateRole(
 	ctx context.Context,
 	userID, companyID uuid.UUID,

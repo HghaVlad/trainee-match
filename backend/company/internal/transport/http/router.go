@@ -73,7 +73,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 					r.With(compmiddleware.UUIDMiddleware("user-id"),
 						compmiddleware.LoggingMiddleware).
-						Delete("/{user-id}", deps.MemberHandler.Delete)
+						Delete("/{user-id}", deps.MemberHandler.Remove)
 				})
 
 			// /company/{company-id}/vacancies

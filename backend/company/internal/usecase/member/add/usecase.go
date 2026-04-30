@@ -8,15 +8,26 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
 type Usecase struct {
-	memberRepo CompanyMemberRepo
+	memberRepo   CompanyMemberRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
 }
 
-func NewUsecase(memberRepo CompanyMemberRepo) *Usecase {
-	return &Usecase{memberRepo: memberRepo}
+func NewUsecase(
+	memberRepo CompanyMemberRepo,
+	outboxWriter outboxWriter,
+	txManager common.TxManager,
+) *Usecase {
+	return &Usecase{
+		memberRepo:   memberRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
+	}
 }
 
 func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
@@ -27,17 +38,23 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
-		return err
-	}
+	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
+			return err
+		}
 
-	memb := &member.CompanyMember{
-		UserID:    req.UserID,
-		CompanyID: req.CompanyID,
-		Role:      req.Role,
-	}
+		memb := &member.CompanyMember{
+			UserID:    req.UserID,
+			CompanyID: req.CompanyID,
+			Role:      req.Role,
+		}
 
-	return u.memberRepo.Create(ctx, memb)
+		if err := u.memberRepo.Create(ctx, memb); err != nil {
+			return err
+		}
+
+		return u.createCompMemAddedEvent(ctx, memb)
+	})
 }
 
 func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
@@ -58,4 +75,16 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *ide
 	}
 
 	return nil
+}
+
+func (u *Usecase) createCompMemAddedEvent(ctx context.Context, mem *member.CompanyMember) error {
+	ev := member.AddedEvent{
+		EventID:    uuid.New(),
+		UserID:     mem.UserID,
+		CompanyID:  mem.CompanyID,
+		Role:       mem.Role,
+		OccurredAt: time.Now(),
+	}
+
+	return u.outboxWriter.WriteCompanyMemberAdded(ctx, ev)
 }
