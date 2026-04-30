@@ -108,7 +108,6 @@ func (repo *VacancyRepo) GetPublishedEventView(
 	vacancyID uuid.UUID,
 	companyID uuid.UUID,
 ) (*publish.PublishedEventView, error) {
-
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	const query = `SELECT 

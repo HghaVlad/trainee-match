@@ -17,7 +17,7 @@ done
 echo "Kafka topic vacancy.events is ready."
 
 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
-  --topic recruiter.events \
+  --topic companymember.events \
   --bootstrap-server kafka-1:9092,kafka-2:9092,kafka-3:9092 \
   --partitions 3 \
   --replication-factor 3

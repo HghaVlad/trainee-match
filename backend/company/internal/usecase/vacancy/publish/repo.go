@@ -8,6 +8,7 @@ import (
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
+//go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
 type VacancyRepo interface {
 	GetPublishedEventView(
 		ctx context.Context,

@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "RecruiterRemoved",
-  "namespace": "traineematch.recruiter",
+  "name": "CompanyMemberRemoved",
+  "namespace": "traineematch.companymember",
   "fields": [
     { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
     { "name": "user_id", "type": {"type": "string", "logicalType": "uuid"} },

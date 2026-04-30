@@ -88,11 +88,12 @@ func (u *Usecase) Execute(
 			if err != nil {
 				return err
 			}
+
+			u.compCache.Del(ctx, compID)
 		}
 
 		u.vacCache.Del(ctx, vacID)
 		u.pubVacCache.Del(ctx, vacID)
-		u.compCache.Del(ctx, compID)
 		return nil
 	})
 }

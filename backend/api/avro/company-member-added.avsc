@@ -1,7 +1,7 @@
 {
   "type": "record",
-  "name": "RecruiterAdded",
-  "namespace": "traineematch.recruiter",
+  "name": "CompanyMemberAdded",
+  "namespace": "traineematch.companymember",
   "fields": [
     { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
     { "name": "user_id", "type": {"type": "string", "logicalType": "uuid"} },

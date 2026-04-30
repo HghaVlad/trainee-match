@@ -6,7 +6,9 @@ require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
+	github.com/hamba/avro/v2 v2.31.0
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/lestrrat-go/jwx/v3 v3.0.13
 	github.com/lib/pq v1.12.0
@@ -55,7 +57,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
-	github.com/hamba/avro/v2 v2.31.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect

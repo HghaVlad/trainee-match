@@ -20,8 +20,8 @@ const (
 	EventTypeVacancyArchived  EventType = "VacancyArchived"
 	EventTypeVacancyUpdated   EventType = "VacancyUpdated"
 
-	EventTypeRecruiterAdded   EventType = "RecruiterAdded"
-	EventTypeRecruiterRemoved EventType = "RecruiterRemoved"
+	EventTypeRecruiterAdded   EventType = "CompanyMemberAdded"
+	EventTypeRecruiterRemoved EventType = "CompanyMemberRemoved"
 
 	EventTypeCompanyDeleted EventType = "CompanyDeleted"
 	EventTypeCompanyUpdated EventType = "CompanyUpdated"
@@ -29,7 +29,7 @@ const (
 
 const (
 	VacancyTopic   = "vacancy.events"
-	RecruiterTopic = "recruiter.events"
+	RecruiterTopic = "companymember.events"
 	CompanyTopic   = "company.events"
 )
 
@@ -59,7 +59,6 @@ func (w *Writer) WriteVacancyPublished(ctx context.Context, ev vacancy.Published
 		key,
 		VacancyTopic,
 		EventTypeVacancyPublished,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -83,7 +82,6 @@ func (w *Writer) WriteVacancyArchived(ctx context.Context, ev vacancy.ArchivedEv
 		key,
 		VacancyTopic,
 		EventTypeVacancyArchived,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -107,7 +105,6 @@ func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEven
 		key,
 		VacancyTopic,
 		EventTypeVacancyUpdated,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -131,7 +128,6 @@ func (w *Writer) WriteRecruiterAdded(ctx context.Context, ev member.RecruiterAdd
 		key,
 		RecruiterTopic,
 		EventTypeRecruiterAdded,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -155,7 +151,6 @@ func (w *Writer) WriteRecruiterRemoved(ctx context.Context, ev member.RecruiterR
 		key,
 		RecruiterTopic,
 		EventTypeRecruiterRemoved,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -179,7 +174,6 @@ func (w *Writer) WriteCompanyUpdated(ctx context.Context, ev company.UpdatedEven
 		key,
 		CompanyTopic,
 		EventTypeCompanyUpdated,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -203,7 +197,6 @@ func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEven
 		key,
 		CompanyTopic,
 		EventTypeCompanyDeleted,
-		defaultMaxAttempts,
 		ev.EventID,
 		ev.OccurredAt,
 	)
@@ -219,7 +212,6 @@ func (w *Writer) createDefaultMsg(
 	payload, key []byte,
 	topic string,
 	evType EventType,
-	maxAttempts int,
 	id uuid.UUID,
 	occurredAt time.Time,
 ) Message {
@@ -232,7 +224,7 @@ func (w *Writer) createDefaultMsg(
 		SchemaID:      schemaIDFromPayload(payload),
 		EventType:     evType,
 		Status:        StatusPending,
-		MaxAttempts:   maxAttempts,
+		MaxAttempts:   defaultMaxAttempts,
 		CreatedAt:     occurredAt,
 		NextAttemptAt: occurredAt,
 	}

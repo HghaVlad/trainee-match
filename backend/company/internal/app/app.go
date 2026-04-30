@@ -50,6 +50,7 @@ type App struct {
 	logger  *slog.Logger
 }
 
+//nolint:funlen // app wiring
 func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	lgr := logger.NewSlogLogger()
 	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, conf.Postgres, lgr)
@@ -105,7 +106,16 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
-	vacArchive := archive.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, publicVacCache, compCache)
+	vacArchive := archive.NewUsecase(
+		vacRepo,
+		compRepo,
+		memRepo,
+		outboxWriter,
+		txManager,
+		vacCache,
+		publicVacCache,
+		compCache,
+	)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	companyHandler := handlers.NewCompanyHandler(

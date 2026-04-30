@@ -19,8 +19,8 @@ const (
 	companyUpdatedSubject = "company-updated-value"
 	companyDeletedSubject = "company-deleted-value"
 
-	recruiterAddedSubject   = "recruiter-added-value"
-	recruiterRemovedSubject = "recruiter-removed-value"
+	recruiterAddedSubject   = "company-member-added-value"
+	recruiterRemovedSubject = "company-member-removed-value"
 )
 
 type Encoder struct {
@@ -102,5 +102,6 @@ func (en *Encoder) eventToBytes(ev any, subject string) ([]byte, error) {
 // writes [0][schemaID] - payload to be appended
 func writeConfluentWireSchemaID(buf []byte, schemaID int) {
 	buf[0] = 0 // magic byte
+	//nolint:gosec // under control
 	binary.BigEndian.PutUint32(buf[1:], uint32(schemaID))
 }
