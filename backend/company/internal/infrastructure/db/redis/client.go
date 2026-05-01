@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -17,9 +18,9 @@ func NewClient(cfg *Config) (*redis.Client, error) {
 	}
 
 	rdb := redis.NewClient(opts)
-	err := ping(rdb, time.Second*5)
+	err := ping(rdb, time.Second*10)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("redis ping: %w", err)
 	}
 
 	return rdb, nil

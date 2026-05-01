@@ -158,8 +158,8 @@ func (repo *CompanyRepository) Exists(ctx context.Context, id uuid.UUID) (bool, 
 	return exists, nil
 }
 
-// Update updates only req's non-nil fields
-func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) error {
+// UpdateAndGetOldName updates only req's non-nil fields
+func (repo *CompanyRepository) UpdateAndGetOldName(ctx context.Context, req *update.Request) (string, error) {
 	setParts := make([]string, 0)
 	args := make([]any, 0)
 	argID := 1
@@ -183,34 +183,41 @@ func (repo *CompanyRepository) Update(ctx context.Context, req *update.Request) 
 	}
 
 	if len(setParts) == 0 {
-		return nil // no update
+		return "", nil // no update
 	}
-
-	query := fmt.Sprintf(
-		"UPDATE companies SET %s WHERE id = $%d",
-		strings.Join(setParts, ", "),
-		argID,
-	)
 
 	args = append(args, req.ID)
 
+	setStr := strings.Join(setParts, ", ")
+
+	const query = `WITH old AS (
+			SELECT name
+			FROM companies
+			WHERE id = $%d
+		)
+		UPDATE companies
+		SET %s
+		FROM old
+		WHERE id = $%d
+		RETURNING old.name`
+
+	filledQuery := fmt.Sprintf(query, argID, setStr, argID)
+
 	q := postgres.GetQuerier(ctx, repo.db)
 
-	cmd, err := q.Exec(ctx, query, args...)
+	var name string
+
+	err := q.QueryRow(ctx, filledQuery, args...).Scan(&name)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return company.ErrCompanyAlreadyExists
+			return "", company.ErrCompanyAlreadyExists
 		}
-		return fmt.Errorf("update company: %w", err)
+		return "", fmt.Errorf("update company: %w", err)
 	}
 
-	if cmd.RowsAffected() == 0 {
-		return company.ErrCompanyNotFound
-	}
-
-	return nil
+	return name, nil
 }
 
 func (repo *CompanyRepository) IncrementOpenVacancies(ctx context.Context, id uuid.UUID) error {
