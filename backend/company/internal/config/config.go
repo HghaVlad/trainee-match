@@ -1,66 +1,74 @@
 package config
 
 import (
-	"os"
-	"strconv"
-	"strings"
+	"fmt"
+
+	"github.com/caarlos0/env/v11"
+	"github.com/go-playground/validator/v10"
 )
 
 type Config struct {
-	HTTP           HTTPConfig
+	HTTP           HTTP
 	Postgres       Postgres
-	Broker         BrokerConfig
-	Redis          RedisConfig
+	Redis          Redis
+	Kafka          Kafka
+	Outbox         Outbox
 	SchemaRegistry SchemaRegistry
 }
 
 func Load() (*Config, error) {
-	cfg := &Config{
-		HTTP: HTTPConfig{
-			Addr:   getEnv("HTTP_ADDR", ":8088"),
-			JWKUrl: getEnv("JWK_URL", ""),
-		},
-		Postgres: Postgres{
-			Host:     os.Getenv("POSTGRES_HOST"),
-			Port:     os.Getenv("POSTGRES_PORT"),
-			Name:     os.Getenv("POSTGRES_DB"),
-			User:     os.Getenv("POSTGRES_USER"),
-			Password: os.Getenv("POSTGRES_PASSWORD"),
-			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
+	validate := validator.New()
 
-			MaxPoolConns: getEnvInt("POSTGRES_MAX_POOL_CONNS", 10),
-			MinPoolConns: getEnvInt("POSTGRES_MIN_POOL_CONNS", 2),
-		},
-		Broker: BrokerConfig{
-			Brokers:       strings.Split(os.Getenv("BROKER_HOST"), ","),
-			ConsumerGroup: os.Getenv("BROKER_CONSUMER_GROUP"),
-		},
-		Redis: RedisConfig{
-			Host: os.Getenv("REDIS_HOST"),
-			Port: os.Getenv("REDIS_PORT"),
-		},
-		SchemaRegistry: SchemaRegistry{
-			BaseURL: os.Getenv("SCHEMA_REGISTRY_BASE_URL"),
-		},
+	httpCfg, err := LoadHTTPConfig(validate)
+	if err != nil {
+		return nil, err
 	}
 
-	return cfg, nil
+	postgresCfg, err := LoadPostgresConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
+	redisCfg, err := LoadRedisConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
+	kafkaCfg, err := LoadKafkaConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
+	outboxCfg, err := LoadOutboxConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
+	schemaRegCfg, err := LoadSchemaRegistryConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Config{
+		HTTP:           *httpCfg,
+		Postgres:       *postgresCfg,
+		Redis:          *redisCfg,
+		SchemaRegistry: *schemaRegCfg,
+		Kafka:          *kafkaCfg,
+		Outbox:         *outboxCfg,
+	}, nil
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
+func loadConfigSection[T any](validate *validator.Validate, sectionName string) (*T, error) {
+	var cfg T
 
-func getEnvInt(key string, def int) int {
-	if str := os.Getenv(key); str != "" {
-		num, err := strconv.Atoi(str)
-		if err != nil {
-			return def
-		}
-		return num
+	if err := env.Parse(&cfg); err != nil {
+		return nil, fmt.Errorf("parse %s config: %w", sectionName, err)
 	}
-	return def
+
+	if err := validate.Struct(cfg); err != nil {
+		return nil, fmt.Errorf("validate %s config: %w", sectionName, err)
+	}
+
+	return &cfg, nil
 }

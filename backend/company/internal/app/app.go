@@ -17,8 +17,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/msgbroker/schemaregistry"
 	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
@@ -51,20 +52,19 @@ type App struct {
 }
 
 //nolint:funlen // app wiring
-func Build(ctx context.Context, conf *config.Config) (*App, error) {
+func Build(ctx context.Context, cfg *config.Config) (*App, error) {
 	lgr := logger.NewSlogLogger()
-	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, conf.Postgres, lgr)
+	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, cfg.Postgres, lgr)
 	if err != nil {
 		return nil, err
 	}
 
-	redisConf := redis.NewConfig(&conf.Redis)
-	rediss, err := redis.NewClient(redisConf)
+	rediss, err := redis.NewClient(cfg.Redis)
 	if err != nil {
 		return nil, err
 	}
 
-	schemaRegCl := schemaregistry.NewClient(conf.SchemaRegistry)
+	schemaRegCl := schemaregistry.NewClient(cfg.SchemaRegistry)
 	schemaLocalReg, err := schemaregistry.NewLocalRegistry(ctx, schemaRegCl)
 	if err != nil {
 		return nil, err
@@ -74,6 +74,12 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	kClient, err := kafka.NewClientForProducer(cfg.Kafka)
+	if err != nil {
+		return nil, err
+	}
+	_ = kClient
 
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
@@ -141,7 +147,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 		vacDelete,
 	)
 
-	authMiddleware, err := compmiddleware.NewAuthMiddleware(ctx, conf)
+	authMiddleware, err := compmiddleware.NewAuthMiddleware(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +163,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	httpRouter := httpapp.NewRouter(routerDeps)
 
 	httpServer := &http.Server{
-		Addr:         conf.HTTP.Addr,
+		Addr:         cfg.HTTP.Addr,
 		Handler:      httpRouter,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -166,7 +172,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	return &App{
 		HTTPSrv: httpServer,
 		pgDB:    pgDB,
-		conf:    conf,
+		conf:    cfg,
 		logger:  lgr,
 	}, nil
 }

@@ -221,6 +221,17 @@ services:
       - kafka-2
       - kafka-3
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8089:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
 
   schema-registry:
     image: confluentinc/cp-schema-registry:8.2.0
