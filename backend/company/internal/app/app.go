@@ -98,7 +98,7 @@ func Build(ctx context.Context, conf *config.Config) (*App, error) {
 	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
