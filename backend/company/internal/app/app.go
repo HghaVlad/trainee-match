@@ -3,13 +3,14 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
@@ -19,7 +20,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
@@ -45,15 +45,15 @@ import (
 )
 
 type App struct {
-	conf    *config.Config
-	HTTPSrv *http.Server
-	pgDB    *pgxpool.Pool
-	logger  *slog.Logger
+	cfg         *config.Config
+	HTTPSrv     *http.Server
+	outboxRelay *outbox.Relay
+	pgDB        *pgxpool.Pool
+	logger      *slog.Logger
 }
 
 //nolint:funlen // app wiring
-func Build(ctx context.Context, cfg *config.Config) (*App, error) {
-	lgr := logger.NewSlogLogger()
+func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, error) {
 	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, cfg.Postgres, lgr)
 	if err != nil {
 		return nil, err
@@ -75,11 +75,11 @@ func Build(ctx context.Context, cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	kClient, err := kafka.NewClientForProducer(cfg.Kafka)
+	kprClient, err := kafka.NewClientForProducer(cfg.Kafka)
 	if err != nil {
 		return nil, err
 	}
-	_ = kClient
+	kProducer := kafka.NewProducer(kprClient, lgr)
 
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
@@ -95,6 +95,7 @@ func Build(ctx context.Context, cfg *config.Config) (*App, error) {
 	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
 
 	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
+	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, txManager, cfg.Outbox, lgr)
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
@@ -170,19 +171,34 @@ func Build(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 
 	return &App{
-		HTTPSrv: httpServer,
-		pgDB:    pgDB,
-		conf:    cfg,
-		logger:  lgr,
+		HTTPSrv:     httpServer,
+		pgDB:        pgDB,
+		outboxRelay: outboxRelay,
+		cfg:         cfg,
+		logger:      lgr,
 	}, nil
 }
 
-func (app *App) Run() {
-	err := app.HTTPSrv.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		app.logger.Error("http listening server err", "err", err)
-		os.Exit(1)
-	}
+func (app *App) Run(ctx context.Context) error {
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		app.logger.Info("http server starting", "addr", app.HTTPSrv.Addr)
+
+		err := app.HTTPSrv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("http listen and serve: %w", err)
+		}
+
+		return nil
+	})
+
+	g.Go(func() error {
+		app.outboxRelay.Run(ctx)
+		return nil
+	})
+
+	return g.Wait()
 }
 
 func (app *App) Shutdown(shutdownCtx context.Context) {

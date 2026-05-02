@@ -110,7 +110,7 @@ func (u *Usecase) createdVacancyUpdatedEvent(ctx context.Context, vac *vacancy.V
 }
 
 func checkIfEventShouldBeCreated(vac *vacancy.Vacancy, req *Request) bool {
-	return req.Title != nil && vac.Title != *req.Title
+	return vac.Status != vacancy.StatusDraft && req.Title != nil && vac.Title != *req.Title
 }
 
 // Applies not-nil only

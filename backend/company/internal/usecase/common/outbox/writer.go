@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/google/uuid"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"

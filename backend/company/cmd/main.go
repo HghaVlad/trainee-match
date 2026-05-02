@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"log"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/app"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/logger"
 )
 
 // @title Trainee Match: Company Service API
@@ -17,33 +18,55 @@ import (
 // @BasePath /api/v1
 // @schemes http https
 func main() {
-	log.Println("Service is starting...")
+	os.Exit(run())
+}
 
-	conf, err := config.Load()
+// actual logic of main,
+// returns exit code, and all defers work normally
+func run() int {
+	lgr := logger.NewSlogLogger()
+	lgr.Info("Service is starting...")
+
+	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("config load err: ", err)
+		lgr.Error("couldn't load config", "error", err)
+		return 1
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	myApp, err := app.Build(ctx, conf)
+	myApp, err := app.Build(ctx, cfg, lgr)
 	if err != nil {
-		stop()
-		//nolint:gocritic // stop() is called right above
-		log.Fatal("app build err: ", err)
+		lgr.Error("couldn't build app", "error", err)
+		return 1
 	}
 
-	go myApp.Run()
+	runErrCh := make(chan error, 1)
 
-	log.Println("http listening on ", conf.HTTP.Addr)
+	go func() {
+		err = myApp.Run(ctx)
+		if err != nil {
+			lgr.Error("app stopped with error", "error", err)
+			runErrCh <- err
+		}
+	}()
 
-	<-ctx.Done()
-	log.Println("Gracefully shutting down...")
+	exitCode := 0
+
+	select {
+	case <-ctx.Done():
+	case <-runErrCh:
+		exitCode = 1
+		stop()
+	}
+
+	lgr.Info("Gracefully shutting down...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	myApp.Shutdown(shutdownCtx)
-	log.Println("server stopped")
+	lgr.Info("server stopped")
+	return exitCode
 }

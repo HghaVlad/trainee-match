@@ -162,7 +162,7 @@ func scanMessages(rows pgx.Rows,
 
 func scanPending(rows pgx.Rows, msg *outbox.Message, headersB *[]byte) error {
 	return rows.Scan(
-		&msg.ID, &msg.Topic, &msg.Key, &msg.Payload, headersB, &msg.SchemaID,
+		&msg.ID, &msg.Key, &msg.Payload, headersB, &msg.SchemaID, &msg.Topic,
 		&msg.EventType, &msg.Status, &msg.AttemptCount, &msg.MaxAttempts,
 		&msg.NextAttemptAt, &msg.CreatedAt,
 	)
