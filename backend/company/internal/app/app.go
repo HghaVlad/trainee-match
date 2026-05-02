@@ -94,7 +94,7 @@ func Build(ctx context.Context, cfg *config.Config) (*App, error) {
 	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
 	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
 
-	outboxWriter := outbox.NewWriter(outboxRepo, schemaEncoder)
+	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)

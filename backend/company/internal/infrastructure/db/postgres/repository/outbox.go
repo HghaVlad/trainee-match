@@ -22,8 +22,22 @@ func NewOutboxRepo(db *pgxpool.Pool) *OutboxRepo {
 	}
 }
 
+// Create creates an outbox message.
+// Gets current aggregate seq number from outbox_seq
 func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 	q := postgres.GetQuerier(ctx, r.db)
+
+	const querySeq = `INSERT INTO outbox_seq (aggregate_id, seq)
+		VALUES ($1, 1)
+		ON CONFLICT (aggregate_id)
+    	DO UPDATE SET seq = outbox_seq.seq + 1
+		RETURNING seq`
+
+	var seq int
+	err := q.QueryRow(ctx, querySeq, msg.AggregateID).Scan(&seq)
+	if err != nil {
+		return fmt.Errorf("create outbox: update seq: %w", err)
+	}
 
 	headersB, err := json.Marshal(msg.Headers)
 	if err != nil {
@@ -31,12 +45,12 @@ func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 	}
 
 	const query = `INSERT INTO outbox
-    (id, topic, key, payload, headers, schema_id,
+    (id, aggregate_id, seq, key, payload, headers, schema_id, topic,
      event_type, status, max_attempts, next_attempt_at, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 
 	_, err = q.Exec(ctx, query,
-		msg.ID, msg.Topic, msg.Key, msg.Payload, headersB, msg.SchemaID,
+		msg.ID, msg.AggregateID, seq, msg.Key, msg.Payload, headersB, msg.SchemaID, msg.Topic,
 		msg.EventType, msg.Status, msg.MaxAttempts, msg.NextAttemptAt, msg.CreatedAt)
 
 	if err != nil {
@@ -46,21 +60,29 @@ func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 	return nil
 }
 
-// ListPending uses skip locked for better throughput,
+// ListPending uses skip locked for better throughput.
+// For each aggregate_id takes the earliest event by the sequence number.
 // Messages are ordered by (next_attempt_at, attempt_count),
 // so that messages with lesser attempts had higher priority
 func (r *OutboxRepo) ListPending(ctx context.Context, limit int) ([]outbox.Message, error) {
 	q := postgres.GetQuerier(ctx, r.db)
 
-	const query = `SELECT
-		id, topic, key, payload, headers, schema_id,
+	const query = `SELECT 
+    	id, key, payload, headers, schema_id, topic,
 		event_type, status, attempt_count, max_attempts,
 		next_attempt_at, created_at
-		FROM outbox
-		WHERE status = 'pending' AND next_attempt_at <= now()
-		ORDER BY next_attempt_at, attempt_count > 0, attempt_count, id
+		FROM outbox o
+		WHERE status = 'pending'
+		  AND next_attempt_at <= now()
+		  AND NOT EXISTS (
+				SELECT 1 FROM outbox o2
+				WHERE o.aggregate_id = o2.aggregate_id AND
+					o2.seq < o.seq AND
+					o2.status = 'pending'
+			  )
+		ORDER BY next_attempt_at, attempt_count, id
 		LIMIT $1
-		FOR UPDATE SKIP LOCKED`
+		FOR UPDATE SKIP LOCKED;`
 
 	rows, err := q.Query(ctx, query, limit)
 	if err != nil {

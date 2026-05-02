@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
@@ -27,21 +28,17 @@ const (
 	EventTypeCompanyUpdated EventType = "CompanyUpdated"
 )
 
-const (
-	VacancyTopic   = "vacancy.events"
-	RecruiterTopic = "companymember.events"
-	CompanyTopic   = "company.events"
-)
-
 const defaultMaxAttempts = 5
 
 type Writer struct {
 	repo    WriterRepo
 	encoder Encoder
+	cfg     config.Outbox
 }
 
-func NewWriter(repo WriterRepo, encoder Encoder) *Writer {
+func NewWriter(cfg config.Outbox, repo WriterRepo, encoder Encoder) *Writer {
 	return &Writer{
+		cfg:     cfg,
 		repo:    repo,
 		encoder: encoder,
 	}
@@ -55,9 +52,10 @@ func (w *Writer) WriteVacancyPublished(ctx context.Context, ev vacancy.Published
 
 	key := ev.VacancyID[:]
 	msg := w.createDefaultMsg(
+		ev.VacancyID,
 		payload,
 		key,
-		VacancyTopic,
+		w.cfg.VacancyTopic,
 		EventTypeVacancyPublished,
 		ev.EventID,
 		ev.OccurredAt,
@@ -78,9 +76,10 @@ func (w *Writer) WriteVacancyArchived(ctx context.Context, ev vacancy.ArchivedEv
 
 	key := ev.VacancyID[:]
 	msg := w.createDefaultMsg(
+		ev.VacancyID,
 		payload,
 		key,
-		VacancyTopic,
+		w.cfg.VacancyTopic,
 		EventTypeVacancyArchived,
 		ev.EventID,
 		ev.OccurredAt,
@@ -101,9 +100,10 @@ func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEven
 
 	key := ev.VacancyID[:]
 	msg := w.createDefaultMsg(
+		ev.VacancyID,
 		payload,
 		key,
-		VacancyTopic,
+		w.cfg.VacancyTopic,
 		EventTypeVacancyUpdated,
 		ev.EventID,
 		ev.OccurredAt,
@@ -124,9 +124,10 @@ func (w *Writer) WriteCompanyMemberAdded(ctx context.Context, ev member.AddedEve
 
 	key := ev.CompanyID[:]
 	msg := w.createDefaultMsg(
+		ev.CompanyID,
 		payload,
 		key,
-		RecruiterTopic,
+		w.cfg.CompanyMemberTopic,
 		EventTypeRecruiterAdded,
 		ev.EventID,
 		ev.OccurredAt,
@@ -147,9 +148,10 @@ func (w *Writer) WriteCompanyMemberRemoved(ctx context.Context, ev member.Remove
 
 	key := ev.CompanyID[:]
 	msg := w.createDefaultMsg(
+		ev.CompanyID,
 		payload,
 		key,
-		RecruiterTopic,
+		w.cfg.CompanyMemberTopic,
 		EventTypeRecruiterRemoved,
 		ev.EventID,
 		ev.OccurredAt,
@@ -170,9 +172,10 @@ func (w *Writer) WriteCompanyUpdated(ctx context.Context, ev company.UpdatedEven
 
 	key := ev.CompanyID[:]
 	msg := w.createDefaultMsg(
+		ev.CompanyID,
 		payload,
 		key,
-		CompanyTopic,
+		w.cfg.CompanyTopic,
 		EventTypeCompanyUpdated,
 		ev.EventID,
 		ev.OccurredAt,
@@ -193,9 +196,10 @@ func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEven
 
 	key := ev.CompanyID[:]
 	msg := w.createDefaultMsg(
+		ev.CompanyID,
 		payload,
 		key,
-		CompanyTopic,
+		w.cfg.CompanyTopic,
 		EventTypeCompanyDeleted,
 		ev.EventID,
 		ev.OccurredAt,
@@ -209,14 +213,16 @@ func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEven
 }
 
 func (w *Writer) createDefaultMsg(
+	aggregateID uuid.UUID,
 	payload, key []byte,
 	topic string,
 	evType EventType,
-	id uuid.UUID,
+	eventID uuid.UUID,
 	occurredAt time.Time,
 ) Message {
 	return Message{
-		ID:            id,
+		ID:            eventID,
+		AggregateID:   aggregateID,
 		Topic:         topic,
 		Key:           key,
 		Payload:       payload,

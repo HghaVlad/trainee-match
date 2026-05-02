@@ -32,6 +32,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		compmiddleware.LoggerMiddleware(deps.Logger),
 	)
 
+	// TODO: remove all auth middle fake handlers!!
+
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/companies", func(r chi.Router) {
 			// /companies/{id}
@@ -39,7 +41,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				Route("/{id}", func(r chi.Router) {
 					r.Get("/", deps.CompanyHandler.GetByID)
 
-					r.With(deps.AuthMiddleware.Handler,
+					r.With(deps.AuthMiddleware.FakeHandler,
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
@@ -48,19 +50,19 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(deps.AuthMiddleware.Handler,
+			r.With(deps.AuthMiddleware.FakeHandler,
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest](),
 				compmiddleware.LoggingMiddleware).
 				Post("/", deps.CompanyHandler.Create)
 
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.CompanyHandler.List)
 
-			r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+			r.With(deps.AuthMiddleware.FakeHandler, compmiddleware.LoggingMiddleware).
 				Get("/me", deps.CompanyHandler.ListMy)
 
 			// /company/{company-id}/members
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
-				With(deps.AuthMiddleware.Handler).
+				With(deps.AuthMiddleware.FakeHandler).
 				Route("/{company-id}/members", func(r chi.Router) {
 					r.With(compmiddleware.BindJSONBodyMiddleware[dto.CompanyAddHrRequest](),
 						compmiddleware.LoggingMiddleware).
@@ -78,7 +80,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			// /company/{company-id}/vacancies
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
-				With(deps.AuthMiddleware.Handler).
+				With(deps.AuthMiddleware.FakeHandler).
 				Route("/{company-id}/vacancies", func(r chi.Router) {
 					r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.ListByCompany)
 

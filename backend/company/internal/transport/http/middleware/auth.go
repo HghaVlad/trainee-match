@@ -95,6 +95,48 @@ func (m *AuthMiddleware) Handler(next http.Handler) http.Handler {
 	})
 }
 
+// FakeHandler checks cookies for user_id and role, for dev only
+func (m *AuthMiddleware) FakeHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		logger := utilslog.FromContext(ctx)
+
+		cookies := r.Cookies()
+		if cookies == nil {
+			logger.InfoContext(ctx, "unauthorized: missing cookies", "status", http.StatusUnauthorized)
+			helpers.RespondErrorMsg(ctx, w, http.StatusUnauthorized, "missing cookies")
+			return
+		}
+
+		var ident identity.Identity
+
+		for _, cookie := range cookies {
+			if cookie.Name == "user_id" {
+				ident.UserID = uuid.MustParse(cookie.Value)
+			}
+
+			if cookie.Name == "role" {
+				ident.Role = identity.GlobalRole(cookie.Value)
+			}
+		}
+
+		if ident.UserID == uuid.Nil || ident.Role == "" {
+			logger.InfoContext(ctx, "invalid identity", "identity", ident)
+			helpers.RespondErrorMsg(ctx, w, http.StatusUnauthorized, "invalid identity")
+			return
+		}
+
+		logger = logger.With(
+			"user_id", ident.UserID,
+			"role", ident.Role,
+		)
+
+		ctx = context.WithValue(ctx, identityKey, &ident)
+		ctx = utilslog.WithLoggerContext(ctx, logger)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func (m *AuthMiddleware) getPublicKey(ctx context.Context) error {
 	keys, err := jwk.Fetch(ctx, m.JWKUrl)
 	if err != nil {

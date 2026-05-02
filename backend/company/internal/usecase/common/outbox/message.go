@@ -8,6 +8,8 @@ import (
 
 type Message struct {
 	ID           uuid.UUID
+	AggregateID  uuid.UUID
+	AggregateSeq int64 // sequential number of the event for the AggregateID
 	Topic        string
 	Key          []byte
 	Payload      []byte
