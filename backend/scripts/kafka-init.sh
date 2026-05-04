@@ -47,6 +47,14 @@ echo "Kafka topic company.events is ready."
 echo "Kafka topic candidate.events is ready."
 
 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
+  --topic user.events \
+  --bootstrap-server kafka-1:9092,kafka-2:9092,kafka-3:9092 \
+  --partitions 3 \
+  --replication-factor 3
+
+echo "Kafka topic user.events is ready."
+
+/opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
   --topic dlq \
   --bootstrap-server kafka-1:9092,kafka-2:9092,kafka-3:9092 \
   --partitions 3 \

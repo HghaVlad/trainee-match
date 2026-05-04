@@ -35,3 +35,15 @@ const (
 	StatusSent    Status = "sent"
 	StatusFailed  Status = "dead"
 )
+
+type DLQMeta struct {
+	EventID  uuid.UUID
+	EventType string
+	Topic     string
+	Key       []byte
+	Payload   []byte
+	SchemaID  int
+	ErrMsg    string
+	Headers   map[string][]byte
+}
+

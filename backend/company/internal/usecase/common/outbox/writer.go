@@ -212,6 +212,11 @@ func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEven
 	return nil
 }
 
+func (w *Writer) WriteToDLQ(ctx context.Context, meta DLQMeta) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (w *Writer) createDefaultMsg(
 	aggregateID uuid.UUID,
 	payload, key []byte,

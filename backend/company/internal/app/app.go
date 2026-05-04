@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
@@ -17,12 +18,13 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
+	appredis "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
 	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/eventhandler"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
@@ -49,6 +51,9 @@ type App struct {
 	HTTPSrv     *http.Server
 	outboxRelay *outbox.Relay
 	pgDB        *pgxpool.Pool
+	rediss      redis.UniversalClient
+	kConsumer   *kafka.Consumer
+	kProducer   *kafka.Producer
 	logger      *slog.Logger
 }
 
@@ -59,7 +64,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		return nil, err
 	}
 
-	rediss, err := redis.NewClient(cfg.Redis)
+	rediss, err := appredis.NewClient(cfg.Redis)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +75,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		return nil, err
 	}
 
+	schemaDecoder := schemaregistry.NewDecoder(schemaLocalReg)
 	schemaEncoder, err := schemaregistry.NewEncoder(schemaLocalReg)
 	if err != nil {
 		return nil, err
@@ -87,12 +93,12 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	outboxRepo := repository.NewOutboxRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
 
-	compCache := redis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
-	vacCache := redis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy", lgr)
-	publicVacCache := redis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public", lgr)
-	compListCache := redis.NewRepo[string, listcomp.Response](rediss, "companies:list", lgr)
-	vacListCache := redis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
-	vacByCompListCache := redis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
+	compCache := appredis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
+	vacCache := appredis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy", lgr)
+	publicVacCache := appredis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public", lgr)
+	compListCache := appredis.NewRepo[string, listcomp.Response](rediss, "companies:list", lgr)
+	vacListCache := appredis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
+	vacByCompListCache := appredis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
 
 	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
 	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, txManager, cfg.Outbox, lgr)
@@ -125,6 +131,13 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compCache,
 	)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
+
+	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, outboxWriter, lgr)
+
+	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
+	if err != nil {
+		return nil, err
+	}
 
 	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,
@@ -173,6 +186,9 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	return &App{
 		HTTPSrv:     httpServer,
 		pgDB:        pgDB,
+		rediss:      rediss,
+		kProducer:   kProducer,
+		kConsumer:   kConsumer,
 		outboxRelay: outboxRelay,
 		cfg:         cfg,
 		logger:      lgr,
@@ -198,14 +214,23 @@ func (app *App) Run(ctx context.Context) error {
 		return nil
 	})
 
+	g.Go(func() error {
+		app.kConsumer.Poll(ctx)
+		return nil
+	})
+
 	return g.Wait()
 }
 
 func (app *App) Shutdown(shutdownCtx context.Context) {
-	err := app.HTTPSrv.Shutdown(shutdownCtx)
-	if err != nil {
-		app.logger.WarnContext(shutdownCtx, "shutdown error", "err", err)
+	if err := app.HTTPSrv.Shutdown(shutdownCtx); err != nil {
+		app.logger.WarnContext(shutdownCtx, "http shutdown error", "err", err)
 	}
 
+	app.kProducer.Close()
 	app.pgDB.Close()
+
+	if err := app.rediss.Close(); err != nil {
+		app.logger.WarnContext(shutdownCtx, "redis shutdown error", "err", err)
+	}
 }

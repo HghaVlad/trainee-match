@@ -9,6 +9,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// TODO: maybe each event gets it's own delay and max retry
+
 type KafkaHandling struct {
 	BaseRetryDelay time.Duration `env:"KAFKA_CONSUMER_BASE_RETRY_DELAY" envDefault:"50ms" validate:"gt=0"`
 	MaxRetries     int           `env:"KAFKA_CONSUMER_MAX_RETRIES"      envDefault:"2"    validate:"gt=0,lte=5"`
