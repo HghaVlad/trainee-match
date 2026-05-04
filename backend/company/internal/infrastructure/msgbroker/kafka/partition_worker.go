@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -28,6 +29,7 @@ type partitionWorker struct {
 	stop       chan struct{}
 	done       chan struct{}
 	stopped    atomic.Bool
+	logger     *slog.Logger
 }
 
 func (pw *partitionWorker) run(ctx context.Context) {
@@ -41,7 +43,9 @@ func (pw *partitionWorker) run(ctx context.Context) {
 			pw.lastOffset = r.Offset
 
 		case <-ticker.C: // commit every 100 ms
-			pw.consumer.commitAsync(ctx, pw.topic, pw.partition, pw.lastOffset)
+			if pw.lastOffset != 0 {
+				pw.consumer.commitAsync(ctx, pw.topic, pw.partition, pw.lastOffset)
+			}
 
 		case <-pw.stop:
 			// graceful drain, once, after shutdown is called
@@ -51,7 +55,10 @@ func (pw *partitionWorker) run(ctx context.Context) {
 					pw.consumer.handle(ctx, r)
 					pw.lastOffset = r.Offset
 				default:
-					pw.consumer.commitSync(ctx, pw.topic, pw.partition, pw.lastOffset)
+					if pw.lastOffset != 0 {
+						pw.logger.Info("commiting final offset", "offset", pw.lastOffset+1)
+						pw.consumer.commitSync(ctx, pw.topic, pw.partition, pw.lastOffset)
+					}
 					close(pw.done)
 					return
 				}
@@ -62,8 +69,9 @@ func (pw *partitionWorker) run(ctx context.Context) {
 
 // blocks until no new records to handle
 func (pw *partitionWorker) shutdown() {
-	pw.stopped.Store(true)
-	close(pw.stop)
-	<-pw.done
+	if !pw.stopped.Load() {
+		pw.stopped.Store(true)
+		close(pw.stop)
+		<-pw.done
+	}
 }
-

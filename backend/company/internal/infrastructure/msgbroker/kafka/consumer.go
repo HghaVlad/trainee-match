@@ -41,6 +41,11 @@ func NewConsumer(cfg config.Kafka, handler *eventhandler.Handler, logger *slog.L
 }
 
 func (c *Consumer) Poll(ctx context.Context) {
+	go func() {
+		<-ctx.Done()
+		c.cl.Close() // unblocks PollFetches, triggers shutdown
+	}()
+
 	for {
 		fetches := c.cl.PollFetches(ctx)
 		if errs := fetches.Errors(); len(errs) > 0 {
@@ -122,7 +127,6 @@ func (c *Consumer) onRevoked(_ context.Context, partitions map[string][]int32) {
 
 // handles the rest of received records
 func (c *Consumer) shutdown(_ context.Context) {
-	c.cl.Close()
 	c.logger.Info("kafka consumer gracefully shutting down")
 
 	wg := &sync.WaitGroup{}
@@ -187,6 +191,7 @@ func (c *Consumer) getOrCreateWorker(ctx context.Context, topic string, partitio
 		partition: partition,
 		stop:      make(chan struct{}),
 		done:      make(chan struct{}),
+		logger:    c.logger,
 	}
 	c.workers[key] = w
 

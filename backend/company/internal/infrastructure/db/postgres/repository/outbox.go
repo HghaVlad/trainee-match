@@ -127,6 +127,25 @@ func (r *OutboxRepo) Save(ctx context.Context, msgs []outbox.Message) error {
 	return nil
 }
 
+func (r *OutboxRepo) CreateFailed(ctx context.Context, msg outbox.Message) error {
+	q := postgres.GetQuerier(ctx, r.db)
+
+	const query = `INSERT INTO outbox
+    (id, aggregate_id, seq, key, payload, headers, schema_id, topic,
+     event_type, status, last_error, max_attempts, next_attempt_at, created_at, failed_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+
+	_, err := q.Exec(ctx, query, msg.ID, msg.AggregateID, msg.AggregateSeq, msg.Key, msg.Payload,
+		msg.Headers, msg.SchemaID, msg.Topic, msg.EventType, msg.Status, msg.LastError,
+		msg.MaxAttempts, msg.NextAttemptAt, msg.CreatedAt, msg.FailedAt)
+
+	if err != nil {
+		return fmt.Errorf("create failed outbox msg failed: %w", err)
+	}
+
+	return nil
+}
+
 func scanMessages(rows pgx.Rows,
 	scanFunc func(rows pgx.Rows, msg *outbox.Message, headersB *[]byte) error,
 ) ([]outbox.Message, error) {

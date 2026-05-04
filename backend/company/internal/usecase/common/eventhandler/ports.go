@@ -3,9 +3,8 @@ package eventhandler
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/user"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/user"
 )
 
 //go:generate mockgen -source=handler_ports.go -destination=mocks/mocks.go -package=mocks

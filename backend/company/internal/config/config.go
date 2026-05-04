@@ -13,7 +13,7 @@ type Config struct {
 	Redis          Redis
 	Kafka          Kafka
 	Outbox         Outbox
-	KafkaHandling KafkaHandling
+	KafkaHandling  KafkaHandling
 	SchemaRegistry SchemaRegistry
 }
 

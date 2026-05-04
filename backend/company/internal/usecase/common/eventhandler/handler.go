@@ -9,11 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 )
 

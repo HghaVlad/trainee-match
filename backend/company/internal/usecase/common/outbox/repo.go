@@ -4,6 +4,7 @@ import "context"
 
 type WriterRepo interface {
 	Create(ctx context.Context, msg Message) error
+	CreateFailed(ctx context.Context, msg Message) error
 }
 
 type RelayRepo interface {

@@ -33,11 +33,11 @@ type Status string
 const (
 	StatusPending Status = "pending"
 	StatusSent    Status = "sent"
-	StatusFailed  Status = "dead"
+	StatusFailed  Status = "failed"
 )
 
 type DLQMeta struct {
-	EventID  uuid.UUID
+	EventID   uuid.UUID
 	EventType string
 	Topic     string
 	Key       []byte
@@ -46,4 +46,3 @@ type DLQMeta struct {
 	ErrMsg    string
 	Headers   map[string][]byte
 }
-
