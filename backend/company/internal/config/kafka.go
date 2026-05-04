@@ -14,6 +14,9 @@ type Kafka struct {
 	ClientID       string        `env:"KAFKA_CLIENT_ID"                        envDefault:"company" validate:"required"`
 	ProducerAcks   string        `env:"KAFKA_PRODUCER_ACKS"                    envDefault:"all"     validate:"oneof=none 0 leader 1 all -1"`
 	ProducerLinger time.Duration `env:"KAFKA_PRODUCER_LINGER"                  envDefault:"10ms"    validate:"gt=0"`
+
+	ConsumerGroup string `env:"KAFKA_CONSUMER_GROUP" validate:"required"`
+	UserTopic     string `env:"KAFKA_USER_TOPIC"     validate:"required"`
 }
 
 func LoadKafkaConfig(validate *validator.Validate) (*Kafka, error) {

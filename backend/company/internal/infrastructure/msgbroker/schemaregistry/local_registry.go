@@ -4,14 +4,24 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"strconv"
 	"strings"
+	"sync"
+
+	"github.com/hamba/avro/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 type LocalRegistry struct {
 	schemaIDs map[string]int // subject -> schemaID
 
-	schemas       map[string]string // subject -> raw schema string
+	schemas    map[string]string   // subject -> raw schema string
+	parsedByID map[int]avro.Schema // schemaID -> parsed schema
+
 	realRegClient *RealRegistryClient
+
+	mu sync.RWMutex
+	sf singleflight.Group
 }
 
 // NewLocalRegistry loads, looks up schema ids of local schemas, saves them
@@ -29,8 +39,48 @@ func NewLocalRegistry(ctx context.Context, client *RealRegistryClient) (*LocalRe
 	return &LocalRegistry{
 		schemaIDs:     schemaIDs,
 		schemas:       schemas,
+		parsedByID:    make(map[int]avro.Schema),
 		realRegClient: client,
+		mu:            sync.RWMutex{},
+		sf:            singleflight.Group{},
 	}, nil
+}
+
+// GetSchemaByID returns parsed schema by schema id from local cache
+// or fetches it via schema registry client and saves it parsed
+func (r *LocalRegistry) GetSchemaByID(ctx context.Context, schemaID int) (avro.Schema, error) {
+	r.mu.RLock()
+	schema, ok := r.parsedByID[schemaID]
+	if ok {
+		r.mu.RUnlock()
+		return schema, nil
+	}
+	r.mu.RUnlock()
+
+	val, err, _ := r.sf.Do(strconv.Itoa(schemaID), func() (any, error) {
+		schemaRaw, err := r.realRegClient.GetSchemaByID(ctx, schemaID)
+		if err != nil {
+			return nil, err
+		}
+
+		avroSchema, err := avro.Parse(schemaRaw)
+		if err != nil {
+			return nil, fmt.Errorf("local reg get schema by id: %w", err)
+		}
+
+		r.mu.Lock()
+		r.parsedByID[schemaID] = avroSchema
+		r.mu.Unlock()
+
+		return avroSchema, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	c, _ := val.(avro.Schema)
+	return c, nil
 }
 
 // looks up schema ids of local schemas in real schema registry

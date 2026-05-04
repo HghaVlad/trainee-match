@@ -13,6 +13,7 @@ type Config struct {
 	Redis          Redis
 	Kafka          Kafka
 	Outbox         Outbox
+	KafkaHandling KafkaHandling
 	SchemaRegistry SchemaRegistry
 }
 
@@ -44,6 +45,11 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	kafkaHandling, err := LoadKafkaHandlingConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
 	schemaRegCfg, err := LoadSchemaRegistryConfig(validate)
 	if err != nil {
 		return nil, err
@@ -55,6 +61,7 @@ func Load() (*Config, error) {
 		Redis:          *redisCfg,
 		SchemaRegistry: *schemaRegCfg,
 		Kafka:          *kafkaCfg,
+		KafkaHandling:  *kafkaHandling,
 		Outbox:         *outboxCfg,
 	}, nil
 }

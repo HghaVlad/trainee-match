@@ -79,6 +79,29 @@ func (c *RealRegistryClient) LookupSchemaID(
 	return success.ID, nil
 }
 
+func (c *RealRegistryClient) GetSchemaByID(ctx context.Context, id int) (string, error) {
+	var success schemaByIDResponse
+	var apiErr apiError
+
+	resp, err := c.resty.R().
+		SetContext(ctx).
+		SetHeader("Accept", contentType).
+		SetResult(&success).
+		SetError(&apiErr).
+		Get(fmt.Sprintf("%s/schemas/ids/%d", c.baseURL, id))
+
+	if err != nil {
+		return "", fmt.Errorf("schema reg client: get schema by id: %w", err)
+	}
+
+	if resp.IsError() {
+		err := handleRestyError(resp, &apiErr)
+		return "", err
+	}
+
+	return success.Schema, nil
+}
+
 func handleRestyError(resp *resty.Response, apiErr *apiError) error {
 	if resp.StatusCode() == http.StatusNotFound && apiErr.ErrorCode == 40403 {
 		return ErrSchemaNotFound
@@ -95,6 +118,10 @@ func handleRestyError(resp *resty.Response, apiErr *apiError) error {
 type schemaRequest struct {
 	Schema     string `json:"schema"`
 	SchemaType string `json:"schemaType,omitempty"`
+}
+
+type schemaByIDResponse struct {
+	Schema string `json:"schema"`
 }
 
 type schemaVersionResponse struct {
