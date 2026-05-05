@@ -24,6 +24,7 @@ import (
 	httpapp "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/handlers"
 	compmiddleware "github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/dlq"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/eventhandler"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 	createcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
@@ -85,7 +86,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	if err != nil {
 		return nil, err
 	}
-	kProducer := kafka.NewProducer(kprClient, lgr)
+	kProducer := kafka.NewProducer(cfg.Kafka, kprClient, lgr)
 
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
@@ -102,6 +103,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 
 	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
 	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, txManager, cfg.Outbox, lgr)
+	dlqSender := dlq.NewSender(cfg.Kafka, kProducer, schemaEncoder)
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
@@ -132,7 +134,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
-	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, outboxWriter, lgr)
+	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, lgr)
 
 	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
 	if err != nil {

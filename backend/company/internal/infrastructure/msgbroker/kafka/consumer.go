@@ -49,7 +49,7 @@ func (c *Consumer) Poll(ctx context.Context) {
 	for {
 		fetches := c.cl.PollFetches(ctx)
 		if errs := fetches.Errors(); len(errs) > 0 {
-			c.logger.Warn("kafka consume fetch fail", "errors", errs)
+			c.logger.WarnContext(ctx, "kafka consume fetch fail", "errors", errs)
 		}
 
 		fetches.EachPartition(func(p kgo.FetchTopicPartition) {
@@ -64,7 +64,7 @@ func (c *Consumer) Poll(ctx context.Context) {
 			}
 		})
 
-		c.logger.Info("got kafka fetches", "cnt", len(fetches))
+		c.logger.InfoContext(ctx, "got kafka fetches", "cnt", len(fetches))
 
 		select {
 		case <-ctx.Done():
@@ -126,8 +126,8 @@ func (c *Consumer) onRevoked(_ context.Context, partitions map[string][]int32) {
 }
 
 // handles the rest of received records
-func (c *Consumer) shutdown(_ context.Context) {
-	c.logger.Info("kafka consumer gracefully shutting down")
+func (c *Consumer) shutdown(ctx context.Context) {
+	c.logger.InfoContext(ctx, "kafka consumer gracefully shutting down")
 
 	wg := &sync.WaitGroup{}
 

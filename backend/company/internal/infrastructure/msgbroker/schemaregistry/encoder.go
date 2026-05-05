@@ -9,6 +9,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/dlq"
 )
 
 const (
@@ -21,6 +22,8 @@ const (
 
 	companyMemberAddedSubject   = "company-member-added-value"
 	companyMemberRemovedSubject = "company-member-removed-value"
+
+	dlqSubject = "dlq-value"
 )
 
 type Encoder struct {
@@ -72,6 +75,10 @@ func (en *Encoder) CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error
 
 func (en *Encoder) CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error) {
 	return en.eventToBytes(ev, companyUpdatedSubject)
+}
+
+func (en *Encoder) DLQToBytes(msg dlq.Message) ([]byte, error) {
+	return en.eventToBytes(msg, dlqSubject)
 }
 
 func (en *Encoder) eventToBytes(ev any, subject string) ([]byte, error) {

@@ -11,7 +11,6 @@ type Outbox struct {
 	VacancyTopic       string `env:"KAFKA_VACANCY_TOPIC"        validate:"required"`
 	CompanyMemberTopic string `env:"KAFKA_COMPANY_MEMBER_TOPIC" validate:"required"`
 	CompanyTopic       string `env:"KAFKA_COMPANY_TOPIC"        validate:"required"`
-	DLQTopic           string `env:"KAFKA_DLQ_TOPIC"            validate:"required"`
 
 	BaseRetryDelay   time.Duration `env:"OUTBOX_MESSAGE_BASE_RETRY_DELAY" envDefault:"5s"   validate:"gt=0"`
 	MaxRetries       int           `env:"OUTBOX_MAX_RETRIES"              envDefault:"5"    validate:"gt=0,lte=8"`
@@ -19,7 +18,6 @@ type Outbox struct {
 	RelayMinSleep    time.Duration `env:"OUTBOX_RELAY_MIN_SLEEP"          envDefault:"50ms"`
 	RelayMaxSleep    time.Duration `env:"OUTBOX_RELAY_MAX_SLEEP"          envDefault:"5s"`
 	RelayWorkerCount int           `env:"OUTBOX_RELAY_WORKER_COUNT"       envDefault:"3"    validate:"gte=1,lte=8"`
-	DLQRelaySleep    time.Duration `env:"OUTBOX_DLQ_RELAY_SLEEP"          envDefault:"3s"`
 }
 
 func LoadOutboxConfig(validate *validator.Validate) (*Outbox, error) {
@@ -40,10 +38,6 @@ func LoadOutboxConfig(validate *validator.Validate) (*Outbox, error) {
 		return nil, errors.New("validate outbox config: OUTBOX_RELAY_MAX_SLEEP must be between 1 and 10s")
 	}
 
-	if cfg.DLQRelaySleep < minDLQRelaySleep || cfg.DLQRelaySleep > maxDLQRelaySleep {
-		return nil, errors.New("validate outbox config: OUTBOX_DLQ_RELAY_SLEEP must be between 500ms and 10s")
-	}
-
 	return cfg, nil
 }
 
@@ -60,9 +54,4 @@ const (
 const (
 	minMaxRelaySleep = 1 * time.Second
 	maxMaxRelaySleep = 10 * time.Second
-)
-
-const (
-	minDLQRelaySleep = 500 * time.Millisecond
-	maxDLQRelaySleep = 10 * time.Second
 )

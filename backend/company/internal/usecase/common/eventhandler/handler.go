@@ -12,30 +12,29 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 )
 
 // Handler contains the logic of handling a single event.
 // Decodes it, calls inner application logic.
 // If it fails, decides whether to retry, or to push it to dlq.
 type Handler struct {
-	cfg          config.KafkaHandling
-	decoder      decoder
-	outboxWriter outboxDLQWriter
-	logger       *slog.Logger
+	cfg       config.KafkaHandling
+	decoder   Decoder
+	dlqSender DLQSender
+	logger    *slog.Logger
 }
 
 func NewHandler(
 	cfg config.KafkaHandling,
-	decoder decoder,
-	outboxWriter outboxDLQWriter,
+	decoder Decoder,
+	dlqSender DLQSender,
 	logger *slog.Logger,
 ) *Handler {
 	return &Handler{
-		cfg:          cfg,
-		decoder:      decoder,
-		outboxWriter: outboxWriter,
-		logger:       logger,
+		cfg:       cfg,
+		decoder:   decoder,
+		dlqSender: dlqSender,
+		logger:    logger,
 	}
 }
 
@@ -44,58 +43,49 @@ func NewHandler(
 // Logs key points
 func (h *Handler) HandleMsg(ctx context.Context, event *Event) {
 	evType := string(event.Headers["event_type"])
-
 	evID, err := getEventID(event.Headers)
 	if err != nil {
 		// maybe we will get it from payload
-		h.logger.Warn("event ID in headers err", "error", err)
+		h.logger.WarnContext(ctx, "event ID in headers err", "error", err)
 	}
 
-	schemaID, err := h.decoder.RetrieveSchemaID(event.Payload)
-	if err != nil {
-		h.toDLQ(ctx, event, evID, schemaID, evType, event.Headers, err.Error())
-		return
-	}
+	var lastErr error
 
 	for i := range h.cfg.MaxRetries {
 		if i > 0 {
 			time.Sleep(h.backoff(i)) // 50ms 100ms
 		}
 
-		res, err := h.handleByEventType(ctx, schemaID, event.Payload, evType)
+		res, err := h.handleByEventType(ctx, event.Payload, evType)
 
 		switch res {
 		case ResultSuccess:
 			return
 		case ResultDLQ:
-			h.toDLQ(ctx, event, evID, schemaID, evType, event.Headers, err.Error())
+			h.toDLQ(ctx, event, evID, evType, err.Error())
 			return
 		case ResultRetry:
+			lastErr = err
 			continue
 		}
 	}
 
-	h.logger.Warn("sending to DLQ due to max retries", "retries", h.cfg.MaxRetries)
-	h.toDLQ(ctx, event, evID, schemaID, evType, event.Headers, "max retries")
+	h.toDLQ(ctx, event, evID, evType,
+		fmt.Sprintf("max retries: %d, lastErr: %v", h.cfg.MaxRetries, lastErr))
 }
 
-func (h *Handler) handleByEventType(
-	ctx context.Context,
-	schemaID int,
-	payload []byte,
-	evType string,
-) (ResultStatus, error) {
+func (h *Handler) handleByEventType(ctx context.Context, payload []byte, evType string) (ResultStatus, error) {
 	switch evType {
 	case UserCreatedEventType:
-		return h.handleUserCreated(ctx, schemaID, payload)
+		return h.handleUserCreated(ctx, payload)
 	default:
 		return ResultDLQ, ErrUnknownEventType
 	}
 }
 
 // decodes events, calls , checks errors to decide if we retry or dlq
-func (h *Handler) handleUserCreated(ctx context.Context, schemaID int, payload []byte) (ResultStatus, error) {
-	event, err := h.decoder.GetUserCreatedEvent(ctx, schemaID, payload)
+func (h *Handler) handleUserCreated(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetUserCreatedEvent(ctx, payload)
 	if err != nil {
 		return classifyErr(err), err
 	}
@@ -105,7 +95,7 @@ func (h *Handler) handleUserCreated(ctx context.Context, schemaID int, payload [
 		return ResultSuccess, nil
 	}
 
-	h.logger.Info("got user created event", "id", event.EventID, "")
+	h.logger.Info("got user created event", "id", event.UserID)
 
 	// TODO: call actual usecase (better by interface)
 
@@ -116,28 +106,25 @@ func (h *Handler) handleUserCreated(ctx context.Context, schemaID int, payload [
 	return ResultSuccess, nil
 }
 
-func (h *Handler) toDLQ(
-	ctx context.Context, msg *Event, eventID uuid.UUID,
-	schemaID int, evType string,
-	headers map[string][]byte, errMsg string,
-) {
-	h.logger.Warn("sending to DLQ", "event_type", evType, "error", errMsg)
+func (h *Handler) toDLQ(ctx context.Context, event *Event, evID uuid.UUID, evType string, errMsg string) {
+	h.logger.WarnContext(ctx, "sending to DLQ", "event_type", evType, "error", errMsg)
 
-	meta := outbox.DLQMeta{
-		EventID:   eventID,
-		EventType: evType,
-		Topic:     msg.Topic,
-		Key:       msg.Key,
-		Payload:   msg.Payload,
-		SchemaID:  schemaID,
-		ErrMsg:    errMsg,
-		Headers:   headers,
+	var lastErr error
+
+	for i := range 3 {
+		if i > 0 {
+			time.Sleep(h.backoff(i))
+		}
+
+		if err := h.dlqSender.ToDLQ(ctx, evID, event.Key, event.Payload, event.Topic, evType, errMsg); err != nil {
+			lastErr = err
+			continue
+		}
+
+		return
 	}
 
-	err := h.outboxWriter.WriteToDLQ(ctx, meta)
-	if err != nil {
-		h.logger.Warn("failed to send DLQ msg", "error", err)
-	}
+	h.logger.ErrorContext(ctx, "dlq failed after retries", "error", lastErr)
 }
 
 func classifyErr(err error) ResultStatus {

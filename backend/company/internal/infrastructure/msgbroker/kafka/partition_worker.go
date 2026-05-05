@@ -56,7 +56,7 @@ func (pw *partitionWorker) run(ctx context.Context) {
 					pw.lastOffset = r.Offset
 				default:
 					if pw.lastOffset != 0 {
-						pw.logger.Info("commiting final offset", "offset", pw.lastOffset+1)
+						pw.logger.InfoContext(ctx, "commiting final offset", "offset", pw.lastOffset+1)
 						pw.consumer.commitSync(ctx, pw.topic, pw.partition, pw.lastOffset)
 					}
 					close(pw.done)

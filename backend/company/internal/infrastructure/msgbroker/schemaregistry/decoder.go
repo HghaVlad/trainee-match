@@ -25,11 +25,13 @@ func NewDecoder(registry *LocalRegistry) *Decoder {
 	return &Decoder{registry: registry}
 }
 
-func (d *Decoder) GetUserCreatedEvent(ctx context.Context, schemaID int, allBytes []byte) (*user.CreatedEvent, error) {
-	if len(allBytes) < magicAndFourBytes {
+func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*user.CreatedEvent, error) {
+	if len(payload) < magicAndFourBytes {
 		return nil, errors.New("missing schema id in avro wire bytes")
 	}
-	payload := allBytes[magicAndFourBytes:]
+
+	schemaID := getSchemaID(payload)
+	payload = payload[magicAndFourBytes:]
 
 	schema, err := d.registry.GetSchemaByID(ctx, schemaID)
 	if err != nil {
@@ -40,18 +42,14 @@ func (d *Decoder) GetUserCreatedEvent(ctx context.Context, schemaID int, allByte
 
 	err = avro.Unmarshal(schema, payload, &event)
 	if err != nil {
-		return nil, fmt.Errorf("%w: decode user created: %v", ErrDecodePayload, err)
+		return nil, fmt.Errorf("%w: decode user created: %w", ErrDecodePayload, err)
 	}
 
 	return &event, nil
 }
 
-func (d *Decoder) RetrieveSchemaID(bytes []byte) (int, error) {
-	if len(bytes) < magicAndFourBytes {
-		return -1, errors.New("missing schema id in avro wire bytes")
-	}
-
+func getSchemaID(bytes []byte) int {
 	bytes = bytes[1:] // magic byte
 	schemaID := binary.BigEndian.Uint32(bytes)
-	return int(schemaID), nil
+	return int(schemaID)
 }

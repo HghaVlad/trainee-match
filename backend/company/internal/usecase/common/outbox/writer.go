@@ -212,39 +212,6 @@ func (w *Writer) WriteCompanyDeleted(ctx context.Context, ev company.DeletedEven
 	return nil
 }
 
-func (w *Writer) WriteToDLQ(ctx context.Context, meta DLQMeta) error {
-	now := time.Now().UTC()
-
-	msg := Message{
-		ID:            meta.EventID,
-		AggregateID:   uuid.Nil,
-		AggregateSeq:  0,
-		Topic:         meta.Topic,
-		Key:           meta.Key,
-		Payload:       meta.Payload,
-		Headers:       make(map[string]string),
-		SchemaID:      meta.SchemaID,
-		EventType:     EventType(meta.EventType),
-		Status:        StatusFailed,
-		LastError:     &meta.ErrMsg,
-		AttemptCount:  0,
-		MaxAttempts:   0,
-		CreatedAt:     now,
-		NextAttemptAt: now,
-		FailedAt:      &now,
-	}
-
-	for k, v := range meta.Headers {
-		msg.Headers[k] = string(v)
-	}
-
-	if msg.ID == uuid.Nil {
-		msg.ID = uuid.New()
-	}
-
-	return w.repo.CreateFailed(ctx, msg)
-}
-
 func (w *Writer) createDefaultMsg(
 	aggregateID uuid.UUID,
 	payload, key []byte,

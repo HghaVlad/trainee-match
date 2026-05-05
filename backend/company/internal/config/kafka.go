@@ -17,6 +17,7 @@ type Kafka struct {
 
 	ConsumerGroup string `env:"KAFKA_CONSUMER_GROUP" validate:"required"`
 	UserTopic     string `env:"KAFKA_USER_TOPIC"     validate:"required"`
+	DLQTopic      string `env:"KAFKA_DLQ_TOPIC"      validate:"required"`
 }
 
 func LoadKafkaConfig(validate *validator.Validate) (*Kafka, error) {
