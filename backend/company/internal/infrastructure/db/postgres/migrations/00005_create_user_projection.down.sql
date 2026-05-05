@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS user_projection;
+DROP TABLE IF EXISTS hr_user_projection;

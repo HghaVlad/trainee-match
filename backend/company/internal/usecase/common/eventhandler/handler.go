@@ -12,6 +12,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 // Handler contains the logic of handling a single event.
@@ -21,20 +22,25 @@ type Handler struct {
 	cfg       config.KafkaHandling
 	decoder   Decoder
 	dlqSender DLQSender
-	logger    *slog.Logger
+
+	userHrCreator UserHrCreator
+
+	logger *slog.Logger
 }
 
 func NewHandler(
 	cfg config.KafkaHandling,
 	decoder Decoder,
 	dlqSender DLQSender,
+	userHrCreator UserHrCreator,
 	logger *slog.Logger,
 ) *Handler {
 	return &Handler{
-		cfg:       cfg,
-		decoder:   decoder,
-		dlqSender: dlqSender,
-		logger:    logger,
+		cfg:           cfg,
+		decoder:       decoder,
+		dlqSender:     dlqSender,
+		userHrCreator: userHrCreator,
+		logger:        logger,
 	}
 }
 
@@ -95,12 +101,19 @@ func (h *Handler) handleUserCreated(ctx context.Context, payload []byte) (Result
 		return ResultSuccess, nil
 	}
 
-	h.logger.Info("got user created event", "id", event.UserID)
+	h.logger.InfoContext(ctx, "got user created event", "id", event.UserID)
 
-	// TODO: call actual usecase (better by interface)
+	err = h.userHrCreator.Execute(ctx, *event)
 
 	if err != nil {
-		// return retry / dlq /success depending on error
+		switch {
+		case errors.Is(err, userhr.ErrUserIDNil),
+			errors.Is(err, userhr.ErrUsernameEmpty),
+			errors.Is(err, userhr.ErrEmailEmpty):
+			return ResultDLQ, err
+		default:
+			return ResultRetry, err
+		}
 	}
 
 	return ResultSuccess, nil

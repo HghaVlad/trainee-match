@@ -288,7 +288,7 @@ func run(m *testing.M) int {
 		},
 	}
 
-	app, err = appl.Build(ctx, conf)
+	app, err = appl.Build(ctx, conf, logger)
 	if err != nil {
 		logger.Error("failed to build app", "err", err)
 		return 1

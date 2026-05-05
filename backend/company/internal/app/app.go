@@ -36,6 +36,7 @@ import (
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	removemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	updatemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
@@ -91,6 +92,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
+	hrProjRepo := repository.NewHrProjectionRepo(pgDB)
 	outboxRepo := repository.NewOutboxRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
 
@@ -134,7 +136,9 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
-	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, lgr)
+	userHrCreate := userhr.NewCreatedUsecase(hrProjRepo)
+
+	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, userHrCreate, lgr)
 
 	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
 	if err != nil {

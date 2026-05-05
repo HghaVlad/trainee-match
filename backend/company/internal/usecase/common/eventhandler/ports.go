@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/user"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 //go:generate mockgen -source=handler_ports.go -destination=mocks/mocks.go -package=mocks
@@ -14,5 +14,9 @@ type DLQSender interface {
 }
 
 type Decoder interface {
-	GetUserCreatedEvent(ctx context.Context, payload []byte) (*user.CreatedEvent, error)
+	GetUserCreatedEvent(ctx context.Context, payload []byte) (*userhr.CreatedEvent, error)
+}
+
+type UserHrCreator interface {
+	Execute(ctx context.Context, ev userhr.CreatedEvent) error
 }

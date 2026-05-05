@@ -8,7 +8,7 @@ import (
 
 	"github.com/hamba/avro/v2"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/user"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 const magicAndFourBytes = 5
@@ -25,7 +25,9 @@ func NewDecoder(registry *LocalRegistry) *Decoder {
 	return &Decoder{registry: registry}
 }
 
-func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*user.CreatedEvent, error) {
+// TODO: maybe as generic in the future
+
+func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*userhr.CreatedEvent, error) {
 	if len(payload) < magicAndFourBytes {
 		return nil, errors.New("missing schema id in avro wire bytes")
 	}
@@ -38,7 +40,7 @@ func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*use
 		return nil, fmt.Errorf("decode user created: %w", err)
 	}
 
-	var event user.CreatedEvent
+	var event userhr.CreatedEvent
 
 	err = avro.Unmarshal(schema, payload, &event)
 	if err != nil {
