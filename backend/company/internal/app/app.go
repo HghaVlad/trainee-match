@@ -112,7 +112,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
-	compAddHrUc := addmember.NewUsecase(memRepo, outboxWriter, txManager)
+	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
 	compListMemUc := listmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
@@ -154,7 +154,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compUpdateUc,
 		compDeleteUc,
 	)
-	memberHandler := handlers.NewMemberHandler(compAddHrUc, compListMemUc, compUpdateMemberUc, compDeleteMemberUc)
+	memberHandler := handlers.NewMemberHandler(compAddMemUc, compListMemUc, compUpdateMemberUc, compDeleteMemberUc)
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,

@@ -13,38 +13,50 @@ import (
 )
 
 type Usecase struct {
-	memberRepo   CompanyMemberRepo
+	memberRepo   companyMemberRepo
+	hrProjRepo   hrProjRepo
 	outboxWriter outboxWriter
 	txManager    common.TxManager
 }
 
 func NewUsecase(
-	memberRepo CompanyMemberRepo,
+	memberRepo companyMemberRepo,
+	hrProjRepo hrProjRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
 		memberRepo:   memberRepo,
+		hrProjRepo:   hrProjRepo,
 		outboxWriter: outboxWriter,
 		txManager:    txManager,
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Identity) error {
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
+	}
+
 	if err := req.Validate(); err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
+	hrProj, err := u.hrProjRepo.GetByUsername(ctx, req.Username)
+	if err != nil {
+		return err
+	}
+
 	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
+		if err := u.authorize(ctx, req.CompanyID, ident); err != nil {
 			return err
 		}
 
 		memb := &member.CompanyMember{
-			UserID:    req.UserID,
+			UserID:    hrProj.UserID,
 			CompanyID: req.CompanyID,
 			Role:      req.Role,
 		}
@@ -58,10 +70,6 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 }
 
 func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
-	if ident.Role != identity.RoleHR {
-		return identity.ErrHrRoleRequired
-	}
-
 	memb, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
 	if errors.Is(err, member.ErrCompanyMemberNotFound) {
 		return member.ErrCompanyMemberRequired

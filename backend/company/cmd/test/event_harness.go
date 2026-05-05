@@ -46,9 +46,9 @@ func main() {
 	ev := userhr.CreatedEvent{
 		EventID:    uuid.New(),
 		UserID:     uuid.New(),
-		Username:   "john",
+		Username:   "JohnPork360",
 		Role:       identity.RoleHR,
-		Email:      "john@mail.com",
+		Email:      "john.pork360@mail.com",
 		OccurredAt: time.Now(),
 	}
 

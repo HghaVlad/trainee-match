@@ -18,6 +18,7 @@ var (
 	ErrUserIDNil     = errors.New("user id cannot be nil")
 	ErrUsernameEmpty = errors.New("user name cannot be empty")
 	ErrEmailEmpty    = errors.New("email cannot be empty")
+	ErrNotFound      = errors.New("user not found")
 )
 
 func NewHrProjection(userID uuid.UUID, username string, email string, createdAt time.Time) (*Projection, error) {

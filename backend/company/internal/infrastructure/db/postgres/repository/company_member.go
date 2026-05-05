@@ -179,14 +179,14 @@ func scanMembersWithNames(rows pgx.Rows) ([]list.View, error) {
 
 		err := rows.Scan(&mem.UserID, &mem.CompanyID, &mem.Username, &mem.Email, &mem.Role)
 		if err != nil {
-			return nil, fmt.Errorf("scan company member rows: %v", err)
+			return nil, fmt.Errorf("scan company member rows: %w", err)
 		}
 
 		mems = append(mems, mem)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("scan company member rows: %v", err)
+		return nil, fmt.Errorf("scan company member rows: %w", err)
 	}
 
 	return mems, nil

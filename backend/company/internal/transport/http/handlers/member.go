@@ -17,6 +17,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 type MemberHandler struct {
@@ -42,7 +43,7 @@ func NewMemberHandler(
 
 // Add godoc
 // @Summary Add member to company
-// @Description Adds member to company. Requires admin role in company
+// @Description Adds member to company by username. Requires admin role in company
 // @Tags member
 // @Accept json
 // @Produce json
@@ -69,7 +70,7 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to add company member",
-				"member_id", dtoReq.UserID)
+				"username", dtoReq.Username)
 		}
 		return
 	}
@@ -191,7 +192,8 @@ func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound),
-		errors.Is(err, member.ErrCompanyMemberNotFound):
+		errors.Is(err, member.ErrCompanyMemberNotFound),
+		errors.Is(err, userhr.ErrNotFound):
 		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
@@ -202,7 +204,8 @@ func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, er
 	case errors.Is(err, member.ErrInvalidUserID),
 		errors.Is(err, member.ErrInvalidCompanyMemberRole),
 		errors.Is(err, member.ErrCantRemoveYourself),
-		errors.Is(err, common.ErrLimitTooLarge):
+		errors.Is(err, common.ErrLimitTooLarge),
+		errors.Is(err, userhr.ErrUsernameEmpty):
 		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 

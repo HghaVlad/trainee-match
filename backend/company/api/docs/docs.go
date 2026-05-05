@@ -1003,7 +1003,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Adds member to company. Requires admin role in company",
+                "description": "Adds member to company by username. Requires admin role in company",
                 "consumes": [
                     "application/json"
                 ],
@@ -1415,9 +1415,9 @@ const docTemplate = `{
                     ],
                     "example": "recruiter"
                 },
-                "userId": {
+                "username": {
                     "type": "string",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                    "example": "JohnPork360"
                 }
             }
         },

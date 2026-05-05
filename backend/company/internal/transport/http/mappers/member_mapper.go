@@ -16,7 +16,7 @@ func CompanyAddHrReqToUC(
 ) *addmemb.Request {
 	return &addmemb.Request{
 		CompanyID: companyID,
-		UserID:    dtoReq.UserID,
+		Username:  dtoReq.Username,
 		Role:      member.CompanyRole(dtoReq.Role),
 	}
 }

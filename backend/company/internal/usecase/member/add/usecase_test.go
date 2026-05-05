@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add/mocks"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 type fakeTxManager struct {
@@ -25,17 +27,19 @@ func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 }
 
 type testDeps struct {
-	memRepo   *mocks.MockCompanyMemberRepo
-	outbox    *mocks.MockoutboxWriter
-	txManager *fakeTxManager
+	memRepo    *mocks.MockcompanyMemberRepo
+	hrProjRepo *mocks.MockhrProjRepo
+	outbox     *mocks.MockoutboxWriter
+	txManager  *fakeTxManager
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 	return &testDeps{
-		memRepo:   mocks.NewMockCompanyMemberRepo(ctrl),
-		outbox:    mocks.NewMockoutboxWriter(ctrl),
-		txManager: new(fakeTxManager),
+		memRepo:    mocks.NewMockcompanyMemberRepo(ctrl),
+		hrProjRepo: mocks.NewMockhrProjRepo(ctrl),
+		outbox:     mocks.NewMockoutboxWriter(ctrl),
+		txManager:  new(fakeTxManager),
 	}
 }
 
@@ -76,27 +80,39 @@ func (m memberAddedEvMatcher) String() string {
 }
 
 func NewUC(deps *testDeps) *add.Usecase {
-	return add.NewUsecase(deps.memRepo, deps.outbox, deps.txManager)
+	return add.NewUsecase(deps.memRepo, deps.hrProjRepo, deps.outbox, deps.txManager)
 }
 
 func TestUsecase_ExecuteOK(t *testing.T) {
 	deps := setup(t)
 
 	compID := uuid.New()
+	usID := uuid.New()
+	usname := "JohnPork360"
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	req := &add.Request{
-		UserID:    uuid.New(),
+		Username:  usname,
 		CompanyID: compID,
 		Role:      member.CompanyRoleRecruiter,
 	}
 
 	mem := &member.CompanyMember{
-		UserID:    req.UserID,
+		UserID:    usID,
 		CompanyID: req.CompanyID,
 		Role:      req.Role,
 	}
 
-	memEv := member.AddedEvent{UserID: req.UserID, CompanyID: req.CompanyID, Role: req.Role}
+	hrProj := &userhr.Projection{
+		UserID:    usID,
+		Username:  usname,
+		Email:     "usname@mail.com",
+		CreatedAt: time.Now().UTC(),
+	}
+
+	memEv := member.AddedEvent{UserID: usID, CompanyID: req.CompanyID, Role: req.Role}
+
+	deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+		Return(hrProj, nil)
 
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
@@ -108,15 +124,37 @@ func TestUsecase_ExecuteOK(t *testing.T) {
 
 	uc := NewUC(deps)
 
-	err := uc.Execute(context.Background(), req, ident)
+	err := uc.Execute(t.Context(), req, ident)
 
 	require.NoError(t, err)
 }
 
-func TestUsecase_ExecuteAuthErr(t *testing.T) {
+func TestUsecase_ExecuteUsProjNotFound(t *testing.T) {
+	usname := "JohnPork360"
 	req := &add.Request{
 		CompanyID: uuid.New(),
-		UserID:    uuid.New(),
+		Username:  usname,
+		Role:      member.CompanyRoleRecruiter,
+	}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+
+	deps := setup(t)
+
+	deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+		Return(nil, userhr.ErrNotFound)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), req, ident)
+
+	require.ErrorIs(t, err, userhr.ErrNotFound)
+}
+
+func TestUsecase_ExecuteAuthErr(t *testing.T) {
+	usname := "JohnPork360"
+	req := &add.Request{
+		CompanyID: uuid.New(),
+		Username:  usname,
 		Role:      member.CompanyRoleRecruiter,
 	}
 
@@ -137,6 +175,9 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		deps := setup(t)
 
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
+
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
 			Return(nil, member.ErrCompanyMemberNotFound)
 
@@ -152,6 +193,9 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 
 		deps := setup(t)
 
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
+
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
 			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
 
@@ -164,13 +208,15 @@ func TestUsecase_ExecuteAuthErr(t *testing.T) {
 }
 
 func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
+	usname := "JohnPork360"
+
 	t.Run("invalid role", func(t *testing.T) {
 		deps := setup(t)
 		uc := NewUC(deps)
 
 		req := &add.Request{
 			CompanyID: uuid.New(),
-			UserID:    uuid.New(),
+			Username:  usname,
 			Role:      "invalid",
 		}
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
@@ -184,11 +230,14 @@ func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 		req := &add.Request{
 			CompanyID: uuid.New(),
-			UserID:    uuid.New(),
+			Username:  usname,
 			Role:      member.CompanyRoleAdmin,
 		}
 
 		deps := setup(t)
+
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
 
 		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
 			Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)

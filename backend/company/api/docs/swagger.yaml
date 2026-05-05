@@ -8,8 +8,8 @@ definitions:
         - admin
         example: recruiter
         type: string
-      userId:
-        example: 550e8400-e29b-41d4-a716-446655440000
+      username:
+        example: JohnPork360
         type: string
     type: object
   dto.CompanyCreateRequest:
@@ -1114,7 +1114,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Adds member to company. Requires admin role in company
+      description: Adds member to company by username. Requires admin role in company
       parameters:
       - description: Company ID
         in: path

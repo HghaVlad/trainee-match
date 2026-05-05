@@ -7,8 +7,8 @@ import (
 )
 
 type CompanyAddHrRequest struct {
-	UserID uuid.UUID `json:"userId" example:"550e8400-e29b-41d4-a716-446655440000"`
-	Role   string    `json:"role"   example:"recruiter"                            enums:"recruiter,admin"`
+	Username string `json:"username" example:"JohnPork360"`
+	Role     string `json:"role"     example:"recruiter"   enums:"recruiter,admin"`
 }
 
 type CompanyUpdateMemberRequest struct {
