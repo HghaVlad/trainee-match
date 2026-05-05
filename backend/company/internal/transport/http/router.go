@@ -83,8 +83,6 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
 				With(deps.AuthMiddleware.Handler).
 				Route("/{company-id}/vacancies", func(r chi.Router) {
-					r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.ListByCompany)
-
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
 

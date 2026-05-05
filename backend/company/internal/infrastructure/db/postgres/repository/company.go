@@ -210,6 +210,10 @@ func (repo *CompanyRepository) UpdateAndGetOldName(ctx context.Context, req *upd
 	err := q.QueryRow(ctx, filledQuery, args...).Scan(&name)
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", company.ErrCompanyNotFound
+		}
+
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return "", company.ErrCompanyAlreadyExists

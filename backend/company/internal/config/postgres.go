@@ -12,7 +12,7 @@ type Postgres struct {
 	Name     string `env:"POSTGRES_DB"       validate:"required"`
 	User     string `env:"POSTGRES_USER"     validate:"required"`
 	Password string `env:"POSTGRES_PASSWORD" validate:"required"`
-	SSLMode  string `env:"POSTGRES_SSL_MODE" validate:"oneof=disable allow prefer require verify-ca verify-full" envDefault:"disable"`
+	SSLMode  string `env:"POSTGRES_SSLMODE"  validate:"oneof=disable allow prefer require verify-ca verify-full" envDefault:"disable"`
 
 	MaxPoolConns int `env:"POSTGRES_MAX_POOL_CONNS" envDefault:"10" validate:"gte=1,lte=100"`
 	MinPoolConns int `env:"POSTGRES_MIN_POOL_CONNS" envDefault:"2"  validate:"gte=0,lte=100"`

@@ -36,7 +36,7 @@ echo "Kafka topic company.events is ready."
   --partitions 6 \
   --replication-factor 3
 
-echo "Kafka topic company.events is ready."
+echo "Kafka topic resume.events is ready."
 
 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
   --topic candidate.events \

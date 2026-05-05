@@ -185,13 +185,14 @@ func (c *Consumer) getOrCreateWorker(ctx context.Context, topic string, partitio
 	}
 
 	w := &partitionWorker{
-		jobs:      make(chan *kgo.Record, partitionWorkerJobsCap),
-		consumer:  c,
-		topic:     topic,
-		partition: partition,
-		stop:      make(chan struct{}),
-		done:      make(chan struct{}),
-		logger:    c.logger,
+		jobs:       make(chan *kgo.Record, partitionWorkerJobsCap),
+		consumer:   c,
+		topic:      topic,
+		partition:  partition,
+		lastOffset: -1, // -1 won't be commited
+		stop:       make(chan struct{}),
+		done:       make(chan struct{}),
+		logger:     c.logger,
 	}
 	c.workers[key] = w
 

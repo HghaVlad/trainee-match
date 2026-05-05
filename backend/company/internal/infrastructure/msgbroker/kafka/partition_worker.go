@@ -43,7 +43,7 @@ func (pw *partitionWorker) run(ctx context.Context) {
 			pw.lastOffset = r.Offset
 
 		case <-ticker.C: // commit every 100 ms
-			if pw.lastOffset != 0 {
+			if pw.lastOffset != -1 {
 				pw.consumer.commitAsync(ctx, pw.topic, pw.partition, pw.lastOffset)
 			}
 
@@ -55,7 +55,7 @@ func (pw *partitionWorker) run(ctx context.Context) {
 					pw.consumer.handle(ctx, r)
 					pw.lastOffset = r.Offset
 				default:
-					if pw.lastOffset != 0 {
+					if pw.lastOffset != -1 {
 						pw.logger.InfoContext(ctx, "commiting final offset", "offset", pw.lastOffset+1)
 						pw.consumer.commitSync(ctx, pw.topic, pw.partition, pw.lastOffset)
 					}

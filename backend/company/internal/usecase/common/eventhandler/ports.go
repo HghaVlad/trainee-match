@@ -8,7 +8,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
-//go:generate mockgen -source=handler_ports.go -destination=mocks/mocks.go -package=mocks
+//go:generate mockgen -source=ports.go -destination=mocks/mocks.go -package=mocks
 type DLQSender interface {
 	ToDLQ(ctx context.Context, eventID uuid.UUID, key, payload []byte, topic, eventType string, errMsg string) error
 }
