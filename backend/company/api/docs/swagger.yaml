@@ -8,7 +8,7 @@ definitions:
         - admin
         example: recruiter
         type: string
-      userID:
+      userId:
         example: 550e8400-e29b-41d4-a716-446655440000
         type: string
     type: object
@@ -49,6 +49,37 @@ definitions:
         type: array
       nextCursor:
         type: string
+    type: object
+  dto.CompanyMemberListItem:
+    properties:
+      companyId:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      email:
+        example: johnkaisen@gmail.com
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/member.CompanyRole'
+        enum:
+        - recruiter
+        - admin
+        example: recruiter
+      userId:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      username:
+        example: JohnKaisen
+        type: string
+    type: object
+  dto.CompanyMemberListResponse:
+    properties:
+      hasMore:
+        type: boolean
+      members:
+        items:
+          $ref: '#/definitions/dto.CompanyMemberListItem'
+        type: array
     type: object
   dto.CompanyResponse:
     properties:
@@ -442,6 +473,14 @@ definitions:
         example: remote
         type: string
     type: object
+  member.CompanyRole:
+    enum:
+    - recruiter
+    - admin
+    type: string
+    x-enum-varnames:
+    - CompanyRoleRecruiter
+    - CompanyRoleAdmin
 info:
   contact: {}
   description: company microservice
@@ -617,6 +656,14 @@ paths:
             $ref: '#/definitions/dto.VacancyByCompListResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "404":
@@ -1016,6 +1063,54 @@ paths:
       tags:
       - company
   /companies/{id}/members:
+    get:
+      consumes:
+      - application/json
+      description: List members of company with usernames, emails, sorted by username;
+        requires being a member of the company. Standard limit / offset pagination,
+        with hasMore.
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyMemberListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List members of company.
+      tags:
+      - member
     post:
       consumes:
       - application/json
@@ -1066,7 +1161,8 @@ paths:
       - member
   /companies/{id}/members/{user-id}:
     delete:
-      description: Deletes company member. Requires admin role in company
+      description: removes company member. Requires admin role in company. Admin can't
+        remove themselves if they are the only admin left.
       parameters:
       - description: Company ID
         in: path
@@ -1103,7 +1199,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Delete company member
+      summary: Remove company member
       tags:
       - member
     patch:

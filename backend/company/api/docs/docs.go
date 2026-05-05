@@ -332,6 +332,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -922,6 +934,74 @@ const docTemplate = `{
             }
         },
         "/companies/{id}/members": {
+            "get": {
+                "description": "List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "member"
+                ],
+                "summary": "List members of company.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyMemberListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Adds member to company. Requires admin role in company",
                 "consumes": [
@@ -997,14 +1077,14 @@ const docTemplate = `{
         },
         "/companies/{id}/members/{user-id}": {
             "delete": {
-                "description": "Deletes company member. Requires admin role in company",
+                "description": "removes company member. Requires admin role in company. Admin can't remove themselves if they are the only admin left.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "member"
                 ],
-                "summary": "Delete company member",
+                "summary": "Remove company member",
                 "parameters": [
                     {
                         "type": "string",
@@ -1335,7 +1415,7 @@ const docTemplate = `{
                     ],
                     "example": "recruiter"
                 },
-                "userID": {
+                "userId": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
                 }
@@ -1395,6 +1475,53 @@ const docTemplate = `{
                 },
                 "nextCursor": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CompanyMemberListItem": {
+            "type": "object",
+            "properties": {
+                "companyId": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "johnkaisen@gmail.com"
+                },
+                "role": {
+                    "enum": [
+                        "recruiter",
+                        "admin"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/member.CompanyRole"
+                        }
+                    ],
+                    "example": "recruiter"
+                },
+                "userId": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "JohnKaisen"
+                }
+            }
+        },
+        "dto.CompanyMemberListResponse": {
+            "type": "object",
+            "properties": {
+                "hasMore": {
+                    "type": "boolean"
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.CompanyMemberListItem"
+                    }
                 }
             }
         },
@@ -1933,6 +2060,17 @@ const docTemplate = `{
                     "example": "remote"
                 }
             }
+        },
+        "member.CompanyRole": {
+            "type": "string",
+            "enum": [
+                "recruiter",
+                "admin"
+            ],
+            "x-enum-varnames": [
+                "CompanyRoleRecruiter",
+                "CompanyRoleAdmin"
+            ]
         }
     }
 }`

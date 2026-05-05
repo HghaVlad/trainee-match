@@ -34,6 +34,7 @@ import (
 	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	listmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
 	removemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	updatemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
@@ -112,6 +113,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
 	compAddHrUc := addmember.NewUsecase(memRepo, outboxWriter, txManager)
+	compListMemUc := listmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
@@ -137,7 +139,6 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	userHrCreate := userhr.NewCreatedUsecase(hrProjRepo)
-
 	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, userHrCreate, lgr)
 
 	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
@@ -153,7 +154,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compUpdateUc,
 		compDeleteUc,
 	)
-	memberHandler := handlers.NewMemberHandler(compAddHrUc, compUpdateMemberUc, compDeleteMemberUc)
+	memberHandler := handlers.NewMemberHandler(compAddHrUc, compListMemUc, compUpdateMemberUc, compDeleteMemberUc)
 
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,

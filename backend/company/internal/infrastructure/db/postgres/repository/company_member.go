@@ -13,6 +13,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
 )
 
 type CompanyMemberRepo struct {
@@ -51,6 +52,34 @@ func (repo *CompanyMemberRepo) Get(
 	}
 
 	return &memb, nil
+}
+
+func (repo *CompanyMemberRepo) ListViewsByCompany(
+	ctx context.Context,
+	companyID uuid.UUID,
+	limit, offset int,
+) ([]list.View, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT cm.user_id, cm.company_id, p.username, p.email, cm.role
+		FROM company_members cm
+		JOIN hr_user_projection p ON p.user_id = cm.user_id
+		WHERE cm.company_id = $1
+		ORDER BY username
+		LIMIT $2 OFFSET $3`
+
+	rows, err := q.Query(ctx, query, companyID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list members: %w", err)
+	}
+	defer rows.Close()
+
+	mems, err := scanMembersWithNames(rows)
+	if err != nil {
+		return nil, fmt.Errorf("list members: %w", err)
+	}
+
+	return mems, nil
 }
 
 func (repo *CompanyMemberRepo) Create(ctx context.Context, memb *member.CompanyMember) error {
@@ -140,4 +169,25 @@ func (repo *CompanyMemberRepo) Delete(
 	}
 
 	return nil
+}
+
+func scanMembersWithNames(rows pgx.Rows) ([]list.View, error) {
+	var mems []list.View
+
+	for rows.Next() {
+		var mem list.View
+
+		err := rows.Scan(&mem.UserID, &mem.CompanyID, &mem.Username, &mem.Email, &mem.Role)
+		if err != nil {
+			return nil, fmt.Errorf("scan company member rows: %v", err)
+		}
+
+		mems = append(mems, mem)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scan company member rows: %v", err)
+	}
+
+	return mems, nil
 }
