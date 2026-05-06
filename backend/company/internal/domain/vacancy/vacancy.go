@@ -40,8 +40,8 @@ type Vacancy struct {
 }
 
 const (
-	maxTitleLen       = 200
-	maxDescriptionLen = 5000
+	MaxTitleLen       = 200
+	MaxDescriptionLen = 5000
 )
 
 const (
@@ -66,6 +66,10 @@ func (v *Vacancy) Validate() error {
 		if err := validate(); err != nil {
 			return err
 		}
+	}
+
+	if !v.Status.IsValid() {
+		return ErrInvalidStatus
 	}
 
 	return nil
@@ -142,7 +146,7 @@ func (v *Vacancy) validateEmploymentType() error {
 }
 
 func (v *Vacancy) validateTitle() error {
-	if len([]rune(v.Title)) == 0 || len([]rune(v.Title)) > maxTitleLen {
+	if len([]rune(v.Title)) == 0 || len([]rune(v.Title)) > MaxTitleLen {
 		return ErrInvalidTitleLength
 	}
 
@@ -150,7 +154,7 @@ func (v *Vacancy) validateTitle() error {
 }
 
 func (v *Vacancy) validateDescription() error {
-	if len([]rune(v.Description)) > maxDescriptionLen {
+	if len([]rune(v.Description)) > MaxDescriptionLen {
 		return ErrInvalidDescriptionLength
 	}
 

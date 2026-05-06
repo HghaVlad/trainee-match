@@ -13,38 +13,44 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 )
 
-// Usecase archive vacancy (hide from candidates)
+// Usecase archive vacancy (hide from candidates).
+// Decreases company OpenVacanciesCount.
+// Generates vacancy archived event
 type Usecase struct {
-	vacRepo     VacancyRepo
-	memberRepo  CompMemberRepo
-	compRepo    CompanyRepo
-	txManager   common.TxManager
-	vacCache    CacheRepo
-	pubVacCache CacheRepo
-	compCache   CacheRepo
+	vacRepo      VacancyRepo
+	memberRepo   CompMemberRepo
+	compRepo     CompanyRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
+	vacCache     CacheRepo
+	pubVacCache  CacheRepo
+	compCache    CacheRepo
 }
 
 func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
+	outboxWriter outboxWriter,
 	txManager common.TxManager,
 	vacCache CacheRepo,
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		vacRepo:     vacRepo,
-		memberRepo:  memberRepo,
-		compRepo:    compRepo,
-		txManager:   txManager,
-		vacCache:    vacCache,
-		pubVacCache: pubVacCache,
-		compCache:   compCache,
+		vacRepo:      vacRepo,
+		memberRepo:   memberRepo,
+		compRepo:     compRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
+		vacCache:     vacCache,
+		pubVacCache:  pubVacCache,
+		compCache:    compCache,
 	}
 }
 
-// Execute archives vacancy, decreases open vacancies count of company if it was published.
+// Execute archives vacancy, decreases open vacancies count of company
+// and creates vacancy.ArchivedEvent if it was published.
 // Deletes company and vacancy from cache.
 func (u *Usecase) Execute(
 	ctx context.Context,
@@ -60,29 +66,31 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vac, err := u.vacRepo.GetByID(ctx, vacID, compID)
+		oldStatus, err := u.vacRepo.ArchiveAndGetOldStatus(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}
 
-		if vac.Status == vacancy.StatusArchived {
+		if oldStatus == vacancy.StatusArchived {
 			return nil
 		}
 
-		if err := u.vacRepo.Archive(ctx, vacID, compID); err != nil {
-			return err
-		}
-
-		if vac.Status == vacancy.StatusPublished {
-			err := u.compRepo.DecrementOpenVacancies(ctx, compID)
+		if oldStatus == vacancy.StatusPublished {
+			err = u.compRepo.DecrementOpenVacancies(ctx, compID)
 			if err != nil {
 				return err
 			}
+
+			err = u.createArchivedEvent(ctx, vacID)
+			if err != nil {
+				return err
+			}
+
+			u.compCache.Del(ctx, compID)
 		}
 
 		u.vacCache.Del(ctx, vacID)
 		u.pubVacCache.Del(ctx, vacID)
-		u.compCache.Del(ctx, compID)
 		return nil
 	})
 }
@@ -99,4 +107,14 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, iden *iden
 	}
 
 	return err
+}
+
+func (u *Usecase) createArchivedEvent(ctx context.Context, vacID uuid.UUID) error {
+	ev := vacancy.ArchivedEvent{
+		EventID:    uuid.New(),
+		VacancyID:  vacID,
+		OccurredAt: time.Now().UTC(),
+	}
+
+	return u.outboxWriter.WriteVacancyArchived(ctx, ev)
 }

@@ -9,8 +9,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 )
 
+//go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
 type VacancyRepo interface {
-	GetByID(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*vacancy.Vacancy, error)
+	GetByIDForUpdate(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) (*vacancy.Vacancy, error)
 	Update(ctx context.Context, v *vacancy.Vacancy) error
 }
 

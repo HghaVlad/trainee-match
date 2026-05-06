@@ -6,8 +6,8 @@ type Config struct {
 	Addr string
 }
 
-func NewConfig(conf *config.RedisConfig) *Config {
-	return &Config{
+func NewConfig(conf config.Redis) Config {
+	return Config{
 		Addr: conf.Host + ":" + conf.Port,
 	}
 }

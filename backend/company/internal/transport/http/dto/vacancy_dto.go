@@ -106,8 +106,8 @@ type VacancyByCompListItemResponse struct {
 	SalaryFrom *int `json:"salaryFrom,omitempty" example:"3500"`
 	SalaryTo   *int `json:"salaryTo,omitempty"   example:"5000"`
 
-	Status    string    `json:"status"              enums:"draft,published,archived" example:"published"`
-	CreatedAt time.Time `json:"createdAt,omitempty"                                  example:"2026-01-18T09:30:00Z"`
+	Status    string    `json:"status"    enums:"draft,published,archived" example:"published"`
+	CreatedAt time.Time `json:"createdAt"                                  example:"2026-01-18T09:30:00Z"`
 }
 
 type VacancyByCompListResponse struct {

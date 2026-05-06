@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )

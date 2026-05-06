@@ -11,25 +11,31 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 type MemberHandler struct {
 	add    *add.Usecase
+	list   *list.Usecase
 	update *update.Usecase
 	delete *remove.Usecase
 }
 
 func NewMemberHandler(
 	add *add.Usecase,
+	list *list.Usecase,
 	update *update.Usecase,
 	del *remove.Usecase,
 ) *MemberHandler {
 	return &MemberHandler{
 		add:    add,
+		list:   list,
 		update: update,
 		delete: del,
 	}
@@ -37,7 +43,7 @@ func NewMemberHandler(
 
 // Add godoc
 // @Summary Add member to company
-// @Description Adds member to company. Requires admin role in company
+// @Description Adds member to company by username. Requires admin role in company
 // @Tags member
 // @Accept json
 // @Produce json
@@ -64,12 +70,52 @@ func (h *MemberHandler) Add(w http.ResponseWriter, r *http.Request) {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {
 			handleUnexpectedErr(ctx, w, err, "failed to add company member",
-				"member_id", dtoReq.UserID)
+				"username", dtoReq.Username)
 		}
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// List godoc
+// @Summary List members of company.
+// @Description List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.
+// @Tags member
+// @Accept json
+// @Produce json
+// @Param id path string true "Company ID"
+// @Param limit query int false "Items per page" default(20)
+// @Param offset query int false "Offset" default(0)
+// @Success 200 {object} dto.CompanyMemberListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{id}/members [get]
+func (h *MemberHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+
+	req := list.Request{
+		CompanyID: middleware.UUIDFromContext(ctx, "company-id"),
+		Limit:     helpers.ParseLimit(r, "limit", 20),
+		Offset:    helpers.ParseLimit(r, "offset", 0),
+	}
+
+	res, err := h.list.Execute(ctx, req, iden)
+
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list company members",
+				"company_id", req.CompanyID)
+		}
+		return
+	}
+
+	resp := mappers.CompanyMemberListRespToDto(*res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Update godoc
@@ -110,9 +156,9 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Delete godoc
-// @Summary Delete company member
-// @Description Deletes company member. Requires admin role in company
+// Remove godoc
+// @Summary Remove company member
+// @Description removes company member. Requires admin role in company. Admin can't remove themselves if they are the only admin left.
 // @Tags member
 // @Produce json
 // @Param id path string true "Company ID"
@@ -124,7 +170,7 @@ func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id}/members/{user-id} [delete]
-func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *MemberHandler) Remove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	iden := middleware.IdentityFromContext(ctx)
 	companyID := middleware.UUIDFromContext(ctx, "company-id")
@@ -146,7 +192,8 @@ func (h *MemberHandler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, err error) bool {
 	switch {
 	case errors.Is(err, company.ErrCompanyNotFound),
-		errors.Is(err, member.ErrCompanyMemberNotFound):
+		errors.Is(err, member.ErrCompanyMemberNotFound),
+		errors.Is(err, userhr.ErrNotFound):
 		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
@@ -155,7 +202,10 @@ func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, er
 		return true
 
 	case errors.Is(err, member.ErrInvalidUserID),
-		errors.Is(err, member.ErrInvalidCompanyMemberRole):
+		errors.Is(err, member.ErrInvalidCompanyMemberRole),
+		errors.Is(err, member.ErrCantRemoveYourself),
+		errors.Is(err, common.ErrLimitTooLarge),
+		errors.Is(err, userhr.ErrUsernameEmpty):
 		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 

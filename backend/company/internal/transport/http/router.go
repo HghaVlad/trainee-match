@@ -66,6 +66,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.LoggingMiddleware).
 						Post("/", deps.MemberHandler.Add)
 
+					r.With(compmiddleware.LoggingMiddleware).
+						Get("/", deps.MemberHandler.List)
+
 					r.With(compmiddleware.UUIDMiddleware("user-id"),
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateMemberRequest](),
 						compmiddleware.LoggingMiddleware).
@@ -73,15 +76,13 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 					r.With(compmiddleware.UUIDMiddleware("user-id"),
 						compmiddleware.LoggingMiddleware).
-						Delete("/{user-id}", deps.MemberHandler.Delete)
+						Delete("/{user-id}", deps.MemberHandler.Remove)
 				})
 
 			// /company/{company-id}/vacancies
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
 				With(deps.AuthMiddleware.Handler).
 				Route("/{company-id}/vacancies", func(r chi.Router) {
-					r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.ListByCompany)
-
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
 
