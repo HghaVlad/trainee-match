@@ -98,7 +98,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(candidateRepo, resumeRepo)
 			}
 
-			uc := New(candidateRepo, resumeRepo)
+			uc := New(resumeRepo, candidateRepo)
 			err := uc.RemoveResume(ctx, tt.req)
 
 			if tt.expectedError == nil {
