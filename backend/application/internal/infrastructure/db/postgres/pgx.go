@@ -53,6 +53,7 @@ func buildPgxConfFromAppConf(cfg config.DB) (*pgxpool.Config, error) {
 	cc.Host = cfg.Host
 	cc.Port = uint16(port)
 	cc.Database = cfg.DBName
+	cc.TLSConfig = nil
 
 	if cfg.MaxPoolConns < 0 || cfg.MaxPoolConns > 200 {
 		return nil, fmt.Errorf("invalid max pool conns: %d", cfg.MaxPoolConns)

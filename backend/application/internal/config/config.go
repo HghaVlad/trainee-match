@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	DB   DB   `mapstructure:"db"`
-	Http HTTP `mapstructure:"http"`
+	HTTP HTTP `mapstructure:"http"`
 }
 
 func Load() (*Config, error) {

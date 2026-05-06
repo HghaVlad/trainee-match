@@ -9,4 +9,3 @@ type DB struct {
 	MaxPoolConns int    `mapstructure:"max_pool_conns" validate:"gte=1,lte=100"`
 	MinPoolConns int    `mapstructure:"min_pool_conns" validate:"gte=0,lte=100"`
 }
-

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/delivery/http/dto"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/dto"
 )
 
 func RespondJSON(w http.ResponseWriter, status int, data any) {
