@@ -18,10 +18,11 @@ type companyRepoMock struct {
 func (c *companyRepoMock) ListSummaries(
 	ctx context.Context,
 	order list.Order,
+	filter list.Filter,
 	cursor any,
 	limit int,
 ) ([]list.CompanySummary, error) {
-	args := c.Called(ctx, order, cursor, limit)
+	args := c.Called(ctx, order, filter, cursor, limit)
 
 	if comps := args.Get(0); comps != nil {
 		return comps.([]list.CompanySummary), nil
@@ -90,7 +91,7 @@ func TestExecute_CacheMiss(t *testing.T) {
 		Return(nil).Once()
 
 	repo.
-		On("ListSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		On("ListSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return([]list.CompanySummary{}, nil).Once()
 
 	cache.

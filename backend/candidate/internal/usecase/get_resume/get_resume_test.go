@@ -27,7 +27,7 @@ func TestGetById(t *testing.T) {
 		ID:          id,
 		CandidateId: candidateId,
 		Name:        "Resume 1",
-		Status:      domain.Draft,
+		Status:      0,
 		Data: domain.ResumeData{
 			LastName:        "Doe",
 			FirstName:       "John",
@@ -46,7 +46,7 @@ func TestGetById(t *testing.T) {
 		ID:          id,
 		CandidateID: candidateId,
 		Name:        domainResume.Name,
-		Status:      domainResume.Status,
+		Status:      "draft",
 		Data:        convertDomainDataToResponseData(domainResume.Data),
 	}
 
@@ -111,8 +111,8 @@ func TestGetByCandidateId(t *testing.T) {
 	userId := uuid.New()
 	candidateId := uuid.New()
 	domainResumes := []domain.Resume{
-		{ID: uuid.New(), CandidateId: candidateId, Name: "r1", Status: domain.Draft},
-		{ID: uuid.New(), CandidateId: candidateId, Name: "r2", Status: domain.Published},
+		{ID: uuid.New(), CandidateId: candidateId, Name: "r1", Status: 0},
+		{ID: uuid.New(), CandidateId: candidateId, Name: "r2", Status: 1},
 	}
 
 	tests := []struct {

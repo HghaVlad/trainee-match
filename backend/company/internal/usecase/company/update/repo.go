@@ -8,8 +8,9 @@ import (
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
+//go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
 type CompanyRepo interface {
-	Update(ctx context.Context, req *Request) error
+	UpdateAndGetOldName(ctx context.Context, req *Request) (string, error)
 }
 
 type CompMemberRepo interface {

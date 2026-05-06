@@ -4,20 +4,24 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-	"github.com/google/uuid"
 )
 
 type CreateResumeRequest struct {
 	Name   string     `json:"name"`
-	Status int        `json:"status"`
+	Status string     `json:"status"`
 	Data   ResumeData `json:"data"`
 }
 
 func (req *CreateResumeRequest) Validate() error {
 	if req.Name == "" {
 		return errors.New("name is required")
+	}
+	if err := validateResumeStatus(req.Status); err != nil {
+		return err
 	}
 	if err := req.Data.Validate(); err != nil {
 		return err
@@ -75,11 +79,16 @@ func (req *CreateResumeRequest) ToUseCaseRequest() create_resume.Request {
 type UpdateResumeRequest struct {
 	ID     *uuid.UUID       `json:"id"`
 	Name   *string          `json:"name"`
-	Status *int             `json:"status"`
+	Status *string          `json:"status"`
 	Data   *PatchResumeData `json:"data"`
 }
 
 func (req *UpdateResumeRequest) Validate() error {
+	if req.Status != nil {
+		if err := validateResumeStatus(*req.Status); err != nil {
+			return err
+		}
+	}
 	if req.Data != nil {
 		if err := req.Data.Validate(); err != nil {
 			return err
@@ -156,4 +165,13 @@ func (req *UpdateResumeRequest) ToUseCaseRequest() update_resume.Request {
 		}
 	}
 	return useCaseReq
+}
+
+func validateResumeStatus(status string) error {
+	switch status {
+	case "draft", "published":
+		return nil
+	default:
+		return errors.New("status must be draft or published")
+	}
 }

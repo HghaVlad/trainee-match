@@ -464,6 +464,10 @@ linters:
         linters: [ revive, staticcheck ]
       - text: 'shadow: declaration of "(err|ctx)" shadows declaration at'
         linters: [ govet ]
+      - path: '.*api/docs/.*\.go'
+        linters:
+          - gochecknoinits
+          - gochecknoglobals
       - path: '_test\.go'
         linters:
           - bodyclose

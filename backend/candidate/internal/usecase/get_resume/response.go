@@ -10,7 +10,7 @@ type Response struct {
 	ID          uuid.UUID  `json:"id"`
 	CandidateID uuid.UUID  `json:"candidate_id"`
 	Name        string     `json:"name"`
-	Status      int        `json:"status"`
+	Status      string     `json:"status"`
 	Data        ResumeData `json:"data"`
 }
 
@@ -18,7 +18,7 @@ type ShortResponse struct {
 	ID          uuid.UUID `json:"id"`
 	CandidateId uuid.UUID `json:"candidate_id"`
 	Name        string    `json:"name"`
-	Status      int       `json:"status"`
+	Status      string    `json:"status"`
 }
 
 type ResumeData struct {

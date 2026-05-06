@@ -2,160 +2,253 @@ package add_test
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add/mocks"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
-type memberRepoMock struct {
-	mock.Mock
+type fakeTxManager struct {
+	called bool
 }
 
-func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
-	args := m.Called(ctx, userID, companyID)
+func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	f.called = true
+	return fn(ctx)
+}
 
-	if memb := args.Get(0); memb != nil {
-		return memb.(*member.CompanyMember), args.Error(1)
+type testDeps struct {
+	memRepo    *mocks.MockcompanyMemberRepo
+	hrProjRepo *mocks.MockhrProjRepo
+	outbox     *mocks.MockoutboxWriter
+	txManager  *fakeTxManager
+}
+
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
+	return &testDeps{
+		memRepo:    mocks.NewMockcompanyMemberRepo(ctrl),
+		hrProjRepo: mocks.NewMockhrProjRepo(ctrl),
+		outbox:     mocks.NewMockoutboxWriter(ctrl),
+		txManager:  new(fakeTxManager),
+	}
+}
+
+type memberMatcher struct {
+	expected *member.CompanyMember
+}
+
+func (m memberMatcher) Matches(x any) bool {
+	mem, ok := x.(*member.CompanyMember)
+	if !ok {
+		return false
 	}
 
-	return nil, args.Error(1)
+	return m.expected.UserID == mem.UserID && m.expected.CompanyID == mem.CompanyID &&
+		m.expected.Role == mem.Role
 }
 
-func (m *memberRepoMock) Create(ctx context.Context, member *member.CompanyMember) error {
-	return m.Called(ctx, member).Error(0)
+func (m memberMatcher) String() string {
+	return fmt.Sprintf("is equal to %v", m.expected)
+}
+
+type memberAddedEvMatcher struct {
+	expected member.AddedEvent
+}
+
+func (m memberAddedEvMatcher) Matches(x any) bool {
+	ev, ok := x.(member.AddedEvent)
+	if !ok {
+		return false
+	}
+
+	return m.expected.UserID == ev.UserID && m.expected.CompanyID == ev.CompanyID &&
+		m.expected.Role == ev.Role
+}
+
+func (m memberAddedEvMatcher) String() string {
+	return fmt.Sprintf("is equal to %v", m.expected)
+}
+
+func NewUC(deps *testDeps) *add.Usecase {
+	return add.NewUsecase(deps.memRepo, deps.hrProjRepo, deps.outbox, deps.txManager)
 }
 
 func TestUsecase_ExecuteOK(t *testing.T) {
-	repo := new(memberRepoMock)
-	uc := add.NewUsecase(repo)
+	deps := setup(t)
 
+	compID := uuid.New()
+	usID := uuid.New()
+	usname := "JohnPork360"
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	req := &add.Request{
-		CompanyID: uuid.New(),
-		UserID:    uuid.New(),
+		Username:  usname,
+		CompanyID: compID,
 		Role:      member.CompanyRoleRecruiter,
 	}
 
-	repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
-	repo.On("Create", mock.Anything, mock.MatchedBy(func(member *member.CompanyMember) bool {
-		return member.UserID == req.UserID &&
-			member.CompanyID == req.CompanyID &&
-			member.Role == req.Role
-	})).Return(nil).Once()
+	mem := &member.CompanyMember{
+		UserID:    usID,
+		CompanyID: req.CompanyID,
+		Role:      req.Role,
+	}
 
-	err := uc.Execute(context.Background(), req, ident)
+	hrProj := &userhr.Projection{
+		UserID:    usID,
+		Username:  usname,
+		Email:     "usname@mail.com",
+		CreatedAt: time.Now().UTC(),
+	}
+
+	memEv := member.AddedEvent{UserID: usID, CompanyID: req.CompanyID, Role: req.Role}
+
+	deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+		Return(hrProj, nil)
+
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+
+	deps.memRepo.EXPECT().Create(gomock.Any(), memberMatcher{expected: mem}).
+		Return(nil)
+
+	deps.outbox.EXPECT().WriteCompanyMemberAdded(gomock.Any(), memberAddedEvMatcher{memEv}).Return(nil)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), req, ident)
 
 	require.NoError(t, err)
-	repo.AssertExpectations(t)
+}
+
+func TestUsecase_ExecuteUsProjNotFound(t *testing.T) {
+	usname := "JohnPork360"
+	req := &add.Request{
+		CompanyID: uuid.New(),
+		Username:  usname,
+		Role:      member.CompanyRoleRecruiter,
+	}
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+
+	deps := setup(t)
+
+	deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+		Return(nil, userhr.ErrNotFound)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), req, ident)
+
+	require.ErrorIs(t, err, userhr.ErrNotFound)
 }
 
 func TestUsecase_ExecuteAuthErr(t *testing.T) {
-	repo := new(memberRepoMock)
-	uc := add.NewUsecase(repo)
-
+	usname := "JohnPork360"
 	req := &add.Request{
 		CompanyID: uuid.New(),
-		UserID:    uuid.New(),
+		Username:  usname,
 		Role:      member.CompanyRoleRecruiter,
 	}
 
-	t.Run("global role required", func(t *testing.T) {
+	t.Run("global hr role required", func(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
-		err := uc.Execute(context.Background(), req, ident)
+		deps := setup(t)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), req, ident)
 
 		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
-		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
-		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 
 	t.Run("company member required", func(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-			Return(nil, member.ErrCompanyMemberNotFound).Once()
+		deps := setup(t)
 
-		err := uc.Execute(context.Background(), req, ident)
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
+
+		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
+			Return(nil, member.ErrCompanyMemberNotFound)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), req, ident)
 
 		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
-		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 
 	t.Run("admin company role required", func(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
+		deps := setup(t)
 
-		err := uc.Execute(context.Background(), req, ident)
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
+
+		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), req, ident)
 
 		require.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
-		repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 	})
 }
 
 func TestUsecase_ExecuteValidationAndRepoErr(t *testing.T) {
-	t.Run("invalid user id", func(t *testing.T) {
-		repo := new(memberRepoMock)
-		uc := add.NewUsecase(repo)
-
-		req := &add.Request{
-			CompanyID: uuid.New(),
-			UserID:    uuid.Nil,
-			Role:      member.CompanyRoleRecruiter,
-		}
-		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-		err := uc.Execute(context.Background(), req, ident)
-
-		require.ErrorIs(t, err, member.ErrInvalidUserID)
-		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
-	})
+	usname := "JohnPork360"
 
 	t.Run("invalid role", func(t *testing.T) {
-		repo := new(memberRepoMock)
-		uc := add.NewUsecase(repo)
+		deps := setup(t)
+		uc := NewUC(deps)
 
 		req := &add.Request{
 			CompanyID: uuid.New(),
-			UserID:    uuid.New(),
-			Role:      "owner",
+			Username:  usname,
+			Role:      "invalid",
 		}
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		err := uc.Execute(context.Background(), req, ident)
+		err := uc.Execute(t.Context(), req, ident)
 
 		require.ErrorIs(t, err, member.ErrInvalidCompanyMemberRole)
-		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("repo err", func(t *testing.T) {
-		repo := new(memberRepoMock)
-		uc := add.NewUsecase(repo)
-
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 		req := &add.Request{
 			CompanyID: uuid.New(),
-			UserID:    uuid.New(),
+			Username:  usname,
 			Role:      member.CompanyRoleAdmin,
 		}
 
-		repo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-			Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
-		repo.On("Create", mock.Anything, mock.Anything).
-			Return(errors.New("db err")).Once()
+		deps := setup(t)
 
-		err := uc.Execute(context.Background(), req, ident)
+		deps.hrProjRepo.EXPECT().GetByUsername(gomock.Any(), usname).
+			Return(&userhr.Projection{UserID: uuid.New(), Username: usname}, nil)
 
-		require.EqualError(t, err, "db err")
-		repo.AssertExpectations(t)
+		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, req.CompanyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+
+		deps.memRepo.EXPECT().Create(gomock.Any(), gomock.Any()).
+			Return(member.ErrCompanyMemberAlreadyExists)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), req, ident)
+
+		require.ErrorIs(t, err, member.ErrCompanyMemberAlreadyExists)
 	})
 }

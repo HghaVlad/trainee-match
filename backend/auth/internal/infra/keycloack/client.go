@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/Nerzal/gocloak/v13"
+
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 )
 
 var ErrorInvalidToken = errors.New("invalid access token")
@@ -21,6 +22,24 @@ type Client struct {
 	clientSecret string
 	adminUser    string
 	adminPass    string
+}
+
+func NewClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
+	client := gocloak.NewClient(clientUrl)
+	keycloakClient := &Client{
+		client:       client,
+		realm:        realm,
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		adminUser:    adminUser,
+		adminPass:    adminPass,
+	}
+	err := keycloakClient.loginAdmin(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	slog.Debug("keycloakClient successfully started")
+	return keycloakClient
 }
 
 func (kc *Client) loginAdmin(ctx context.Context) error {
@@ -90,9 +109,15 @@ func (kc *Client) addRole(ctx context.Context, userId, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
 	if roleName == "Candidate" {
-		roles[0] = gocloak.Role{ID: gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"), Name: gocloak.StringP("Candidate")}
+		roles[0] = gocloak.Role{
+			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
+			Name: gocloak.StringP("Candidate"),
+		}
 	} else if roleName == "Company" {
-		roles[0] = gocloak.Role{ID: gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"), Name: gocloak.StringP("Company")}
+		roles[0] = gocloak.Role{
+			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
+			Name: gocloak.StringP("Company"),
+		}
 	} else {
 		return fmt.Errorf("the roleName is not valid: %s", roleName)
 	}
@@ -149,20 +174,46 @@ func (kc *Client) validateToken(ctx context.Context, token string) error {
 	return nil
 }
 
-func NewClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
-	client := gocloak.NewClient(clientUrl)
-	keycloakClient := &Client{
-		client:       client,
-		realm:        realm,
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		adminUser:    adminUser,
-		adminPass:    adminPass,
+func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, error) {
+	if err := kc.ensureAdminTokenValid(ctx); err != nil {
+		return nil, err
 	}
-	err := keycloakClient.loginAdmin(context.Background())
+
+	user_info, err := kc.client.GetUserInfo(ctx, token, kc.realm)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	slog.Debug("keycloakClient successfully started")
-	return keycloakClient
+
+	user, err := kc.client.GetUserByID(ctx, kc.token.AccessToken, kc.realm, *user_info.Sub)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.User{
+		Id:        *user_info.Sub,
+		FirstName: *user.FirstName,
+		LastName:  *user.LastName,
+		Email:     *user.Email,
+		Username:  *user.Username,
+	}, nil
+}
+
+func (kc *Client) GetUserRole(ctx context.Context, token string, userId string) (string, error) {
+	if err := kc.ensureAdminTokenValid(ctx); err != nil {
+		return "", err
+	}
+
+	roles, err := kc.client.GetCompositeRealmRolesByUserID(ctx, kc.token.AccessToken, kc.realm, userId)
+	if err != nil {
+		return "", err
+	}
+	for _, role := range roles {
+		if *role.Name == "Candidate" {
+			return "Candidate", nil
+		} else if *role.Name == "Company" {
+			return "Company", nil
+		}
+	}
+
+	return "", fmt.Errorf("user role not found")
 }

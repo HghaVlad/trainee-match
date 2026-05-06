@@ -124,9 +124,50 @@ func ParseVacByCompListOrderQuery(r *http.Request) listbycomp.Order {
 	ord := listbycomp.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case listbycomp.OrderPublishedAtDesc:
+	case listbycomp.OrderCreatedAtDesc:
 		return ord
 	default:
-		return listbycomp.OrderPublishedAtDesc
+		return listbycomp.OrderCreatedAtDesc
 	}
+}
+
+func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listbycomp.Request, error) {
+	q := r.URL.Query()
+
+	order := ParseVacByCompListOrderQuery(r)
+	req := &listbycomp.Request{
+		CompID:        compID,
+		Limit:         ParseLimit(r, "limit", 20),
+		Order:         order,
+		EncodedCursor: q.Get("cursor"),
+		Requirements:  &list.Requirements{},
+	}
+
+	req.Requirements.Salary = parseRangeInt(q, "salary_min", "salary_max")
+	req.Requirements.HoursPerWeek = parseRangeInt(q, "hours_min", "hours_max")
+	req.Requirements.Duration = parseRangeInt(q, "duration_min", "duration_max")
+
+	parseBoolToPtr(q, "is_paid", &req.Requirements.IsPaid)
+	parseBoolToPtr(q, "internship_to_offer", &req.Requirements.InternshipToOffer)
+	parseBoolToPtr(q, "flexible_schedule", &req.Requirements.FlexibleSchedule)
+
+	applyRequirementsWorkFormat(q, req.Requirements)
+	applyRequirementsCity(q, req.Requirements)
+
+	if statusStr := strings.TrimSpace(q.Get("status")); statusStr != "" {
+		status := vacancy.Status(statusStr)
+		req.Status = &status
+	}
+
+	return req, nil
+}
+
+func applyRequirementsWorkFormat(q url.Values, req *list.Requirements) {
+	wrapper := &list.Request{Requirements: req}
+	applyWorkFormat(q, wrapper)
+}
+
+func applyRequirementsCity(q url.Values, req *list.Requirements) {
+	wrapper := &list.Request{Requirements: req}
+	applyCity(q, wrapper)
 }
