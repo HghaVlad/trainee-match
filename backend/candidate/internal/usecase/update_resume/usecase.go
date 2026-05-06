@@ -56,7 +56,11 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		resume.Name = *req.Name
 	}
 	if req.Status != nil {
-		resume.Status = *req.Status
+		status, err := domain.Parse(*req.Status)
+		if err != nil {
+			return err
+		}
+		resume.Status = status
 	}
 	if req.Data != nil {
 		if req.Data.SkillsList != nil {

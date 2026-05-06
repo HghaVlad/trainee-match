@@ -42,13 +42,18 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		return Response{}, err
 	}
 
+	status, err := domain.Parse(req.Status)
+	if err != nil {
+		return Response{}, err
+	}
+
 	// Convert request data to domain model
 	domainData := convertRequestDataToDomainData(req.Data)
 
 	resume := &domain.Resume{
 		CandidateId: candidate.ID,
 		Name:        req.Name,
-		Status:      req.Status,
+		Status:      status,
 		Data:        domainData,
 	}
 

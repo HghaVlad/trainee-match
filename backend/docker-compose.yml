@@ -6,11 +6,10 @@ services:
       POSTGRES_PASSWORD: keycloak
       POSTGRES_DB: keycloak
     healthcheck:
-      test: pg_isready -d postgres
+      test: [ "CMD-SHELL", "pg_isready -U keycloak -d keycloak" ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 5s
+      retries: 5
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
 
