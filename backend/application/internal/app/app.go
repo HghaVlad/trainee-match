@@ -7,16 +7,25 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	http2 "github.com/HghaVlad/trainee-match/backend/application/internal/delivery/http"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 )
 
 type App struct {
 	httpServer *http.Server
+	pgDB       *pgxpool.Pool
 	logger     *slog.Logger
 }
 
 func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
+	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, cfg.DB, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	deps := http2.NewRouterDeps()
 	router := http2.NewRouter(deps)
 
@@ -30,29 +39,31 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	return &App{
 		httpServer: httpServer,
 		logger:     logger,
+		pgDB:       pgDB,
 	}, nil
 }
 
-func (app *App) Run(_ context.Context) error {
-	app.logger.Info("starting http server", "addr", app.httpServer.Addr)
+func (app *App) Run(ctx context.Context) error {
+	app.logger.InfoContext(ctx, "starting http server", "addr", app.httpServer.Addr)
+
 	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
-	app.logger.Info("http server stopped")
+	app.logger.InfoContext(ctx, "http server stopped")
 	return nil
 }
 
 func (app *App) Shutdown(ctx context.Context) {
 	if err := app.httpServer.Shutdown(ctx); err != nil {
-		app.logger.Info("http server graceful shutdown fail", "error", err)
+		app.logger.InfoContext(ctx, "http server graceful shutdown fail", "error", err)
 
 		if cerr := app.httpServer.Close(); cerr != nil {
-			app.logger.Info("server close fail", cerr)
+			app.logger.InfoContext(ctx, "http server close fail", "error", cerr)
 		}
-
-		return
 	}
 
-	app.logger.Info("app gracefully stopped")
+	app.pgDB.Close()
+
+	app.logger.InfoContext(ctx, "app gracefully stopped")
 }

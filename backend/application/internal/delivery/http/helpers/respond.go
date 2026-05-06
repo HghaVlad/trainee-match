@@ -23,7 +23,6 @@ func RespondWithError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, dto.ErrBadRequest):
 		code = http.StatusBadRequest
-		break
 	}
 	RespondJSON(w, code, dto.JSONResponse{Message: err.Error()})
 }

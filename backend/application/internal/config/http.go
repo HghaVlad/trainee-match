@@ -1,6 +1,6 @@
 package config
 
-type Http struct {
+type HTTP struct {
 	Addr   string `mapstructure:"addr"`
 	JWKUrl string `mapstructure:"jwkurl"`
 }

@@ -85,8 +85,12 @@ services:
       - "8081:8081"
       - "8085:8085"
     depends_on:
-      - candidate-db
-      - auth-service
+      candidate-db:
+        condition: service_healthy
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
 
   company-postgres:
     image: postgres:17
@@ -130,6 +134,25 @@ services:
       timeout: 3s
       retries: 5
 
+  company-service:
+    build:
+      context: ./company
+    env_file:
+      - company/.env
+    ports:
+      - "8088:8080"
+    depends_on:
+      company-postgres:
+        condition: service_healthy
+      company-postgres-migrate:
+        condition: service_completed_successfully
+      redis-cache:
+        condition: service_healthy
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
+
   application-postgres:
     image: postgres:17
     ports:
@@ -147,19 +170,17 @@ services:
       retries: 15
       start_period: 10s
 
-  company-service:
-    build:
-      context: ./company
-    env_file:
-      - company/.env
-    ports:
-      - "8088:8080"
+  application-postgres-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./application/internal/infrastructure/db/postgres/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://${APPLICATION_PGS_USER}:${APPLICATION_PGS_PASS}@application-postgres:5432/${APPLICATION_PGS_NAME}?sslmode=disable",
+      "up"
+    ]
     depends_on:
       company-postgres:
-        condition: service_healthy
-      company-postgres-migrate:
-        condition: service_completed_successfully
-      redis-cache:
         condition: service_healthy
 
   application-service:
@@ -173,6 +194,12 @@ services:
     depends_on:
       application-postgres:
         condition: service_healthy
+      application-postgres-migrate:
+        condition: service_completed_successfully
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
 
 
   kafka-1:

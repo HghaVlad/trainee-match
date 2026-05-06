@@ -9,7 +9,7 @@ import (
 type ResumeStatus string
 
 const (
-	ResumeStatusDraft   ResumeStatus = "draft"
+	ResumeStatusDraft     ResumeStatus = "draft"
 	ResumeStatusPublished ResumeStatus = "published"
 )
 
