@@ -2,19 +2,31 @@ import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@ta
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { type ReactNode } from 'react'
 import { AppError, SessionExpiredError } from '@/shared/api/http/client'
+import { toast } from '@/shared/hooks/use-toast'
+
+function describeError(error: unknown): string {
+  if (error instanceof AppError) return error.message || 'Что-то пошло не так'
+  if (error instanceof Error) return error.message
+  return 'Что-то пошло не так'
+}
 
 function createQueryClient() {
   return new QueryClient({
     queryCache: new QueryCache({
       onError: (error) => {
         if (error instanceof SessionExpiredError) return
-        console.error('[QueryCache]', error) // reason: temporary until T21 toast wiring
+        console.error('[QueryCache]', error)
       },
     }),
     mutationCache: new MutationCache({
-      onError: (error) => {
+      onError: (error, _vars, _ctx, mutation) => {
         if (error instanceof SessionExpiredError) return
-        console.error('[MutationCache]', error) // reason: temporary until T21 toast wiring
+        if (mutation.options.onError) return
+        toast({
+          title: 'Ошибка',
+          description: describeError(error),
+          variant: 'destructive',
+        })
       },
     }),
     defaultOptions: {

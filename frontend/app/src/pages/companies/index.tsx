@@ -1,23 +1,50 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { useGetCompanies } from '@/api/generated/company/company/company'
+import { useQueries } from '@tanstack/react-query'
+import {
+  getGetCompaniesQueryOptions,
+} from '@/api/generated/company/company/company'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Button } from '@/shared/ui/button'
 
+const PAGE_SIZE = 20
+
 export default function CompaniesPage() {
-  const [cursor, setCursor] = useState<string | undefined>(undefined)
-  const { data, isLoading, error, refetch } = useGetCompanies({
-    limit: 20,
-    cursor,
+  const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
+
+  const queries = useQueries({
+    queries: cursors.map((cursor) =>
+      getGetCompaniesQueryOptions({ limit: PAGE_SIZE, cursor }),
+    ),
   })
 
-  if (isLoading) return <LoadingState />
-  if (error) return <ErrorState onRetry={() => refetch()} />
+  const isLoading = queries[0]?.isLoading ?? false
+  const isFetching = queries.some((q) => q.isFetching)
+  const error = queries.find((q) => q.error)?.error
+  const items = useMemo(() => {
+    const seen = new Set<string>()
+    const out: Array<{ id?: string; name?: string; openVacanciesCount?: number }> = []
+    for (const q of queries) {
+      for (const c of q.data?.companies ?? []) {
+        if (!c.id || seen.has(c.id)) continue
+        seen.add(c.id)
+        out.push(c)
+      }
+    }
+    return out
+  }, [queries])
+  const lastQuery = queries[queries.length - 1]
+  const nextCursor = lastQuery?.data?.nextCursor ?? undefined
 
-  const items = data?.companies ?? []
-  if (items.length === 0) return <EmptyState title="Компании не найдены" />
+  if (isLoading && items.length === 0) return <LoadingState />
+  if (error && items.length === 0) {
+    return <ErrorState onRetry={() => queries.forEach((q) => void q.refetch())} />
+  }
+  if (!isLoading && items.length === 0) {
+    return <EmptyState title="Компании не найдены" />
+  }
 
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-4">
@@ -37,9 +64,13 @@ export default function CompaniesPage() {
           </li>
         ))}
       </ul>
-      {data?.nextCursor && (
-        <Button variant="outline" onClick={() => setCursor(data.nextCursor)}>
-          Загрузить ещё
+      {nextCursor && (
+        <Button
+          variant="outline"
+          onClick={() => setCursors((prev) => [...prev, nextCursor])}
+          disabled={isFetching}
+        >
+          {isFetching ? 'Загрузка…' : 'Загрузить ещё'}
         </Button>
       )}
     </div>

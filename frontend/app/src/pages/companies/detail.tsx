@@ -4,7 +4,8 @@ import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 
 export default function CompanyDetailPage() {
-  const { id = '' } = useParams<{ id: string }>()
+  const { companyId = '' } = useParams<{ companyId: string }>()
+  const id = companyId
   const { data, isLoading, error, refetch } = useGetCompaniesId(id, {
     query: { enabled: Boolean(id) },
   })

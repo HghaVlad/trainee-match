@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams, Link } from 'react-router'
+import { useParams, Link, useNavigate } from 'react-router'
 import { useForm, useFieldArray, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,12 +8,15 @@ import {
   usePatchResumeId,
 } from '@/api/generated/candidate/resume/resume'
 import type { DtoResumeData } from '@/api/generated/candidate/schemas'
+import { useDeleteResume } from '@/shared/api/resume/deleteResume'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/ui/form'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
 import { Button } from '@/shared/ui/button'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 import { SkillCombobox } from '@/features/skill-catalog'
 
 const educationSchema = z.object({
@@ -68,10 +71,15 @@ function toForm(name?: string, d?: DtoResumeData): ResumeFormData {
 }
 
 export default function ResumeEditPage() {
-  const { id = '' } = useParams<{ id: string }>()
+  const { resumeId = '' } = useParams<{ resumeId: string }>()
+  const id = resumeId
+  const navigate = useNavigate()
+  const { toast } = useToast()
   const detail = useGetResumeId(id, { query: { enabled: Boolean(id) } })
   const patch = usePatchResumeId()
+  const del = useDeleteResume()
   const [savedAt, setSavedAt] = useState<Date | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const form = useForm<ResumeFormData>({
     resolver: zodResolver(resumeSchema) as never,
@@ -87,6 +95,55 @@ export default function ResumeEditPage() {
   const debounce = useRef<number | null>(null)
   const lastSaved = useRef<string>('')
 
+  function buildPayload(values: ResumeFormData) {
+    return {
+      id,
+      data: {
+        name: values.name,
+        data: {
+          first_name: values.first_name || undefined,
+          last_name: values.last_name || undefined,
+          email: values.email || undefined,
+          phone: values.phone || undefined,
+          city: values.city || undefined,
+          desired_format: values.desired_format || undefined,
+          english_level: values.english_level || undefined,
+          additional_info: values.additional_info || undefined,
+          portfolio_link: values.portfolio_link || undefined,
+          education: values.education,
+          work_experiences: values.work_experiences,
+          skills_list: values.skills_list,
+        },
+      },
+    }
+  }
+
+  async function onManualSave(values: ResumeFormData) {
+    if (debounce.current) window.clearTimeout(debounce.current)
+    try {
+      await patch.mutateAsync(buildPayload(values))
+      lastSaved.current = JSON.stringify(values)
+      setSavedAt(new Date())
+      toast({ title: 'Резюме сохранено' })
+    } catch (e) {
+      const msg = e instanceof AppError ? e.message : 'Не удалось сохранить резюме'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    }
+  }
+
+  async function onConfirmDelete() {
+    try {
+      await del.mutateAsync(id)
+      toast({ title: 'Резюме удалено' })
+      navigate('/me/resumes')
+    } catch (e) {
+      const msg = e instanceof AppError ? e.message : 'Не удалось удалить резюме'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    } finally {
+      setConfirmingDelete(false)
+    }
+  }
+
   useEffect(() => {
     const sub = form.watch((values) => {
       if (!form.formState.isValid) return
@@ -95,35 +152,16 @@ export default function ResumeEditPage() {
         const json = JSON.stringify(values)
         if (json === lastSaved.current) return
         lastSaved.current = json
-        patch.mutate(
-          {
-            id,
-            data: {
-              name: values.name,
-              data: {
-                first_name: values.first_name || undefined,
-                last_name: values.last_name || undefined,
-                email: values.email || undefined,
-                phone: values.phone || undefined,
-                city: values.city || undefined,
-                desired_format: values.desired_format || undefined,
-                english_level: values.english_level || undefined,
-                additional_info: values.additional_info || undefined,
-                portfolio_link: values.portfolio_link || undefined,
-                education: values.education,
-                work_experiences: values.work_experiences,
-                skills_list: values.skills_list,
-              },
-            },
-          },
-          { onSuccess: () => setSavedAt(new Date()) },
-        )
+        patch.mutate(buildPayload(values as ResumeFormData), {
+          onSuccess: () => setSavedAt(new Date()),
+        })
       }, 3000)
     })
     return () => {
       sub.unsubscribe()
       if (debounce.current) window.clearTimeout(debounce.current)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, id, patch])
 
   if (detail.isLoading) return <LoadingState />
@@ -141,13 +179,70 @@ export default function ResumeEditPage() {
         </p>
       )}
       <Form {...form}>
-        <form noValidate onSubmit={(e) => e.preventDefault()} className="space-y-4">
+        <form noValidate onSubmit={form.handleSubmit(onManualSave)} className="space-y-4">
           <BasicFields form={form} />
           <EducationList form={form} />
           <WorkList form={form} />
           <SkillsList form={form} />
+          <div className="sticky bottom-0 -mx-2 flex items-center justify-end gap-2 border-t bg-background/95 p-3 backdrop-blur">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={del.isPending}
+            >
+              Удалить
+            </Button>
+            <div className="flex-1" />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/me/resumes')}
+            >
+              Отмена
+            </Button>
+            <Button type="submit" disabled={patch.isPending}>
+              {patch.isPending ? 'Сохранение…' : 'Сохранить'}
+            </Button>
+          </div>
         </form>
       </Form>
+
+      {confirmingDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="resume-delete-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+            <h2 id="resume-delete-title" className="text-lg font-semibold">
+              Удалить резюме?
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Это действие нельзя отменить. Все данные резюме будут удалены безвозвратно.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={del.isPending}
+              >
+                Отмена
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onConfirmDelete}
+                disabled={del.isPending}
+              >
+                {del.isPending ? 'Удаление…' : 'Удалить'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
