@@ -29,9 +29,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) 
 		return nil, err
 	}
 
-	respCacheKey := strings.Join([]string{
-		string(req.Order), req.EncodedCursor, strconv.Itoa(req.Limit),
-	}, "-")
+	respCacheKey := getResponseCacheKey(req)
 
 	resp := u.responseCache.Get(ctx, respCacheKey)
 	if resp != nil {
@@ -72,7 +70,7 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 	}
 
 	// limit + 1 strat
-	companies, err := uc.repo.ListSummaries(ctx, req.Order, cursor, req.Limit+1)
+	companies, err := uc.repo.ListSummaries(ctx, req.Order, req.Filter, cursor, req.Limit+1)
 	if err != nil {
 		return nil, err
 	}
@@ -133,4 +131,16 @@ func buildResponse[CursorT any](companies []CompanySummary, nextCursor *CursorT,
 	}
 
 	return &response, nil
+}
+
+func getResponseCacheKey(req *Request) string {
+	parts := []string{string(req.Order), req.EncodedCursor, strconv.Itoa(req.Limit)}
+
+	if req.Filter.CompanyMemberID != nil {
+		parts = append(parts, req.Filter.CompanyMemberID.String())
+	}
+
+	respCacheKey := strings.Join(parts, "-")
+
+	return respCacheKey
 }

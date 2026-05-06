@@ -16,6 +16,7 @@ var ErrSalaryMissingForPaid = errors.New("salary missing for paid vacancy")
 
 var ErrInvalidTitleLength = errors.New("invalid title length")
 var ErrInvalidDescriptionLength = errors.New("invalid description length")
+var ErrInvalidStatus = errors.New("invalid vacancy status")
 
 var ErrSalaryTooLarge = errors.New("salary too large")
 var ErrNegativeSalary = errors.New("salary negative")

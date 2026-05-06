@@ -1,6 +1,8 @@
 package list
 
 import (
+	"github.com/google/uuid"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 )
 
@@ -8,6 +10,11 @@ type Request struct {
 	Order         Order
 	Limit         int
 	EncodedCursor string
+	Filter        Filter
+}
+
+type Filter struct {
+	CompanyMemberID *uuid.UUID
 }
 
 func (r *Request) Validate() error {

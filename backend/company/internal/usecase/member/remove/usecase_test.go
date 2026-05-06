@@ -3,111 +3,199 @@ package remove_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove/mocks"
 )
 
-type memberRepoMock struct {
-	mock.Mock
+type fakeTxManager struct {
+	called bool
 }
 
-func (m *memberRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
-	args := m.Called(ctx, userID, companyID)
+func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	f.called = true
+	return fn(ctx)
+}
 
-	if memb := args.Get(0); memb != nil {
-		return memb.(*member.CompanyMember), args.Error(1)
+type testDeps struct {
+	memRepo   *mocks.MockCompanyMemberRepo
+	outbox    *mocks.MockoutboxWriter
+	txManager *fakeTxManager
+}
+
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
+	return &testDeps{
+		memRepo:   mocks.NewMockCompanyMemberRepo(ctrl),
+		outbox:    mocks.NewMockoutboxWriter(ctrl),
+		txManager: new(fakeTxManager),
+	}
+}
+
+type memberRemovedEvMatcher struct {
+	expected member.RemovedEvent
+}
+
+func (m memberRemovedEvMatcher) Matches(x any) bool {
+	ev, ok := x.(member.RemovedEvent)
+	if !ok {
+		return false
 	}
 
-	return nil, args.Error(1)
+	return m.expected.UserID == ev.UserID && m.expected.CompanyID == ev.CompanyID
 }
 
-func (m *memberRepoMock) Delete(ctx context.Context, userID, companyID uuid.UUID) error {
-	return m.Called(ctx, userID, companyID).Error(0)
+func (m memberRemovedEvMatcher) String() string {
+	return fmt.Sprintf("is equal to %v", m.expected)
+}
+
+func NewUC(deps *testDeps) *remove.Usecase {
+	return remove.NewUsecase(deps.memRepo, deps.outbox, deps.txManager)
 }
 
 func TestUsecase_ExecuteOK(t *testing.T) {
-	repo := new(memberRepoMock)
-	uc := remove.NewUsecase(repo)
+	deps := setup(t)
 
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	userID := uuid.New()
 
-	repo.On("Get", mock.Anything, ident.UserID, companyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
-	repo.On("Delete", mock.Anything, userID, companyID).
-		Return(nil).Once()
+	expectedEv := member.RemovedEvent{UserID: userID, CompanyID: companyID}
 
-	err := uc.Execute(context.Background(), companyID, userID, ident)
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+
+	deps.memRepo.EXPECT().Delete(gomock.Any(), userID, companyID).Return(nil)
+
+	deps.outbox.EXPECT().
+		WriteCompanyMemberRemoved(gomock.Any(), memberRemovedEvMatcher{expected: expectedEv}).Return(nil)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), companyID, userID, ident)
 
 	require.NoError(t, err)
-	repo.AssertExpectations(t)
+}
+
+func TestUsecase_ExecuteRemovesThemselvesWhenMoreThanOneAdmin(t *testing.T) {
+	deps := setup(t)
+
+	userID := uuid.New()
+	ident := &identity.Identity{UserID: userID, Role: identity.RoleHR}
+	companyID := uuid.New()
+
+	expectedEv := member.RemovedEvent{UserID: userID, CompanyID: companyID}
+
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+
+	deps.memRepo.EXPECT().
+		GetCompanyRoleCount(gomock.Any(), companyID, member.CompanyRoleAdmin).
+		Return(2, nil)
+
+	deps.memRepo.EXPECT().Delete(gomock.Any(), userID, companyID).Return(nil)
+
+	deps.outbox.EXPECT().
+		WriteCompanyMemberRemoved(gomock.Any(), memberRemovedEvMatcher{expected: expectedEv}).Return(nil)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), companyID, userID, ident)
+
+	require.NoError(t, err)
+}
+
+func TestUsecase_ExecuteCantRemovesThemselvesWhenTheOnlyAdmin(t *testing.T) {
+	deps := setup(t)
+
+	userID := uuid.New()
+	ident := &identity.Identity{UserID: userID, Role: identity.RoleHR}
+	companyID := uuid.New()
+
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+
+	deps.memRepo.EXPECT().
+		GetCompanyRoleCount(gomock.Any(), companyID, member.CompanyRoleAdmin).
+		Return(1, nil)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(t.Context(), companyID, userID, ident)
+
+	require.ErrorIs(t, err, member.ErrCantRemoveYourself)
 }
 
 func TestUsecase_ExecuteAuthErr(t *testing.T) {
-	repo := new(memberRepoMock)
-	uc := remove.NewUsecase(repo)
-
 	companyID := uuid.New()
 	userID := uuid.New()
 
-	t.Run("global role required", func(t *testing.T) {
-		iden := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+	t.Run("global hr role required", func(t *testing.T) {
+		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
 
-		err := uc.Execute(context.Background(), companyID, userID, iden)
+		deps := setup(t)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), companyID, userID, ident)
 
 		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
-		repo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
-		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("company member required", func(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, ident.UserID, companyID).
-			Return(nil, member.ErrCompanyMemberNotFound).Once()
+		deps := setup(t)
 
-		err := uc.Execute(context.Background(), companyID, userID, ident)
+		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+			Return(nil, member.ErrCompanyMemberNotFound)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), companyID, userID, ident)
 
 		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
-		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	t.Run("admin company role required", func(t *testing.T) {
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		repo.On("Get", mock.Anything, ident.UserID, companyID).
-			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
+		deps := setup(t)
 
-		err := uc.Execute(context.Background(), companyID, userID, ident)
+		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+			Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+
+		uc := NewUC(deps)
+
+		err := uc.Execute(t.Context(), companyID, userID, ident)
 
 		require.ErrorIs(t, err, member.ErrInsufficientRoleInCompany)
-		repo.AssertNotCalled(t, "Delete", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 
 func TestUsecase_ExecuteRepoErr(t *testing.T) {
-	repo := new(memberRepoMock)
-	uc := remove.NewUsecase(repo)
-
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 	companyID := uuid.New()
 	userID := uuid.New()
 
-	repo.On("Get", mock.Anything, ident.UserID, companyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
-	repo.On("Delete", mock.Anything, userID, companyID).
-		Return(errors.New("db err")).Once()
+	deps := setup(t)
+
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, companyID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
+	deps.memRepo.EXPECT().Delete(gomock.Any(), userID, companyID).
+		Return(errors.New("db err"))
+
+	uc := NewUC(deps)
 
 	err := uc.Execute(context.Background(), companyID, userID, ident)
 
-	require.EqualError(t, err, "db err")
-	repo.AssertExpectations(t)
+	require.Error(t, err)
 }

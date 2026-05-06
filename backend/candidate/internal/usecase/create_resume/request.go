@@ -9,7 +9,7 @@ import (
 type Request struct {
 	UserId uuid.UUID  `json:"userId"`
 	Name   string     `json:"name"`
-	Status int        `json:"status"`
+	Status string     `json:"status"`
 	Data   ResumeData `json:"data"`
 }
 

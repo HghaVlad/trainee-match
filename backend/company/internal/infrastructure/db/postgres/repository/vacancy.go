@@ -17,6 +17,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 )
 
 type VacancyRepo struct {
@@ -46,13 +47,8 @@ func (repo *VacancyRepo) GetByID(
 
 	var vac vacancy.Vacancy
 
-	err := q.QueryRow(ctx, query, vacancyID, companyID).
-		Scan(&vac.ID, &vac.CompanyID, &vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
-			&vac.DurationFromDays, &vac.DurationToDays, &vac.EmploymentType,
-			&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
-			&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.CreatedBy,
-			&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
-		)
+	row := q.QueryRow(ctx, query, vacancyID, companyID)
+	err := scanVacancy(row, &vac)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
@@ -97,6 +93,69 @@ func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UU
 
 	if err != nil {
 		return nil, fmt.Errorf("get published vacancy: %w", err)
+	}
+
+	return &vac, nil
+}
+
+func (repo *VacancyRepo) GetPublishedEventView(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	companyID uuid.UUID,
+) (*publish.PublishedEventView, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT 
+    v.id, v.company_id, v.title, v.status, c.name
+	FROM vacancies v
+	JOIN companies c ON v.company_id = c.id
+	WHERE v.id = $1 AND v.company_id = $2`
+
+	var vac publish.PublishedEventView
+
+	err := q.QueryRow(ctx, query, vacancyID, companyID).Scan(
+		&vac.ID, &vac.CompanyID, &vac.Title, &vac.Status, &vac.CompanyName,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get published event view: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get published event view: %w", err)
+	}
+
+	return &vac, nil
+}
+
+func (repo *VacancyRepo) GetByIDForUpdate(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	companyID uuid.UUID,
+) (*vacancy.Vacancy, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT 
+    id, company_id, title, description, work_format, city,
+    duration_from_days, duration_to_days, employment_type,
+    hours_per_week_from, hours_per_week_to, flexible_schedule, is_paid,
+    salary_from, salary_to, internship_to_offer, status, created_by_user_id,
+    published_at, created_at, updated_at
+	FROM vacancies 
+	WHERE id = $1 AND company_id = $2
+	FOR UPDATE`
+
+	var vac vacancy.Vacancy
+
+	row := q.QueryRow(ctx, query, vacancyID, companyID)
+	err := scanVacancy(row, &vac)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("%w: id=%s", vacancy.ErrVacancyNotFound, vacancyID)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get vacancy: %w", err)
 	}
 
 	return &vac, nil
@@ -214,43 +273,47 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 	return vacancies, nil
 }
 
-func (repo *VacancyRepo) ListByCompanyByPublishedAt(
+func (repo *VacancyRepo) ListByCompanySummaries(
 	ctx context.Context,
 	compID uuid.UUID,
-	cursor *listbycomp.PublishedAtCursor,
+	requirements *list.Requirements,
+	status *vacancy.Status,
+	cursor *listbycomp.CreatedAtCursor,
 	limit int,
-) (
-	[]listbycomp.VacancySummary, error) {
+) ([]listbycomp.VacancySummary, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
-	var query string
-	var args []any
-
-	if cursor == nil {
-		query = `SELECT
-    	v.id, v.title, v.work_format,
-    	v.city, v.employment_type, v.is_paid,
-    	v.salary_from, v.salary_to, v.published_at
-		FROM vacancies v
-		WHERE v.company_id = $1 AND v.status = 'published'
-		ORDER BY v.published_at DESC, v.id DESC
-		LIMIT $2`
-		args = []any{compID, limit}
-	} else {
-		query = `SELECT
-    	v.id, v.title, v.work_format,
-    	v.city, v.employment_type, v.is_paid,
-    	v.salary_from, v.salary_to, v.published_at
-		FROM vacancies v
-		WHERE v.company_id = $1 AND 
-		      (v.published_at < $2 OR (v.published_at = $2 AND v.id < $3))
-		  		AND v.status = 'published'
-		ORDER BY v.published_at DESC, v.id DESC
-		LIMIT $4`
-		args = []any{compID, cursor.PublishedAt, cursor.ID, limit}
+	filtersCondition, args := listVacRequirementsToSQL(requirements)
+	if filtersCondition != "" {
+		filtersCondition = "AND " + filtersCondition
 	}
 
-	rows, err := q.Query(ctx, query, args...)
+	statusCondition, args := listByCompStatusToSQL(status, args)
+	if statusCondition != "" {
+		statusCondition = "AND " + statusCondition
+	}
+
+	cursorCondition := ""
+	if cursor != nil {
+		cursorCondition, args = listByCompCreatedAtCursorToSQL(*cursor, args)
+		cursorCondition = "AND " + cursorCondition
+	}
+
+	args = append(args, compID, limit)
+
+	const query = `SELECT
+    v.id, v.title, v.work_format,
+    v.city, v.employment_type, v.is_paid,
+    v.salary_from, v.salary_to, v.status, v.created_at
+	FROM vacancies v
+	WHERE 1=1 %s %s %s
+		AND v.company_id = $%d
+	ORDER BY v.created_at DESC, v.id DESC
+	LIMIT $%d`
+
+	filledQuery := fmt.Sprintf(query, filtersCondition, statusCondition, cursorCondition, len(args)-1, len(args))
+
+	rows, err := q.Query(ctx, filledQuery, args...)
 
 	if err != nil {
 		return nil, fmt.Errorf("list vacancy by company: %w", err)
@@ -264,7 +327,7 @@ func (repo *VacancyRepo) ListByCompanyByPublishedAt(
 		err := rows.Scan(
 			&vac.ID, &vac.Title, &vac.WorkFormat,
 			&vac.City, &vac.EmploymentType, &vac.IsPaid,
-			&vac.SalaryFrom, &vac.SalaryTo, &vac.PublishedAt,
+			&vac.SalaryFrom, &vac.SalaryTo, &vac.Status, &vac.CreatedAt,
 		)
 
 		if err != nil {
@@ -334,6 +397,48 @@ func (repo *VacancyRepo) Publish(ctx context.Context, vacID, compID uuid.UUID) e
 	return nil
 }
 
+// PublishIfNotPublished if vacancy exists and is not published,
+// marks it as published and returns view for the event.
+// If it was already published, updates nothing and returns view WasAlreadyPublished = true.
+// If vacancy doesn't exist, returns vacancy.ErrVacancyNotFound.
+// Optimized to do a single round trip to db to be effective and avoid race conditions.
+func (repo *VacancyRepo) PublishIfNotPublished(
+	ctx context.Context,
+	vacID, compID uuid.UUID,
+) (*publish.PublishedEventView, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `WITH existing AS (
+			SELECT v.id, v.company_id, v.title, v.status, c.name
+			FROM vacancies v
+			JOIN companies c ON v.company_id = c.id
+			WHERE v.id = $1 AND v.company_id = $2
+		), update AS (
+			UPDATE vacancies v
+			SET status = 'published', published_at = now()
+			WHERE v.id = $1 AND v.company_id = $2 AND status != 'published'
+			RETURNING v.id, v.status
+		)
+		SELECT e.id, e.company_id, e.title, COALESCE(u.status, e.status) AS status, e.name, (u.id IS NULL) as already_published
+		FROM existing e
+		LEFT JOIN update u ON u.id = e.id`
+
+	var view publish.PublishedEventView
+
+	err := q.QueryRow(ctx, query, vacID, compID).Scan(
+		&view.ID, &view.CompanyID, &view.Title, &view.Status, &view.CompanyName, &view.WasAlreadyPublished)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("publish vacancy if not published: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("publish vacancy if not published: %w", err)
+	}
+
+	return &view, nil
+}
+
 func (repo *VacancyRepo) Archive(ctx context.Context, vacID, compID uuid.UUID) error {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -354,6 +459,35 @@ func (repo *VacancyRepo) Archive(ctx context.Context, vacID, compID uuid.UUID) e
 	return nil
 }
 
+func (repo *VacancyRepo) ArchiveAndGetOldStatus(ctx context.Context, vacID, compID uuid.UUID) (vacancy.Status, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `WITH old AS (
+			SELECT status
+			FROM vacancies v
+			WHERE v.id = $1 AND v.company_id = $2
+		)
+		UPDATE vacancies v
+		SET status = 'archived', published_at = NULL
+		FROM old
+		WHERE v.id = $1 AND v.company_id = $2
+		RETURNING old.status;`
+
+	var status vacancy.Status
+
+	err := q.QueryRow(ctx, query, vacID, compID).Scan(&status)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", vacancy.ErrVacancyNotFound
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("archive vacancy get old status: %w", err)
+	}
+
+	return status, nil
+}
+
 func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -370,4 +504,13 @@ func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, compan
 	}
 
 	return nil
+}
+
+func scanVacancy(row pgx.Row, vac *vacancy.Vacancy) error {
+	return row.Scan(&vac.ID, &vac.CompanyID, &vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
+		&vac.DurationFromDays, &vac.DurationToDays, &vac.EmploymentType,
+		&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
+		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.CreatedBy,
+		&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
+	)
 }

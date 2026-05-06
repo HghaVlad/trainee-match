@@ -160,7 +160,8 @@ func ListVacByCompRespToDto(resp *list_vac_by_comp.Response) *dto.VacancyByCompL
 			SalaryFrom: v.SalaryFrom,
 			SalaryTo:   v.SalaryTo,
 
-			PublishedAt: v.PublishedAt,
+			Status:    string(v.Status),
+			CreatedAt: v.CreatedAt,
 		})
 	}
 

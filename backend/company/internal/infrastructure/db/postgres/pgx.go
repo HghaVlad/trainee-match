@@ -21,7 +21,7 @@ func ConnectPgxPoolWithLogger(ctx context.Context, cfg config.Postgres, logger *
 
 	pgxCfg.ConnConfig.Tracer = &tracelog.TraceLog{
 		Logger:   newPgxSlogAdapter(logger),
-		LogLevel: tracelog.LogLevelInfo,
+		LogLevel: tracelog.LogLevelError,
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, pgxCfg)
