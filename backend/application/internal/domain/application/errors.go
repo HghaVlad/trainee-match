@@ -1,0 +1,14 @@
+package application
+
+import "errors"
+
+var (
+	ErrActiveAlreadyExists = errors.New("active application already exists")
+	ErrVacancyNotPublished = errors.New("vacancy must be published")
+	ErrResumeNotPublished  = errors.New("resume must be published")
+	ErrResumeAccessDenied  = errors.New("resume access denied")
+)
+
+var (
+	ErrStatusChangeRequiresUserID = errors.New("status change with this actor requires user ID")
+)

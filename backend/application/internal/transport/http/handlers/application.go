@@ -2,18 +2,25 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
 
 type Handler struct {
+	apply  applyUC
 	logger *slog.Logger
 }
 
 func NewHandler(deps *Deps) *Handler {
 	return &Handler{
+		apply:  deps.Apply,
 		logger: deps.Logger,
 	}
 }
@@ -31,8 +38,17 @@ func (h *Handler) CreateApplication(
 	request oapi.CreateApplicationRequestObject,
 ) (oapi.CreateApplicationResponseObject, error) {
 	ident := middleware.IdentityFromContext(ctx)
-	h.logger.InfoContext(ctx, "got ident", "id", ident.UserID, "role", ident.Role)
-	return nil, nil
+	req := mappers.ApplyReqToUC(request)
+
+	resp, err := h.apply.Execute(ctx, req, *ident)
+
+	if err != nil {
+		return applyErrToResponse(err)
+	}
+
+	return oapi.CreateApplication201JSONResponse{
+		Data: mappers.ApplyRespToHTTP(resp),
+	}, nil
 }
 
 func (h *Handler) GetMyApplication(
@@ -145,4 +161,35 @@ func (h *Handler) ListVacancyApplications(
 ) (oapi.ListVacancyApplicationsResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
+}
+
+func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error) {
+	switch {
+	case errors.Is(err, application.ErrResumeAccessDenied),
+		errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.CreateApplication403Response{}, nil
+
+	case errors.Is(err, projection.ErrVacancyNotFound),
+		errors.Is(err, projection.ErrResumeNotFound),
+		errors.Is(err, projection.ErrCandidateNotFound):
+		return oapi.CreateApplication404Response{}, nil
+
+	case errors.Is(err, application.ErrVacancyNotPublished),
+		errors.Is(err, application.ErrResumeNotPublished):
+		return oapi.CreateApplication400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrActiveAlreadyExists):
+		return oapi.CreateApplication409JSONResponse{
+			Error:   "conflict",
+			Message: err.Error(),
+		}, nil
+
+	default:
+		return nil, err
+	}
 }

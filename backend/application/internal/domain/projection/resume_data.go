@@ -1,4 +1,4 @@
-package domain
+package projection
 
 import (
 	"time"
@@ -12,23 +12,6 @@ const (
 	ResumeStatusDraft     ResumeStatus = "draft"
 	ResumeStatusPublished ResumeStatus = "published"
 )
-
-type Education struct {
-	Level          string `json:"level"`
-	University     string `json:"university"`
-	Faculty        string `json:"faculty"`
-	Specialization string `json:"specialization"`
-	StartYear      int    `json:"start_year"`
-	EndYear        int    `json:"end_year"`
-	Format         string `json:"format"`
-}
-
-type WorkExperience struct {
-	Position         string `json:"position"`
-	Company          string `json:"company"`
-	Period           string `json:"period"`
-	Responsibilities string `json:"responsibilities"`
-}
 
 type ResumeData struct {
 	LastName        string           `json:"last_name"`
@@ -46,4 +29,21 @@ type ResumeData struct {
 	PortfolioLink   string           `json:"portfolio_link"`
 	DesiredFormat   string           `json:"desired_format"`
 	EnglishLevel    string           `json:"english_level"`
+}
+
+type Education struct {
+	Level          string `json:"level"`
+	University     string `json:"university"`
+	Faculty        string `json:"faculty"`
+	Specialization string `json:"specialization"`
+	StartYear      int    `json:"start_year"`
+	EndYear        int    `json:"end_year"`
+	Format         string `json:"format"`
+}
+
+type WorkExperience struct {
+	Position         string `json:"position"`
+	Company          string `json:"company"`
+	Period           string `json:"period"`
+	Responsibilities string `json:"responsibilities"`
 }

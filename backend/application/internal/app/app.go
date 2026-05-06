@@ -7,13 +7,18 @@ import (
 	"net/http"
 	"time"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/utils/hash"
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 )
 
 type App struct {
@@ -28,12 +33,36 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		return nil, err
 	}
 
+	txManager := manager.Must(trmpgx.NewDefaultFactory(pgDB))
+	txGetter := trmpgx.DefaultCtxGetter
+
+	appRepo := repository.NewApplication(pgDB, txGetter)
+	appSnapRepo := repository.NewAppSnapshot(pgDB, txGetter)
+	appStatusHistoryRepo := repository.NewAppStatusHistoryRepo(pgDB, txGetter)
+	resumeProjRepo := repository.NewResumeProjection(pgDB, txGetter)
+	vacProjRepo := repository.NewVacancyProjection(pgDB, txGetter)
+	candProjRepo := repository.NewCandidateProjection(pgDB, txGetter)
+
+	appSnapHasher := hash.NewAppSnapshotHasher()
+
+	applyUC := apply.NewUsecase(
+		appRepo,
+		resumeProjRepo,
+		candProjRepo,
+		vacProjRepo,
+		appSnapRepo,
+		appStatusHistoryRepo,
+		appSnapHasher,
+		txManager,
+	)
+
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
 		return nil, err
 	}
 
 	deps := &handlers.Deps{
+		Apply:  applyUC,
 		Logger: logger,
 	}
 
