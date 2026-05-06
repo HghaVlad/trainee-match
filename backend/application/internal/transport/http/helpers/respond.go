@@ -1,28 +1,38 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"log/slog"
 	"net/http"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/dto"
+	utilslog "github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/utils/logger"
 )
 
-func RespondJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		slog.Info("json encode error: %v", err)
-	}
+type ErrorResponse struct {
+	Error   string         `json:"error"`
+	Message string         `json:"message"`
+	Details map[string]any `json:"details,omitempty"`
 }
 
-func RespondWithError(w http.ResponseWriter, err error) {
-	code := http.StatusInternalServerError
-
-	switch {
-	case errors.Is(err, dto.ErrBadRequest):
-		code = http.StatusBadRequest
+func WriteError(
+	ctx context.Context,
+	w http.ResponseWriter,
+	status int,
+	errCode string,
+	message string,
+	details map[string]any,
+) {
+	resp := ErrorResponse{
+		Error:   errCode,
+		Message: message,
+		Details: details,
 	}
-	RespondJSON(w, code, dto.JSONResponse{Message: err.Error()})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		logger := utilslog.FromContext(ctx)
+		logger.ErrorContext(ctx, "json encode error", "err", err)
+	}
 }

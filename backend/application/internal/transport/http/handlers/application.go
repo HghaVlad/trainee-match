@@ -1,12 +1,21 @@
-package handler
+package handlers
 
 import (
 	"context"
+	"log/slog"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 )
 
 type Handler struct {
+	logger *slog.Logger
+}
+
+func NewHandler(deps *Deps) *Handler {
+	return &Handler{
+		logger: deps.Logger,
+	}
 }
 
 func (h *Handler) ListMyApplications(
@@ -21,8 +30,9 @@ func (h *Handler) CreateApplication(
 	ctx context.Context,
 	request oapi.CreateApplicationRequestObject,
 ) (oapi.CreateApplicationResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	h.logger.InfoContext(ctx, "got ident", "id", ident.UserID, "role", ident.Role)
+	return nil, nil
 }
 
 func (h *Handler) GetMyApplication(

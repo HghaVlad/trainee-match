@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	handler "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 )
 
 type App struct {
@@ -27,9 +28,18 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		return nil, err
 	}
 
-	hand := &handler.Handler{}
+	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
+	if err != nil {
+		return nil, err
+	}
 
-	router := apphttp.NewRouter(hand, logger)
+	deps := &handlers.Deps{
+		Logger: logger,
+	}
+
+	hand := handlers.NewHandler(deps)
+
+	router := apphttp.NewRouter(hand, authMiddleware, logger)
 
 	httpServer := &http.Server{
 		Addr:         cfg.HTTP.Addr,

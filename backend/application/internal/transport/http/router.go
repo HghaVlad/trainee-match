@@ -7,23 +7,27 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 
-	handler "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
+	appmiddleware "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 )
 
-func NewRouter(handler *handler.Handler, logger *slog.Logger) http.Handler {
+func NewRouter(
+	handler *handlers.Handler,
+	authMiddleware *appmiddleware.AuthMiddleware,
+	logger *slog.Logger,
+) http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(
 		middleware.RequestID,
 		middleware.RealIP,
-		middleware.Logger,
+		appmiddleware.LoggerMiddleware(logger),
+		authMiddleware.FakeHandler, // TODO: change to real Handler
 	)
 
-	middlewares := []oapi.StrictMiddlewareFunc{}
-
 	oapi.HandlerFromMux(
-		oapi.NewStrictHandler(handler, middlewares),
+		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{}),
 		router,
 	)
 
