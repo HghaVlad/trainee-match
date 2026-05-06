@@ -7,11 +7,11 @@ import (
 )
 
 type CompanySummary struct {
-	ID               uuid.UUID `db:"id"`
-	Name             string    `db:"name"`
-	OpenVacanciesCnt int       `db:"open_vacancies_count"`
-	LogoKey          *string   `db:"logo_key"`
-	CreatedAt        time.Time `db:"created_at"`
+	ID               uuid.UUID
+	Name             string
+	OpenVacanciesCnt int
+	LogoKey          *string
+	CreatedAt        time.Time
 }
 
 type Response struct {

@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "CompanyMemberRemoved",
+  "namespace": "traineematch.companymember",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "user_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "company_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}

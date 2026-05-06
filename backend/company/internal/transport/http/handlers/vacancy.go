@@ -215,36 +215,46 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListByCompany godoc
-// @Summary Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param
-// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
+// @Summary Lists company's vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports filters and status.
 // @Tags vacancy
 // @Accept json
 // @Produce json
 // @Param company-id path string true "Company ID (UUID)"
-// @Param order query string false "Order attribute" default(published_at_desc)
+// @Param order query string false "Order attribute" default(created_at_desc)
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
+// @Param status query string false "Vacancy status filter"
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
 // @Success 200 {object} dto.VacancyByCompListResponse
 // @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{company-id}/vacancies [get]
 func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
 	compID := middleware.UUIDFromContext(ctx, "company-id")
 
-	order := helpers.ParseVacByCompListOrderQuery(r)
-	cursor := r.URL.Query().Get("cursor")
-	limit := helpers.ParseLimit(r, "limit", 20)
-
-	req := &listbycomp.Request{
-		CompID: compID,
-		Limit:  limit,
-		Order:  order,
-		Cursor: cursor,
+	req, err := helpers.ListVacByCompRequestFromQuery(r, compID)
+	if err != nil {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
+		return
 	}
 
-	res, err := h.listByComp.Execute(ctx, req)
+	res, err := h.listByComp.Execute(ctx, req, iden)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {
@@ -415,6 +425,7 @@ func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 		errors.Is(err, vacancy.ErrSalaryTooLarge),
 		errors.Is(err, vacancy.ErrInvalidTitleLength),
 		errors.Is(err, vacancy.ErrInvalidDescriptionLength),
+		errors.Is(err, vacancy.ErrInvalidStatus),
 		errors.Is(err, vacancy.ErrEmptyCityFilter),
 		errors.Is(err, vacancy.ErrEmptyCompaniesFilter),
 		errors.Is(err, vacancy.ErrInvalidSalaryOrderForUnpaid),

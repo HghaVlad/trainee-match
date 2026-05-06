@@ -18,6 +18,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
@@ -26,6 +27,7 @@ type CompanyHandler struct {
 	getByID *get.Usecase
 	create  *create.Usecase
 	list    *list.Usecase
+	listMy  *listmy.Usecase
 	update  *update.Usecase
 	delete  *remove.Usecase
 }
@@ -34,6 +36,7 @@ func NewCompanyHandler(
 	get *get.Usecase,
 	create *create.Usecase,
 	list *list.Usecase,
+	listMy *listmy.Usecase,
 	upd *update.Usecase,
 	del *remove.Usecase,
 ) *CompanyHandler {
@@ -41,6 +44,7 @@ func NewCompanyHandler(
 		getByID: get,
 		create:  create,
 		list:    list,
+		listMy:  listMy,
 		update:  upd,
 		delete:  del,
 	}
@@ -146,6 +150,46 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	dtoResp := mappers.CompanyCreateRespToDto(resp)
 	helpers.RespondJSON(ctx, w, http.StatusCreated, dtoResp)
+}
+
+// ListMy godoc
+// @Summary Lists hr's company summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc
+// @Tags company
+// @Accept json
+// @Produce json
+// @Param order query string false "Order attribute" default(vacancies_desc)
+// @Param cursor query string false "Items per page"
+// @Param limit query int false "Items per page" default(20)
+// @Success 200 {object} dto.CompanyListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/me [get]
+func (h *CompanyHandler) ListMy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	limit := helpers.ParseLimit(r, "limit", 20)
+	order := h.parseOrderQuery(r)
+	cursor := r.URL.Query().Get("cursor")
+
+	req := &listmy.Request{
+		Limit:         limit,
+		Order:         order,
+		EncodedCursor: cursor,
+	}
+
+	res, err := h.listMy.Execute(ctx, req, iden)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list my companies")
+		}
+		return
+	}
+
+	resp := mappers.CompanyListRespToDto(res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Update godoc

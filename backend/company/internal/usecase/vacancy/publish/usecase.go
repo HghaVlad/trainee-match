@@ -15,35 +15,40 @@ import (
 
 // Usecase publishes vacancy, thus makes it available for candidates.
 // Increases company open vacancies count
+// Generates a vacancy.PublishedEvent if it isn't in published state now
 type Usecase struct {
-	vacRepo     VacancyRepo
-	companyRepo CompanyRepo
-	memberRepo  CompMemberRepo
-	txManager   common.TxManager
-	compCache   CacheRepo
-	vacCache    CacheRepo
+	vacRepo      VacancyRepo
+	companyRepo  CompanyRepo
+	memberRepo   CompMemberRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
+	compCache    CacheRepo
+	vacCache     CacheRepo
 }
 
 func NewUsecase(
 	vacRepo VacancyRepo,
 	compRepo CompanyRepo,
 	memberRepo CompMemberRepo,
+	outboxWriter outboxWriter,
 	txManager common.TxManager,
 	vacCache CacheRepo,
 	compCache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		vacRepo:     vacRepo,
-		memberRepo:  memberRepo,
-		companyRepo: compRepo,
-		txManager:   txManager,
-		compCache:   compCache,
-		vacCache:    vacCache,
+		vacRepo:      vacRepo,
+		memberRepo:   memberRepo,
+		companyRepo:  compRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
+		compCache:    compCache,
+		vacCache:     vacCache,
 	}
 }
 
 // Execute publishes vacancy, thus makes it available for candidates.
-// Increases company open vacancies count if vacancy wasn't published.
+// Increases company open vacancies count and creates vacancy.PublishedEvent, if vacancy wasn't published.
+// Returns vacacny.ErrNotFound if it was.
 // Deletes company and vacancy from cache because of the updates.
 func (u *Usecase) Execute(
 	ctx context.Context,
@@ -59,21 +64,21 @@ func (u *Usecase) Execute(
 			return err
 		}
 
-		vac, err := u.vacRepo.GetByID(ctx, vacID, compID)
+		vac, err := u.vacRepo.PublishIfNotPublished(ctx, vacID, compID)
 		if err != nil {
 			return err
 		}
 
-		if vac.Status == vacancy.StatusPublished {
+		if vac.WasAlreadyPublished {
 			return nil
 		}
 
-		err = u.vacRepo.Publish(ctx, vacID, compID)
+		err = u.companyRepo.IncrementOpenVacancies(ctx, compID)
 		if err != nil {
 			return err
 		}
 
-		err = u.companyRepo.IncrementOpenVacancies(ctx, compID)
+		err = u.createPublishedEvent(ctx, vac)
 		if err != nil {
 			return err
 		}
@@ -96,4 +101,17 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *ide
 	}
 
 	return err
+}
+
+func (u *Usecase) createPublishedEvent(ctx context.Context, vac *PublishedEventView) error {
+	ev := vacancy.PublishedEvent{
+		EventID:     uuid.New(),
+		VacancyID:   vac.ID,
+		Title:       vac.Title,
+		CompanyID:   vac.CompanyID,
+		CompanyName: vac.CompanyName,
+		OccurredAt:  time.Now().UTC(),
+	}
+
+	return u.outboxWriter.WriteVacancyPublished(ctx, ev)
 }

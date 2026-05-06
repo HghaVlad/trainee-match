@@ -2,14 +2,17 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 )
 
-func NewClient(cfg *Config) (*redis.Client, error) {
+func NewClient(cfg config.Redis) (*redis.Client, error) {
 	opts := &redis.Options{
-		Addr:         cfg.Addr,
+		Addr:         cfg.Host + ":" + cfg.Port,
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  200 * time.Millisecond,
 		WriteTimeout: 200 * time.Millisecond,
@@ -17,9 +20,9 @@ func NewClient(cfg *Config) (*redis.Client, error) {
 	}
 
 	rdb := redis.NewClient(opts)
-	err := ping(rdb, time.Second*5)
+	err := ping(rdb, time.Second*10)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("redis ping: %w", err)
 	}
 
 	return rdb, nil

@@ -2,90 +2,164 @@ package remove_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove/mocks"
 )
 
-type repoMock struct {
-	mock.Mock
+type fakeTxManager struct {
+	called bool
 }
 
-func (r *repoMock) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.Called(ctx, id).Error(0)
+func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	f.called = true
+	return fn(ctx)
 }
 
-type cacheMock struct {
-	mock.Mock
+type testDeps struct {
+	compRepo  *mocks.MockCompanyRepo
+	memRepo   *mocks.MockCompMemberRepo
+	outbox    *mocks.MockoutboxWriter
+	cache     *mocks.MockCacheRepo
+	txManager *fakeTxManager
 }
 
-func (r *cacheMock) Del(ctx context.Context, id uuid.UUID) {
-	r.Called(ctx, id)
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
+
+	return &testDeps{
+		compRepo:  mocks.NewMockCompanyRepo(ctrl),
+		memRepo:   mocks.NewMockCompMemberRepo(ctrl),
+		outbox:    mocks.NewMockoutboxWriter(ctrl),
+		cache:     mocks.NewMockCacheRepo(ctrl),
+		txManager: new(fakeTxManager),
+	}
 }
 
-type memRepoMock struct {
-	mock.Mock
+func NewUC(deps *testDeps) *remove.Usecase {
+	return remove.NewUsecase(deps.compRepo, deps.memRepo, deps.outbox, deps.txManager, deps.cache)
 }
 
-func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
-	res := m.Called(ctx, userID, companyID)
+type deletedEventMatcher struct {
+	expected company.DeletedEvent
+}
 
-	if c := res.Get(0); c != nil {
-		return c.(*member.CompanyMember), res.Error(1)
+func (m deletedEventMatcher) Matches(x any) bool {
+	ev, ok := x.(company.DeletedEvent)
+	if !ok {
+		return false
 	}
 
-	return nil, res.Error(1)
+	return ev.CompanyID == m.expected.CompanyID
 }
 
-func TestUsecase_Execute_OK(t *testing.T) {
-	repo := new(repoMock)
-	cache := new(cacheMock)
-	memRepo := new(memRepoMock)
+func (m deletedEventMatcher) String() string {
+	return "match company deleted event"
+}
 
-	repo.On("Delete", mock.Anything, mock.Anything).
-		Return(nil).Once()
+func TestUsecase_Execute_Success_HRAdmin(t *testing.T) {
+	deps := setup(t)
+	compID := uuid.New()
 
-	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleHR,
+	}
 
-	cache.On("Del", mock.Anything, mock.Anything).Once()
+	deps.memRepo.EXPECT().
+		Get(gomock.Any(), ident.UserID, compID).
+		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil)
 
-	uc := remove.NewUsecase(repo, memRepo, cache)
+	deps.compRepo.EXPECT().Delete(gomock.Any(), compID).Return(nil)
 
-	idenity := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	deps.outbox.EXPECT().WriteCompanyDeleted(gomock.Any(), deletedEventMatcher{
+		expected: company.DeletedEvent{CompanyID: compID},
+	})
 
-	err := uc.Execute(context.Background(), uuid.New(), idenity)
+	deps.cache.EXPECT().Del(gomock.Any(), compID)
 
+	uc := NewUC(deps)
+
+	err := uc.Execute(context.Background(), compID, ident)
 	require.NoError(t, err)
-	repo.AssertExpectations(t)
-	cache.AssertExpectations(t)
 }
 
-func TestUsecase_Execute_CompanyRepoErr(t *testing.T) {
-	repo := new(repoMock)
-	cache := new(cacheMock)
-	memRepo := new(memRepoMock)
+func TestUsecase_Execute_Success_PlatformAdmin(t *testing.T) {
+	deps := setup(t)
+	compID := uuid.New()
 
-	memRepo.On("Get", mock.Anything, mock.Anything, mock.Anything).
-		Return(&member.CompanyMember{Role: member.CompanyRoleAdmin}, nil).Once()
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleAdmin}
 
-	repo.On("Delete", mock.Anything, mock.Anything).
-		Return(errors.New("some member err")).Once()
+	deps.compRepo.EXPECT().Delete(gomock.Any(), compID).Return(nil)
 
-	uc := remove.NewUsecase(repo, memRepo, cache)
+	deps.outbox.EXPECT().WriteCompanyDeleted(gomock.Any(), deletedEventMatcher{
+		expected: company.DeletedEvent{CompanyID: compID},
+	})
 
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	deps.cache.EXPECT().Del(gomock.Any(), compID)
 
-	err := uc.Execute(context.Background(), uuid.New(), ident)
+	uc := NewUC(deps)
 
-	require.Error(t, err)
-	repo.AssertExpectations(t)
-	cache.AssertNotCalled(t, "Del", mock.Anything, mock.Anything)
+	err := uc.Execute(context.Background(), compID, ident)
+	require.NoError(t, err)
+}
+
+func TestUsecase_Execute_NotFound(t *testing.T) {
+	deps := setup(t)
+	compID := uuid.New()
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleAdmin,
+	}
+
+	deps.compRepo.EXPECT().
+		Delete(gomock.Any(), compID).
+		Return(company.ErrCompanyNotFound)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(context.Background(), compID, ident)
+
+	require.ErrorIs(t, err, company.ErrCompanyNotFound)
+}
+
+func TestUsecase_Execute_AuthError_Role(t *testing.T) {
+	deps := setup(t)
+	compID := uuid.New()
+
+	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate}
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(context.Background(), compID, ident)
+
+	require.ErrorIs(t, err, identity.ErrInsufficientRole)
+}
+
+func TestUsecase_Execute_AuthError_NotMember(t *testing.T) {
+	deps := setup(t)
+	compID := uuid.New()
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleHR,
+	}
+
+	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
+		Return(nil, member.ErrCompanyMemberNotFound)
+
+	uc := NewUC(deps)
+
+	err := uc.Execute(context.Background(), compID, ident)
+
+	require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
 }

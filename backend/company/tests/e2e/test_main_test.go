@@ -1,3 +1,5 @@
+//go:build e2e
+
 package e2e_test
 
 import (
@@ -269,7 +271,7 @@ func run(m *testing.M) int {
 	jwkURL := strings.TrimRight(keycloakExternalURL, "/") + "/realms/trainee-match/protocol/openid-connect/certs"
 
 	conf := &config.Config{
-		HTTP: config.HTTPConfig{
+		HTTP: config.HTTP{
 			JWKUrl: jwkURL,
 		},
 		Postgres: config.Postgres{
@@ -282,13 +284,13 @@ func run(m *testing.M) int {
 			MaxPoolConns: 10,
 			MinPoolConns: 2,
 		},
-		Redis: config.RedisConfig{
+		Redis: config.Redis{
 			Host: redisHost,
 			Port: redisPort.Port(),
 		},
 	}
 
-	app, err = appl.Build(ctx, conf)
+	app, err = appl.Build(ctx, conf, logger)
 	if err != nil {
 		logger.Error("failed to build app", "err", err)
 		return 1

@@ -10,3 +10,5 @@ var ErrInvalidCompanyMemberRole = errors.New("invalid company member role")
 var ErrCompanyMemberRequired = errors.New("being this company's member is required")
 
 var ErrInsufficientRoleInCompany = errors.New("insufficient company member role")
+
+var ErrCantRemoveYourself = errors.New("can't remove yourself")
