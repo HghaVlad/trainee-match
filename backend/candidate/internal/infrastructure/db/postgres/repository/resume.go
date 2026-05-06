@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type ResumeRepo struct {
@@ -33,7 +34,8 @@ func (r *ResumeRepo) GetById(ctx context.Context, id uuid.UUID) (domain.Resume, 
 	query := `SELECT id, candidate_id, name, status, data FROM resumes WHERE id = $1`
 
 	var resume domain.Resume
-	err := r.db.QueryRow(ctx, query, id).Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.Data)
+	err := r.db.QueryRow(ctx, query, id).
+		Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.Data)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Resume{}, domain.ErrResumeNotFound
@@ -78,10 +80,10 @@ func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
 	return nil
 }
 
-func (r *ResumeRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM resumes WHERE id = $1`
+func (r *ResumeRepo) Remove(ctx context.Context, id, candidateId uuid.UUID) error {
+	query := `DELETE FROM resumes WHERE id = $1 AND candidate_id = $2`
 
-	result, err := r.db.Exec(ctx, query, id)
+	result, err := r.db.Exec(ctx, query, id, candidateId)
 	if err != nil {
 		return err
 	}
