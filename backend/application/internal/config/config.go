@@ -1,37 +1,45 @@
 package config
 
 import (
-	"log/slog"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Db     DB     `mapstructure:"DB"`
-	Addr   string `mapstructure:"ADDR"`
-	JWKUrl string `mapstructure:"JWKURL"`
+	DB   DB   `mapstructure:"db"`
+	Http Http `mapstructure:"http"`
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	v := viper.New()
+
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	v.BindEnv("DB.HOST")
-	v.BindEnv("DB.PORT")
-	v.BindEnv("DB.USER")
-	v.BindEnv("DB.PASSWORD")
-	v.BindEnv("DB.NAME")
-
-	v.BindEnv("ADDR")
-	v.BindEnv("JWKURL")
-
 	v.AutomaticEnv()
 
-	var config Config
-	if err := v.Unmarshal(&config); err != nil {
-		slog.Error("Error parsing config file, %s", err)
+	v.SetDefault("db.max_pool_conns", 24)
+	v.SetDefault("db.min_pool_conns", 2)
+
+	_ = v.BindEnv("db.host")
+	_ = v.BindEnv("db.port")
+	_ = v.BindEnv("db.user")
+	_ = v.BindEnv("db.password")
+	_ = v.BindEnv("db.name")
+	_ = v.BindEnv("http.addr")
+	_ = v.BindEnv("http.jwkurl")
+
+	var cfg Config
+
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, err
 	}
 
-	return &config
+	validate := validator.New()
+
+	if err := validate.Struct(cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }

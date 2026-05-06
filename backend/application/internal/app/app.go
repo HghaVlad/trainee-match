@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -13,50 +12,47 @@ import (
 )
 
 type App struct {
-	Server *http.Server
+	httpServer *http.Server
+	logger     *slog.Logger
 }
 
-func Build(conf *config.Config) (*App, error) {
+func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
 	deps := http2.NewRouterDeps()
 	router := http2.NewRouter(deps)
 
 	httpServer := &http.Server{
-		Addr:         conf.Addr,
+		Addr:         cfg.Http.Addr,
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
-	return &App{Server: httpServer}, nil
+	return &App{
+		httpServer: httpServer,
+		logger:     logger,
+	}, nil
 }
 
-func (app *App) Run() error {
-	if app == nil || app.Server == nil {
-		return fmt.Errorf("no server configured, nothing to run")
-	}
-
-	slog.Info("starting server with", "server address", app.Server.Addr)
-	if err := app.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+func (app *App) Run(_ context.Context) error {
+	app.logger.Info("starting http server", "addr", app.httpServer.Addr)
+	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
-	slog.Info("server stopped")
+	app.logger.Info("http server stopped")
 	return nil
 }
 
-func (app *App) Shutdown(ctx context.Context) error {
-	if app == nil || app.Server == nil {
-		return nil
-	}
+func (app *App) Shutdown(ctx context.Context) {
+	if err := app.httpServer.Shutdown(ctx); err != nil {
+		app.logger.Info("http server graceful shutdown fail", "error", err)
 
-	if err := app.Server.Shutdown(ctx); err != nil {
-		slog.Debug("graceful shutdown failed: %v", err)
-		if cerr := app.Server.Close(); cerr != nil {
-			slog.Debug("server close failed: %v", cerr)
+		if cerr := app.httpServer.Close(); cerr != nil {
+			app.logger.Info("server close fail", cerr)
 		}
-		return err
+
+		return
 	}
 
-	slog.Info("server gracefully stopped")
-	return nil
+	app.logger.Info("app gracefully stopped")
 }

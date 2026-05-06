@@ -165,21 +165,14 @@ services:
   application-service:
     build:
       context: ./application
-    environment:
-      DB_HOST: application-postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: application_db
-      ADDR: 0.0.0.0:8086
-      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
+    env_file:
+      - application/.env
 
     ports:
-      - "8086:8086"
+      - "8086:8080"
     depends_on:
       application-postgres:
         condition: service_healthy
-
 
 
   kafka-1:

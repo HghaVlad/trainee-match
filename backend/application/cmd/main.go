@@ -13,38 +13,53 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
-	slog.Info("starting application", "config", cfg)
-	myApp, err := app.Build(cfg)
+	os.Exit(run())
+}
+
+func run() int {
+	logger := slog.Default()
+	logger.Info("starting application service...")
+
+	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("error building app", "err", err)
-		return
+		logger.Error("error loading config", "error", err)
+		return 1
 	}
 
-	runErr := make(chan error, 1)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	myApp, err := app.Build(ctx, *cfg, logger)
+	if err != nil {
+		logger.Error("error building app", "error", err)
+		return 1
+	}
+
+	runErrCh := make(chan error, 1)
+
 	go func() {
-		runErr <- myApp.Run()
+		err = myApp.Run(ctx)
+		if err != nil {
+			logger.Error("app stopped with error", "error", err)
+			runErrCh <- err
+		}
 	}()
 
-	// wait for signal or run error
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	exitCode := 0
 
 	select {
-	case sig := <-quit:
-		slog.Info("received signal, initiating shutdown", "signal", sig)
-	case err = <-runErr:
-		if err != nil {
-			slog.Error("server run error, initiating shutdown", "err", err)
-		} else {
-			slog.Info("server stopped")
-		}
+	case <-ctx.Done():
+	case <-runErrCh:
+		exitCode = 1
+		stop()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	logger.Info("gracefully shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err = myApp.Shutdown(ctx); err != nil {
-		slog.Error("failed to shutdown gracefully", "err", err)
-	}
+	myApp.Shutdown(shutdownCtx)
+	logger.Info("app stopped")
+	return exitCode
 }
