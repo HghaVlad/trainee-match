@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
-const useMsw = process.env['VITE_USE_MSW'] === 'true'
+const useMsw = process.env['VITE_USE_MSW'] === 'false'
 
 const authTarget = process.env['VITE_AUTH_URL'] ?? 'http://localhost:8000'
 const candidateTarget = process.env['VITE_CANDIDATE_URL'] ?? 'http://localhost:8081'

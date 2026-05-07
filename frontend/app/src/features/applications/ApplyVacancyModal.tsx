@@ -65,7 +65,13 @@ export function ApplyVacancyModal({
   const [serverError, setServerError] = useState<string | null>(null)
 
   const publishedResumes = useMemo(
-    () => (resumes.data ?? []).filter((r) => (r.status ?? 0) === 1 && r.id),
+    () =>
+      (resumes.data ?? []).filter((r) => {
+        const s: unknown = r.status
+        return (
+          (s === 1 || s === 'published') && Boolean(r.id)
+        )
+      }),
     [resumes.data],
   )
 

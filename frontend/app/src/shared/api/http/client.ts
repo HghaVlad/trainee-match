@@ -67,9 +67,26 @@ function normalizeAxiosError(err: AxiosError): AppError {
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 
+function serializeParams(params: Record<string, unknown>): string {
+  const usp = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item === undefined || item === null || item === '') continue
+        usp.append(key, String(item))
+      }
+    } else if (value !== '') {
+      usp.append(key, String(value))
+    }
+  }
+  return usp.toString()
+}
+
 export const httpClient = axios.create({
   baseURL: env.VITE_API_URL || '/api/v1',
   withCredentials: true,
+  paramsSerializer: serializeParams,
 })
 
 // Request interceptor: correlation id + Accept header

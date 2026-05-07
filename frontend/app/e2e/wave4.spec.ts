@@ -55,7 +55,7 @@ test.describe('wave 4 — public pages', () => {
 
   test('/vacancies — accepts company_id from URL search param', async ({ page }) => {
     await page.goto('/vacancies?company_id=test-uuid-123')
-    await expect(page.getByLabel('ID компании')).toHaveValue('test-uuid-123')
+    await expect(page.getByRole('button', { name: /Удалить test-uuid-123/ })).toBeVisible()
   })
 })
 

@@ -15,11 +15,12 @@ import {
   useDeleteCompaniesCompanyIdVacanciesVacancyId,
   usePostCompaniesCompanyIdVacanciesVacancyIdArchive,
   usePostCompaniesCompanyIdVacanciesVacancyIdPublish,
-  getGetCompaniesCompanyIdVacanciesQueryKey,
   getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey,
 } from '@/api/generated/company/vacancy/vacancy'
 import {
   DtoVacancyFullResponseStatus,
+  type DtoVacancyByCompListResponse,
+  type DtoVacancyFullResponse,
   type DtoVacancyFullResponseStatus as VacancyStatus,
 } from '@/api/generated/company/schemas'
 import { AppError } from '@/shared/api/http/client'
@@ -60,16 +61,47 @@ export function VacancyActions({
   const isArchived = status === DtoVacancyFullResponseStatus.archived
   const canPublish = isDraft || isArchived
 
+  function applyOptimisticStatus(nextStatus: VacancyStatus) {
+    const listPrefix = `/companies/${companyId}/vacancies`
+    qc.setQueriesData<DtoVacancyByCompListResponse>(
+      {
+        predicate: (query) => {
+          const first = query.queryKey[0]
+          return typeof first === 'string' && first === listPrefix
+        },
+      },
+      (prev) => {
+        if (!prev?.vacancies) return prev
+        return {
+          ...prev,
+          vacancies: prev.vacancies.map((v) =>
+            v.id === vacancyId ? { ...v, status: nextStatus } : v,
+          ),
+        }
+      },
+    )
+    qc.setQueryData<DtoVacancyFullResponse>(
+      getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey(companyId, vacancyId),
+      (prev) => (prev ? { ...prev, status: nextStatus } : prev),
+    )
+  }
+
   async function invalidate() {
+    const listPrefix = `/companies/${companyId}/vacancies`
     await Promise.all([
       qc.invalidateQueries({
-        queryKey: getGetCompaniesCompanyIdVacanciesQueryKey(companyId),
+        predicate: (query) => {
+          const first = query.queryKey[0]
+          return typeof first === 'string' && first === listPrefix
+        },
+        refetchType: 'active',
       }),
       qc.invalidateQueries({
         queryKey: getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey(
           companyId,
           vacancyId,
         ),
+        refetchType: 'active',
       }),
     ])
   }
@@ -77,6 +109,7 @@ export function VacancyActions({
   async function onPublish() {
     try {
       await publishMut.mutateAsync({ companyId, vacancyId })
+      applyOptimisticStatus(DtoVacancyFullResponseStatus.published)
       await invalidate()
       toast({ title: 'Вакансия опубликована' })
       setConfirmPublish(false)
@@ -92,6 +125,7 @@ export function VacancyActions({
   async function onArchive() {
     try {
       await archiveMut.mutateAsync({ companyId, vacancyId })
+      applyOptimisticStatus(DtoVacancyFullResponseStatus.archived)
       await invalidate()
       toast({ title: 'Вакансия в архиве' })
       setConfirmArchive(false)
@@ -107,8 +141,13 @@ export function VacancyActions({
   async function onDelete() {
     try {
       await deleteMut.mutateAsync({ companyId, vacancyId })
+      const listPrefix = `/companies/${companyId}/vacancies`
       await qc.invalidateQueries({
-        queryKey: getGetCompaniesCompanyIdVacanciesQueryKey(companyId),
+        predicate: (query) => {
+          const first = query.queryKey[0]
+          return typeof first === 'string' && first === listPrefix
+        },
+        refetchType: 'active',
       })
       toast({ title: 'Вакансия удалена' })
       setConfirmDelete(false)

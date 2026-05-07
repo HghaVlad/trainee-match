@@ -11,12 +11,17 @@ export async function refreshCompanies(options?: RefreshOptions): Promise<void> 
   const { user, setCompanies, setActiveCompany, activeCompanyId } = stateBefore
   const { data } = await fetchCompaniesMe({ limit: 100 })
 
-  // Merge with optimistic local entries: if local store has a company that the
-  // server omitted (e.g. stale 20s cache after POST /companies), keep it.
+  const fromServer: CompanyMembership[] = data.map((srv) => {
+    const local = stateBefore.companies.find((l) => l.id === srv.id)
+    return {
+      ...srv,
+      role: srv.role ?? local?.role,
+    }
+  })
   const localOptimistic = stateBefore.companies.filter(
     (local) => !data.some((srv) => srv.id === local.id),
   )
-  const merged = [...data, ...localOptimistic]
+  const merged = [...fromServer, ...localOptimistic]
   setCompanies(merged)
 
   if (!user) return

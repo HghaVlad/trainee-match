@@ -51,9 +51,20 @@ function Dashboard({ companyId }: { companyId: string }) {
     interval: range.interval,
   }
 
-  const summaryQ = useGetCompanyAnalyticsSummary(companyId, summaryParams)
-  const funnelQ = useGetCompanyStatusFunnel(companyId, summaryParams)
-  const dynamicsQ = useGetCompanyDynamics(companyId, dynamicsParams)
+  const summaryQ = useGetCompanyAnalyticsSummary(companyId, summaryParams, {
+    query: { retry: false },
+  })
+  const funnelQ = useGetCompanyStatusFunnel(companyId, summaryParams, {
+    query: { retry: false },
+  })
+  const dynamicsQ = useGetCompanyDynamics(companyId, dynamicsParams, {
+    query: { retry: false },
+  })
+
+  function isNotFound(e: unknown): boolean {
+    const err: unknown = e
+    return err instanceof AppError && err.status === 404
+  }
 
   function notify(e: unknown) {
     toast({
@@ -62,6 +73,10 @@ function Dashboard({ companyId }: { companyId: string }) {
       variant: 'destructive',
     })
   }
+
+  const summaryNotFound = isNotFound(summaryQ.error)
+  const funnelNotFound = isNotFound(funnelQ.error)
+  const dynamicsNotFound = isNotFound(dynamicsQ.error)
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -85,12 +100,16 @@ function Dashboard({ companyId }: { companyId: string }) {
         <h2 className="text-lg font-semibold">Сводка</h2>
         {summaryQ.isLoading ? (
           <LoadingState />
-        ) : summaryQ.isError || !summaryQ.data ? (
+        ) : summaryQ.isError && !summaryNotFound ? (
           <ErrorState
             onRetry={() => {
               summaryQ.refetch().catch(notify)
             }}
           />
+        ) : summaryNotFound || !summaryQ.data ? (
+          <p className="text-sm text-muted-foreground">
+            Откликов в выбранном периоде нет.
+          </p>
         ) : (
           <SummaryCards summary={summaryQ.data.data} />
         )}
@@ -102,12 +121,16 @@ function Dashboard({ companyId }: { companyId: string }) {
           <CardContent className="p-4">
             {funnelQ.isLoading ? (
               <LoadingState />
-            ) : funnelQ.isError || !funnelQ.data ? (
+            ) : funnelQ.isError && !funnelNotFound ? (
               <ErrorState
                 onRetry={() => {
                   funnelQ.refetch().catch(notify)
                 }}
               />
+            ) : funnelNotFound || !funnelQ.data ? (
+              <p className="text-sm text-muted-foreground">
+                Откликов в выбранном периоде нет.
+              </p>
             ) : (
               <StatusFunnelChart funnel={funnelQ.data.data} />
             )}
@@ -121,14 +144,14 @@ function Dashboard({ companyId }: { companyId: string }) {
           <CardContent className="p-4">
             {dynamicsQ.isLoading ? (
               <LoadingState />
-            ) : dynamicsQ.isError || !dynamicsQ.data ? (
+            ) : dynamicsQ.isError && !dynamicsNotFound ? (
               <ErrorState
                 onRetry={() => {
                   dynamicsQ.refetch().catch(notify)
                 }}
               />
             ) : (
-              <DynamicsChart points={dynamicsQ.data.data} />
+              <DynamicsChart points={dynamicsNotFound ? [] : dynamicsQ.data?.data ?? []} />
             )}
           </CardContent>
         </Card>

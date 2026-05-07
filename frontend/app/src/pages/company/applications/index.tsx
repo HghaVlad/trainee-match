@@ -5,6 +5,7 @@ import type { ListCompanyApplicationsParams } from '@/api/generated/application/
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { AppError } from '@/shared/api/http/client'
 import {
   ApplicationsListFilters,
   ApplicationsTable,
@@ -36,12 +37,19 @@ export default function CompanyApplicationsPage() {
   const [cursor, setCursor] = useState<string | undefined>(undefined)
 
   const params = useMemo(() => buildParams(filters, cursor), [filters, cursor])
-  const query = useListCompanyApplications(companyId, params)
+  const query = useListCompanyApplications(companyId, params, {
+    query: { retry: false },
+  })
 
   function applyFilters(next: FiltersValue) {
     setCursor(undefined)
     setFilters(next)
   }
+
+  const queryError: unknown = query.error
+  const notFound = queryError instanceof AppError && queryError.status === 404
+  const items = notFound ? [] : query.data?.data ?? []
+  const showError = query.isError && !notFound
 
   return (
     <div className="mx-auto max-w-6xl p-6 space-y-4">
@@ -53,17 +61,17 @@ export default function CompanyApplicationsPage() {
       />
       {query.isLoading ? (
         <LoadingState />
-      ) : query.isError || !query.data ? (
+      ) : showError ? (
         <ErrorState onRetry={() => query.refetch()} />
-      ) : query.data.data.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState
           title="Откликов нет"
           description="По заданным фильтрам ничего не найдено."
         />
       ) : (
         <ApplicationsTable
-          items={query.data.data}
-          nextCursor={query.data.nextCursor}
+          items={items}
+          nextCursor={query.data?.nextCursor}
           isFetching={query.isFetching}
           onLoadMore={() =>
             setCursor(query.data?.nextCursor ?? undefined)

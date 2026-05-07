@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isValidUuid(v: string): boolean {
+  return UUID_RE.test(v.trim())
+}
 
 interface FilterState {
   order: string
@@ -29,8 +37,8 @@ interface FilterState {
   internshipToOffer: boolean
   flexibleSchedule: boolean
   workFormat: string[]
-  city: string
-  companyId: string
+  cities: string[]
+  companyIds: string[]
 }
 
 const EMPTY: FilterState = {
@@ -45,8 +53,8 @@ const EMPTY: FilterState = {
   internshipToOffer: false,
   flexibleSchedule: false,
   workFormat: [],
-  city: '',
-  companyId: '',
+  cities: [],
+  companyIds: [],
 }
 
 const SALARY_STEP = 1000
@@ -104,8 +112,9 @@ function toParams(f: FilterState, cursor: string | undefined): GetVacanciesParam
   if (f.internshipToOffer) p.internship_to_offer = true
   if (f.flexibleSchedule) p.flexible_schedule = true
   if (f.workFormat.length > 0) p.work_format = f.workFormat
-  if (f.city.trim()) p.city = [f.city.trim()]
-  if (f.companyId.trim()) p.company_id = [f.companyId.trim()]
+  if (f.cities.length > 0) p.city = f.cities
+  const validIds = f.companyIds.filter(isValidUuid)
+  if (validIds.length > 0) p.company_id = validIds
   return p
 }
 
@@ -126,6 +135,10 @@ function filterErrors(f: FilterState): string[] {
   if (f.durationMin && f.durationMax && dMin > dMax) {
     errors.push('Длительность «от» больше «до»')
   }
+  const invalidIds = f.companyIds.filter((id) => !isValidUuid(id))
+  if (invalidIds.length > 0) {
+    errors.push(`ID компании должен быть в формате UUID (${invalidIds.join(', ')})`)
+  }
   return errors
 }
 
@@ -133,14 +146,33 @@ export default function VacanciesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [filters, setFilters] = useState<FilterState>(() => ({
     ...EMPTY,
-    companyId: searchParams.get('company_id') ?? '',
-    city: searchParams.get('city') ?? '',
+    companyIds: searchParams.getAll('company_id'),
+    cities: searchParams.getAll('city'),
   }))
   const [cursor, setCursor] = useState<string | undefined>(undefined)
 
   function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     setCursor(undefined)
     setFilters((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function addToList(key: 'cities' | 'companyIds', value: string) {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    setCursor(undefined)
+    setFilters((prev) =>
+      prev[key].includes(trimmed)
+        ? prev
+        : { ...prev, [key]: [...prev[key], trimmed] },
+    )
+  }
+
+  function removeFromList(key: 'cities' | 'companyIds', value: string) {
+    setCursor(undefined)
+    setFilters((prev) => ({
+      ...prev,
+      [key]: prev[key].filter((v) => v !== value),
+    }))
   }
 
   function toggleWorkFormat(value: string) {
@@ -154,9 +186,10 @@ export default function VacanciesPage() {
   }
 
   const errors = filterErrors(filters)
-  const { data, isLoading, error, refetch } = useGetVacancies(
-    toParams(filters, cursor),
-    { query: { enabled: errors.length === 0 } },
+  const debouncedFilters = useDebouncedValue(filters, 400)
+  const { data, isLoading, error, refetch, isFetching } = useGetVacancies(
+    toParams(debouncedFilters, cursor),
+    { query: { enabled: filterErrors(debouncedFilters).length === 0 } },
   )
 
   function reset() {
@@ -188,20 +221,24 @@ export default function VacanciesPage() {
           </div>
           <div>
             <Label htmlFor="f-city">Город</Label>
-            <Input
-              id="f-city"
-              value={filters.city}
-              onChange={(e) => update('city', e.target.value)}
-              placeholder="Москва"
+            <ChipsInput
+              inputId="f-city"
+              ariaLabel="Город"
+              values={filters.cities}
+              onAdd={(v) => addToList('cities', v)}
+              onRemove={(v) => removeFromList('cities', v)}
+              placeholder="Москва, Enter"
             />
           </div>
           <div>
             <Label htmlFor="f-company">ID компании</Label>
-            <Input
-              id="f-company"
-              value={filters.companyId}
-              onChange={(e) => update('companyId', e.target.value)}
-              placeholder="UUID"
+            <ChipsInput
+              inputId="f-company"
+              ariaLabel="ID компании"
+              values={filters.companyIds}
+              onAdd={(v) => addToList('companyIds', v)}
+              onRemove={(v) => removeFromList('companyIds', v)}
+              placeholder="UUID, Enter"
             />
           </div>
         </div>
@@ -404,6 +441,9 @@ export default function VacanciesPage() {
       {!isLoading && !error && (data?.vacancies?.length ?? 0) === 0 && (
         <EmptyState title="Вакансии не найдены" />
       )}
+      {isFetching && !isLoading && (
+        <p className="text-xs text-muted-foreground">Обновление…</p>
+      )}
 
       <ul className="space-y-2">
         {(data?.vacancies ?? []).map((v) => {
@@ -462,6 +502,75 @@ export default function VacanciesPage() {
           Загрузить ещё
         </Button>
       )}
+    </div>
+  )
+}
+
+interface ChipsInputProps {
+  inputId: string
+  ariaLabel: string
+  values: string[]
+  onAdd: (value: string) => void
+  onRemove: (value: string) => void
+  placeholder?: string
+}
+
+function ChipsInput({
+  inputId,
+  ariaLabel,
+  values,
+  onAdd,
+  onRemove,
+  placeholder,
+}: ChipsInputProps) {
+  const [draft, setDraft] = useState('')
+
+  function commit() {
+    if (draft.trim()) {
+      onAdd(draft)
+      setDraft('')
+    }
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      commit()
+    } else if (e.key === 'Backspace' && draft === '' && values.length > 0) {
+      e.preventDefault()
+      onRemove(values[values.length - 1] as string)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 focus-within:ring-2 focus-within:ring-ring">
+      {values.map((v) => (
+        <span
+          key={v}
+          className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+        >
+          {v}
+          <button
+            type="button"
+            aria-label={`Удалить ${v}`}
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => onRemove(v)}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      <input
+        id={inputId}
+        aria-label={ariaLabel}
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={commit}
+        placeholder={values.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[8rem] bg-transparent py-1 text-sm outline-none"
+      />
     </div>
   )
 }

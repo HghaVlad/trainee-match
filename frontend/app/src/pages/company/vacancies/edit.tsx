@@ -14,7 +14,6 @@ import { useToast } from '@/shared/hooks/use-toast'
 import {
   useGetCompaniesCompanyIdVacanciesVacancyId,
   usePatchCompaniesCompanyIdVacanciesVacancyId,
-  getGetCompaniesCompanyIdVacanciesQueryKey,
   getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey,
 } from '@/api/generated/company/vacancy/vacancy'
 import type {
@@ -91,15 +90,21 @@ function EditView({
           internshipToOffer: payload.internshipToOffer,
         },
       })
+      const listPrefix = `/companies/${companyId}/vacancies`
       await Promise.all([
         qc.invalidateQueries({
           queryKey: getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey(
             companyId,
             vacancyId,
           ),
+          refetchType: 'active',
         }),
         qc.invalidateQueries({
-          queryKey: getGetCompaniesCompanyIdVacanciesQueryKey(companyId),
+          predicate: (query) => {
+            const first = query.queryKey[0]
+            return typeof first === 'string' && first === listPrefix
+          },
+          refetchType: 'active',
         }),
       ])
       toast({ title: 'Вакансия сохранена' })

@@ -42,6 +42,13 @@ function getStatus(item: DtoVacancyByCompListItemResponse): VacancyStatus {
     DtoVacancyFullResponseStatus.draft
 }
 
+function formatDate(value: string | undefined): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('ru-RU')
+}
+
 export default function CompanyVacanciesPage() {
   const { companyId } = useParams<{ companyId: string }>()
   if (!companyId) return <Navigate to="/company" replace />
@@ -95,19 +102,8 @@ function VacanciesList({ companyId }: { companyId: string }) {
       },
       {
         header: 'Создана',
-        id: 'created',
-        cell: ({ row }) =>
-          row.original.createdAt
-            ? new Date(row.original.createdAt).toLocaleDateString('ru-RU')
-            : '—',
-      },
-      {
-        header: 'Создана',
-        id: 'created',
-        cell: ({ row }) =>
-          row.original.createdAt
-            ? new Date(row.original.createdAt).toLocaleDateString()
-            : '—',
+        accessorKey: 'createdAt',
+        cell: ({ row }) => formatDate(row.original.createdAt),
       },
       {
         id: 'actions',
@@ -117,11 +113,6 @@ function VacanciesList({ companyId }: { companyId: string }) {
           if (!v.id) return null
           return (
             <div className="flex items-center justify-end gap-2">
-              <Button asChild size="sm" variant="outline">
-                <Link to={`/company/${companyId}/vacancies/${v.id}`}>
-                  Открыть
-                </Link>
-              </Button>
               <VacancyActions
                 companyId={companyId}
                 vacancyId={v.id}

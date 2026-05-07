@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router'
 import { useForm, useFieldArray, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -484,14 +484,40 @@ function YearSelect({
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent>
-        {YEARS.map((y) => (
-          <SelectItem key={y} value={String(y)}>
+      <ScrollableYearContent selected={display} />
+    </Select>
+  )
+}
+
+function ScrollableYearContent({ selected }: { selected: string }) {
+  const currentYearStr = String(currentYear)
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    const targetYear = selected || currentYearStr
+    const node = itemRefs.current[targetYear]
+    if (node) {
+      node.scrollIntoView({ block: 'center' })
+    }
+  }, [selected, currentYearStr])
+
+  return (
+    <SelectContent className="max-h-72">
+      {YEARS.map((y) => {
+        const v = String(y)
+        return (
+          <SelectItem
+            key={y}
+            value={v}
+            ref={(node) => {
+              itemRefs.current[v] = node as unknown as HTMLDivElement | null
+            }}
+          >
             {y}
           </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        )
+      })}
+    </SelectContent>
   )
 }
 
@@ -593,13 +619,7 @@ function MonthYearSelect({
         <SelectTrigger>
           <SelectValue placeholder={yearPlaceholder} />
         </SelectTrigger>
-        <SelectContent>
-          {YEARS.map((y) => (
-            <SelectItem key={y} value={String(y)}>
-              {y}
-            </SelectItem>
-          ))}
-        </SelectContent>
+        <ScrollableYearContent selected={yearValue} />
       </Select>
     </div>
   )
