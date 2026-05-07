@@ -3,8 +3,10 @@ package mappers
 import (
 	openapitypes "github.com/oapi-codegen/runtime/types"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 )
 
@@ -13,6 +15,62 @@ func ApplyReqToUC(dto oapi.CreateApplicationRequestObject) apply.Request {
 		VacancyID:   dto.Body.VacancyId,
 		ResumeID:    dto.Body.ResumeId,
 		CoverLetter: dto.Body.CoverLetter,
+	}
+}
+
+func ListMyApplicationsReqToUC(dto oapi.ListMyApplicationsRequestObject) listcandidatesummary.Request {
+	req := listcandidatesummary.Request{
+		Limit: 20,
+		Order: listcandidatesummary.OrderCreatedAtDesc,
+	}
+
+	if dto.Params.Statuses != nil {
+		req.Statuses = make([]application.Status, 0, len(*dto.Params.Statuses))
+		for _, status := range *dto.Params.Statuses {
+			req.Statuses = append(req.Statuses, application.Status(status))
+		}
+	}
+
+	if dto.Params.CompanyId != nil {
+		companyID := *dto.Params.CompanyId
+		req.CompanyID = &companyID
+	}
+
+	if dto.Params.Cursor != nil {
+		req.Cursor = *dto.Params.Cursor
+	}
+
+	if dto.Params.Limit != nil {
+		req.Limit = *dto.Params.Limit
+	}
+
+	if dto.Params.Sort != nil {
+		req.Order = listcandidatesummary.Order(*dto.Params.Sort)
+	}
+
+	return req
+}
+
+func CandidateListResponseToHTTP(resp *listcandidatesummary.Response) oapi.ListMyApplications200JSONResponse {
+	items := make([]oapi.CandidateApplicationListItem, 0, len(resp.AppSummaries))
+
+	for _, item := range resp.AppSummaries {
+		items = append(items, oapi.CandidateApplicationListItem{
+			CompanyId:    item.CompanyID,
+			CompanyName:  item.CompanyName,
+			CreatedAt:    item.CreatedAt,
+			Id:           item.AppID,
+			Status:       oapi.ApplicationStatus(item.Status),
+			UpdatedAt:    item.UpdatedAt,
+			VacancyId:    item.VacancyID,
+			VacancyTitle: item.VacancyTitle,
+		})
+	}
+
+	return oapi.ListMyApplications200JSONResponse{
+		Data:       items,
+		HasNext:    resp.HasNext,
+		NextCursor: resp.NextCursor,
 	}
 }
 

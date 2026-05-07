@@ -14,16 +14,18 @@ import (
 )
 
 type Handler struct {
-	apply            applyUC
-	getCandidateView getCandidateViewUC
-	logger           *slog.Logger
+	apply             applyUC
+	listCandidateApps listCandidateAppsUC
+	getCandidateView  getCandidateViewUC
+	logger            *slog.Logger
 }
 
 func NewHandler(deps *Deps) *Handler {
 	return &Handler{
-		apply:            deps.Apply,
-		getCandidateView: deps.GetCandidateViewUC,
-		logger:           deps.Logger,
+		apply:             deps.Apply,
+		listCandidateApps: deps.ListCandidateApps,
+		getCandidateView:  deps.GetCandidateViewUC,
+		logger:            deps.Logger,
 	}
 }
 
@@ -31,8 +33,15 @@ func (h *Handler) ListMyApplications(
 	ctx context.Context,
 	request oapi.ListMyApplicationsRequestObject,
 ) (oapi.ListMyApplicationsResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	req := mappers.ListMyApplicationsReqToUC(request)
+
+	resp, err := h.listCandidateApps.Execute(ctx, req, *ident)
+	if err != nil {
+		return nil, err
+	}
+
+	return mappers.CandidateListResponseToHTTP(resp), nil
 }
 
 func (h *Handler) CreateApplication(

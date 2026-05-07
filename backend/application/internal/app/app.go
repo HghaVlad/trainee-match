@@ -20,6 +20,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 )
 
 type App struct {
@@ -56,6 +57,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		appSnapHasher,
 		txManager,
 	)
+	listCandidateAppsUC := listcandidatesummary.NewUsecase(appRepo)
 	getCandidateView := getcandidateview.NewUsecase(appRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
@@ -65,6 +67,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	deps := &handlers.Deps{
 		Apply:              applyUC,
+		ListCandidateApps:  listCandidateAppsUC,
 		GetCandidateViewUC: getCandidateView,
 		Logger:             logger,
 	}
