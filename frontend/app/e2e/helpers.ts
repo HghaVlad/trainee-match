@@ -66,11 +66,11 @@ export async function loginViaUi(page: Page, user: TestUser): Promise<void> {
 
 export async function expectAuthedHeader(page: Page, username: string): Promise<void> {
   await expect(page.getByRole('banner').getByText(username)).toBeVisible()
-  await expect(page.getByRole('banner').getByRole('button', { name: 'Logout' })).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ })).toBeVisible()
 }
 
 export async function expectAnonHeader(page: Page): Promise<void> {
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Login' })).toBeVisible()
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Register' })).toBeVisible()
-  await expect(page.getByRole('banner').getByRole('button', { name: 'Logout' })).toHaveCount(0)
+  await expect(page.getByRole('banner').getByRole('link', { name: /Войти|Login/ })).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('link', { name: /Регистрация|Register/ })).toBeVisible()
+  await expect(page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ })).toHaveCount(0)
 }

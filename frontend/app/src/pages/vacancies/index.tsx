@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { useGetVacancies } from '@/api/generated/company/vacancy/vacancy'
 import type { GetVacanciesParams } from '@/api/generated/company/schemas'
 import { LoadingState } from '@/shared/ui/LoadingState'
@@ -8,6 +8,7 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { Badge } from '@/shared/ui/badge'
 import {
   Select,
   SelectContent,
@@ -48,6 +49,47 @@ const EMPTY: FilterState = {
   companyId: '',
 }
 
+const SALARY_STEP = 1000
+const HOURS_MIN = 1
+const HOURS_MAX = 168
+const DURATION_MIN = 1
+const DURATION_MAX = 730
+
+const WORK_FORMAT_LABEL: Record<string, string> = {
+  remote: 'Удалёнка',
+  office: 'Офис',
+  onsite: 'Офис',
+  hybrid: 'Гибрид',
+}
+
+function dash(value: unknown, suffix?: string): string {
+  if (value === undefined || value === null || value === '') return '—'
+  return suffix ? `${value} ${suffix}` : String(value)
+}
+
+function salaryRange(from?: number, to?: number): string {
+  if (typeof from !== 'number' && typeof to !== 'number') return '—'
+  if (typeof from === 'number' && typeof to === 'number') {
+    if (from === to) return `${from.toLocaleString('ru-RU')} ₽`
+    return `${from.toLocaleString('ru-RU')} – ${to.toLocaleString('ru-RU')} ₽`
+  }
+  if (typeof from === 'number') return `от ${from.toLocaleString('ru-RU')} ₽`
+  return `до ${(to as number).toLocaleString('ru-RU')} ₽`
+}
+
+function clampNumeric(
+  raw: string,
+  { min, max, step }: { min?: number; max?: number; step?: number },
+): string {
+  if (raw === '') return ''
+  let n = Number(raw)
+  if (Number.isNaN(n)) return ''
+  if (typeof min === 'number' && n < min) n = min
+  if (typeof max === 'number' && n > max) n = max
+  if (step && step > 1) n = Math.round(n / step) * step
+  return String(n)
+}
+
 function toParams(f: FilterState, cursor: string | undefined): GetVacanciesParams {
   const p: GetVacanciesParams = { limit: 20 }
   if (cursor) p.cursor = cursor
@@ -67,8 +109,33 @@ function toParams(f: FilterState, cursor: string | undefined): GetVacanciesParam
   return p
 }
 
+function filterErrors(f: FilterState): string[] {
+  const errors: string[] = []
+  const sMin = Number(f.salaryMin)
+  const sMax = Number(f.salaryMax)
+  if (f.salaryMin && f.salaryMax && sMin > sMax) {
+    errors.push('Зарплата «от» больше «до»')
+  }
+  const hMin = Number(f.hoursMin)
+  const hMax = Number(f.hoursMax)
+  if (f.hoursMin && f.hoursMax && hMin > hMax) {
+    errors.push('Часов «от» больше «до»')
+  }
+  const dMin = Number(f.durationMin)
+  const dMax = Number(f.durationMax)
+  if (f.durationMin && f.durationMax && dMin > dMax) {
+    errors.push('Длительность «от» больше «до»')
+  }
+  return errors
+}
+
 export default function VacanciesPage() {
-  const [filters, setFilters] = useState<FilterState>(EMPTY)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    ...EMPTY,
+    companyId: searchParams.get('company_id') ?? '',
+    city: searchParams.get('city') ?? '',
+  }))
   const [cursor, setCursor] = useState<string | undefined>(undefined)
 
   function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
@@ -86,7 +153,17 @@ export default function VacanciesPage() {
     }))
   }
 
-  const { data, isLoading, error, refetch } = useGetVacancies(toParams(filters, cursor))
+  const errors = filterErrors(filters)
+  const { data, isLoading, error, refetch } = useGetVacancies(
+    toParams(filters, cursor),
+    { query: { enabled: errors.length === 0 } },
+  )
+
+  function reset() {
+    setFilters(EMPTY)
+    setCursor(undefined)
+    setSearchParams({})
+  }
 
   return (
     <div className="mx-auto max-w-5xl p-6 space-y-4">
@@ -135,8 +212,17 @@ export default function VacanciesPage() {
             <Input
               id="f-salary-min"
               type="number"
+              min={0}
+              step={SALARY_STEP}
+              inputMode="numeric"
               value={filters.salaryMin}
               onChange={(e) => update('salaryMin', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'salaryMin',
+                  clampNumeric(e.target.value, { min: 0, step: SALARY_STEP }),
+                )
+              }
             />
           </div>
           <div>
@@ -144,8 +230,17 @@ export default function VacanciesPage() {
             <Input
               id="f-salary-max"
               type="number"
+              min={0}
+              step={SALARY_STEP}
+              inputMode="numeric"
               value={filters.salaryMax}
               onChange={(e) => update('salaryMax', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'salaryMax',
+                  clampNumeric(e.target.value, { min: 0, step: SALARY_STEP }),
+                )
+              }
             />
           </div>
           <div>
@@ -153,8 +248,22 @@ export default function VacanciesPage() {
             <Input
               id="f-hours-min"
               type="number"
+              min={HOURS_MIN}
+              max={HOURS_MAX}
+              step={1}
+              inputMode="numeric"
               value={filters.hoursMin}
               onChange={(e) => update('hoursMin', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'hoursMin',
+                  clampNumeric(e.target.value, {
+                    min: HOURS_MIN,
+                    max: HOURS_MAX,
+                    step: 1,
+                  }),
+                )
+              }
             />
           </div>
           <div>
@@ -162,8 +271,22 @@ export default function VacanciesPage() {
             <Input
               id="f-hours-max"
               type="number"
+              min={HOURS_MIN}
+              max={HOURS_MAX}
+              step={1}
+              inputMode="numeric"
               value={filters.hoursMax}
               onChange={(e) => update('hoursMax', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'hoursMax',
+                  clampNumeric(e.target.value, {
+                    min: HOURS_MIN,
+                    max: HOURS_MAX,
+                    step: 1,
+                  }),
+                )
+              }
             />
           </div>
           <div>
@@ -171,8 +294,22 @@ export default function VacanciesPage() {
             <Input
               id="f-duration-min"
               type="number"
+              min={DURATION_MIN}
+              max={DURATION_MAX}
+              step={1}
+              inputMode="numeric"
               value={filters.durationMin}
               onChange={(e) => update('durationMin', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'durationMin',
+                  clampNumeric(e.target.value, {
+                    min: DURATION_MIN,
+                    max: DURATION_MAX,
+                    step: 1,
+                  }),
+                )
+              }
             />
           </div>
           <div>
@@ -180,8 +317,22 @@ export default function VacanciesPage() {
             <Input
               id="f-duration-max"
               type="number"
+              min={DURATION_MIN}
+              max={DURATION_MAX}
+              step={1}
+              inputMode="numeric"
               value={filters.durationMax}
               onChange={(e) => update('durationMax', e.target.value)}
+              onBlur={(e) =>
+                update(
+                  'durationMax',
+                  clampNumeric(e.target.value, {
+                    min: DURATION_MIN,
+                    max: DURATION_MAX,
+                    step: 1,
+                  }),
+                )
+              }
             />
           </div>
         </div>
@@ -233,15 +384,16 @@ export default function VacanciesPage() {
           </label>
         </div>
 
+        {errors.length > 0 && (
+          <ul className="text-sm text-destructive">
+            {errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
+
         <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setFilters(EMPTY)
-              setCursor(undefined)
-            }}
-          >
+          <Button type="button" variant="outline" onClick={reset}>
             Сбросить
           </Button>
         </div>
@@ -254,26 +406,55 @@ export default function VacanciesPage() {
       )}
 
       <ul className="space-y-2">
-        {(data?.vacancies ?? []).map((v) => (
-          <li key={v.id} className="rounded-lg border bg-card p-4">
-            <Link
-              to={`/vacancies/${v.id ?? ''}`}
-              className="text-lg font-medium text-primary underline"
+        {(data?.vacancies ?? []).map((v) => {
+          const target = v.id ? `/vacancies/${v.id}` : undefined
+          return (
+            <li
+              key={v.id ?? `${v.title ?? 'noid'}-${v.companyName ?? ''}`}
+              className="rounded-lg border bg-card p-4 space-y-2"
             >
-              {v.title ?? '—'}
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              {v.companyName ?? '—'} • {v.city ?? '—'}
-            </p>
-            {(v.salaryFrom ?? v.salaryTo) && (
-              <p className="text-sm">
-                {v.salaryFrom ?? ''}
-                {v.salaryFrom && v.salaryTo ? '–' : ''}
-                {v.salaryTo ?? ''} ₽
+              <div className="flex items-start justify-between gap-4">
+                {target ? (
+                  <Link
+                    to={target}
+                    className="text-lg font-medium text-primary underline"
+                  >
+                    {v.title ?? '—'}
+                  </Link>
+                ) : (
+                  <span className="text-lg font-medium">{v.title ?? '—'}</span>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {salaryRange(v.salaryFrom, v.salaryTo)}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {dash(v.companyName)} • {dash(v.city)}
               </p>
-            )}
-          </li>
-        ))}
+              <div className="flex flex-wrap gap-2 text-xs">
+                {v.workFormat && (
+                  <Badge variant="secondary">
+                    {WORK_FORMAT_LABEL[v.workFormat] ?? v.workFormat}
+                  </Badge>
+                )}
+                {v.isPaid !== undefined && (
+                  <Badge variant={v.isPaid ? 'default' : 'outline'}>
+                    {v.isPaid ? 'Оплачиваемая' : 'Без оплаты'}
+                  </Badge>
+                )}
+                {v.employmentType && (
+                  <Badge variant="outline">{v.employmentType}</Badge>
+                )}
+                {v.publishedAt && (
+                  <span className="text-xs text-muted-foreground">
+                    Опубликована{' '}
+                    {new Date(v.publishedAt).toLocaleDateString('ru-RU')}
+                  </span>
+                )}
+              </div>
+            </li>
+          )
+        })}
       </ul>
 
       {data?.nextCursor && (

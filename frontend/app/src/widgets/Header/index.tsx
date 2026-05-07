@@ -20,55 +20,53 @@ export function Header() {
   }
 
   return (
-    <header
-      style={{
-        padding: '0.75rem 1rem',
-        borderBottom: '1px solid #eee',
-        display: 'flex',
-        gap: '1rem',
-        alignItems: 'center',
-      }}
-    >
-      <Link to="/" style={{ fontWeight: 'bold' }}>
+    <header className="flex flex-wrap items-center gap-4 border-b border-border px-4 py-3">
+      <Link to="/" className="text-base font-bold">
         trainee-match
       </Link>
-      <nav style={{ display: 'flex', gap: '0.75rem', flex: 1 }}>
-        <Link to="/vacancies">Vacancies</Link>
-        <Link to="/companies">Companies</Link>
+      <nav className="flex flex-wrap items-center gap-3 text-sm">
+        <Link to="/vacancies">Вакансии</Link>
+        <Link to="/companies">Компании</Link>
         {isAuthed && role === 'Candidate' && (
           <>
-            <Link to="/me/profile">Profile</Link>
-            <Link to="/me/resumes">Resumes</Link>
-            <Link to="/me/applications">Applications</Link>
+            <Link to="/me/profile">Профиль</Link>
+            <Link to="/me/resumes">Резюме</Link>
+            <Link to="/me/applications">Отклики</Link>
           </>
         )}
         {isAuthed && role === 'Company' && activeCompanyId && (
           <>
-            <Link to={`${companyBase}/dashboard`}>Dashboard</Link>
-            <Link to={`${companyBase}/vacancies`}>Vacancies</Link>
-            <Link to={`${companyBase}/applications`}>Applications</Link>
-            <Link to={`${companyBase}/members`}>Members</Link>
-            <Link to={`${companyBase}/profile`}>Profile</Link>
+            <Link to={`${companyBase}/dashboard`}>Дашборд</Link>
+            <Link to={`${companyBase}/vacancies`}>Мои вакансии</Link>
+            <Link to={`${companyBase}/applications`}>Отклики</Link>
+            <Link to={`${companyBase}/members`}>Команда</Link>
+            <Link to={`${companyBase}/profile`}>Профиль компании</Link>
           </>
         )}
         {isAuthed && role === 'Company' && !activeCompanyId && (
           <Link to="/company/new">Создать компанию</Link>
         )}
       </nav>
-      {isAuthed && role === 'Company' && <CompanySwitcher />}
-      {isAuthed ? (
-        <>
-          <span>{user?.username}</span>
-          <button type="button" onClick={handleLogout}>
-            Logout
-          </button>
-        </>
-      ) : (
-        <>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
-        </>
-      )}
+      <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
+        {isAuthed && role === 'Company' && <CompanySwitcher />}
+        {isAuthed ? (
+          <>
+            <span className="text-muted-foreground">{user?.username}</span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="underline"
+            >
+              Выйти
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login">Войти</Link>
+            <Link to="/register">Регистрация</Link>
+          </>
+        )}
+      </div>
     </header>
   )
 }

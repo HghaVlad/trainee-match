@@ -1,8 +1,5 @@
 {
-    "schemes": [
-        "http",
-        "https"
-    ],
+    "schemes": ["http","https"],
     "swagger": "2.0",
     "info": {
         "description": "API for managing candidate profiles",
@@ -10,7 +7,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "0.0.0.0:8081",
+    "host": "localhost:8081",
     "basePath": "/api/v1",
     "paths": {
         "/candidate/": {

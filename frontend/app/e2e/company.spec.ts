@@ -117,7 +117,7 @@ test.describe('logout regression', () => {
     const u = makeUser('Company')
     await registerAndLogin(page, u)
 
-    await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click()
+    await page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ }).click()
     await expectAnonHeader(page)
     await expect.poll(() => new URL(page.url()).pathname).not.toMatch(/^\/company/)
   })

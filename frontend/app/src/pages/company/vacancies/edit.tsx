@@ -83,6 +83,12 @@ function EditView({
           salaryFrom: payload.salaryFrom,
           salaryTo: payload.salaryTo,
           isPaid: payload.isPaid,
+          hoursPerWeekFrom: payload.hoursPerWeekFrom,
+          hoursPerWeekTo: payload.hoursPerWeekTo,
+          durationFromDays: payload.durationFromDays,
+          durationToDays: payload.durationToDays,
+          flexibleSchedule: payload.flexibleSchedule,
+          internshipToOffer: payload.internshipToOffer,
         },
       })
       await Promise.all([
@@ -153,6 +159,12 @@ function EditView({
               salaryFrom: vacancy.salaryFrom,
               salaryTo: vacancy.salaryTo,
               isPaid: vacancy.isPaid,
+              hoursPerWeekFrom: vacancy.hoursPerWeekFrom,
+              hoursPerWeekTo: vacancy.hoursPerWeekTo,
+              durationFromDays: vacancy.durationFromDays,
+              durationToDays: vacancy.durationToDays,
+              flexibleSchedule: vacancy.flexibleSchedule,
+              internshipToOffer: vacancy.internshipToOffer,
             }}
           />
           <VacancyActions

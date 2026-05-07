@@ -6,19 +6,30 @@
  * OpenAPI spec version: 1.0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
   DtoCompanyAddHrRequest,
+  DtoCompanyMemberListResponse,
   DtoCompanyUpdateMemberRequest,
-  DtoErrorResponse
+  DtoErrorResponse,
+  GetCompaniesIdMembersParams
 } from '../schemas';
 
 import { mutatorFn } from '../../../../shared/api/http/client';
@@ -27,7 +38,108 @@ import { mutatorFn } from '../../../../shared/api/http/client';
 
 
 /**
- * Adds member to company. Requires admin role in company
+ * List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.
+ * @summary List members of company.
+ */
+export const getCompaniesIdMembers = (
+    id: string,
+    params?: GetCompaniesIdMembersParams,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoCompanyMemberListResponse>(
+      {url: `/companies/${id}/members`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getGetCompaniesIdMembersQueryKey = (id: string,
+    params?: GetCompaniesIdMembersParams,) => {
+    return [
+    `/companies/${id}/members`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCompaniesIdMembersQueryOptions = <TData = Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError = DtoErrorResponse>(id: string,
+    params?: GetCompaniesIdMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompaniesIdMembersQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompaniesIdMembers>>> = ({ signal }) => getCompaniesIdMembers(id,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCompaniesIdMembersQueryResult = NonNullable<Awaited<ReturnType<typeof getCompaniesIdMembers>>>
+export type GetCompaniesIdMembersQueryError = DtoErrorResponse
+
+
+export function useGetCompaniesIdMembers<TData = Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError = DtoErrorResponse>(
+ id: string,
+    params: undefined |  GetCompaniesIdMembersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesIdMembers>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesIdMembers>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesIdMembers<TData = Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError = DtoErrorResponse>(
+ id: string,
+    params?: GetCompaniesIdMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesIdMembers>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesIdMembers>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesIdMembers<TData = Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError = DtoErrorResponse>(
+ id: string,
+    params?: GetCompaniesIdMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List members of company.
+ */
+
+export function useGetCompaniesIdMembers<TData = Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError = DtoErrorResponse>(
+ id: string,
+    params?: GetCompaniesIdMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMembers>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCompaniesIdMembersQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * Adds member to company by username. Requires admin role in company
  * @summary Add member to company
  */
 export const postCompaniesIdMembers = (
@@ -92,8 +204,8 @@ export const usePostCompaniesIdMembers = <TError = DtoErrorResponse,
       return useMutation(getPostCompaniesIdMembersMutationOptions(options), queryClient);
     }
     /**
- * Deletes company member. Requires admin role in company
- * @summary Delete company member
+ * removes company member. Requires admin role in company. Admin can't remove themselves if they are the only admin left.
+ * @summary Remove company member
  */
 export const deleteCompaniesIdMembersUserId = (
     id: string,
@@ -142,7 +254,7 @@ const {mutation: mutationOptions} = options ?
     export type DeleteCompaniesIdMembersUserIdMutationError = DtoErrorResponse
 
     /**
- * @summary Delete company member
+ * @summary Remove company member
  */
 export const useDeleteCompaniesIdMembersUserId = <TError = DtoErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesIdMembersUserId>>, TError,{id: string;userId: string}, TContext>, }

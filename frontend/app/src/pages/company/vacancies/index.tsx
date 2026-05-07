@@ -37,10 +37,9 @@ const PAGE_SIZE = 20
 
 type StatusFilter = 'all' | VacancyStatus
 
-function inferStatus(item: DtoVacancyByCompListItemResponse): VacancyStatus {
-  return item.publishedAt
-    ? DtoVacancyFullResponseStatus.published
-    : DtoVacancyFullResponseStatus.draft
+function getStatus(item: DtoVacancyByCompListItemResponse): VacancyStatus {
+  return (item.status as VacancyStatus | undefined) ??
+    DtoVacancyFullResponseStatus.draft
 }
 
 export default function CompanyVacanciesPage() {
@@ -68,7 +67,7 @@ function VacanciesList({ companyId }: { companyId: string }) {
     () =>
       statusFilter === 'all'
         ? allItems
-        : allItems.filter((v) => inferStatus(v) === statusFilter),
+        : allItems.filter((v) => getStatus(v) === statusFilter),
     [allItems, statusFilter],
   )
 
@@ -92,14 +91,22 @@ function VacanciesList({ companyId }: { companyId: string }) {
       {
         header: 'Статус',
         id: 'status',
-        cell: ({ row }) => <VacancyStatusBadge status={inferStatus(row.original)} />,
+        cell: ({ row }) => <VacancyStatusBadge status={getStatus(row.original)} />,
       },
       {
         header: 'Создана',
         id: 'created',
         cell: ({ row }) =>
-          row.original.publishedAt
-            ? new Date(row.original.publishedAt).toLocaleDateString()
+          row.original.createdAt
+            ? new Date(row.original.createdAt).toLocaleDateString('ru-RU')
+            : '—',
+      },
+      {
+        header: 'Создана',
+        id: 'created',
+        cell: ({ row }) =>
+          row.original.createdAt
+            ? new Date(row.original.createdAt).toLocaleDateString()
             : '—',
       },
       {
@@ -118,7 +125,7 @@ function VacanciesList({ companyId }: { companyId: string }) {
               <VacancyActions
                 companyId={companyId}
                 vacancyId={v.id}
-                status={inferStatus(v)}
+                status={getStatus(v)}
                 isAdmin={isAdmin}
                 variant="row"
               />

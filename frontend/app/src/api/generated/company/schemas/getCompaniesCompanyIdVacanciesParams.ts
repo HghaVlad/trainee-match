@@ -19,4 +19,52 @@ cursor?: string;
  * Items per page
  */
 limit?: number;
+/**
+ * Vacancy status filter
+ */
+status?: string;
+/**
+ * Minimum salary
+ */
+salary_min?: number;
+/**
+ * Maximum salary
+ */
+salary_max?: number;
+/**
+ * Minimum hours per week
+ */
+hours_min?: number;
+/**
+ * Maximum hours per week
+ */
+hours_max?: number;
+/**
+ * Minimum duration in days
+ */
+duration_min?: number;
+/**
+ * Maximum duration in days
+ */
+duration_max?: number;
+/**
+ * Paid vacancy filter
+ */
+is_paid?: boolean;
+/**
+ * Internship with possible job offer
+ */
+internship_to_offer?: boolean;
+/**
+ * Flexible schedule filter
+ */
+flexible_schedule?: boolean;
+/**
+ * Work format filter (repeat param)
+ */
+work_format?: string[];
+/**
+ * City filter (repeat param)
+ */
+city?: string[];
 };

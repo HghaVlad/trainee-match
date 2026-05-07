@@ -9,5 +9,5 @@ import type { DtoCompanyAddHrRequestRole } from './dtoCompanyAddHrRequestRole';
 
 export interface DtoCompanyAddHrRequest {
   role?: DtoCompanyAddHrRequestRole;
-  userID?: string;
+  username?: string;
 }

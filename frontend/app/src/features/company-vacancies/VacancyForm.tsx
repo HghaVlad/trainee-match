@@ -1,3 +1,4 @@
+import type { UseFormReturn } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -31,14 +32,27 @@ export interface VacancyFormPayload {
   salaryFrom?: number
   salaryTo?: number
   isPaid?: boolean
+  hoursPerWeekFrom?: number
+  hoursPerWeekTo?: number
+  durationFromDays?: number
+  durationToDays?: number
+  flexibleSchedule?: boolean
+  internshipToOffer?: boolean
 }
 
-const optionalNonNegative = z
-  .union([
-    z.literal(''),
-    z.coerce.number().min(0, 'Не меньше 0'),
-  ])
-  .optional()
+const optionalRange = (opts: { min: number; max?: number; label?: string }) =>
+  z
+    .union([
+      z.literal(''),
+      z.coerce
+        .number()
+        .min(opts.min, `Не меньше ${opts.min}`)
+        .refine(
+          (v) => opts.max === undefined || v <= opts.max,
+          `Не больше ${opts.max}`,
+        ),
+    ])
+    .optional()
 
 const baseSchema = z
   .object({
@@ -69,20 +83,44 @@ const baseSchema = z
       ])
       .optional()
       .or(z.literal('')),
-    salaryFrom: optionalNonNegative,
-    salaryTo: optionalNonNegative,
+    salaryFrom: optionalRange({ min: 0 }),
+    salaryTo: optionalRange({ min: 0 }),
     isPaid: z.boolean().optional(),
+    hoursPerWeekFrom: optionalRange({ min: 1, max: 168 }),
+    hoursPerWeekTo: optionalRange({ min: 1, max: 168 }),
+    durationFromDays: optionalRange({ min: 1, max: 730 }),
+    durationToDays: optionalRange({ min: 1, max: 730 }),
+    flexibleSchedule: z.boolean().optional(),
+    internshipToOffer: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
-    const from = val.salaryFrom
-    const to = val.salaryTo
-    if (typeof from === 'number' && typeof to === 'number' && to < from) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['salaryTo'],
-        message: '«До» должно быть не меньше «От»',
-      })
+    function checkRange(
+      from: number | '' | undefined,
+      to: number | '' | undefined,
+      path: string[],
+      label: string,
+    ) {
+      if (typeof from === 'number' && typeof to === 'number' && to < from) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path,
+          message: `${label}: «До» должно быть не меньше «От»`,
+        })
+      }
     }
+    checkRange(val.salaryFrom, val.salaryTo, ['salaryTo'], 'Зарплата')
+    checkRange(
+      val.hoursPerWeekFrom,
+      val.hoursPerWeekTo,
+      ['hoursPerWeekTo'],
+      'Часы в неделю',
+    )
+    checkRange(
+      val.durationFromDays,
+      val.durationToDays,
+      ['durationToDays'],
+      'Длительность',
+    )
   })
 
 type FormValues = z.infer<typeof baseSchema>
@@ -110,11 +148,20 @@ function toFormValues(v: Partial<VacancyFormPayload> | undefined): FormValues {
     salaryFrom: v?.salaryFrom ?? '',
     salaryTo: v?.salaryTo ?? '',
     isPaid: v?.isPaid ?? false,
+    hoursPerWeekFrom: v?.hoursPerWeekFrom ?? '',
+    hoursPerWeekTo: v?.hoursPerWeekTo ?? '',
+    durationFromDays: v?.durationFromDays ?? '',
+    durationToDays: v?.durationToDays ?? '',
+    flexibleSchedule: v?.flexibleSchedule ?? false,
+    internshipToOffer: v?.internshipToOffer ?? false,
   }
 }
 
+function num(value: number | '' | undefined): number | undefined {
+  return typeof value === 'number' ? value : undefined
+}
+
 export function VacancyForm({
-  mode,
   defaultValues,
   onSubmit,
   isSubmitting,
@@ -128,13 +175,17 @@ export function VacancyForm({
       description: values.description ? values.description : undefined,
       city: values.city ? values.city : undefined,
       workFormat: values.workFormat,
-      salaryFrom:
-        typeof values.salaryFrom === 'number' ? values.salaryFrom : undefined,
-      salaryTo:
-        typeof values.salaryTo === 'number' ? values.salaryTo : undefined,
+      salaryFrom: num(values.salaryFrom),
+      salaryTo: num(values.salaryTo),
       isPaid: values.isPaid,
+      hoursPerWeekFrom: num(values.hoursPerWeekFrom),
+      hoursPerWeekTo: num(values.hoursPerWeekTo),
+      durationFromDays: num(values.durationFromDays),
+      durationToDays: num(values.durationToDays),
+      flexibleSchedule: values.flexibleSchedule,
+      internshipToOffer: values.internshipToOffer,
     }
-    if (mode === 'edit' && values.employmentType) {
+    if (values.employmentType) {
       payload.employmentType =
         values.employmentType as VacancyFormPayload['employmentType']
     }
@@ -180,44 +231,38 @@ export function VacancyForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="workFormat"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Формат работы</FormLabel>
-                <Select
-                  value={field.value as string}
-                  onValueChange={field.onChange}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem
-                      value={DtoVacancyCreateRequestWorkFormat.onsite}
-                    >
-                      Офис
-                    </SelectItem>
-                    <SelectItem
-                      value={DtoVacancyCreateRequestWorkFormat.remote}
-                    >
-                      Удалённо
-                    </SelectItem>
-                    <SelectItem
-                      value={DtoVacancyCreateRequestWorkFormat.hybrid}
-                    >
-                      Гибрид
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {mode === 'edit' && (
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="workFormat"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Формат работы</FormLabel>
+                  <Select
+                    value={field.value as string}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={DtoVacancyCreateRequestWorkFormat.onsite}>
+                        Офис
+                      </SelectItem>
+                      <SelectItem value={DtoVacancyCreateRequestWorkFormat.remote}>
+                        Удалённо
+                      </SelectItem>
+                      <SelectItem value={DtoVacancyCreateRequestWorkFormat.hybrid}>
+                        Гибрид
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="employmentType"
@@ -235,23 +280,17 @@ export function VacancyForm({
                     </FormControl>
                     <SelectContent>
                       <SelectItem
-                        value={
-                          DtoVacancyUpdateRequestEmploymentType.internship
-                        }
+                        value={DtoVacancyUpdateRequestEmploymentType.internship}
                       >
                         Стажировка
                       </SelectItem>
                       <SelectItem
-                        value={
-                          DtoVacancyUpdateRequestEmploymentType.full_time
-                        }
+                        value={DtoVacancyUpdateRequestEmploymentType.full_time}
                       >
                         Полная занятость
                       </SelectItem>
                       <SelectItem
-                        value={
-                          DtoVacancyUpdateRequestEmploymentType.part_time
-                        }
+                        value={DtoVacancyUpdateRequestEmploymentType.part_time}
                       >
                         Частичная занятость
                       </SelectItem>
@@ -261,82 +300,135 @@ export function VacancyForm({
                 </FormItem>
               )}
             />
-          )}
-          <div className="flex gap-3">
-            <FormField
-              control={form.control}
-              name="salaryFrom"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Зарплата от</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      value={
-                        field.value === undefined || field.value === null
-                          ? ''
-                          : String(field.value)
-                      }
-                      onChange={(e) => field.onChange(e.target.value)}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="salaryTo"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>До</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      value={
-                        field.value === undefined || field.value === null
-                          ? ''
-                          : String(field.value)
-                      }
-                      onChange={(e) => field.onChange(e.target.value)}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
-          <FormField
-            control={form.control}
-            name="isPaid"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                <FormControl>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(field.value)}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                    name={field.name}
-                    className="h-4 w-4"
-                  />
-                </FormControl>
-                <FormLabel className="!m-0">Оплачиваемая</FormLabel>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <fieldset className="space-y-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">Зарплата</legend>
+            <div className="flex gap-3">
+              <NumberFormField
+                form={form}
+                name="salaryFrom"
+                label="От, ₽"
+                min={0}
+                step={1000}
+              />
+              <NumberFormField
+                form={form}
+                name="salaryTo"
+                label="До, ₽"
+                min={0}
+                step={1000}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="isPaid"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(field.value)}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
+                      className="h-4 w-4"
+                    />
+                  </FormControl>
+                  <FormLabel className="!m-0">Оплачиваемая</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </fieldset>
+          <fieldset className="space-y-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">Часы в неделю</legend>
+            <div className="flex gap-3">
+              <NumberFormField
+                form={form}
+                name="hoursPerWeekFrom"
+                label="От"
+                min={1}
+                max={168}
+                step={1}
+              />
+              <NumberFormField
+                form={form}
+                name="hoursPerWeekTo"
+                label="До"
+                min={1}
+                max={168}
+                step={1}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="flexibleSchedule"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(field.value)}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
+                      className="h-4 w-4"
+                    />
+                  </FormControl>
+                  <FormLabel className="!m-0">Гибкий график</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </fieldset>
+          <fieldset className="space-y-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">
+              Длительность (дней)
+            </legend>
+            <div className="flex gap-3">
+              <NumberFormField
+                form={form}
+                name="durationFromDays"
+                label="От"
+                min={1}
+                max={730}
+                step={1}
+              />
+              <NumberFormField
+                form={form}
+                name="durationToDays"
+                label="До"
+                min={1}
+                max={730}
+                step={1}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="internshipToOffer"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(field.value)}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      name={field.name}
+                      className="h-4 w-4"
+                    />
+                  </FormControl>
+                  <FormLabel className="!m-0">
+                    С возможностью трудоустройства
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </fieldset>
           <FormField
             control={form.control}
             name="description"
@@ -374,5 +466,62 @@ export function VacancyForm({
         </div>
       )}
     </FormWrapper>
+  )
+}
+
+type NumberFieldName =
+  | 'salaryFrom'
+  | 'salaryTo'
+  | 'hoursPerWeekFrom'
+  | 'hoursPerWeekTo'
+  | 'durationFromDays'
+  | 'durationToDays'
+
+interface NumberFieldProps {
+  form: UseFormReturn<FormValues>
+  name: NumberFieldName
+  label: string
+  min?: number
+  max?: number
+  step?: number
+}
+
+function NumberFormField({
+  form,
+  name,
+  label,
+  min,
+  max,
+  step,
+}: NumberFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className="flex-1">
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={min}
+              max={max}
+              step={step}
+              inputMode="numeric"
+              value={
+                field.value === undefined || field.value === null
+                  ? ''
+                  : String(field.value)
+              }
+              onChange={(e) => field.onChange(e.target.value)}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 }

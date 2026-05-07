@@ -310,7 +310,10 @@ function RemoveMemberButton({
 }
 
 const addSchema = z.object({
-  userID: z.string().min(1, 'Введите идентификатор пользователя').max(128),
+  username: z
+    .string()
+    .min(1, 'Введите username пользователя')
+    .max(64, 'Максимум 64 символа'),
   role: z.enum([
     DtoCompanyAddHrRequestRole.recruiter,
     DtoCompanyAddHrRequestRole.admin,
@@ -329,7 +332,7 @@ function AddMemberButton({ companyId }: { companyId: string }) {
   const form = useForm<AddFormData>({
     resolver: zodResolver(addSchema),
     defaultValues: {
-      userID: '',
+      username: '',
       role: DtoCompanyAddHrRequestRole.recruiter,
     },
   })
@@ -337,7 +340,7 @@ function AddMemberButton({ companyId }: { companyId: string }) {
   function handleOpenChange(next: boolean) {
     if (next) {
       form.reset({
-        userID: '',
+        username: '',
         role: DtoCompanyAddHrRequestRole.recruiter,
       })
       setServerError(null)
@@ -350,7 +353,7 @@ function AddMemberButton({ companyId }: { companyId: string }) {
     try {
       await add.mutateAsync({
         id: companyId,
-        data: { userID: values.userID, role: values.role },
+        data: { username: values.username, role: values.role },
       })
       await Promise.all([
         qc.invalidateQueries({
@@ -381,7 +384,7 @@ function AddMemberButton({ companyId }: { companyId: string }) {
           <DialogHeader>
             <DialogTitle>Добавить участника</DialogTitle>
             <DialogDescription>
-              Укажите идентификатор пользователя и роль в компании.
+              Укажите username пользователя и роль в компании.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -397,12 +400,17 @@ function AddMemberButton({ companyId }: { companyId: string }) {
               )}
               <FormField
                 control={form.control}
-                name="userID"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>UserID</FormLabel>
+                    <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input autoFocus {...field} />
+                      <Input
+                        autoFocus
+                        autoComplete="off"
+                        placeholder="ivan_ivanov"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

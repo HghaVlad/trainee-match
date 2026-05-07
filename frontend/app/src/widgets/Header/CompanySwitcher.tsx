@@ -26,18 +26,21 @@ export function CompanySwitcher() {
   }
 
   return (
-    <select
-      aria-label="Active company"
-      value={activeCompanyId ?? ''}
-      onChange={handleChange}
-      style={{ padding: '0.25rem 0.5rem' }}
-    >
-      {companies.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name}
-          {c.role ? ` · ${c.role}` : ''}
-        </option>
-      ))}
-    </select>
+    <label className="flex items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Активная компания:</span>
+      <select
+        aria-label="Активная компания"
+        value={activeCompanyId ?? ''}
+        onChange={handleChange}
+        className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        {companies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+            {c.role ? ` · ${c.role}` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }

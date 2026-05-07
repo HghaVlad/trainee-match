@@ -20,8 +20,8 @@ test.describe('auth: candidate', () => {
     await registerAndLogin(page, u)
     await page.waitForURL('**/me/profile')
 
-    await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click()
-
+    await page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ }).click()
+    await expect(page).toHaveURL(/\/login(\?|$)/)
     await expectAnonHeader(page)
     await expect.poll(() => new URL(page.url()).pathname).not.toMatch(/^\/me\//)
 
@@ -42,7 +42,7 @@ test.describe('auth: candidate', () => {
   test('BUG #11/#12: deep-link without session → login → return to original', async ({ page }) => {
     const u = makeUser('Candidate')
     await registerAndLogin(page, u)
-    await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click()
+    await page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ }).click()
     await expectAnonHeader(page)
 
     await page.goto('/me/resumes/new')

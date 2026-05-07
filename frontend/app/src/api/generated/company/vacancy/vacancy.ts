@@ -43,8 +43,8 @@ import { mutatorFn } from '../../../../shared/api/http/client';
 
 
 /**
- * Uses cursor pagination, returns next cursor if there's more. Supports order by published_at_desc
- * @summary Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param
+ * Uses cursor pagination, returns next cursor if there's more. Supports filters and status.
+ * @summary Lists company's vacancy summaries
  */
 export const getCompaniesCompanyIdVacancies = (
     companyId: string,
@@ -122,7 +122,7 @@ export function useGetCompaniesCompanyIdVacancies<TData = Awaited<ReturnType<typ
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Lists company's vacancy summaries. Outdated, needs update if needed. Rn u can use list with company_id param
+ * @summary Lists company's vacancy summaries
  */
 
 export function useGetCompaniesCompanyIdVacancies<TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacancies>>, TError = DtoErrorResponse>(
@@ -207,69 +207,6 @@ export const usePostCompaniesCompanyIdVacancies = <TError = DtoErrorResponse,
         TContext
       > => {
       return useMutation(getPostCompaniesCompanyIdVacanciesMutationOptions(options), queryClient);
-    }
-    /**
- * Deletes vacancy by id
- * @summary Delete vacancy
- */
-export const deleteCompaniesCompanyIdVacanciesVacancyId = (
-    companyId: string,
-    vacancyId: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<void>(
-      {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'DELETE', signal
-    },
-      );
-    }
-
-
-
-export const getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext> => {
-
-const mutationKey = ['deleteCompaniesCompanyIdVacanciesVacancyId'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, {companyId: string;vacancyId: string}> = (props) => {
-          const {companyId,vacancyId} = props ?? {};
-
-          return  deleteCompaniesCompanyIdVacanciesVacancyId(companyId,vacancyId,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>>
-
-    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationError = DtoErrorResponse
-
-    /**
- * @summary Delete vacancy
- */
-export const useDeleteCompaniesCompanyIdVacanciesVacancyId = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>,
-        TError,
-        {companyId: string;vacancyId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions(options), queryClient);
     }
     /**
  * Returns vacancy by id, company id should be correct, otherwise it's 404
@@ -372,6 +309,69 @@ export function useGetCompaniesCompanyIdVacanciesVacancyId<TData = Awaited<Retur
 
 
 /**
+ * Deletes vacancy by id
+ * @summary Delete vacancy
+ */
+export const deleteCompaniesCompanyIdVacanciesVacancyId = (
+    companyId: string,
+    vacancyId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<void>(
+      {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext> => {
+
+const mutationKey = ['deleteCompaniesCompanyIdVacanciesVacancyId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, {companyId: string;vacancyId: string}> = (props) => {
+          const {companyId,vacancyId} = props ?? {};
+
+          return  deleteCompaniesCompanyIdVacanciesVacancyId(companyId,vacancyId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>>
+
+    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationError = DtoErrorResponse
+
+    /**
+ * @summary Delete vacancy
+ */
+export const useDeleteCompaniesCompanyIdVacanciesVacancyId = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>,
+        TError,
+        {companyId: string;vacancyId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions(options), queryClient);
+    }
+    /**
  * Partially updates vacancy fields. Nil fields are ignored (not updated).
  * @summary Update vacancy
  */

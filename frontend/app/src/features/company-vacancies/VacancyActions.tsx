@@ -57,6 +57,8 @@ export function VacancyActions({
 
   const isDraft = status === DtoVacancyFullResponseStatus.draft
   const isPublished = status === DtoVacancyFullResponseStatus.published
+  const isArchived = status === DtoVacancyFullResponseStatus.archived
+  const canPublish = isDraft || isArchived
 
   async function invalidate() {
     await Promise.all([
@@ -132,7 +134,7 @@ export function VacancyActions({
           : 'flex flex-wrap gap-2 border-t pt-4'
       }
     >
-      {isDraft && (
+      {canPublish && (
         <Button
           size={size}
           variant="outline"

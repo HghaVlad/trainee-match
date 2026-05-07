@@ -39,9 +39,16 @@ function CreateView({ companyId }: { companyId: string }) {
           description: payload.description,
           city: payload.city,
           workFormat: payload.workFormat,
+          employmentType: payload.employmentType,
           salaryFrom: payload.salaryFrom,
           salaryTo: payload.salaryTo,
           isPaid: payload.isPaid,
+          hoursPerWeekFrom: payload.hoursPerWeekFrom,
+          hoursPerWeekTo: payload.hoursPerWeekTo,
+          durationFromDays: payload.durationFromDays,
+          durationToDays: payload.durationToDays,
+          flexibleSchedule: payload.flexibleSchedule,
+          internshipToOffer: payload.internshipToOffer,
         },
       })
       await qc.invalidateQueries({

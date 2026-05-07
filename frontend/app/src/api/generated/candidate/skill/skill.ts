@@ -31,98 +31,6 @@ import { mutatorFn } from '../../../../shared/api/http/client';
 
 
 /**
- * @summary Get skill by ID
- */
-export const getSkillId = (
-    id: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<DtoSkillResponse>(
-      {url: `/skill/${id}`, method: 'GET', signal
-    },
-      );
-    }
-
-
-
-
-export const getGetSkillIdQueryKey = (id: string,) => {
-    return [
-    `/skill/${id}`
-    ] as const;
-    }
-
-
-export const getGetSkillIdQueryOptions = <TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetSkillIdQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkillId>>> = ({ signal }) => getSkillId(id, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetSkillIdQueryResult = NonNullable<Awaited<ReturnType<typeof getSkillId>>>
-export type GetSkillIdQueryError = DtoErrorResponse
-
-
-export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getSkillId>>,
-          TError,
-          Awaited<ReturnType<typeof getSkillId>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getSkillId>>,
-          TError,
-          Awaited<ReturnType<typeof getSkillId>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Get skill by ID
- */
-
-export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetSkillIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-/**
  * @summary List all skills
  */
 export const getSkillList = (
@@ -203,6 +111,98 @@ export function useGetSkillList<TData = Awaited<ReturnType<typeof getSkillList>>
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetSkillListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Get skill by ID
+ */
+export const getSkillId = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoSkillResponse>(
+      {url: `/skill/${id}`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getGetSkillIdQueryKey = (id: string,) => {
+    return [
+    `/skill/${id}`
+    ] as const;
+    }
+
+
+export const getGetSkillIdQueryOptions = <TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSkillIdQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkillId>>> = ({ signal }) => getSkillId(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSkillIdQueryResult = NonNullable<Awaited<ReturnType<typeof getSkillId>>>
+export type GetSkillIdQueryError = DtoErrorResponse
+
+
+export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSkillId>>,
+          TError,
+          Awaited<ReturnType<typeof getSkillId>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSkillId>>,
+          TError,
+          Awaited<ReturnType<typeof getSkillId>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get skill by ID
+ */
+
+export function useGetSkillId<TData = Awaited<ReturnType<typeof getSkillId>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSkillId>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSkillIdQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
