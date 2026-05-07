@@ -48,7 +48,7 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - keycloak
+        - keycloak
 
   candidate-db:
     image: postgres:17
@@ -78,12 +78,10 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: candidate_db
       ADDR: 0.0.0.0:8081
-      GRPCADDR: 0.0.0.0:8085
       JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
 
     ports:
       - "8081:8081"
-      - "8085:8085"
     depends_on:
       candidate-db:
         condition: service_healthy

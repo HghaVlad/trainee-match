@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type CandidateRepo struct {

@@ -9,11 +9,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"google.golang.org/grpc"
-
-	grpc2 "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/grpc"
-
-	candidatev1 "github.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
@@ -26,15 +21,14 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
 )
 
 type App struct {
-	httpServer   *http.Server
-	grpcServer   *grpc.Server
-	grpcListener net.Listener
-	Db           *pgxpool.Pool
+	server *http.Server
+	Db     *pgxpool.Pool
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -58,11 +52,12 @@ func Build(conf *config.Config) (*App, error) {
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo)
 	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo)
+	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo)
 
 	getSkillUC := get_skill.New(skillRepo)
 
 	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
-	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 
@@ -75,77 +70,26 @@ func Build(conf *config.Config) (*App, error) {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	grpcServer := grpc.NewServer()
-	candidateService := grpc2.NewCandidateService(getCandidateByUserIdUC, getResumeUC)
-	candidatev1.RegisterCandidateServiceServer(grpcServer, candidateService)
-	grpcLis, err := net.Listen("tcp", conf.GrpcAddr)
-	if err != nil {
-		return nil, err
-	}
-
 	return &App{
-		httpServer:   httpServer,
-		Db:           pgPool,
-		grpcServer:   grpcServer,
-		grpcListener: grpcLis,
+		server: httpServer,
+		Db:     pgPool,
 	}, nil
 }
 
 func (app *App) Run() error {
-	errCh := make(chan error, 2)
-
-	go func() {
-		err := app.httpServer.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
-			return
-		}
-		errCh <- nil
-	}()
-	go func() {
-		if err := app.grpcServer.Serve(app.grpcListener); err != nil {
-			errCh <- err
-			return
-		}
-		errCh <- nil
-	}()
-
-	for {
-		err := <-errCh
-		if err != nil {
-			return err
-		}
+	slog.Info("Server started")
+	err := app.server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		slog.Error("http listening server err", "error", err)
 	}
+	return err
 }
 
 func (app *App) Shutdown(ctx context.Context) {
-	if app.httpServer != nil {
-		if err := app.httpServer.Shutdown(ctx); err != nil {
-			slog.Error("http shutdown error", "error", err)
-		}
+	err := app.server.Shutdown(ctx)
+	if err != nil {
+		slog.Error("shutdown error", "error", err)
 	}
-
-	if app.grpcServer != nil {
-		done := make(chan struct{})
-		go func() {
-			app.grpcServer.GracefulStop()
-			close(done)
-		}()
-
-		select {
-		case <-done:
-		case <-ctx.Done():
-			app.grpcServer.Stop()
-		}
-	}
-
-	if app.grpcListener != nil {
-		if err := app.grpcListener.Close(); err != nil {
-			slog.Error("grpc listener close error", "error", err)
-		}
-	}
-
-	if app.Db != nil {
-		app.Db.Close()
-	}
+	slog.Info("Server stopped")
+	app.Db.Close()
 }

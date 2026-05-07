@@ -3,8 +3,9 @@ package update_resume
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 //go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
@@ -62,6 +63,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		}
 		resume.Status = status
 	}
+
 	if req.Data != nil {
 		if req.Data.SkillsList != nil {
 			ok, err := uc.skillRepo.AreSkillsExist(ctx, *req.Data.SkillsList)
