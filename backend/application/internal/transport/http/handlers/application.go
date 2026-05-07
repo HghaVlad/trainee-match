@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
@@ -10,6 +11,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
 
@@ -17,6 +20,7 @@ type Handler struct {
 	apply             applyUC
 	listCandidateApps listCandidateAppsUC
 	getCandidateView  getCandidateViewUC
+	listHrApps        listHrAppsUC
 	logger            *slog.Logger
 }
 
@@ -25,23 +29,9 @@ func NewHandler(deps *Deps) *Handler {
 		apply:             deps.Apply,
 		listCandidateApps: deps.ListCandidateApps,
 		getCandidateView:  deps.GetCandidateViewUC,
+		listHrApps:        deps.ListHrApps,
 		logger:            deps.Logger,
 	}
-}
-
-func (h *Handler) ListMyApplications(
-	ctx context.Context,
-	request oapi.ListMyApplicationsRequestObject,
-) (oapi.ListMyApplicationsResponseObject, error) {
-	ident := middleware.IdentityFromContext(ctx)
-	req := mappers.ListMyApplicationsReqToUC(request)
-
-	resp, err := h.listCandidateApps.Execute(ctx, req, *ident)
-	if err != nil {
-		return nil, err
-	}
-
-	return mappers.CandidateListResponseToHTTP(resp), nil
 }
 
 func (h *Handler) CreateApplication(
@@ -87,12 +77,59 @@ func (h *Handler) GetMyApplicationHistory(
 	panic("implement me")
 }
 
+func (h *Handler) ListMyApplications(
+	ctx context.Context,
+	request oapi.ListMyApplicationsRequestObject,
+) (oapi.ListMyApplicationsResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	req := mappers.ListMyApplicationsReqToUC(request)
+
+	resp, err := h.listCandidateApps.Execute(ctx, req, *ident)
+	if err != nil {
+		return nil, err
+	} // TODO: add normal errors
+
+	return mappers.CandidateListResponseToHTTP(resp), nil
+}
+
 func (h *Handler) WithdrawApplication(
 	ctx context.Context,
 	request oapi.WithdrawApplicationRequestObject,
 ) (oapi.WithdrawApplicationResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
+}
+
+func (h *Handler) ListCompanyApplications(
+	ctx context.Context,
+	request oapi.ListCompanyApplicationsRequestObject,
+) (oapi.ListCompanyApplicationsResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	req := mappers.ListCompanyApplicationsReqToUC(request)
+
+	resp, err := h.listHrApps.Execute(ctx, req, *ident)
+
+	if err != nil {
+		return hrCompListErrToResponse(err)
+	}
+
+	return oapi.ListCompanyApplications200JSONResponse(mappers.HrListResponseToHTTP(resp)), nil
+}
+
+func (h *Handler) ListVacancyApplications(
+	ctx context.Context,
+	request oapi.ListVacancyApplicationsRequestObject,
+) (oapi.ListVacancyApplicationsResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	req := mappers.ListVacancyApplicationsReqToUC(request)
+
+	resp, err := h.listHrApps.Execute(ctx, req, *ident)
+
+	if err != nil {
+		return hrVacListErrToResponse(err)
+	}
+
+	return oapi.ListVacancyApplications200JSONResponse(mappers.HrListResponseToHTTP(resp)), nil
 }
 
 func (h *Handler) GetHrApplication(
@@ -143,14 +180,6 @@ func (h *Handler) GetCompanyAnalyticsSummary(
 	panic("implement me")
 }
 
-func (h *Handler) ListCompanyApplications(
-	ctx context.Context,
-	request oapi.ListCompanyApplicationsRequestObject,
-) (oapi.ListCompanyApplicationsResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
 func (h *Handler) GetVacancyDynamics(
 	ctx context.Context,
 	request oapi.GetVacancyDynamicsRequestObject,
@@ -171,14 +200,6 @@ func (h *Handler) GetVacancyAnalyticsSummary(
 	ctx context.Context,
 	request oapi.GetVacancyAnalyticsSummaryRequestObject,
 ) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (h *Handler) ListVacancyApplications(
-	ctx context.Context,
-	request oapi.ListVacancyApplicationsRequestObject,
-) (oapi.ListVacancyApplicationsResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
 }
@@ -222,6 +243,38 @@ func getCandViewErrToResponse(err error) (oapi.GetMyApplicationResponseObject, e
 
 	case errors.Is(err, application.ErrNotFound):
 		return oapi.GetMyApplication404Response{}, nil
+
+	default:
+		return nil, err
+	}
+}
+
+func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
+	switch {
+	case errors.Is(err, application.ErrAccessDenied),
+		errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.ListCompanyApplications403Response{}, nil
+
+	case errors.Is(err, projection.ErrVacancyNotFound):
+		return oapi.ListCompanyApplications404Response{}, nil
+
+	default:
+		return nil, err
+	}
+}
+
+func hrVacListErrToResponse(err error) (oapi.ListVacancyApplicationsResponseObject, error) {
+	switch {
+	case errors.Is(err, cursors.ErrUnsupportedOrder),
+		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
+		return nil, fmt.Errorf("400: %v", err) // TODO: 400
+
+	case errors.Is(err, application.ErrAccessDenied),
+		errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.ListVacancyApplications403Response{}, nil
+
+	case errors.Is(err, projection.ErrVacancyNotFound):
+		return oapi.ListVacancyApplications404Response{}, nil
 
 	default:
 		return nil, err

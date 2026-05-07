@@ -8,6 +8,7 @@ var (
 	ErrVacancyNotPublished = errors.New("vacancy must be published")
 	ErrResumeNotPublished  = errors.New("resume must be published")
 	ErrResumeAccessDenied  = errors.New("resume access denied")
+	ErrAccessDenied        = errors.New("access denied")
 )
 
 var (

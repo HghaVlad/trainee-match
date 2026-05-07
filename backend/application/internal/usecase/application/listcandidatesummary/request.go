@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 )
 
 type Request struct {
@@ -11,12 +12,5 @@ type Request struct {
 	CompanyID *uuid.UUID
 	Cursor    string
 	Limit     int
-	Order     Order
+	Order     cursors.SummaryOrder
 }
-
-type Order string
-
-const (
-	OrderCreatedAtDesc = "createdAtDesc"
-	OrderUpdatedAtDesc = "updatedAtDesc"
-)

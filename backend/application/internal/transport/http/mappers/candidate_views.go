@@ -3,7 +3,6 @@ package mappers
 import (
 	openapitypes "github.com/oapi-codegen/runtime/types"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
@@ -16,39 +15,6 @@ func ApplyReqToUC(dto oapi.CreateApplicationRequestObject) apply.Request {
 		ResumeID:    dto.Body.ResumeId,
 		CoverLetter: dto.Body.CoverLetter,
 	}
-}
-
-func ListMyApplicationsReqToUC(dto oapi.ListMyApplicationsRequestObject) listcandidatesummary.Request {
-	req := listcandidatesummary.Request{
-		Limit: 20,
-		Order: listcandidatesummary.OrderCreatedAtDesc,
-	}
-
-	if dto.Params.Statuses != nil {
-		req.Statuses = make([]application.Status, 0, len(*dto.Params.Statuses))
-		for _, status := range *dto.Params.Statuses {
-			req.Statuses = append(req.Statuses, application.Status(status))
-		}
-	}
-
-	if dto.Params.CompanyId != nil {
-		companyID := *dto.Params.CompanyId
-		req.CompanyID = &companyID
-	}
-
-	if dto.Params.Cursor != nil {
-		req.Cursor = *dto.Params.Cursor
-	}
-
-	if dto.Params.Limit != nil {
-		req.Limit = *dto.Params.Limit
-	}
-
-	if dto.Params.Sort != nil {
-		req.Order = listcandidatesummary.Order(*dto.Params.Sort)
-	}
-
-	return req
 }
 
 func CandidateListResponseToHTTP(resp *listcandidatesummary.Response) oapi.ListMyApplications200JSONResponse {

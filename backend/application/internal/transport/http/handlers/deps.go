@@ -8,6 +8,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	appviews "github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
@@ -16,6 +17,7 @@ type Deps struct {
 	Apply              applyUC
 	ListCandidateApps  listCandidateAppsUC
 	GetCandidateViewUC getCandidateViewUC
+	ListHrApps         listHrAppsUC
 	Logger             *slog.Logger
 }
 
@@ -33,4 +35,12 @@ type listCandidateAppsUC interface {
 		req listcandidatesummary.Request,
 		ident identity.Identity,
 	) (*listcandidatesummary.Response, error)
+}
+
+type listHrAppsUC interface {
+	Execute(
+		ctx context.Context,
+		req listhrsummary.Request,
+		ident identity.Identity,
+	) (*listhrsummary.Response, error)
 }

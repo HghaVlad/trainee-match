@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
@@ -14,8 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
-	listcandidatesummary "github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 )
 
 type ApplicationRepo struct {
@@ -121,19 +122,19 @@ func (a *ApplicationRepo) GetByIDCandidateViewWithDetails(
 	return &view, nil
 }
 
-func (a *ApplicationRepo) ListCandidateSummaries(
+func (a *ApplicationRepo) ListCandidateAppSummaries(
 	ctx context.Context,
 	candidateID uuid.UUID,
 	statuses []application.Status,
 	companyID *uuid.UUID,
-	order listcandidatesummary.Order,
+	order cursors.SummaryOrder,
 	cursor any,
 	limit int,
-) ([]views.CandidateSummary, error) {
+) ([]views.CandidateAppSummary, error) {
 	q := a.getter.DefaultTrOrDB(ctx, a.db)
 
 	orderByColumn := "a.created_at"
-	if order == listcandidatesummary.OrderUpdatedAtDesc {
+	if order == cursors.OrderUpdatedAtDesc {
 		orderByColumn = "a.updated_at"
 	}
 
@@ -155,7 +156,7 @@ func (a *ApplicationRepo) ListCandidateSummaries(
 		conditions = append(conditions, fmt.Sprintf("a.company_id = $%d", len(args)))
 	}
 
-	if cur, ok := cursor.(*listcandidatesummary.SummaryCursor); ok && cur != nil {
+	if cur, ok := cursor.(*cursors.SummaryCursor); ok && cur != nil {
 		args = append(args, cur.SortAt, cur.AppID)
 		sortArgPos := len(args) - 1
 		idArgPos := len(args)
@@ -183,9 +184,9 @@ func (a *ApplicationRepo) ListCandidateSummaries(
 	}
 	defer rows.Close()
 
-	items := make([]views.CandidateSummary, 0, limit)
+	items := make([]views.CandidateAppSummary, 0, limit)
 	for rows.Next() {
-		var item views.CandidateSummary
+		var item views.CandidateAppSummary
 
 		err := rows.Scan(&item.AppID, &item.Status, &item.VacancyID, &item.VacancyTitle,
 			&item.CompanyID, &item.CompanyName, &item.CreatedAt, &item.UpdatedAt)
@@ -199,6 +200,151 @@ func (a *ApplicationRepo) ListCandidateSummaries(
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate candidate summaries: %w", err)
+	}
+
+	return items, nil
+}
+
+func (a *ApplicationRepo) ListHrAppSummaries(
+	ctx context.Context,
+	statuses []application.Status,
+	companyID *uuid.UUID,
+	vacancyID *uuid.UUID,
+	createdFrom *time.Time,
+	createdTo *time.Time,
+	order cursors.HrSummaryOrder,
+	cursor any,
+	limit int,
+) ([]views.HrAppSummary, error) {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	var args []any
+	var conditions []string
+
+	if len(statuses) > 0 {
+		strStatuses := make([]string, 0, len(statuses))
+		for _, s := range statuses {
+			strStatuses = append(strStatuses, string(s))
+		}
+
+		args = append(args, strStatuses)
+		conditions = append(conditions, fmt.Sprintf("a.status = ANY($%d::application_status_enum[])", len(args)))
+	}
+
+	if companyID != nil {
+		args = append(args, *companyID)
+		conditions = append(conditions, fmt.Sprintf("a.company_id = $%d", len(args)))
+	}
+
+	if vacancyID != nil {
+		args = append(args, *vacancyID)
+		conditions = append(conditions, fmt.Sprintf("a.vacancy_id = $%d", len(args)))
+	}
+
+	if createdFrom != nil {
+		args = append(args, *createdFrom)
+		conditions = append(conditions, fmt.Sprintf("a.created_at >= $%d", len(args)))
+	}
+
+	if createdTo != nil {
+		args = append(args, *createdTo)
+		conditions = append(conditions, fmt.Sprintf("a.created_at <= $%d", len(args)))
+	}
+
+	orderBy := "a.created_at DESC, a.id DESC"
+	switch order {
+	case cursors.HrSummaryOrderUpdatedAtDesc:
+		orderBy = "a.updated_at DESC, a.id DESC"
+	case cursors.HrSummaryOrderCandidateFullName:
+		orderBy = "s.full_name ASC, a.id ASC"
+	}
+
+	if cur, ok := cursor.(*cursors.HrSummaryCursor); ok && cur != nil {
+		switch order {
+		case cursors.HrSummaryOrderUpdatedAtDesc:
+			if cur.SortAt != nil {
+				args = append(args, *cur.SortAt, cur.AppID)
+				sortArgPos := len(args) - 1
+				idArgPos := len(args)
+				conditions = append(conditions,
+					fmt.Sprintf("(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))", sortArgPos, sortArgPos, idArgPos),
+				)
+			}
+		case cursors.HrSummaryOrderCandidateFullName:
+			if cur.FullName != nil {
+				args = append(args, *cur.FullName, cur.AppID)
+				nameArgPos := len(args) - 1
+				idArgPos := len(args)
+				conditions = append(conditions,
+					fmt.Sprintf("(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))", nameArgPos, nameArgPos, idArgPos),
+				)
+			}
+		default:
+			if cur.SortAt != nil {
+				args = append(args, *cur.SortAt, cur.AppID)
+				sortArgPos := len(args) - 1
+				idArgPos := len(args)
+				conditions = append(conditions,
+					fmt.Sprintf("(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))", sortArgPos, sortArgPos, idArgPos),
+				)
+			}
+		}
+	}
+
+	args = append(args, limit)
+	limitPos := len(args)
+
+	query := fmt.Sprintf(`
+		SELECT
+			a.id,
+			a.status,
+			a.vacancy_id,
+			COALESCE(v.title, ''),
+			s.email,
+			s.full_name,
+			s.telegram,
+			s.created_at,
+			a.created_at,
+			a.updated_at
+		FROM applications a
+		LEFT JOIN vacancy_projection v ON v.id = a.vacancy_id
+		JOIN application_snapshots s ON s.id = a.snapshot_id
+		WHERE %s
+		ORDER BY %s
+		LIMIT $%d
+	`, strings.Join(conditions, " AND "), orderBy, limitPos)
+
+	rows, err := q.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list hr summaries: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]views.HrAppSummary, 0, limit)
+	for rows.Next() {
+		var item views.HrAppSummary
+
+		err := rows.Scan(
+			&item.AppID,
+			&item.Status,
+			&item.VacancyID,
+			&item.VacancyTitle,
+			&item.AppSnap.Email,
+			&item.AppSnap.FullName,
+			&item.AppSnap.Telegram,
+			&item.AppSnap.CreatedAt,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan hr summary: %w", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate hr summaries: %w", err)
 	}
 
 	return items, nil

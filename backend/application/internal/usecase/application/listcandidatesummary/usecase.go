@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
 
@@ -26,19 +27,19 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 	}
 
 	if req.Order == "" {
-		req.Order = OrderCreatedAtDesc
+		req.Order = cursors.OrderCreatedAtDesc
 	}
 
 	if !req.Order.IsValid() {
-		return nil, ErrUnsupportedOrder
+		return nil, cursors.ErrUnsupportedOrder
 	}
 
-	cursor, err := decodeCursor(req.Cursor, req.Order)
+	cursor, err := cursors.DecodeSummaryCursor(req.Cursor, req.Order)
 	if err != nil {
 		return nil, err
 	}
 
-	items, err := u.repo.ListCandidateSummaries(
+	items, err := u.repo.ListCandidateAppSummaries(
 		ctx,
 		ident.UserID,
 		req.Statuses,
@@ -52,7 +53,7 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 	}
 
 	nextCursor, items := getNextCursor(items, req.Limit, req.Order)
-	encodedCursor, err := encodeCursor(req.Order, nextCursor)
+	encodedCursor, err := cursors.EncodeCursor(req.Order, nextCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +65,11 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 	}, nil
 }
 
-func getNextCursor(items []views.CandidateSummary, limit int, order Order) (*SummaryCursor, []views.CandidateSummary) {
+func getNextCursor(
+	items []views.CandidateAppSummary,
+	limit int,
+	order cursors.SummaryOrder,
+) (*cursors.SummaryCursor, []views.CandidateAppSummary) {
 	if len(items) <= limit {
 		return nil, items
 	}
@@ -74,13 +79,13 @@ func getNextCursor(items []views.CandidateSummary, limit int, order Order) (*Sum
 
 	var sortAt time.Time
 	switch order {
-	case OrderUpdatedAtDesc:
+	case cursors.OrderUpdatedAtDesc:
 		sortAt = last.UpdatedAt
 	default:
 		sortAt = last.CreatedAt
 	}
 
-	return &SummaryCursor{
+	return &cursors.SummaryCursor{
 		SortAt: sortAt,
 		AppID:  last.AppID,
 	}, items

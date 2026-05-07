@@ -7,16 +7,17 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 )
 
 type repo interface {
-	ListCandidateSummaries(
+	ListCandidateAppSummaries(
 		ctx context.Context,
 		candidateID uuid.UUID,
 		statuses []application.Status,
 		companyID *uuid.UUID,
-		order Order,
+		order cursors.SummaryOrder,
 		cursor any,
 		limit int,
-	) ([]views.CandidateSummary, error)
+	) ([]views.CandidateAppSummary, error)
 }

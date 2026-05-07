@@ -21,6 +21,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 )
 
 type App struct {
@@ -44,6 +45,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	resumeProjRepo := repository.NewResumeProjection(pgDB, txGetter)
 	vacProjRepo := repository.NewVacancyProjection(pgDB, txGetter)
 	candProjRepo := repository.NewCandidateProjection(pgDB, txGetter)
+	compMemProjRepo := repository.NewCompanyMemberProjection(pgDB, txGetter)
 
 	appSnapHasher := hash.NewAppSnapshotHasher()
 
@@ -60,6 +62,8 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	listCandidateAppsUC := listcandidatesummary.NewUsecase(appRepo)
 	getCandidateView := getcandidateview.NewUsecase(appRepo)
 
+	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
 		return nil, err
@@ -69,6 +73,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		Apply:              applyUC,
 		ListCandidateApps:  listCandidateAppsUC,
 		GetCandidateViewUC: getCandidateView,
+		ListHrApps:         listHrApps,
 		Logger:             logger,
 	}
 
