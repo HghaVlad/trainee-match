@@ -3,9 +3,10 @@ package http
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
-	"github.com/go-chi/chi/v5"
 )
 
 type RouterDeps struct {
@@ -15,7 +16,12 @@ type RouterDeps struct {
 	skillHandler     *handlers.Skill
 }
 
-func NewRouterDeps(authMiddleware *auth.Middleware, candidateHandler *handlers.Candidate, resumeHandler *handlers.Resume, skillHandler *handlers.Skill) *RouterDeps {
+func NewRouterDeps(
+	authMiddleware *auth.Middleware,
+	candidateHandler *handlers.Candidate,
+	resumeHandler *handlers.Resume,
+	skillHandler *handlers.Skill,
+) *RouterDeps {
 	return &RouterDeps{
 		authMiddleware:   authMiddleware,
 		candidateHandler: candidateHandler,
@@ -25,11 +31,9 @@ func NewRouterDeps(authMiddleware *auth.Middleware, candidateHandler *handlers.C
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
-
 	router := chi.NewRouter()
 
 	router.Route("/api/v1/candidate", func(r chi.Router) {
-
 		r.Group(func(r chi.Router) {
 			r.Use(deps.authMiddleware.Handler)
 			r.Get("/me", deps.candidateHandler.GetMe)
@@ -46,6 +50,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.Get("/", deps.resumeHandler.ListResumes)
 			r.Get("/{id}", deps.resumeHandler.GetResume)
 			r.Patch("/{id}", deps.resumeHandler.UpdateResume) // Changed from PUT to PATCH
+			r.Delete("/{id}", deps.resumeHandler.DeleteResume)
 		})
 	})
 

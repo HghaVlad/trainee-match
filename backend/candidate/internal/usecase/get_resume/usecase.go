@@ -3,8 +3,9 @@ package get_resume
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 //go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
@@ -30,12 +31,19 @@ func New(resumeRepo ResumeRepo, candidateRepo CandidateRepo) *UseCase {
 	}
 }
 
-// TODO: add check that user has access to this resume
 func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Response, error) {
+	candidate, err := uc.candidateRepo.GetByUserID(ctx, UserId)
+	if err != nil {
+		return nil, err
+	}
 	resume, err := uc.resumeRepo.GetById(ctx, resumeId)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if candidate.ID != resume.CandidateId {
+		return nil, domain.ErrResumeNotFound
 	}
 
 	status, err := domain.Format(resume.Status)

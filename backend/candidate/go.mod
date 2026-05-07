@@ -3,17 +3,20 @@ module github.com/HghaVlad/trainee-match/backend/candidate
 go 1.24.0
 
 require (
+	github.com/HghaVlad/trainee-match/backend/contracts/go v1.0.0
 	github.com/go-chi/chi/v5 v5.2.4
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/lestrrat-go/jwx/v3 v3.0.13
-	github.com/lib/pq v1.11.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
+	google.golang.org/grpc v1.74.2
 )
+
+replace github.com/HghaVlad/trainee-match/backend/contracts/go => ../contracts/go
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -41,6 +44,7 @@ require (
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc/v3 v3.0.2 // indirect
 	github.com/lestrrat-go/option/v2 v2.0.0 // indirect
+	github.com/lib/pq v1.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
@@ -61,5 +65,7 @@ require (
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
+	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

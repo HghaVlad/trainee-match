@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Db     DB     `mapstructure:"DB"`
-	Addr   string `mapstructure:"ADDR"`
-	JWKUrl string `mapstructure:"JWKURL"`
+	Db       DB     `mapstructure:"DB"`
+	Addr     string `mapstructure:"ADDR"`
+	GrpcAddr string `mapstructure:"GRPCADDR"`
+	JWKUrl   string `mapstructure:"JWKURL"`
 }
 
 func Load() (*Config, error) {
@@ -26,6 +27,7 @@ func Load() (*Config, error) {
 	v.SetDefault("DB.NAME", "candidate")
 
 	v.BindEnv("Addr", "ADDR")
+	v.BindEnv("GrpcAddr", "GRPCADDR")
 	v.BindEnv("JWKUrl", "JWKURL")
 
 	v.SetConfigName("config")
@@ -40,6 +42,5 @@ func Load() (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, err
 	}
-
 	return &cfg, nil
 }

@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume/mocks"
-	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 )
@@ -20,6 +21,7 @@ var (
 func TestGetById(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.New()
+	userID := uuid.New()
 	candidateId := uuid.New()
 	now := time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC)
 
@@ -41,6 +43,10 @@ func TestGetById(t *testing.T) {
 			SkillsList:      []uuid.UUID{uuid.New()},
 		},
 	}
+	domainCandidate := domain.Candidate{
+		ID:     candidateId,
+		UserId: userID,
+	}
 
 	validResp := &Response{
 		ID:          id,
@@ -52,32 +58,53 @@ func TestGetById(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockSetup     func(resumeRepo *mocks.ResumeRepo)
+		mockSetup     func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo)
 		reqUserId     uuid.UUID
 		expectedError error
 	}{
 		{
 			name: "valid get",
-			mockSetup: func(resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
 				resumeRepo.On("GetById", ctx, id).Return(domainResume, nil).Once()
+				candidateRepo.On("GetByUserID", ctx, userID).Return(domainCandidate, nil).Once()
 			},
-			reqUserId:     uuid.New(),
+			reqUserId:     userID,
 			expectedError: nil,
 		},
 		{
 			name: "not found",
-			mockSetup: func(resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
+				candidateRepo.On("GetByUserID", ctx, userID).Return(domainCandidate, nil).Once()
 				resumeRepo.On("GetById", ctx, id).Return(domain.Resume{}, domain.ErrResumeNotFound).Once()
 			},
-			reqUserId:     uuid.New(),
+			reqUserId:     userID,
 			expectedError: domain.ErrResumeNotFound,
 		},
 		{
-			name: "repo error",
-			mockSetup: func(resumeRepo *mocks.ResumeRepo) {
+			name: "another user",
+			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
+				resumeRepo.On("GetById", ctx, id).Return(domain.Resume{ID: id, CandidateId: uuid.New()}, nil).Once()
+				candidateRepo.On("GetByUserID", ctx, userID).Return(domainCandidate, nil).Once()
+			},
+			reqUserId:     userID,
+			expectedError: domain.ErrResumeNotFound,
+		},
+		{
+			name: "resume repo error",
+			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
+				candidateRepo.On("GetByUserID", ctx, userID).Return(domainCandidate, nil).Once()
 				resumeRepo.On("GetById", ctx, id).Return(domain.Resume{}, ErrDb).Once()
 			},
-			reqUserId:     uuid.New(),
+			reqUserId:     userID,
+			expectedError: ErrDb,
+		},
+		{
+			name: "candidate repo error",
+			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
+				resumeRepo.On("GetById", ctx, id).Return(domainResume, nil).Maybe()
+				candidateRepo.On("GetByUserID", ctx, userID).Return(domain.Candidate{}, ErrDb).Once()
+			},
+			reqUserId:     userID,
 			expectedError: ErrDb,
 		},
 	}
@@ -85,11 +112,12 @@ func TestGetById(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resumeRepo := &mocks.ResumeRepo{}
+			candidateRepo := &mocks.CandidateRepo{}
 			if tt.mockSetup != nil {
-				tt.mockSetup(resumeRepo)
+				tt.mockSetup(resumeRepo, candidateRepo)
 			}
 
-			uc := New(resumeRepo, nil)
+			uc := New(resumeRepo, candidateRepo)
 			resp, err := uc.GetById(ctx, id, tt.reqUserId)
 			if tt.expectedError != nil {
 				require.Error(t, err)
@@ -123,7 +151,9 @@ func TestGetByCandidateId(t *testing.T) {
 		{
 			name: "valid get",
 			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
-				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).Once()
+				candidateRepo.On("GetByUserID", ctx, userId).
+					Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).
+					Once()
 				resumeRepo.On("GetByCandidateId", ctx, candidateId).Return(domainResumes, nil).Once()
 			},
 			expectedError: nil,
@@ -131,14 +161,18 @@ func TestGetByCandidateId(t *testing.T) {
 		{
 			name: "candidate not found",
 			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
-				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
+				candidateRepo.On("GetByUserID", ctx, userId).
+					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
+					Once()
 			},
 			expectedError: domain.ErrCandidateNotFound,
 		},
 		{
 			name: "repo error",
 			mockSetup: func(resumeRepo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo) {
-				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).Once()
+				candidateRepo.On("GetByUserID", ctx, userId).
+					Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).
+					Once()
 				resumeRepo.On("GetByCandidateId", ctx, candidateId).Return(nil, ErrDb).Once()
 			},
 			expectedError: ErrDb,
