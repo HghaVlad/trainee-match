@@ -178,7 +178,7 @@ services:
       "up"
     ]
     depends_on:
-      company-postgres:
+      application-postgres:
         condition: service_healthy
 
   application-service:

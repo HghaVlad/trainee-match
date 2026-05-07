@@ -48,6 +48,8 @@ func (a *ApplicationRepo) Create(ctx context.Context, app application.Applicatio
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "uniq_active_application" {
 			return application.ErrActiveAlreadyExists
 		}
+
+		return fmt.Errorf("create application: %v", err)
 	}
 
 	return nil
