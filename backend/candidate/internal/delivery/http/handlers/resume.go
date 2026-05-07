@@ -5,28 +5,32 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type Resume struct {
 	createResumeUC *create_resume.UseCase
 	getResumeUC    *get_resume.UseCase
 	updateResumeUC *update_resume.UseCase
+	removeResumeUC *remove_resume.Usecase
 }
 
 func NewResume(createResumeUC *create_resume.UseCase, getResumeUC *get_resume.UseCase,
-	updateResumeUC *update_resume.UseCase) *Resume {
+	updateResumeUC *update_resume.UseCase, removeResumeUC *remove_resume.Usecase) *Resume {
 	return &Resume{
 		createResumeUC: createResumeUC,
 		getResumeUC:    getResumeUC,
 		updateResumeUC: updateResumeUC,
+		removeResumeUC: removeResumeUC,
 	}
 }
 
@@ -190,6 +194,51 @@ func (res *Resume) UpdateResume(w http.ResponseWriter, r *http.Request) {
 	response := dto.UseCaseResponseToDtoResumeResponse(*updatedResumeResp)
 
 	helpers.RespondJSON(w, http.StatusOK, response)
+}
+
+// DeleteResume godoc
+// @Summary Delete a resume
+// @Tags resume
+// @Accept json
+// @Produce json
+// @Param id path string true "Resume ID"
+// @Success 200 {string} string "ok"
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /resume/{id} [delete]
+func (res *Resume) DeleteResume(w http.ResponseWriter, r *http.Request) {
+	resumeId := chi.URLParam(r, "id")
+	if resumeId == "" {
+		helpers.RespondError(w, http.StatusBadRequest, "resume ID is required")
+		return
+	}
+
+	parsedId, err := uuid.Parse(resumeId)
+	if err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, "invalid resume ID format")
+		return
+	}
+
+	user, ok := auth.FromContext(r.Context())
+	if !ok {
+		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	req := remove_resume.Request{
+		ResumeId: parsedId,
+		UserId:   user.Id,
+	}
+
+	err = res.removeResumeUC.RemoveResume(r.Context(), req)
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+
+	helpers.RespondJSON(w, http.StatusNoContent, struct{ Message string }{Message: "ok"})
 }
 
 // ListResumes godoc

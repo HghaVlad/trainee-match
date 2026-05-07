@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
@@ -18,9 +20,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
@@ -49,11 +51,12 @@ func Build(conf *config.Config) (*App, error) {
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo)
 	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo)
+	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo)
 
 	getSkillUC := get_skill.New(skillRepo)
 
 	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
-	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 
@@ -73,7 +76,6 @@ func Build(conf *config.Config) (*App, error) {
 }
 
 func (app *App) Run() error {
-
 	slog.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {

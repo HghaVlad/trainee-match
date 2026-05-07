@@ -14,10 +14,12 @@ var (
 	ErrForbidden              = errors.New("forbidden")
 	ErrBirthdayInFuture       = errors.New("birthday cannot be in the future")
 	ErrInvalidPhoneFormat     = errors.New("invalid phone number format")
-	ErrInvalidTelegramFormat  = errors.New("telegram username must start with @ and contain only alphanumeric characters and underscores, 3-32 characters long")
-	ErrInvalidCityFormat      = errors.New("city is required")
-	ErrTelegramAlreadyExists  = errors.New("telegram username already exists")
-	ErrPhoneAlreadyExists     = errors.New("phone number already exists")
+	ErrInvalidTelegramFormat  = errors.New(
+		"telegram username must start with @ and contain only alphanumeric characters and underscores, 3-32 characters long",
+	)
+	ErrInvalidCityFormat     = errors.New("city is required")
+	ErrTelegramAlreadyExists = errors.New("telegram username already exists")
+	ErrPhoneAlreadyExists    = errors.New("phone number already exists")
 )
 
 type Candidate struct {

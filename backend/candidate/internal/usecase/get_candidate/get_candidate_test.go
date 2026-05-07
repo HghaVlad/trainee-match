@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate/mocks"
-	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 )

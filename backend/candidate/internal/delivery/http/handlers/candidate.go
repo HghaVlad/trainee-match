@@ -21,7 +21,11 @@ type Candidate struct {
 	getByUserId *get_candidate_by_user_id.UseCase
 }
 
-func NewCandidate(create *create_candidate.UseCase, update *update_candidate.UseCase, getByUserId *get_candidate_by_user_id.UseCase) *Candidate {
+func NewCandidate(
+	create *create_candidate.UseCase,
+	update *update_candidate.UseCase,
+	getByUserId *get_candidate_by_user_id.UseCase,
+) *Candidate {
 	return &Candidate{
 		create:      create,
 		update:      update,

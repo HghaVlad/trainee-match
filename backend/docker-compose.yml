@@ -47,6 +47,8 @@ services:
       KC_ADMIN_PASSWORD: admin
     ports:
       - "8000:8000"
+    depends_on:
+        - keycloak
 
   candidate-db:
     image: postgres:17
