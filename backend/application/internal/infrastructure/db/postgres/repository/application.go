@@ -209,132 +209,46 @@ func (a *ApplicationRepo) ListCandidateAppSummaries(
 
 func (a *ApplicationRepo) ListHrAppSummaries(
 	ctx context.Context,
+	hrUserID uuid.UUID,
 	statuses []application.Status,
-	companyID *uuid.UUID,
-	vacancyID *uuid.UUID,
-	createdFrom *time.Time,
-	createdTo *time.Time,
+	companyID, vacancyID *uuid.UUID,
+	createdFrom, createdTo *time.Time,
 	order cursors.HrSummaryOrder,
 	cursor any,
 	limit int,
 ) ([]views.HrAppSummary, error) {
 	q := a.getter.DefaultTrOrDB(ctx, a.db)
 
-	var args []any
-	var conditions []string
-
-	if len(statuses) > 0 {
-		strStatuses := make([]string, 0, len(statuses))
-		for _, s := range statuses {
-			strStatuses = append(strStatuses, string(s))
-		}
-
-		args = append(args, strStatuses)
-		conditions = append(conditions, fmt.Sprintf("a.status = ANY($%d::application_status_enum[])", len(args)))
-	}
-
-	if companyID != nil {
-		args = append(args, *companyID)
-		conditions = append(conditions, fmt.Sprintf("a.company_id = $%d", len(args)))
-	}
-
-	if vacancyID != nil {
-		args = append(args, *vacancyID)
-		conditions = append(conditions, fmt.Sprintf("a.vacancy_id = $%d", len(args)))
-	}
-
-	if createdFrom != nil {
-		args = append(args, *createdFrom)
-		conditions = append(conditions, fmt.Sprintf("a.created_at >= $%d", len(args)))
-	}
-
-	if createdTo != nil {
-		args = append(args, *createdTo)
-		conditions = append(conditions, fmt.Sprintf("a.created_at <= $%d", len(args)))
-	}
-
-	orderBy := "a.created_at DESC, a.id DESC"
-	switch order {
-	case cursors.HrSummaryOrderUpdatedAtDesc:
-		orderBy = "a.updated_at DESC, a.id DESC"
-	case cursors.HrSummaryOrderCandidateFullName:
-		orderBy = "s.full_name ASC, a.id ASC"
-	}
-
-	if cur, ok := cursor.(*cursors.HrSummaryCursor); ok && cur != nil {
-		switch order {
-		case cursors.HrSummaryOrderUpdatedAtDesc:
-			if cur.SortAt != nil {
-				args = append(args, *cur.SortAt, cur.AppID)
-				sortArgPos := len(args) - 1
-				idArgPos := len(args)
-				conditions = append(
-					conditions,
-					fmt.Sprintf(
-						"(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))",
-						sortArgPos,
-						sortArgPos,
-						idArgPos,
-					),
-				)
-			}
-		case cursors.HrSummaryOrderCandidateFullName:
-			if cur.FullName != nil {
-				args = append(args, *cur.FullName, cur.AppID)
-				nameArgPos := len(args) - 1
-				idArgPos := len(args)
-				conditions = append(
-					conditions,
-					fmt.Sprintf(
-						"(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))",
-						nameArgPos,
-						nameArgPos,
-						idArgPos,
-					),
-				)
-			}
-		default:
-			if cur.SortAt != nil {
-				args = append(args, *cur.SortAt, cur.AppID)
-				sortArgPos := len(args) - 1
-				idArgPos := len(args)
-				conditions = append(
-					conditions,
-					fmt.Sprintf(
-						"(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))",
-						sortArgPos,
-						sortArgPos,
-						idArgPos,
-					),
-				)
-			}
-		}
-	}
-
-	args = append(args, limit)
-	limitPos := len(args)
+	b := buildHrSummaryListQuery(
+		hrUserID,
+		statuses,
+		companyID,
+		vacancyID,
+		createdFrom,
+		createdTo,
+		order,
+		cursor,
+		limit,
+	)
 
 	query := fmt.Sprintf(`
-		SELECT
-			a.id,
-			a.status,
-			a.vacancy_id,
-			COALESCE(v.title, ''),
-			s.email,
-			s.full_name,
-			s.telegram,
-			s.created_at,
-			a.created_at,
-			a.updated_at
+		SELECT a.id, a.status, a.vacancy_id, COALESCE(v.title, ''),
+			s.email, s.full_name, s.telegram, s.created_at,
+			a.created_at, a.updated_at
 		FROM applications a
+		JOIN company_members cm ON cm.company_id = a.company_id
 		LEFT JOIN vacancy_projection v ON v.id = a.vacancy_id
 		JOIN application_snapshots s ON s.id = a.snapshot_id
 		WHERE %s
 		ORDER BY %s
 		LIMIT $%d
-	`, strings.Join(conditions, " AND "), orderBy, limitPos)
+	`,
+		strings.Join(b.conditions, " AND "),
+		b.orderBy,
+		b.limitPos,
+	)
 
-	rows, err := q.Query(ctx, query, args...)
+	rows, err := q.Query(ctx, query, b.args...)
 	if err != nil {
 		return nil, fmt.Errorf("list hr summaries: %w", err)
 	}
@@ -344,17 +258,9 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 	for rows.Next() {
 		var item views.HrAppSummary
 
-		err := rows.Scan(
-			&item.AppID,
-			&item.Status,
-			&item.VacancyID,
-			&item.VacancyTitle,
-			&item.AppSnap.Email,
-			&item.AppSnap.FullName,
-			&item.AppSnap.Telegram,
-			&item.AppSnap.CreatedAt,
-			&item.CreatedAt,
-			&item.UpdatedAt,
+		err := rows.Scan(&item.AppID, &item.Status, &item.VacancyID, &item.VacancyTitle,
+			&item.AppSnap.Email, &item.AppSnap.FullName, &item.AppSnap.Telegram,
+			&item.AppSnap.CreatedAt, &item.CreatedAt, &item.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan hr summary: %w", err)
@@ -368,4 +274,148 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 	}
 
 	return items, nil
+}
+
+type hrSummaryListQuery struct {
+	args       []any
+	conditions []string
+	orderBy    string
+	limitPos   int
+}
+
+func buildHrSummaryListQuery(
+	hrUserID uuid.UUID,
+	statuses []application.Status,
+	companyID *uuid.UUID,
+	vacancyID *uuid.UUID,
+	createdFrom *time.Time,
+	createdTo *time.Time,
+	order cursors.HrSummaryOrder,
+	cursor any,
+	limit int,
+) hrSummaryListQuery {
+	q := hrSummaryListQuery{
+		args: []any{hrUserID},
+		conditions: []string{
+			"cm.user_id = $1",
+			"cm.company_id = a.company_id",
+		},
+		orderBy: "a.created_at DESC, a.id DESC",
+	}
+
+	if len(statuses) > 0 {
+		strStatuses := make([]string, 0, len(statuses))
+		for _, s := range statuses {
+			strStatuses = append(strStatuses, string(s))
+		}
+
+		q.args = append(q.args, strStatuses)
+		q.conditions = append(
+			q.conditions,
+			fmt.Sprintf("a.status = ANY($%d::application_status_enum[])", len(q.args)),
+		)
+	}
+
+	if companyID != nil {
+		q.args = append(q.args, *companyID)
+		q.conditions = append(
+			q.conditions,
+			fmt.Sprintf("a.company_id = $%d", len(q.args)),
+		)
+	}
+
+	if vacancyID != nil {
+		q.args = append(q.args, *vacancyID)
+		q.conditions = append(
+			q.conditions,
+			fmt.Sprintf("a.vacancy_id = $%d", len(q.args)),
+		)
+	}
+
+	if createdFrom != nil {
+		q.args = append(q.args, *createdFrom)
+		q.conditions = append(
+			q.conditions,
+			fmt.Sprintf("a.created_at >= $%d", len(q.args)),
+		)
+	}
+
+	if createdTo != nil {
+		q.args = append(q.args, *createdTo)
+		q.conditions = append(
+			q.conditions,
+			fmt.Sprintf("a.created_at <= $%d", len(q.args)),
+		)
+	}
+
+	switch order {
+	case cursors.HrSummaryOrderUpdatedAtDesc:
+		q.orderBy = "a.updated_at DESC, a.id DESC"
+
+	case cursors.HrSummaryOrderCandidateFullName:
+		q.orderBy = "s.full_name ASC, a.id ASC"
+	}
+
+	if cur, ok := cursor.(*cursors.HrSummaryCursor); ok && cur != nil {
+		switch order {
+		case cursors.HrSummaryOrderUpdatedAtDesc:
+			if cur.SortAt != nil {
+				q.args = append(q.args, *cur.SortAt, cur.AppID)
+
+				sortPos := len(q.args) - 1
+				idPos := len(q.args)
+
+				q.conditions = append(
+					q.conditions,
+					fmt.Sprintf(
+						"(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))",
+						sortPos,
+						sortPos,
+						idPos,
+					),
+				)
+			}
+
+		case cursors.HrSummaryOrderCandidateFullName:
+			if cur.FullName != nil {
+				q.args = append(q.args, *cur.FullName, cur.AppID)
+
+				namePos := len(q.args) - 1
+				idPos := len(q.args)
+
+				q.conditions = append(
+					q.conditions,
+					fmt.Sprintf(
+						"(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))",
+						namePos,
+						namePos,
+						idPos,
+					),
+				)
+			}
+
+		default:
+			if cur.SortAt != nil {
+				q.args = append(q.args, *cur.SortAt, cur.AppID)
+
+				sortPos := len(q.args) - 1
+				idPos := len(q.args)
+
+				q.conditions = append(
+					q.conditions,
+					fmt.Sprintf(
+						"(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))",
+						sortPos,
+						sortPos,
+						idPos,
+					),
+				)
+			}
+		}
+	}
+
+	q.args = append(q.args, limit)
+	q.limitPos = len(q.args)
+
+	return q
 }

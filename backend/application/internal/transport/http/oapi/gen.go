@@ -180,13 +180,16 @@ func (e CandidateSortQuery) Valid() bool {
 
 // Defines values for HrSortQuery.
 const (
-	HrSortQueryCreatedAtDesc HrSortQuery = "createdAtDesc"
-	HrSortQueryUpdatedAtDesc HrSortQuery = "updatedAtDesc"
+	HrSortQueryCandidateFullNameAsc HrSortQuery = "candidateFullNameAsc"
+	HrSortQueryCreatedAtDesc        HrSortQuery = "createdAtDesc"
+	HrSortQueryUpdatedAtDesc        HrSortQuery = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the HrSortQuery enum.
 func (e HrSortQuery) Valid() bool {
 	switch e {
+	case HrSortQueryCandidateFullNameAsc:
+		return true
 	case HrSortQueryCreatedAtDesc:
 		return true
 	case HrSortQueryUpdatedAtDesc:
@@ -258,13 +261,16 @@ func (e GetCompanyDynamicsParamsInterval) Valid() bool {
 
 // Defines values for ListCompanyApplicationsParamsSort.
 const (
-	ListCompanyApplicationsParamsSortCreatedAtDesc ListCompanyApplicationsParamsSort = "createdAtDesc"
-	ListCompanyApplicationsParamsSortUpdatedAtDesc ListCompanyApplicationsParamsSort = "updatedAtDesc"
+	ListCompanyApplicationsParamsSortCandidateFullNameAsc ListCompanyApplicationsParamsSort = "candidateFullNameAsc"
+	ListCompanyApplicationsParamsSortCreatedAtDesc        ListCompanyApplicationsParamsSort = "createdAtDesc"
+	ListCompanyApplicationsParamsSortUpdatedAtDesc        ListCompanyApplicationsParamsSort = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the ListCompanyApplicationsParamsSort enum.
 func (e ListCompanyApplicationsParamsSort) Valid() bool {
 	switch e {
+	case ListCompanyApplicationsParamsSortCandidateFullNameAsc:
+		return true
 	case ListCompanyApplicationsParamsSortCreatedAtDesc:
 		return true
 	case ListCompanyApplicationsParamsSortUpdatedAtDesc:
@@ -297,13 +303,16 @@ func (e GetVacancyDynamicsParamsInterval) Valid() bool {
 
 // Defines values for ListVacancyApplicationsParamsSort.
 const (
-	CreatedAtDesc ListVacancyApplicationsParamsSort = "createdAtDesc"
-	UpdatedAtDesc ListVacancyApplicationsParamsSort = "updatedAtDesc"
+	CandidateFullNameAsc ListVacancyApplicationsParamsSort = "candidateFullNameAsc"
+	CreatedAtDesc        ListVacancyApplicationsParamsSort = "createdAtDesc"
+	UpdatedAtDesc        ListVacancyApplicationsParamsSort = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the ListVacancyApplicationsParamsSort enum.
 func (e ListVacancyApplicationsParamsSort) Valid() bool {
 	switch e {
+	case CandidateFullNameAsc:
+		return true
 	case CreatedAtDesc:
 		return true
 	case UpdatedAtDesc:
@@ -3085,48 +3094,48 @@ var swaggerSpec = []string{
 	"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",
-	"MEjQfI1yASvKC4lSKhUSIHPOpJ4hKKDp35CuK8i5eCGAPxffAtLPxX9ITFg85IZWVasd3dAFUyBWJO0d",
-	"nJaNtmxKQtbeVtinO4DPOMIZZ2oZ1v97mtF+HKS6RXjOn6YRzsg9zfScp1P9RFn55CbTYt+CMLM5LW7x",
-	"GL7+9vcYG93Z2oiBwxuSXMKXAqTSTzFnCpj5rxewJn9LbYQP3jR9KPpVCC4uK0M0UzaN+Q1JkCgn3UT4",
-	"HRdzmiTATMfnE8PNq4X4k5FCLbmg/4XkmeXwpzZIKHua1CJWXFybPXyoXUkVCHGEl8abraWCLADiCJ8x",
-	"kq4VjeVVkWXEIjkXPAehqEUAiRVdgWf60nOLDqCRVsYKhKScXXNrkxTuup76Uo+BKEOCsFtAH6fR6Q2O",
-	"alwuUk5UDUxWZPPu+H8sFiAOODat5H3LC7uf3fVxPWfP7wL+hlhB0tNEArC+n4t5RlX/EIorkg5vxh1V",
-	"y0SQu+3TbXwv8TEwbhTa+Y6Q/qI6emwrpaHEjpDbIBTa+hrKfK5nMFCuBf1lzUhGY/mBU7v6JqTnRfwZ",
-	"1JUiQo1NQKIqQPfszctA0c5b72ujtczAHu273SN3zDnCzqYlRO2VqTSx0ElYWsowswzIesVILpc8ACyX",
-	"xI2HFWSEpo3m9i8RZkWakrnOpWwQ73RdFGn6uwn+D90fBcgig19KpZEkoVp0kn7wBLbjNn3oRZYVSk+L",
-	"ZLlMxBfIjoZysk45SRBRSAe8NWquqtaWghRuBcn03APraG2AW1TkFOEtJfJUPHKXtga2F7RZB1HXeM3Y",
-	"3N3LGJxTLw3ct23PrCuL9v1CMKtwVPwsTfkdJGexRVc9Y9V/oLtnxqAITWUgP/GnkKM9xBYRA4Qm9qn6",
-	"QP7sWm/d6pivQLwHpWwCM4ibPVBKx0kqPTc2lvVVXQzPq1C0M2W0Xc+pVLzkTrvtWHvMcqQLneQGNtBR",
-	"6fEqXPlka1CTZetrqlIInxn4JmvGKLUXNWhbY5yocQbkw8rburYuo7Y5+ADyNRFyET1mNxyWd925yp5H",
-	"B+DQIOWyD5Q07AmwxyzgPZXKjNqNTof1Ok/nRfZ3A9+fXT7O1jQYnhDKDmsBF7kk8ne499nCnPMUiAmI",
-	"DO6VPX3dPT9JbNZWjT9WFV2z6xrIUpP85M36kqd7H3/sYRd7A76lGYe05kKG8ri3pnVneO+QruNHsvKM",
-	"KiP374HdqiWe/TSdTnvX5jLDEdngzRAIymGDy7H20z6Gely86RxqjffRRveednv02sjj2tcRlmwhueRC",
-	"oQykJLeAFoJnyMETKY7OL3E0Yl8sA9rN641q3dJL8wy5nDOkp+ahZXeT6mS9j3l2hoXqZBXuSZan9iKM",
-	"LVIaq9BKS702O5yZUyvkHcgikgogyRrBPZVKogUXSC2pROVyB9VixarnC2nkXGzlOhkRn6+sHWV8Bc2z",
-	"LWtNBgWf4Y8t9mSGfzou1JY9SIKOtGU/2tLYue+arzwNKwkh/3HhIWhLo0NEo/dhCciuUNlL5B7K8RJt",
-	"1oXwH5JqeCa1p8UckFSEYfTC2MSADQ3TiF5suevWjZe3/ylBhGEyHCbr7PwpQupX5ip2tHcFY5B2NU/9",
-	"S+ItN2X9l2Tb78cGLlgHbs5GXJod5sQ8rKrHRbeG0keHiLK65KXwsL9KZY1jYqMZ7qYzlcFLXAiq1lda",
-	"6vKCGIgAcVbogaqnd5XF/fOv66qkx7g282ttfUulclvGQdmCd7nhr/cKhOaGZx8uDBXxmUpGGLkFvZyT",
-	"T+wTe1NIykBKJIoUJBKwSA2s0HxtGczZh4vZJ/YKEY9WxoShJVkB4ixdI84AkS4lykFU9Mf0ty2q0jBE",
-	"BMyQw3iENMQj5BCuu1h+OKnn1ZuJqHT3hlrOxkUhIixB1N0vkoUCcUdEIvVw55dGcBLHer2eqNKuQ2vK",
-	"HrZRkOhuCQKQWsJai4oyyOYg5CdthsqGYP/CC11psWPQ6tIx1tYS4Bk+PXl9MjXOJgdGcopn+PXJ9OQ1",
-	"jkxxlcHChOR0sjqdkFbRxS0YyGkkutJerKPiv9atkgm/Gvhj2GLqJpMtZaybaHzPVt3vmK5eceWI5l7l",
-	"2y5y1XWTm5tWndlP0+nBKqoGz1YDRVauTwN6Gho/W8lCE7oVTLwyOdPldLhLt6LM9Hw93LNVEGd8WHXJ",
-	"bRCIsnVzGRFW5Fajz1tnA6Q3mwjnXAYQ3TkRK8sLQao3PFkfbtO2nbxtmkFDJ0ebDnhOnxQ8bdYZwI/v",
-	"bcqk6NsAj+728/MVM5Z5BjJV2qamhHGFFrxgpb7+8XyyBE4K20eDraPDlq2d2dDG/YPEITvbRMGIMnlo",
-	"vAGy2RphfoNmgNk5vjTfRnl2RzzCloK+GFVnyker6vc+nj01wPobtOOCU+nhYDtZ1qejo+BbHxF+Uyhu",
-	"n/v1ofjVikqqE95KN0cEHwzBlrA4zR4QyK5ATfPNMjNqiWzPtEt6InjWZlGGmTkSZR4AmP7XI1I4allI",
-	"gPoexDoOn7L1kPRN902SFxBYfJDVxzFHcxxtjs+coF0LwqS5PUZUGjnKe6SWY6iA2PIOO7qDpdg7I2sc",
-	"Or/kWNZ7mRbYgfPLYw524AgW0KehHaYUpMLr+eX+QB2Tg4UuMb8Z3I5Ivs4vw1nXEYCqJ386MA7r26f+",
-	"BEo5N19ZQjNzQq8+FdPpa3DpU/eXxsl09+fqOqbKwbb083/xu7hW7ldzqRP+qe7YSe221O690PRuoNJw",
-	"1Lnc14tcVlhUXlgeI9Y3n+RZOAa81w7uyl0gTR5cEfdmQqpryklSvivYFzrLy5XqtcLd73dc9fiIq5Pm",
-	"xw3G3LW0v/cxvk/18Y4nDeR9r3yGDlGssppJU6X5o01vV1hfAhD3KbU2Jt89uJv8nU3K2uirhSsCGbCr",
-	"RvnCk9rWSzeVYElIz5aXKj5axeOswqoRzdfI+1DOgW2ifiV5wBo6FTQ/tEUMvSzSF0CqPkjWBaVHOzlQ",
-	"9JAOnQcxlLGVNhUeHlVus4uBtL+4NapL6/NXz2SHX7nmx/9I2vOdDA1W+XSxe0wj93EEpsqoUaQ3X1ee",
-	"YQc+ZusmjP27Ivhd+VhpXnvzsfq7akc+NsjHqvKdIx/bsd6pL6Ku+pS6a0gdMqnRfKyU/FF8bCfb+l74",
-	"WLXlRz52EKs4AB8btIlhPrbl/Ygf2yKGXhrpCyBHPvaE0WNfPrbFUMbysQoPj+FjOxnIHnzsyK2eiFsF",
-	"UsNjSriPUQe5VbfCPMCtzMtsYlVZWiHS8n00OZtoKz8pv5JxEvPMIKcc66H6hvSWMimNybJFe1bvp7CL",
-	"2dxs/hcAAP//aHLF4x5hAAA=",
+	"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",
+	"UhqTZYv2rN5PYRezudn8LwAA//9LljSkNWEAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

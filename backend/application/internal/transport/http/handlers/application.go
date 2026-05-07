@@ -289,6 +289,15 @@ func handleListMyAppErr(err error) (oapi.ListMyApplicationsResponseObject, error
 
 func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
 	switch {
+	case errors.Is(err, cursors.ErrUnsupportedOrder),
+		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
+		return oapi.ListCompanyApplications400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
 	case errors.Is(err, application.ErrAccessDenied),
 		errors.Is(err, identity.ErrHrRoleRequired):
 		return oapi.ListCompanyApplications403JSONResponse{
@@ -298,7 +307,8 @@ func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObj
 			},
 		}, nil
 
-	case errors.Is(err, projection.ErrVacancyNotFound):
+	case errors.Is(err, projection.ErrCompanyNotFound),
+		errors.Is(err, projection.ErrVacancyNotFound):
 		return oapi.ListCompanyApplications404JSONResponse{
 			Error:   "not_found",
 			Message: err.Error(),

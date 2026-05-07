@@ -656,6 +656,7 @@ components:
         enum:
           - createdAtDesc
           - updatedAtDesc
+          - candidateFullNameAsc
         default: createdAtDesc
 
   responses:
