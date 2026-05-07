@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -52,6 +53,34 @@ func (repo *CompanyMemberRepo) Get(
 	}
 
 	return &memb, nil
+}
+
+func (repo *CompanyMemberRepo) GetFullView(
+	ctx context.Context,
+	userID, companyID uuid.UUID,
+) (*views.MemberFullView, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT cm.user_id, cm.company_id, cm.role, p.username, p.email
+	FROM company_members cm
+	JOIN hr_user_projection p ON p.user_id = cm.user_id
+	WHERE cm.user_id = $1 AND cm.company_id = $2`
+
+	var mem views.MemberFullView
+
+	err := q.QueryRow(ctx, query, userID, companyID).
+		Scan(&mem.Member.UserID, &mem.Member.CompanyID, &mem.Member.Role,
+			&mem.Username, &mem.Email)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, member.ErrCompanyMemberNotFound
+		}
+
+		return nil, fmt.Errorf("get company member: %w", err)
+	}
+
+	return &mem, nil
 }
 
 func (repo *CompanyMemberRepo) ListViewsByCompany(
