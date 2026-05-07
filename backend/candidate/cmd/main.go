@@ -41,6 +41,7 @@ func main() {
 	go func() {
 		errChan <- myApp.Run()
 	}()
+	slog.Info("App is run")
 
 	select {
 	case <-ctx.Done():
