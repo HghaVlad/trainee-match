@@ -46,7 +46,11 @@ func NewUsecase(
 	}
 }
 
-func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Identity) (*views.Details, error) {
+func (u *Usecase) Execute(
+	ctx context.Context,
+	req Request,
+	ident identity.Identity,
+) (*views.CandidateViewWithDetails, error) {
 	if ident.Role != identity.RoleCandidate {
 		return nil, identity.ErrCandidateRoleRequired
 	}
@@ -119,12 +123,7 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 		return nil, err
 	}
 
-	return &views.Details{
-		Application:    app,
-		VacProj:        vacProj,
-		Snapshot:       appSnap,
-		AllowedActions: []views.AllowedAction{views.AllowedActionWithdraw},
-	}, nil
+	return buildFullCandidateView(app, appSnap, vacProj), nil
 }
 
 func (u *Usecase) getResumeProjAndCheck(ctx context.Context, resID, candID uuid.UUID) (*projection.Resume, error) {
@@ -142,4 +141,36 @@ func (u *Usecase) getResumeProjAndCheck(ctx context.Context, resID, candID uuid.
 	}
 
 	return resumeProj, nil
+}
+
+func buildFullCandidateView(
+	app *application.Application,
+	appSnap *application.Snapshot,
+	vacProj *projection.Vacancy,
+) *views.CandidateViewWithDetails {
+	return &views.CandidateViewWithDetails{
+		AppID:        app.ID,
+		VacancyID:    vacProj.ID,
+		CompanyID:    vacProj.CompanyID,
+		VacancyTitle: vacProj.Title,
+		CompanyName:  vacProj.CompanyName,
+		Status:       app.Status,
+		CoverLetter:  app.CoverLetter,
+		Snapshot: views.ApplicationSnapshot{
+			ResumeData: appSnap.ResumeData,
+			Email:      appSnap.Email,
+			FullName:   appSnap.FullName,
+			Telegram:   appSnap.Telegram,
+			CreatedAt:  appSnap.CreatedAt, // TODO: not really tbh
+		},
+		CreatedAt: app.CreatedAt,
+		UpdatedAt: app.UpdatedAt,
+		StatusHistory: []views.StatusChangeCandidateView{
+			{
+				Status:        app.Status,
+				ChangedByRole: application.ActorCandidate,
+				CreatedAt:     app.CreatedAt},
+		},
+		AllowedActions: []views.AllowedAction{views.AllowedActionWithdraw},
+	}
 }

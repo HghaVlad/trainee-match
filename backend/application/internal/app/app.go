@@ -19,6 +19,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
 )
 
 type App struct {
@@ -55,6 +56,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		appSnapHasher,
 		txManager,
 	)
+	getCandidateView := getcandidateview.NewUsecase(appRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -62,8 +64,9 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	}
 
 	deps := &handlers.Deps{
-		Apply:  applyUC,
-		Logger: logger,
+		Apply:              applyUC,
+		GetCandidateViewUC: getCandidateView,
+		Logger:             logger,
 	}
 
 	hand := handlers.NewHandler(deps)

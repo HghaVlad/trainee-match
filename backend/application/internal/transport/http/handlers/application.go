@@ -14,14 +14,16 @@ import (
 )
 
 type Handler struct {
-	apply  applyUC
-	logger *slog.Logger
+	apply            applyUC
+	getCandidateView getCandidateViewUC
+	logger           *slog.Logger
 }
 
 func NewHandler(deps *Deps) *Handler {
 	return &Handler{
-		apply:  deps.Apply,
-		logger: deps.Logger,
+		apply:            deps.Apply,
+		getCandidateView: deps.GetCandidateViewUC,
+		logger:           deps.Logger,
 	}
 }
 
@@ -47,7 +49,7 @@ func (h *Handler) CreateApplication(
 	}
 
 	return oapi.CreateApplication201JSONResponse{
-		Data: mappers.ApplyRespToHTTP(resp),
+		Data: mappers.CandidateViewWithDetailsToHTTP(resp),
 	}, nil
 }
 
@@ -55,8 +57,17 @@ func (h *Handler) GetMyApplication(
 	ctx context.Context,
 	request oapi.GetMyApplicationRequestObject,
 ) (oapi.GetMyApplicationResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	appID := request.ApplicationId
+
+	resp, err := h.getCandidateView.Execute(ctx, appID, *ident)
+	if err != nil {
+		return getCandViewErrToResponse(err)
+	}
+
+	return oapi.GetMyApplication200JSONResponse{
+		Data: mappers.CandidateViewWithDetailsToHTTP(resp),
+	}, nil
 }
 
 func (h *Handler) GetMyApplicationHistory(
@@ -188,6 +199,20 @@ func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error)
 			Error:   "conflict",
 			Message: err.Error(),
 		}, nil
+
+	default:
+		return nil, err
+	}
+}
+
+func getCandViewErrToResponse(err error) (oapi.GetMyApplicationResponseObject, error) {
+	switch {
+	case errors.Is(err, application.ErrResumeAccessDenied),
+		errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.GetMyApplication403Response{}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.GetMyApplication404Response{}, nil
 
 	default:
 		return nil, err

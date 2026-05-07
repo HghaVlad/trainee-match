@@ -3,7 +3,6 @@ package mappers
 import (
 	openapitypes "github.com/oapi-codegen/runtime/types"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
@@ -17,18 +16,18 @@ func ApplyReqToUC(dto oapi.CreateApplicationRequestObject) apply.Request {
 	}
 }
 
-func ApplyRespToHTTP(view *views.Details) oapi.CandidateApplicationDetails {
+func CandidateViewWithDetailsToHTTP(view *views.CandidateViewWithDetails) oapi.CandidateApplicationDetails {
 	return oapi.CandidateApplicationDetails{
-		Id:             view.Application.ID,
-		Status:         oapi.ApplicationStatus(view.Application.Status),
-		VacancyId:      view.Application.VacancyID,
-		VacancyTitle:   view.VacProj.Title,
-		CompanyId:      view.VacProj.CompanyID,
-		CompanyName:    view.VacProj.CompanyName,
-		CoverLetter:    view.Application.CoverLetter,
+		Id:             view.AppID,
+		Status:         oapi.ApplicationStatus(view.Status),
+		VacancyId:      view.VacancyID,
+		VacancyTitle:   view.VacancyTitle,
+		CompanyId:      view.CompanyID,
+		CompanyName:    view.CompanyName,
+		CoverLetter:    view.CoverLetter,
 		AllowedActions: mapCandidateAllowedActions(view.AllowedActions),
-		CreatedAt:      view.Application.CreatedAt,
-		UpdatedAt:      view.Application.UpdatedAt,
+		CreatedAt:      view.CreatedAt,
+		UpdatedAt:      view.UpdatedAt,
 
 		Snapshot: oapi.ApplicationSnapshot{
 			Email:     emailToOAPI(&view.Snapshot.Email),
@@ -54,7 +53,7 @@ func mapCandidateAllowedActions(actions []views.AllowedAction) []oapi.CandidateA
 	return result
 }
 
-func mapCandidateHistory(items []application.StatusChange) []oapi.CandidateApplicationStatusHistoryItem {
+func mapCandidateHistory(items []views.StatusChangeCandidateView) []oapi.CandidateApplicationStatusHistoryItem {
 	result := make([]oapi.CandidateApplicationStatusHistoryItem, 0, len(items))
 
 	for _, item := range items {

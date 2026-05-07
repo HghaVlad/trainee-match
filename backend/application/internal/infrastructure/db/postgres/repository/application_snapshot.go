@@ -34,7 +34,7 @@ func (a *AppSnapshot) CreateIdempotent(ctx context.Context, appSnapshot applicat
 
 	resDataB, err := json.Marshal(appSnapshot.ResumeData)
 	if err != nil {
-		return fmt.Errorf("app snapshot create idempotent: marshal json: %v", err)
+		return fmt.Errorf("app snapshot create idempotent: marshal json: %w", err)
 	}
 
 	_, err = q.Exec(ctx, query, appSnapshot.ID, appSnapshot.ResumeID,
@@ -43,7 +43,7 @@ func (a *AppSnapshot) CreateIdempotent(ctx context.Context, appSnapshot applicat
 		appSnapshot.Telegram, appSnapshot.CreatedAt)
 
 	if err != nil {
-		return fmt.Errorf("app snapshot create idempotent: %v", err)
+		return fmt.Errorf("app snapshot create idempotent: %w", err)
 	}
 
 	return nil

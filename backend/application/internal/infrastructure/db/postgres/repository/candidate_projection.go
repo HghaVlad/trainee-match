@@ -46,7 +46,7 @@ func (c *CandidateProjection) GetByUserID(
 			return nil, projection.ErrCandidateNotFound
 		}
 
-		return nil, fmt.Errorf("get candidate projection: %v", err)
+		return nil, fmt.Errorf("get candidate projection: %w", err)
 	}
 
 	return &candProj, nil

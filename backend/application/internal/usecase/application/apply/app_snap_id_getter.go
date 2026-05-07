@@ -7,5 +7,8 @@ import (
 )
 
 type snapIDGetter interface {
-	GetDeterministicAppSnapshotID(resumeData projection.ResumeData, candidateProj projection.Candidate) (uuid.UUID, error)
+	GetDeterministicAppSnapshotID(
+		resumeData projection.ResumeData,
+		candidateProj projection.Candidate,
+	) (uuid.UUID, error)
 }
