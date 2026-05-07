@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	membme "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/me"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -112,12 +113,13 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
+	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
 	compListMemUc := listmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
-	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
@@ -154,8 +156,13 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compUpdateUc,
 		compDeleteUc,
 	)
-	memberHandler := handlers.NewMemberHandler(compAddMemUc, compListMemUc, compUpdateMemberUc, compDeleteMemberUc)
-
+	memberHandler := handlers.NewMemberHandler(
+		compMeUc,
+		compAddMemUc,
+		compListMemUc,
+		compUpdateMemberUc,
+		compDeleteMemberUc,
+	)
 	vacancyHandler := handlers.NewVacancyHandler(
 		vacGetByIDUc,
 		vacGetPublishedByIDUc,

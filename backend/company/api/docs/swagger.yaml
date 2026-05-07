@@ -50,7 +50,7 @@ definitions:
       nextCursor:
         type: string
     type: object
-  dto.CompanyMemberListItem:
+  dto.CompanyMemberFullView:
     properties:
       companyId:
         example: 550e8400-e29b-41d4-a716-446655440000
@@ -78,7 +78,7 @@ definitions:
         type: boolean
       members:
         items:
-          $ref: '#/definitions/dto.CompanyMemberListItem'
+          $ref: '#/definitions/dto.CompanyMemberFullView'
         type: array
     type: object
   dto.CompanyResponse:
@@ -1249,6 +1249,41 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Update company member
+      tags:
+      - member
+  /companies/{id}/members/me:
+    get:
+      consumes:
+      - application/json
+      description: Me returns company member view, with role
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Me returns company member
       tags:
       - member
   /companies/me:
