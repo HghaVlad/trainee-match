@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
@@ -86,7 +85,7 @@ func (h *Handler) ListMyApplications(
 
 	resp, err := h.listCandidateApps.Execute(ctx, req, *ident)
 	if err != nil {
-		return nil, err
+		return handleListMyAppErr(err)
 	} // TODO: add normal errors
 
 	return mappers.CandidateListResponseToHTTP(resp), nil
@@ -208,12 +207,20 @@ func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error)
 	switch {
 	case errors.Is(err, application.ErrResumeAccessDenied),
 		errors.Is(err, identity.ErrCandidateRoleRequired):
-		return oapi.CreateApplication403Response{}, nil
+		return oapi.CreateApplication403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
 
 	case errors.Is(err, projection.ErrVacancyNotFound),
 		errors.Is(err, projection.ErrResumeNotFound),
 		errors.Is(err, projection.ErrCandidateNotFound):
-		return oapi.CreateApplication404Response{}, nil
+		return oapi.CreateApplication404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
 
 	case errors.Is(err, application.ErrVacancyNotPublished),
 		errors.Is(err, application.ErrResumeNotPublished):
@@ -239,10 +246,41 @@ func getCandViewErrToResponse(err error) (oapi.GetMyApplicationResponseObject, e
 	switch {
 	case errors.Is(err, application.ErrResumeAccessDenied),
 		errors.Is(err, identity.ErrCandidateRoleRequired):
-		return oapi.GetMyApplication403Response{}, nil
+		return oapi.GetMyApplication403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
 
 	case errors.Is(err, application.ErrNotFound):
-		return oapi.GetMyApplication404Response{}, nil
+		return oapi.GetMyApplication404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+
+	default:
+		return nil, err
+	}
+}
+
+func handleListMyAppErr(err error) (oapi.ListMyApplicationsResponseObject, error) {
+	switch {
+	case errors.Is(err, cursors.ErrUnsupportedOrder):
+		return oapi.ListMyApplications400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.ListMyApplications403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
 
 	default:
 		return nil, err
@@ -252,11 +290,19 @@ func getCandViewErrToResponse(err error) (oapi.GetMyApplicationResponseObject, e
 func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
 	switch {
 	case errors.Is(err, application.ErrAccessDenied),
-		errors.Is(err, identity.ErrCandidateRoleRequired):
-		return oapi.ListCompanyApplications403Response{}, nil
+		errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.ListCompanyApplications403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
 
 	case errors.Is(err, projection.ErrVacancyNotFound):
-		return oapi.ListCompanyApplications404Response{}, nil
+		return oapi.ListCompanyApplications404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
 
 	default:
 		return nil, err
@@ -267,14 +313,27 @@ func hrVacListErrToResponse(err error) (oapi.ListVacancyApplicationsResponseObje
 	switch {
 	case errors.Is(err, cursors.ErrUnsupportedOrder),
 		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
-		return nil, fmt.Errorf("400: %v", err) // TODO: 400
+		return oapi.ListVacancyApplications400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
 
 	case errors.Is(err, application.ErrAccessDenied),
-		errors.Is(err, identity.ErrCandidateRoleRequired):
-		return oapi.ListVacancyApplications403Response{}, nil
+		errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.ListVacancyApplications403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
 
 	case errors.Is(err, projection.ErrVacancyNotFound):
-		return oapi.ListVacancyApplications404Response{}, nil
+		return oapi.ListVacancyApplications404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
 
 	default:
 		return nil, err

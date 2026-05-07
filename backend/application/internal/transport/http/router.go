@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	appmiddleware "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
@@ -23,7 +23,7 @@ func NewRouter(
 		middleware.RequestID,
 		middleware.RealIP,
 		appmiddleware.LoggerMiddleware(logger),
-		authMiddleware.Handler,
+		authMiddleware.FakeHandler, // TODO: add real handler
 	)
 
 	oapi.HandlerFromMux(

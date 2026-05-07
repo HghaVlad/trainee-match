@@ -25,10 +25,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-const (
-	BearerAuthScopes = "bearerAuth.Scopes"
-)
-
 // Defines values for ActorType.
 const (
 	ActorTypeCandidate ActorType = "candidate"
@@ -587,6 +583,12 @@ type VacancyId = openapi_types.UUID
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
 
+// ForbiddenError defines model for ForbiddenError.
+type ForbiddenError = ErrorResponse
+
+// UnauthorizedError defines model for UnauthorizedError.
+type UnauthorizedError = ErrorResponse
+
 // ListMyApplicationsParams defines parameters for ListMyApplications.
 type ListMyApplicationsParams struct {
 	Statuses  *CandidateStatusesQuery  `form:"statuses,omitempty" json:"statuses,omitempty"`
@@ -851,12 +853,6 @@ func (siw *ServerInterfaceWrapper) ListMyApplications(w http.ResponseWriter, r *
 
 	var err error
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListMyApplicationsParams
 
@@ -914,12 +910,6 @@ func (siw *ServerInterfaceWrapper) ListMyApplications(w http.ResponseWriter, r *
 // CreateApplication operation middleware
 func (siw *ServerInterfaceWrapper) CreateApplication(w http.ResponseWriter, r *http.Request) {
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateApplication(w, r)
 	}))
@@ -944,12 +934,6 @@ func (siw *ServerInterfaceWrapper) GetMyApplication(w http.ResponseWriter, r *ht
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMyApplication(w, r, applicationId)
@@ -976,12 +960,6 @@ func (siw *ServerInterfaceWrapper) GetMyApplicationHistory(w http.ResponseWriter
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMyApplicationHistory(w, r, applicationId)
 	}))
@@ -1006,12 +984,6 @@ func (siw *ServerInterfaceWrapper) WithdrawApplication(w http.ResponseWriter, r 
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.WithdrawApplication(w, r, applicationId)
@@ -1038,12 +1010,6 @@ func (siw *ServerInterfaceWrapper) GetHrApplication(w http.ResponseWriter, r *ht
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHrApplication(w, r, applicationId)
 	}))
@@ -1068,12 +1034,6 @@ func (siw *ServerInterfaceWrapper) GetHrApplicationHistory(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHrApplicationHistory(w, r, applicationId)
@@ -1100,12 +1060,6 @@ func (siw *ServerInterfaceWrapper) ChangeApplicationStatus(w http.ResponseWriter
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeApplicationStatus(w, r, applicationId)
 	}))
@@ -1130,12 +1084,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyDynamics(w http.ResponseWriter, r *
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCompanyDynamicsParams
@@ -1189,12 +1137,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyStatusFunnel(w http.ResponseWriter,
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCompanyStatusFunnelParams
 
@@ -1239,12 +1181,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyAnalyticsSummary(w http.ResponseWri
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCompanyAnalyticsSummaryParams
 
@@ -1288,12 +1224,6 @@ func (siw *ServerInterfaceWrapper) ListCompanyApplications(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListCompanyApplicationsParams
@@ -1379,12 +1309,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyDynamics(w http.ResponseWriter, r *
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetVacancyDynamicsParams
 
@@ -1437,12 +1361,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyStatusFunnel(w http.ResponseWriter,
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetVacancyStatusFunnelParams
 
@@ -1487,12 +1405,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyAnalyticsSummary(w http.ResponseWri
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetVacancyAnalyticsSummaryParams
 
@@ -1536,12 +1448,6 @@ func (siw *ServerInterfaceWrapper) ListVacancyApplications(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vacancyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListVacancyApplicationsParams
@@ -1772,6 +1678,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 type BadRequestJSONResponse ErrorResponse
 
+type ForbiddenErrorJSONResponse ErrorResponse
+
+type UnauthorizedErrorJSONResponse ErrorResponse
+
 type ListMyApplicationsRequestObject struct {
 	Params ListMyApplicationsParams
 }
@@ -1785,6 +1695,33 @@ type ListMyApplications200JSONResponse CandidateApplicationListResponse
 func (response ListMyApplications200JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMyApplications400JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListMyApplications401JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListMyApplications403JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1815,20 +1752,31 @@ func (response CreateApplication400JSONResponse) VisitCreateApplicationResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateApplication403Response struct {
+type CreateApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response CreateApplication401JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response CreateApplication403Response) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+type CreateApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response CreateApplication403JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateApplication404Response struct {
-}
+type CreateApplication404JSONResponse ErrorResponse
 
-func (response CreateApplication404Response) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+func (response CreateApplication404JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateApplication409JSONResponse ErrorResponse
@@ -1857,20 +1805,40 @@ func (response GetMyApplication200JSONResponse) VisitGetMyApplicationResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplication403Response struct {
+type GetMyApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMyApplication400JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetMyApplication403Response) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+type GetMyApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetMyApplication401JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMyApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetMyApplication403JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplication404Response struct {
-}
+type GetMyApplication404JSONResponse ErrorResponse
 
-func (response GetMyApplication404Response) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+func (response GetMyApplication404JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetMyApplicationHistoryRequestObject struct {
@@ -1890,20 +1858,40 @@ func (response GetMyApplicationHistory200JSONResponse) VisitGetMyApplicationHist
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplicationHistory403Response struct {
+type GetMyApplicationHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMyApplicationHistory400JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetMyApplicationHistory403Response) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+type GetMyApplicationHistory401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetMyApplicationHistory401JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMyApplicationHistory403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetMyApplicationHistory403JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplicationHistory404Response struct {
-}
+type GetMyApplicationHistory404JSONResponse ErrorResponse
 
-func (response GetMyApplicationHistory404Response) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+func (response GetMyApplicationHistory404JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type WithdrawApplicationRequestObject struct {
@@ -1924,20 +1912,40 @@ func (response WithdrawApplication200JSONResponse) VisitWithdrawApplicationRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type WithdrawApplication403Response struct {
+type WithdrawApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response WithdrawApplication400JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response WithdrawApplication403Response) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+type WithdrawApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response WithdrawApplication401JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type WithdrawApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response WithdrawApplication403JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type WithdrawApplication404Response struct {
-}
+type WithdrawApplication404JSONResponse ErrorResponse
 
-func (response WithdrawApplication404Response) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+func (response WithdrawApplication404JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type WithdrawApplication409JSONResponse ErrorResponse
@@ -1966,20 +1974,40 @@ func (response GetHrApplication200JSONResponse) VisitGetHrApplicationResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplication403Response struct {
+type GetHrApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHrApplication400JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetHrApplication403Response) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+type GetHrApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetHrApplication401JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHrApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetHrApplication403JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplication404Response struct {
-}
+type GetHrApplication404JSONResponse ErrorResponse
 
-func (response GetHrApplication404Response) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+func (response GetHrApplication404JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetHrApplicationHistoryRequestObject struct {
@@ -1999,20 +2027,31 @@ func (response GetHrApplicationHistory200JSONResponse) VisitGetHrApplicationHist
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplicationHistory403Response struct {
+type GetHrApplicationHistory401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetHrApplicationHistory401JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetHrApplicationHistory403Response) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+type GetHrApplicationHistory403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetHrApplicationHistory403JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplicationHistory404Response struct {
-}
+type GetHrApplicationHistory404JSONResponse ErrorResponse
 
-func (response GetHrApplicationHistory404Response) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+func (response GetHrApplicationHistory404JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ChangeApplicationStatusRequestObject struct {
@@ -2042,20 +2081,31 @@ func (response ChangeApplicationStatus400JSONResponse) VisitChangeApplicationSta
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ChangeApplicationStatus403Response struct {
+type ChangeApplicationStatus401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ChangeApplicationStatus401JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ChangeApplicationStatus403Response) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+type ChangeApplicationStatus403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ChangeApplicationStatus403JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ChangeApplicationStatus404Response struct {
-}
+type ChangeApplicationStatus404JSONResponse ErrorResponse
 
-func (response ChangeApplicationStatus404Response) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+func (response ChangeApplicationStatus404JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ChangeApplicationStatus409JSONResponse ErrorResponse
@@ -2085,20 +2135,40 @@ func (response GetCompanyDynamics200JSONResponse) VisitGetCompanyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyDynamics403Response struct {
+type GetCompanyDynamics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCompanyDynamics400JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetCompanyDynamics403Response) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+type GetCompanyDynamics401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetCompanyDynamics401JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCompanyDynamics403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetCompanyDynamics403JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyDynamics404Response struct {
-}
+type GetCompanyDynamics404JSONResponse ErrorResponse
 
-func (response GetCompanyDynamics404Response) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+func (response GetCompanyDynamics404JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetCompanyStatusFunnelRequestObject struct {
@@ -2119,20 +2189,40 @@ func (response GetCompanyStatusFunnel200JSONResponse) VisitGetCompanyStatusFunne
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyStatusFunnel403Response struct {
+type GetCompanyStatusFunnel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCompanyStatusFunnel400JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetCompanyStatusFunnel403Response) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+type GetCompanyStatusFunnel401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetCompanyStatusFunnel401JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCompanyStatusFunnel403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetCompanyStatusFunnel403JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyStatusFunnel404Response struct {
-}
+type GetCompanyStatusFunnel404JSONResponse ErrorResponse
 
-func (response GetCompanyStatusFunnel404Response) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetCompanyStatusFunnel404JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetCompanyAnalyticsSummaryRequestObject struct {
@@ -2153,20 +2243,40 @@ func (response GetCompanyAnalyticsSummary200JSONResponse) VisitGetCompanyAnalyti
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyAnalyticsSummary403Response struct {
+type GetCompanyAnalyticsSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCompanyAnalyticsSummary400JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetCompanyAnalyticsSummary403Response) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+type GetCompanyAnalyticsSummary401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetCompanyAnalyticsSummary401JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCompanyAnalyticsSummary403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetCompanyAnalyticsSummary403JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyAnalyticsSummary404Response struct {
-}
+type GetCompanyAnalyticsSummary404JSONResponse ErrorResponse
 
-func (response GetCompanyAnalyticsSummary404Response) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+func (response GetCompanyAnalyticsSummary404JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListCompanyApplicationsRequestObject struct {
@@ -2187,20 +2297,40 @@ func (response ListCompanyApplications200JSONResponse) VisitListCompanyApplicati
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListCompanyApplications403Response struct {
+type ListCompanyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCompanyApplications400JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ListCompanyApplications403Response) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+type ListCompanyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListCompanyApplications401JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCompanyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListCompanyApplications403JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ListCompanyApplications404Response struct {
-}
+type ListCompanyApplications404JSONResponse ErrorResponse
 
-func (response ListCompanyApplications404Response) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+func (response ListCompanyApplications404JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetVacancyDynamicsRequestObject struct {
@@ -2221,20 +2351,40 @@ func (response GetVacancyDynamics200JSONResponse) VisitGetVacancyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyDynamics403Response struct {
+type GetVacancyDynamics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetVacancyDynamics400JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetVacancyDynamics403Response) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+type GetVacancyDynamics401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetVacancyDynamics401JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVacancyDynamics403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetVacancyDynamics403JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyDynamics404Response struct {
-}
+type GetVacancyDynamics404JSONResponse ErrorResponse
 
-func (response GetVacancyDynamics404Response) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+func (response GetVacancyDynamics404JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetVacancyStatusFunnelRequestObject struct {
@@ -2255,20 +2405,40 @@ func (response GetVacancyStatusFunnel200JSONResponse) VisitGetVacancyStatusFunne
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyStatusFunnel403Response struct {
+type GetVacancyStatusFunnel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetVacancyStatusFunnel400JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetVacancyStatusFunnel403Response) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+type GetVacancyStatusFunnel401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetVacancyStatusFunnel401JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVacancyStatusFunnel403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetVacancyStatusFunnel403JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyStatusFunnel404Response struct {
-}
+type GetVacancyStatusFunnel404JSONResponse ErrorResponse
 
-func (response GetVacancyStatusFunnel404Response) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetVacancyStatusFunnel404JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetVacancyAnalyticsSummaryRequestObject struct {
@@ -2289,20 +2459,40 @@ func (response GetVacancyAnalyticsSummary200JSONResponse) VisitGetVacancyAnalyti
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyAnalyticsSummary403Response struct {
+type GetVacancyAnalyticsSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetVacancyAnalyticsSummary400JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetVacancyAnalyticsSummary403Response) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+type GetVacancyAnalyticsSummary401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetVacancyAnalyticsSummary401JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVacancyAnalyticsSummary403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetVacancyAnalyticsSummary403JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyAnalyticsSummary404Response struct {
-}
+type GetVacancyAnalyticsSummary404JSONResponse ErrorResponse
 
-func (response GetVacancyAnalyticsSummary404Response) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+func (response GetVacancyAnalyticsSummary404JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListVacancyApplicationsRequestObject struct {
@@ -2323,20 +2513,40 @@ func (response ListVacancyApplications200JSONResponse) VisitListVacancyApplicati
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListVacancyApplications403Response struct {
+type ListVacancyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListVacancyApplications400JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ListVacancyApplications403Response) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+type ListVacancyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListVacancyApplications401JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListVacancyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListVacancyApplications403JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ListVacancyApplications404Response struct {
-}
+type ListVacancyApplications404JSONResponse ErrorResponse
 
-func (response ListVacancyApplications404Response) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+func (response ListVacancyApplications404JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 // StrictServerInterface represents all server handlers.
@@ -2869,53 +3079,54 @@ func (sh *strictHandler) ListVacancyApplications(w http.ResponseWriter, r *http.
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"7f8CAAD//0sQHyNcUwAA",
+	"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",
+	"2dxs/hcAAP//aHLF4x5hAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

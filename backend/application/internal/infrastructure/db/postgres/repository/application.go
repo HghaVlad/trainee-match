@@ -49,7 +49,7 @@ func (a *ApplicationRepo) Create(ctx context.Context, app application.Applicatio
 			return application.ErrActiveAlreadyExists
 		}
 
-		return fmt.Errorf("create application: %v", err)
+		return fmt.Errorf("create application: %w", err)
 	}
 
 	return nil
@@ -268,8 +268,14 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 				args = append(args, *cur.SortAt, cur.AppID)
 				sortArgPos := len(args) - 1
 				idArgPos := len(args)
-				conditions = append(conditions,
-					fmt.Sprintf("(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))", sortArgPos, sortArgPos, idArgPos),
+				conditions = append(
+					conditions,
+					fmt.Sprintf(
+						"(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))",
+						sortArgPos,
+						sortArgPos,
+						idArgPos,
+					),
 				)
 			}
 		case cursors.HrSummaryOrderCandidateFullName:
@@ -277,8 +283,14 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 				args = append(args, *cur.FullName, cur.AppID)
 				nameArgPos := len(args) - 1
 				idArgPos := len(args)
-				conditions = append(conditions,
-					fmt.Sprintf("(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))", nameArgPos, nameArgPos, idArgPos),
+				conditions = append(
+					conditions,
+					fmt.Sprintf(
+						"(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))",
+						nameArgPos,
+						nameArgPos,
+						idArgPos,
+					),
 				)
 			}
 		default:
@@ -286,8 +298,14 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 				args = append(args, *cur.SortAt, cur.AppID)
 				sortArgPos := len(args) - 1
 				idArgPos := len(args)
-				conditions = append(conditions,
-					fmt.Sprintf("(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))", sortArgPos, sortArgPos, idArgPos),
+				conditions = append(
+					conditions,
+					fmt.Sprintf(
+						"(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))",
+						sortArgPos,
+						sortArgPos,
+						idArgPos,
+					),
 				)
 			}
 		}

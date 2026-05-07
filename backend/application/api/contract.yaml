@@ -19,8 +19,6 @@ tags:
   - name: HR Applications
   - name: Application Analytics
 
-security:
-  - bearerAuth: []
 
 paths:
   /api/v1/applications:
@@ -43,10 +41,16 @@ paths:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy or resume not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Active application for this vacancy already exists
           content:
@@ -71,6 +75,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
 
   /api/v1/applications/{applicationId}:
     get:
@@ -86,10 +96,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/applications/{applicationId}/history:
     get:
@@ -105,10 +123,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/applications/{applicationId}/withdraw:
     post:
@@ -135,10 +161,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Transition is not allowed
           content:
@@ -167,10 +201,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/applications:
     get:
@@ -192,10 +234,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}:
     get:
@@ -211,10 +261,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}/history:
     get:
@@ -230,10 +288,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationHistoryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}/status:
     post:
@@ -266,10 +330,16 @@ paths:
                 $ref: '#/components/schemas/HrApplicationDetailsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Transition is not allowed
           content:
@@ -293,10 +363,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyAnalyticsSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/analytics/summary:
     get:
@@ -314,10 +392,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VacancyAnalyticsSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/companies/{companyId}/analytics/status-funnel:
     get:
@@ -335,10 +421,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusFunnelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel:
     get:
@@ -356,10 +450,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusFunnelResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/companies/{companyId}/analytics/dynamics:
     get:
@@ -378,10 +480,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics:
     get:
@@ -400,10 +510,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -543,6 +661,18 @@ components:
   responses:
     BadRequest:
       description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenError:
+      description: Forbidden
       content:
         application/json:
           schema:
