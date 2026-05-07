@@ -76,7 +76,6 @@ func Build(conf *config.Config) (*App, error) {
 }
 
 func (app *App) Run() error {
-
 	slog.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {

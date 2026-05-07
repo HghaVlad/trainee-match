@@ -238,7 +238,7 @@ func (res *Resume) DeleteResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.RespondJSON(w, http.StatusOK, struct{ Message string }{Message: "ok"})
+	helpers.RespondJSON(w, http.StatusNoContent, struct{ Message string }{Message: "ok"})
 }
 
 // ListResumes godoc
