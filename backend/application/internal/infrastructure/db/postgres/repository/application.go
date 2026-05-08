@@ -82,46 +82,73 @@ func (a *ApplicationRepo) GetByIDCandidateViewWithDetails(
         		v.id, v.company_id, v.company_name, v.title,
         		s.resume_data, s.email, s.full_name, s.telegram, s.created_at`
 
-	var (
-		view             views.CandidateViewWithDetails
-		resumeDataRaw    []byte
-		statusHistoryRaw []byte
-	)
+	row := q.QueryRow(ctx, query, appID, candID)
 
-	err := q.QueryRow(ctx, query, appID, candID).
-		Scan(&view.AppID, &view.Status, &view.CoverLetter, &view.CreatedAt, &view.UpdatedAt,
-			&view.VacancyID, &view.CompanyID, &view.CompanyName, &view.VacancyTitle,
-			&resumeDataRaw, &view.Snapshot.Email, &view.Snapshot.FullName, &view.Snapshot.Telegram,
-			&view.Snapshot.CreatedAt, &statusHistoryRaw)
+	view, err := scanCandidateViewWithDetails(row)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, application.ErrNotFound
 		}
 
-		return nil, fmt.Errorf(
-			"get application candidate view with details: %w",
-			err,
-		)
+		return nil, fmt.Errorf("get application candidate view with details: %w", err)
 	}
 
-	err = json.Unmarshal(resumeDataRaw, &view.Snapshot.ResumeData)
+	return view, nil
+}
+
+func (a *ApplicationRepo) GetForUpdateByCandidate(
+	ctx context.Context,
+	appID, candID uuid.UUID,
+) (*application.Application, error) {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+		SELECT id, resume_id, candidate_id, vacancy_id, company_id,
+       		snapshot_id, status, cover_letter, created_at, updated_at
+		FROM applications
+		WHERE id = $1 AND candidate_id = $2
+		FOR UPDATE`
+
+	var app application.Application
+
+	err := q.QueryRow(ctx, query, appID, candID).
+		Scan(&app.ID, &app.ResumeID, &app.CandidateID, &app.VacancyID, &app.CompanyID,
+			&app.SnapshotID, &app.Status, &app.CoverLetter, &app.CreatedAt, &app.UpdatedAt)
+
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unmarshal snapshot resume data: %w",
-			err,
-		)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, application.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("get application: %w", err)
 	}
 
-	err = json.Unmarshal(statusHistoryRaw, &view.StatusHistory)
+	return &app, nil
+}
+
+func (a *ApplicationRepo) UpdateStatus(
+	ctx context.Context,
+	appID uuid.UUID,
+	status application.Status,
+	updAt time.Time,
+) error {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `UPDATE applications
+		SET status = $1, updated_at = $2
+		WHERE id = $3`
+
+	cmdTag, err := q.Exec(ctx, query, status, updAt, appID)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unmarshal status history: %w",
-			err,
-		)
+		return fmt.Errorf("update application status: %w", err)
 	}
 
-	return &view, nil
+	if cmdTag.RowsAffected() == 0 {
+		return application.ErrNotFound
+	}
+
+	return nil
 }
 
 func (a *ApplicationRepo) ListCandidateAppSummaries(
@@ -276,6 +303,41 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 	return items, nil
 }
 
+func scanCandidateViewWithDetails(row pgx.Row) (*views.CandidateViewWithDetails, error) {
+	var (
+		view             views.CandidateViewWithDetails
+		resumeDataRaw    []byte
+		statusHistoryRaw []byte
+	)
+
+	err := row.Scan(&view.AppID, &view.Status, &view.CoverLetter, &view.CreatedAt, &view.UpdatedAt,
+		&view.VacancyID, &view.CompanyID, &view.CompanyName, &view.VacancyTitle,
+		&resumeDataRaw, &view.Snapshot.Email, &view.Snapshot.FullName, &view.Snapshot.Telegram,
+		&view.Snapshot.CreatedAt, &statusHistoryRaw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(resumeDataRaw, &view.Snapshot.ResumeData)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"unmarshal snapshot resume data: %w",
+			err,
+		)
+	}
+
+	err = json.Unmarshal(statusHistoryRaw, &view.StatusHistory)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"unmarshal status history: %w",
+			err,
+		)
+	}
+
+	return &view, nil
+}
+
 type hrSummaryListQuery struct {
 	args       []any
 	conditions []string
@@ -283,7 +345,6 @@ type hrSummaryListQuery struct {
 	limitPos   int
 }
 
-//nolint:gocognit // query and args builder
 func buildHrSummaryListQuery(
 	hrUserID uuid.UUID,
 	statuses []application.Status,
@@ -357,66 +418,92 @@ func buildHrSummaryListQuery(
 		q.orderBy = "s.full_name ASC, a.id ASC"
 	}
 
-	if cur, ok := cursor.(*cursors.HrSummaryCursor); ok && cur != nil {
-		switch order {
-		case cursors.HrSummaryOrderUpdatedAtDesc:
-			if cur.SortAt != nil {
-				q.args = append(q.args, *cur.SortAt, cur.AppID)
-
-				sortPos := len(q.args) - 1
-				idPos := len(q.args)
-
-				q.conditions = append(
-					q.conditions,
-					fmt.Sprintf(
-						"(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))",
-						sortPos,
-						sortPos,
-						idPos,
-					),
-				)
-			}
-
-		case cursors.HrSummaryOrderCandidateFullName:
-			if cur.FullName != nil {
-				q.args = append(q.args, *cur.FullName, cur.AppID)
-
-				namePos := len(q.args) - 1
-				idPos := len(q.args)
-
-				q.conditions = append(
-					q.conditions,
-					fmt.Sprintf(
-						"(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))",
-						namePos,
-						namePos,
-						idPos,
-					),
-				)
-			}
-
-		default:
-			if cur.SortAt != nil {
-				q.args = append(q.args, *cur.SortAt, cur.AppID)
-
-				sortPos := len(q.args) - 1
-				idPos := len(q.args)
-
-				q.conditions = append(
-					q.conditions,
-					fmt.Sprintf(
-						"(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))",
-						sortPos,
-						sortPos,
-						idPos,
-					),
-				)
-			}
-		}
-	}
+	applyHrSummaryCursor(&q, order, cursor)
 
 	q.args = append(q.args, limit)
 	q.limitPos = len(q.args)
 
 	return q
+}
+
+func applyHrSummaryCursor(
+	q *hrSummaryListQuery,
+	order cursors.HrSummaryOrder,
+	cursor any,
+) {
+	cur, ok := cursor.(*cursors.HrSummaryCursor)
+	if !ok || cur == nil {
+		return
+	}
+
+	switch order {
+	case cursors.HrSummaryOrderUpdatedAtDesc:
+		applyUpdatedAtCursor(q, cur)
+
+	case cursors.HrSummaryOrderCandidateFullName:
+		applyCandidateNameCursor(q, cur)
+
+	default:
+		applyCreatedAtCursor(q, cur)
+	}
+}
+
+func applyUpdatedAtCursor(
+	q *hrSummaryListQuery,
+	cur *cursors.HrSummaryCursor,
+) {
+	if cur.SortAt == nil {
+		return
+	}
+
+	q.args = append(q.args, *cur.SortAt, cur.AppID)
+
+	sortPos := len(q.args) - 1
+	idPos := len(q.args)
+
+	q.conditions = append(q.conditions,
+		fmt.Sprintf("(a.updated_at < $%d OR (a.updated_at = $%d AND a.id < $%d))",
+			sortPos, sortPos, idPos,
+		),
+	)
+}
+
+func applyCreatedAtCursor(
+	q *hrSummaryListQuery,
+	cur *cursors.HrSummaryCursor,
+) {
+	if cur.SortAt == nil {
+		return
+	}
+
+	q.args = append(q.args, *cur.SortAt, cur.AppID)
+
+	sortPos := len(q.args) - 1
+	idPos := len(q.args)
+
+	q.conditions = append(q.conditions,
+		fmt.Sprintf("(a.created_at < $%d OR (a.created_at = $%d AND a.id < $%d))",
+			sortPos, sortPos, idPos,
+		),
+	)
+}
+
+func applyCandidateNameCursor(
+	q *hrSummaryListQuery,
+	cur *cursors.HrSummaryCursor,
+) {
+	if cur.FullName == nil {
+		return
+	}
+
+	q.args = append(q.args, *cur.FullName, cur.AppID)
+
+	namePos := len(q.args) - 1
+	idPos := len(q.args)
+
+	q.conditions = append(q.conditions,
+		fmt.Sprintf("(s.full_name > $%d OR (s.full_name = $%d AND a.id > $%d))",
+			namePos, namePos, idPos,
+		),
+	)
 }

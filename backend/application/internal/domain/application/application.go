@@ -6,17 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Status string
-
-const (
-	StatusSubmitted Status = "submitted"
-	StatusSeen      Status = "seen"
-	StatusInterview Status = "interview"
-	StatusRejected  Status = "rejected"
-	StatusOffer     Status = "offer"
-	StatusWithdrawn Status = "withdrawn"
-)
-
 type Application struct {
 	ID          uuid.UUID
 	ResumeID    uuid.UUID
@@ -47,4 +36,42 @@ func NewSubmitted(
 		CreatedAt:   when,
 		UpdatedAt:   when,
 	}, nil
+}
+
+func (a *Application) Withdraw(when time.Time) error {
+	return a.ChangeStatus(StatusWithdrawn, when)
+}
+
+func (a *Application) MarkSeen(when time.Time) error {
+	return a.ChangeStatus(StatusSeen, when)
+}
+
+func (a *Application) InviteToInterview(when time.Time) error {
+	return a.ChangeStatus(StatusInterview, when)
+}
+
+func (a *Application) Reject(when time.Time) error {
+	return a.ChangeStatus(StatusRejected, when)
+}
+
+func (a *Application) MakeOffer(when time.Time) error {
+	return a.ChangeStatus(StatusOffer, when)
+}
+
+func (a *Application) ChangeStatus(
+	next Status,
+	when time.Time,
+) error {
+	if a.Status == next {
+		return ErrStatusAlreadySet
+	}
+
+	if !a.Status.CanTransitionTo(next) {
+		return ErrInvalidStatusTransition
+	}
+
+	a.Status = next
+	a.UpdatedAt = when
+
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
@@ -20,6 +21,7 @@ type Handler struct {
 	listCandidateApps    listCandidateAppsUC
 	getCandidateView     getCandidateViewUC
 	listCandiStatHistory listCandidateStatusHistoryUC
+	withdraw             withdrawUC
 	listHrApps           listHrAppsUC
 	logger               *slog.Logger
 }
@@ -31,6 +33,7 @@ func NewHandler(deps *Deps) *Handler {
 		getCandidateView:     deps.GetCandidateViewUC,
 		listCandiStatHistory: deps.GetCandiStatHistory,
 		listHrApps:           deps.ListHrApps,
+		withdraw:             deps.Withdraw,
 		logger:               deps.Logger,
 	}
 }
@@ -104,8 +107,20 @@ func (h *Handler) WithdrawApplication(
 	ctx context.Context,
 	request oapi.WithdrawApplicationRequestObject,
 ) (oapi.WithdrawApplicationResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	req := withdraw.Request{
+		AppID:   request.ApplicationId,
+		Comment: request.Body.Comment,
+	}
+
+	view, err := h.withdraw.Execute(ctx, req, *ident)
+	if err != nil {
+		return handleWithdrawErr(err)
+	}
+
+	return oapi.WithdrawApplication200JSONResponse{
+		Data: mappers.CandidateViewWithDetailsToHTTP(view),
+	}, nil
 }
 
 func (h *Handler) ListCompanyApplications(
@@ -309,6 +324,33 @@ func handleCandiHistoryErr(err error) (oapi.GetMyApplicationHistoryResponseObjec
 	case errors.Is(err, application.ErrNotFound):
 		return oapi.GetMyApplicationHistory404JSONResponse{
 			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleWithdrawErr(err error) (oapi.WithdrawApplicationResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.WithdrawApplication403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.WithdrawApplication404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+
+	case errors.Is(err, application.ErrInvalidStatusTransition),
+		errors.Is(err, application.ErrStatusAlreadySet):
+		return oapi.WithdrawApplication409JSONResponse{
+			Error:   "conflict",
 			Message: err.Error(),
 		}, nil
 	}

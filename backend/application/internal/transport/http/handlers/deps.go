@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	appviews "github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
 )
 
@@ -18,6 +19,7 @@ type Deps struct {
 	ListCandidateApps   listCandidateAppsUC
 	GetCandidateViewUC  getCandidateViewUC
 	GetCandiStatHistory listCandidateStatusHistoryUC
+	Withdraw            withdrawUC
 	ListHrApps          listHrAppsUC
 	Logger              *slog.Logger
 }
@@ -44,6 +46,14 @@ type listCandidateAppsUC interface {
 		req listcandidatesummary.Request,
 		ident identity.Identity,
 	) (*listcandidatesummary.Response, error)
+}
+
+type withdrawUC interface {
+	Execute(
+		ctx context.Context,
+		req withdraw.Request,
+		ident identity.Identity,
+	) (*appviews.CandidateViewWithDetails, error)
 }
 
 type listHrAppsUC interface {

@@ -23,6 +23,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
 )
 
 type App struct {
@@ -63,6 +64,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	listCandidateAppsUC := listcandidatesummary.NewUsecase(appRepo)
 	getCandidateView := getcandidateview.NewUsecase(appRepo)
 	getCandiAppHistory := candidatehistory.NewUsecase(appStatusHistoryRepo)
+	withdrawApp := withdraw.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
 
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
 
@@ -76,6 +78,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		ListCandidateApps:   listCandidateAppsUC,
 		GetCandidateViewUC:  getCandidateView,
 		GetCandiStatHistory: getCandiAppHistory,
+		Withdraw:            withdrawApp,
 		ListHrApps:          listHrApps,
 		Logger:              logger,
 	}
