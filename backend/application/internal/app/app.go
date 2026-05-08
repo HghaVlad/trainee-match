@@ -22,6 +22,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/gethrview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrhistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
@@ -71,6 +72,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
 	getHrDetailedView := gethrview.NewUsecase(appRepo)
 	hrUpdateStatus := hrupdstatus.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
+	getHistoryHrView := hrhistory.NewUsecase(appStatusHistoryRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -86,6 +88,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		ListHrApps:          listHrApps,
 		GetHrDetailedView:   getHrDetailedView,
 		HrUpdateStatus:      hrUpdateStatus,
+		GetHistoryHrView:    getHistoryHrView,
 		Logger:              logger,
 	}
 

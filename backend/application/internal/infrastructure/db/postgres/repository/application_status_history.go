@@ -43,26 +43,25 @@ func (r *AppStatusHistoryRepo) Add(ctx context.Context, change application.Statu
 	return nil
 }
 
-func (r *AppStatusHistoryRepo) ListHistoryCandiView(
+func (r *AppStatusHistoryRepo) GetHistoryCandiView(
 	ctx context.Context,
 	appID, candID uuid.UUID,
 ) ([]views.StatusChangeCandidateFullView, error) {
 	q := r.getter.DefaultTrOrDB(ctx, r.db)
 
-	const query = `SELECT sh.status, sh.changed_by_role, sh.created_At, sh.comment
+	const query = `SELECT sh.status, sh.changed_by_role, sh.created_at, sh.comment
 			FROM application_status_history sh
 			JOIN applications a ON sh.application_id = a.id
 			WHERE application_id = $1 AND a.candidate_id = $2`
 
-	var history []views.StatusChangeCandidateFullView
-
 	rows, err := q.Query(ctx, query, appID, candID)
 
 	if err != nil {
-		return nil, fmt.Errorf("list application status history: %w", err)
+		return nil, fmt.Errorf("get app status history candidate view: %w", err)
 	}
 
 	defer rows.Close()
+	var history []views.StatusChangeCandidateFullView
 
 	for rows.Next() {
 		var statusChange views.StatusChangeCandidateFullView
@@ -70,14 +69,55 @@ func (r *AppStatusHistoryRepo) ListHistoryCandiView(
 		err := rows.Scan(&statusChange.Status, &statusChange.ChangedByRole,
 			&statusChange.CreatedAt, &statusChange.Comment)
 		if err != nil {
-			return nil, fmt.Errorf("list application status history: %w", err)
+			return nil, fmt.Errorf("get app status history candidate view: %w", err)
 		}
 
 		history = append(history, statusChange)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("list application status history: %w", err)
+		return nil, fmt.Errorf("get app status history candidate view: %w", err)
+	}
+
+	return history, nil
+}
+
+func (r *AppStatusHistoryRepo) GetHistoryHrView(
+	ctx context.Context,
+	appID, hrID uuid.UUID,
+) ([]views.StatusChangeHrFullView, error) {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `
+		SELECT sh.status, sh.created_at, sh.comment, sh.changed_by_role, sh.changed_by_user_id
+		FROM application_status_history sh
+		JOIN applications a ON sh.application_id = a.id
+		JOIN company_members cm ON cm.company_id = a.company_id
+		WHERE application_id = $1 AND cm.user_id = $2`
+
+	rows, err := q.Query(ctx, query, appID, hrID)
+
+	if err != nil {
+		return nil, fmt.Errorf("get app status history hr view: %w", err)
+	}
+
+	defer rows.Close()
+	var history []views.StatusChangeHrFullView
+
+	for rows.Next() {
+		var statusChange views.StatusChangeHrFullView
+
+		err := rows.Scan(&statusChange.Status, &statusChange.CreatedAt, &statusChange.Comment,
+			&statusChange.ChangedByRole, &statusChange.ChangedByUserID)
+		if err != nil {
+			return nil, fmt.Errorf("get app status history hr view: %w", err)
+		}
+
+		history = append(history, statusChange)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("get app status history hr view: %w", err)
 	}
 
 	return history, nil

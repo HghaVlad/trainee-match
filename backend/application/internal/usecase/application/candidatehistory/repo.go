@@ -9,5 +9,5 @@ import (
 )
 
 type Repo interface {
-	ListHistoryCandiView(ctx context.Context, appID, candID uuid.UUID) ([]views.StatusChangeCandidateFullView, error)
+	GetHistoryCandiView(ctx context.Context, appID, candID uuid.UUID) ([]views.StatusChangeCandidateFullView, error)
 }

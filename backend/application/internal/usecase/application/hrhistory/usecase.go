@@ -1,4 +1,4 @@
-package candidatehistory
+package hrhistory
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 )
 
 type Usecase struct {
-	repo Repo
+	repo repo
 }
 
-func NewUsecase(repo Repo) *Usecase {
+func NewUsecase(repo repo) *Usecase {
 	return &Usecase{
 		repo: repo,
 	}
@@ -24,12 +24,12 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	appID uuid.UUID,
 	ident identity.Identity,
-) ([]views.StatusChangeCandidateFullView, error) {
-	if ident.Role != identity.RoleCandidate {
-		return nil, identity.ErrCandidateRoleRequired
+) ([]views.StatusChangeHrFullView, error) {
+	if ident.Role != identity.RoleHR {
+		return nil, identity.ErrHrRoleRequired
 	}
 
-	history, err := u.repo.GetHistoryCandiView(ctx, appID, ident.UserID)
+	history, err := u.repo.GetHistoryHrView(ctx, appID, ident.UserID)
 	if err != nil {
 		return nil, err
 	}

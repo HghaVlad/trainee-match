@@ -27,7 +27,7 @@ func NewRouter(
 	)
 
 	oapi.HandlerFromMux(
-		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{}),
+		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{appmiddleware.LoggingMiddleware}),
 		router,
 	)
 

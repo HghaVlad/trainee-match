@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	utilslog "github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/utils/logger"
@@ -36,3 +37,5 @@ func WriteError(
 		logger.ErrorContext(ctx, "json encode error", "err", err)
 	}
 }
+
+var InternalServerError = errors.New("internal server error")

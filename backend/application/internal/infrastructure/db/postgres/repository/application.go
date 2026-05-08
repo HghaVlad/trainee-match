@@ -84,7 +84,7 @@ func (a *ApplicationRepo) GetCandidateDetailedView(
     		WHERE h.application_id = a.id
 		) h ON TRUE
 		
- 		WHERE a.id = $1 AND a.candidate_id = $2`
+ 		WHERE a.id = $1 AND a.candidate_id = $2` // TODO: fix
 
 	row := q.QueryRow(ctx, query, appID, candID)
 

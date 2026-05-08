@@ -18,28 +18,30 @@ import (
 )
 
 type Handler struct {
-	apply                applyUC
-	listCandidateApps    listCandidateApps
-	getCandidateView     getCandidateDetailedView
-	listCandiStatHistory getCandidateStatusHistory
-	withdraw             withdrawUC
-	listHrApps           listHrApps
-	getHrDetailedView    getHrDetailedView
-	hrUpdateStatus       hrUpdateStatus
-	logger               *slog.Logger
+	apply               applyUC
+	listCandidateApps   listCandidateApps
+	getCandidateView    getCandidateDetailedView
+	getHistoryCandiView getCandidateStatusHistory
+	withdraw            withdrawUC
+	listHrApps          listHrApps
+	getHrDetailedView   getHrDetailedView
+	hrUpdateStatus      hrUpdateStatus
+	getHistoryHrView    getHistoryHrView
+	logger              *slog.Logger
 }
 
 func NewHandler(deps *Deps) *Handler {
 	return &Handler{
-		apply:                deps.Apply,
-		listCandidateApps:    deps.ListCandidateApps,
-		getCandidateView:     deps.GetCandidateViewUC,
-		listCandiStatHistory: deps.GetCandiStatHistory,
-		listHrApps:           deps.ListHrApps,
-		withdraw:             deps.Withdraw,
-		getHrDetailedView:    deps.GetHrDetailedView,
-		hrUpdateStatus:       deps.HrUpdateStatus,
-		logger:               deps.Logger,
+		apply:               deps.Apply,
+		listCandidateApps:   deps.ListCandidateApps,
+		getCandidateView:    deps.GetCandidateViewUC,
+		getHistoryCandiView: deps.GetCandiStatHistory,
+		listHrApps:          deps.ListHrApps,
+		withdraw:            deps.Withdraw,
+		getHrDetailedView:   deps.GetHrDetailedView,
+		hrUpdateStatus:      deps.HrUpdateStatus,
+		getHistoryHrView:    deps.GetHistoryHrView,
+		logger:              deps.Logger,
 	}
 }
 
@@ -85,7 +87,7 @@ func (h *Handler) GetMyApplicationHistory(
 	ident := middleware.IdentityFromContext(ctx)
 	appID := request.ApplicationId
 
-	history, err := h.listCandiStatHistory.Execute(ctx, appID, *ident)
+	history, err := h.getHistoryCandiView.Execute(ctx, appID, *ident)
 	if err != nil {
 		return handleCandiHistoryErr(err)
 	}
@@ -203,8 +205,17 @@ func (h *Handler) GetHrApplicationHistory(
 	ctx context.Context,
 	request oapi.GetHrApplicationHistoryRequestObject,
 ) (oapi.GetHrApplicationHistoryResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	appID := request.ApplicationId
+
+	history, err := h.getHistoryHrView.Execute(ctx, appID, *ident)
+	if err != nil {
+		return handleGetHistoryHrViewErr(err)
+	}
+
+	return oapi.GetHrApplicationHistory200JSONResponse{
+		Data: mappers.HrHistoryToHTTP(history),
+	}, nil
 }
 
 func (h *Handler) GetCompanyDynamics(
@@ -520,6 +531,26 @@ func handleHrUpdStatus(err error) (oapi.ChangeApplicationStatusResponseObject, e
 		errors.Is(err, application.ErrStatusAlreadySet):
 		return oapi.ChangeApplicationStatus409JSONResponse{
 			Error:   "conflict",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleGetHistoryHrViewErr(err error) (oapi.GetHrApplicationHistoryResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetHrApplicationHistory403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.GetHrApplicationHistory404JSONResponse{
+			Error:   "not_found",
 			Message: err.Error(),
 		}, nil
 	}

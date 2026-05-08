@@ -24,6 +24,7 @@ type Deps struct {
 	ListHrApps          listHrApps
 	GetHrDetailedView   getHrDetailedView
 	HrUpdateStatus      hrUpdateStatus
+	GetHistoryHrView    getHistoryHrView
 	Logger              *slog.Logger
 }
 
@@ -81,4 +82,12 @@ type hrUpdateStatus interface {
 		req hrupdstatus.Request,
 		ident identity.Identity,
 	) (*appviews.HrDetailedView, error)
+}
+
+type getHistoryHrView interface {
+	Execute(
+		ctx context.Context,
+		appID uuid.UUID,
+		ident identity.Identity,
+	) ([]appviews.StatusChangeHrFullView, error)
 }
