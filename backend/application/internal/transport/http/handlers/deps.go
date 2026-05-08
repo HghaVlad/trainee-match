@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	appviews "github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
@@ -22,6 +23,7 @@ type Deps struct {
 	Withdraw            withdrawUC
 	ListHrApps          listHrApps
 	GetHrDetailedView   getHrDetailedView
+	HrUpdateStatus      hrUpdateStatus
 	Logger              *slog.Logger
 }
 
@@ -69,6 +71,14 @@ type getHrDetailedView interface {
 	Execute(
 		ctx context.Context,
 		appID uuid.UUID,
+		ident identity.Identity,
+	) (*appviews.HrDetailedView, error)
+}
+
+type hrUpdateStatus interface {
+	Execute(
+		ctx context.Context,
+		req hrupdstatus.Request,
 		ident identity.Identity,
 	) (*appviews.HrDetailedView, error)
 }

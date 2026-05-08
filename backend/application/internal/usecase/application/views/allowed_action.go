@@ -43,6 +43,7 @@ func CandidateAllowedActions(status application.Status) []AllowedAction {
 
 	for _, t := range transitions {
 		//nolint:exhaustive // others won't contribute to res
+		//nolint:gocritic // for future dev
 		switch t {
 		case application.StatusWithdrawn:
 			res = append(res, AllowedActionWithdraw)

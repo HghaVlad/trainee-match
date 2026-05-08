@@ -79,3 +79,17 @@ func (s Status) AvailableTransitions(actor Actor) []Status {
 
 	return res
 }
+
+func (s Status) IsValid() error {
+	switch s {
+	case StatusSubmitted,
+		StatusSeen,
+		StatusInterview,
+		StatusRejected,
+		StatusOffer,
+		StatusWithdrawn:
+		return nil
+	}
+
+	return ErrInvalidStatus
+}

@@ -155,5 +155,3 @@ CREATE TABLE company_members
 
     PRIMARY KEY (user_id, company_id)
 );
-
-CREATE INDEX idx_company_members_user ON company_members (user_id);

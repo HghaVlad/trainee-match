@@ -1,4 +1,4 @@
-package apply
+package hrupdstatus
 
 import (
 	"github.com/google/uuid"
@@ -7,13 +7,17 @@ import (
 )
 
 type Request struct {
-	VacancyID   uuid.UUID
-	ResumeID    uuid.UUID
-	CoverLetter *string
+	AppID   uuid.UUID
+	Status  application.Status
+	Comment *string
 }
 
 func (r *Request) validate() error {
-	if r.CoverLetter != nil && len([]rune(*r.CoverLetter)) > application.MaxCoverLetterLength {
+	if err := r.Status.IsValid(); err != nil {
+		return err
+	}
+
+	if r.Comment != nil && len([]rune(*r.Comment)) > application.MaxCommentLength {
 		return application.ErrStatusChangeCommentTooLong
 	}
 

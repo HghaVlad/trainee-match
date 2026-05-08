@@ -55,6 +55,10 @@ func (u *Usecase) Execute(
 		return nil, identity.ErrCandidateRoleRequired
 	}
 
+	if err := req.validate(); err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 
 	candProj, err := u.candProjRepo.GetByUserID(ctx, ident.UserID)

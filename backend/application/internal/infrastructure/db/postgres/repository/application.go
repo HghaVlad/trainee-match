@@ -116,9 +116,8 @@ func (a *ApplicationRepo) GetForUpdateByCandidate(
 
 	var app application.Application
 
-	err := q.QueryRow(ctx, query, appID, candID).
-		Scan(&app.ID, &app.ResumeID, &app.CandidateID, &app.VacancyID, &app.CompanyID,
-			&app.SnapshotID, &app.Status, &app.CoverLetter, &app.CreatedAt, &app.UpdatedAt)
+	row := q.QueryRow(ctx, query, appID, candID)
+	err := scanApp(row, &app)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -178,6 +177,36 @@ func (a *ApplicationRepo) GetHrDetailedView(
 	}
 
 	return view, nil
+}
+
+func (a *ApplicationRepo) GetForUpdateByHr(
+	ctx context.Context,
+	appID, hrID uuid.UUID,
+) (*application.Application, error) {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+		SELECT a.id, a.resume_id, a.candidate_id, a.vacancy_id, a.company_id,
+       		a.snapshot_id, a.status, a.cover_letter, a.created_at, a.updated_at
+		FROM applications a
+		JOIN company_members cm ON cm.company_id = a.company_id
+		WHERE a.id = $1 AND cm.user_id = $2
+		FOR UPDATE`
+
+	var app application.Application
+
+	row := q.QueryRow(ctx, query, appID, hrID)
+	err := scanApp(row, &app)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, application.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("get application: %w", err)
+	}
+
+	return &app, nil
 }
 
 func (a *ApplicationRepo) UpdateStatus(
@@ -421,6 +450,11 @@ func scanHrDetailedView(row pgx.Row) (*views.HrDetailedView, error) {
 	}
 
 	return &view, nil
+}
+
+func scanApp(row pgx.Row, app *application.Application) error {
+	return row.Scan(&app.ID, &app.ResumeID, &app.CandidateID, &app.VacancyID, &app.CompanyID,
+		&app.SnapshotID, &app.Status, &app.CoverLetter, &app.CreatedAt, &app.UpdatedAt)
 }
 
 type hrSummaryListQuery struct {

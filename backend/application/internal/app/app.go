@@ -11,8 +11,6 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/gethrview"
-
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
@@ -23,6 +21,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/gethrview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
@@ -70,6 +70,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
 	getHrDetailedView := gethrview.NewUsecase(appRepo)
+	hrUpdateStatus := hrupdstatus.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -84,6 +85,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		Withdraw:            withdrawApp,
 		ListHrApps:          listHrApps,
 		GetHrDetailedView:   getHrDetailedView,
+		HrUpdateStatus:      hrUpdateStatus,
 		Logger:              logger,
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
@@ -24,6 +25,7 @@ type Handler struct {
 	withdraw             withdrawUC
 	listHrApps           listHrApps
 	getHrDetailedView    getHrDetailedView
+	hrUpdateStatus       hrUpdateStatus
 	logger               *slog.Logger
 }
 
@@ -36,6 +38,7 @@ func NewHandler(deps *Deps) *Handler {
 		listHrApps:           deps.ListHrApps,
 		withdraw:             deps.Withdraw,
 		getHrDetailedView:    deps.GetHrDetailedView,
+		hrUpdateStatus:       deps.HrUpdateStatus,
 		logger:               deps.Logger,
 	}
 }
@@ -174,18 +177,32 @@ func (h *Handler) GetHrApplication(
 	}, nil
 }
 
-func (h *Handler) GetHrApplicationHistory(
-	ctx context.Context,
-	request oapi.GetHrApplicationHistoryRequestObject,
-) (oapi.GetHrApplicationHistoryResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
 func (h *Handler) ChangeApplicationStatus(
 	ctx context.Context,
 	request oapi.ChangeApplicationStatusRequestObject,
 ) (oapi.ChangeApplicationStatusResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	req := hrupdstatus.Request{
+		AppID:   request.ApplicationId,
+		Status:  application.Status(request.Body.Status),
+		Comment: request.Body.Comment,
+	}
+
+	view, err := h.hrUpdateStatus.Execute(ctx, req, *ident)
+
+	if err != nil {
+		return handleHrUpdStatus(err)
+	}
+
+	return oapi.ChangeApplicationStatus200JSONResponse{
+		Data: mappers.HrDetailedViewToHTTP(view),
+	}, nil
+}
+
+func (h *Handler) GetHrApplicationHistory(
+	ctx context.Context,
+	request oapi.GetHrApplicationHistoryRequestObject,
+) (oapi.GetHrApplicationHistoryResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
 }
@@ -240,6 +257,14 @@ func (h *Handler) GetVacancyAnalyticsSummary(
 
 func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error) {
 	switch {
+	case errors.Is(err, application.ErrCoverLetterTooLong):
+		return oapi.CreateApplication400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
 	case errors.Is(err, application.ErrResumeAccessDenied),
 		errors.Is(err, identity.ErrCandidateRoleRequired):
 		return oapi.CreateApplication403JSONResponse{
@@ -301,7 +326,9 @@ func handleCandViewErr(err error) (oapi.GetMyApplicationResponseObject, error) {
 
 func handleListMyAppErr(err error) (oapi.ListMyApplicationsResponseObject, error) {
 	switch {
-	case errors.Is(err, cursors.ErrUnsupportedOrder):
+	case errors.Is(err, cursors.ErrUnsupportedOrder),
+		errors.Is(err, cursors.ErrInvalidCursor),
+		errors.Is(err, cursors.ErrCursorOrderMismatch):
 		return oapi.ListMyApplications400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
 				Error:   "bad_request",
@@ -344,6 +371,14 @@ func handleCandiHistoryErr(err error) (oapi.GetMyApplicationHistoryResponseObjec
 
 func handleWithdrawErr(err error) (oapi.WithdrawApplicationResponseObject, error) {
 	switch {
+	case errors.Is(err, application.ErrCoverLetterTooLong):
+		return oapi.WithdrawApplication400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
 	case errors.Is(err, identity.ErrCandidateRoleRequired):
 		return oapi.WithdrawApplication403JSONResponse{
 			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
@@ -372,6 +407,8 @@ func handleWithdrawErr(err error) (oapi.WithdrawApplicationResponseObject, error
 func handleHrCompListErr(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
 	switch {
 	case errors.Is(err, cursors.ErrUnsupportedOrder),
+		errors.Is(err, cursors.ErrInvalidCursor),
+		errors.Is(err, cursors.ErrCursorOrderMismatch),
 		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
 		return oapi.ListCompanyApplications400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
@@ -404,6 +441,8 @@ func handleHrCompListErr(err error) (oapi.ListCompanyApplicationsResponseObject,
 func handleHrVacListErr(err error) (oapi.ListVacancyApplicationsResponseObject, error) {
 	switch {
 	case errors.Is(err, cursors.ErrUnsupportedOrder),
+		errors.Is(err, cursors.ErrInvalidCursor),
+		errors.Is(err, cursors.ErrCursorOrderMismatch),
 		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
 		return oapi.ListVacancyApplications400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
@@ -445,6 +484,42 @@ func handleHrViewErr(err error) (oapi.GetHrApplicationResponseObject, error) {
 	case errors.Is(err, application.ErrNotFound):
 		return oapi.GetHrApplication404JSONResponse{
 			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleHrUpdStatus(err error) (oapi.ChangeApplicationStatusResponseObject, error) {
+	switch {
+	case errors.Is(err, application.ErrInvalidStatus),
+		errors.Is(err, application.ErrCoverLetterTooLong):
+		return oapi.ChangeApplicationStatus400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "bad_request",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.ChangeApplicationStatus403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.ChangeApplicationStatus404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+
+	case errors.Is(err, application.ErrInvalidStatusTransition),
+		errors.Is(err, application.ErrStatusAlreadySet):
+		return oapi.ChangeApplicationStatus409JSONResponse{
+			Error:   "conflict",
 			Message: err.Error(),
 		}, nil
 	}

@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const MaxCoverLetterLength = 2000
+
 type Application struct {
 	ID          uuid.UUID
 	ResumeID    uuid.UUID
@@ -24,6 +26,10 @@ func NewSubmitted(
 	coverLetter *string,
 	when time.Time,
 ) (*Application, error) {
+	if coverLetter != nil && len([]rune(*coverLetter)) > MaxCoverLetterLength {
+		return nil, ErrCoverLetterTooLong
+	}
+
 	return &Application{
 		ID:          uuid.New(),
 		ResumeID:    resumeID,
