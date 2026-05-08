@@ -16,23 +16,24 @@ import (
 
 type Deps struct {
 	Apply               applyUC
-	ListCandidateApps   listCandidateAppsUC
-	GetCandidateViewUC  getCandidateViewUC
-	GetCandiStatHistory listCandidateStatusHistoryUC
+	ListCandidateApps   listCandidateApps
+	GetCandidateViewUC  getCandidateDetailedView
+	GetCandiStatHistory getCandidateStatusHistory
 	Withdraw            withdrawUC
-	ListHrApps          listHrAppsUC
+	ListHrApps          listHrApps
+	GetHrDetailedView   getHrDetailedView
 	Logger              *slog.Logger
 }
 
 type applyUC interface {
-	Execute(context.Context, apply.Request, identity.Identity) (*appviews.CandidateViewWithDetails, error)
+	Execute(context.Context, apply.Request, identity.Identity) (*appviews.CandidateDetailedView, error)
 }
 
-type getCandidateViewUC interface {
-	Execute(ctx context.Context, appID uuid.UUID, ident identity.Identity) (*appviews.CandidateViewWithDetails, error)
+type getCandidateDetailedView interface {
+	Execute(ctx context.Context, appID uuid.UUID, ident identity.Identity) (*appviews.CandidateDetailedView, error)
 }
 
-type listCandidateStatusHistoryUC interface {
+type getCandidateStatusHistory interface {
 	Execute(
 		ctx context.Context,
 		appID uuid.UUID,
@@ -40,7 +41,7 @@ type listCandidateStatusHistoryUC interface {
 	) ([]appviews.StatusChangeCandidateFullView, error)
 }
 
-type listCandidateAppsUC interface {
+type listCandidateApps interface {
 	Execute(
 		ctx context.Context,
 		req listcandidatesummary.Request,
@@ -53,13 +54,21 @@ type withdrawUC interface {
 		ctx context.Context,
 		req withdraw.Request,
 		ident identity.Identity,
-	) (*appviews.CandidateViewWithDetails, error)
+	) (*appviews.CandidateDetailedView, error)
 }
 
-type listHrAppsUC interface {
+type listHrApps interface {
 	Execute(
 		ctx context.Context,
 		req listhrsummary.Request,
 		ident identity.Identity,
 	) (*listhrsummary.Response, error)
+}
+
+type getHrDetailedView interface {
+	Execute(
+		ctx context.Context,
+		appID uuid.UUID,
+		ident identity.Identity,
+	) (*appviews.HrDetailedView, error)
 }

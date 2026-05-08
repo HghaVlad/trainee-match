@@ -32,7 +32,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	req Request,
 	ident identity.Identity,
-) (*views.CandidateViewWithDetails, error) {
+) (*views.CandidateDetailedView, error) {
 	if ident.Role != identity.RoleCandidate {
 		return nil, identity.ErrCandidateRoleRequired
 	}
@@ -74,5 +74,5 @@ func (u *Usecase) Execute(
 		return nil, err
 	}
 
-	return u.appRepo.GetByIDCandidateViewWithDetails(ctx, req.AppID, ident.UserID)
+	return u.appRepo.GetCandidateDetailedView(ctx, req.AppID, ident.UserID)
 }

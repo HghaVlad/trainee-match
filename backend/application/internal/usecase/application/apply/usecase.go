@@ -50,7 +50,7 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	req Request,
 	ident identity.Identity,
-) (*views.CandidateViewWithDetails, error) {
+) (*views.CandidateDetailedView, error) {
 	if ident.Role != identity.RoleCandidate {
 		return nil, identity.ErrCandidateRoleRequired
 	}
@@ -147,8 +147,8 @@ func buildFullCandidateView(
 	app *application.Application,
 	appSnap *application.Snapshot,
 	vacProj *projection.Vacancy,
-) *views.CandidateViewWithDetails {
-	return &views.CandidateViewWithDetails{
+) *views.CandidateDetailedView {
+	return &views.CandidateDetailedView{
 		AppID:        app.ID,
 		VacancyID:    vacProj.ID,
 		CompanyID:    vacProj.CompanyID,

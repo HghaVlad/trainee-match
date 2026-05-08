@@ -11,6 +11,8 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/gethrview"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
@@ -67,6 +69,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	withdrawApp := withdraw.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
 
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+	getHrDetailedView := gethrview.NewUsecase(appRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -80,6 +83,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		GetCandiStatHistory: getCandiAppHistory,
 		Withdraw:            withdrawApp,
 		ListHrApps:          listHrApps,
+		GetHrDetailedView:   getHrDetailedView,
 		Logger:              logger,
 	}
 

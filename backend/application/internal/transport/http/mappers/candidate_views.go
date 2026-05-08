@@ -40,7 +40,7 @@ func CandidateListResponseToHTTP(resp *listcandidatesummary.Response) oapi.ListM
 	}
 }
 
-func CandidateViewWithDetailsToHTTP(view *views.CandidateViewWithDetails) oapi.CandidateApplicationDetails {
+func CandidateDetailedViewToHTTP(view *views.CandidateDetailedView) oapi.CandidateApplicationDetails {
 	return oapi.CandidateApplicationDetails{
 		Id:             view.AppID,
 		Status:         oapi.ApplicationStatus(view.Status),

@@ -18,11 +18,12 @@ import (
 
 type Handler struct {
 	apply                applyUC
-	listCandidateApps    listCandidateAppsUC
-	getCandidateView     getCandidateViewUC
-	listCandiStatHistory listCandidateStatusHistoryUC
+	listCandidateApps    listCandidateApps
+	getCandidateView     getCandidateDetailedView
+	listCandiStatHistory getCandidateStatusHistory
 	withdraw             withdrawUC
-	listHrApps           listHrAppsUC
+	listHrApps           listHrApps
+	getHrDetailedView    getHrDetailedView
 	logger               *slog.Logger
 }
 
@@ -34,6 +35,7 @@ func NewHandler(deps *Deps) *Handler {
 		listCandiStatHistory: deps.GetCandiStatHistory,
 		listHrApps:           deps.ListHrApps,
 		withdraw:             deps.Withdraw,
+		getHrDetailedView:    deps.GetHrDetailedView,
 		logger:               deps.Logger,
 	}
 }
@@ -52,7 +54,7 @@ func (h *Handler) CreateApplication(
 	}
 
 	return oapi.CreateApplication201JSONResponse{
-		Data: mappers.CandidateViewWithDetailsToHTTP(resp),
+		Data: mappers.CandidateDetailedViewToHTTP(resp),
 	}, nil
 }
 
@@ -69,7 +71,7 @@ func (h *Handler) GetMyApplication(
 	}
 
 	return oapi.GetMyApplication200JSONResponse{
-		Data: mappers.CandidateViewWithDetailsToHTTP(resp),
+		Data: mappers.CandidateDetailedViewToHTTP(resp),
 	}, nil
 }
 
@@ -119,7 +121,7 @@ func (h *Handler) WithdrawApplication(
 	}
 
 	return oapi.WithdrawApplication200JSONResponse{
-		Data: mappers.CandidateViewWithDetailsToHTTP(view),
+		Data: mappers.CandidateDetailedViewToHTTP(view),
 	}, nil
 }
 
@@ -159,8 +161,17 @@ func (h *Handler) GetHrApplication(
 	ctx context.Context,
 	request oapi.GetHrApplicationRequestObject,
 ) (oapi.GetHrApplicationResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	appID := request.ApplicationId
+
+	view, err := h.getHrDetailedView.Execute(ctx, appID, *ident)
+	if err != nil {
+		return handleHrViewErr(err)
+	}
+
+	return oapi.GetHrApplication200JSONResponse{
+		Data: mappers.HrDetailedViewToHTTP(view),
+	}, nil
 }
 
 func (h *Handler) GetHrApplicationHistory(
@@ -419,4 +430,24 @@ func handleHrVacListErr(err error) (oapi.ListVacancyApplicationsResponseObject, 
 	default:
 		return nil, err
 	}
+}
+
+func handleHrViewErr(err error) (oapi.GetHrApplicationResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetHrApplication403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.GetHrApplication404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
 }

@@ -1,5 +1,7 @@
 package application
 
+import "slices"
+
 type Status string
 
 const (
@@ -11,40 +13,69 @@ const (
 	StatusWithdrawn Status = "withdrawn"
 )
 
+type Transition struct {
+	To     Status
+	Actors []Actor
+}
+
 //nolint:gochecknoglobals // its readonly and for validations
-var allowedTransitions = map[Status]map[Status]struct{}{
+var transitions = map[Status][]Transition{
 	StatusSubmitted: {
-		StatusSeen:      {},
-		StatusRejected:  {},
-		StatusWithdrawn: {},
+		{To: StatusSeen, Actors: []Actor{ActorHR}},
+		{To: StatusInterview, Actors: []Actor{ActorHR}},
+		{To: StatusRejected, Actors: []Actor{ActorHR}},
+		{To: StatusWithdrawn, Actors: []Actor{ActorCandidate}},
 	},
 
 	StatusSeen: {
-		StatusInterview: {},
-		StatusRejected:  {},
-		StatusWithdrawn: {},
+		{To: StatusInterview, Actors: []Actor{ActorHR}},
+		{To: StatusRejected, Actors: []Actor{ActorHR}},
+		{To: StatusWithdrawn, Actors: []Actor{ActorCandidate}},
 	},
 
 	StatusInterview: {
-		StatusOffer:     {},
-		StatusRejected:  {},
-		StatusWithdrawn: {},
+		{To: StatusOffer, Actors: []Actor{ActorHR}},
+		{To: StatusRejected, Actors: []Actor{ActorHR}},
+		{To: StatusWithdrawn, Actors: []Actor{ActorCandidate}},
 	},
 
-	StatusOffer: {},
-
-	StatusRejected: {},
-
+	StatusOffer:     {},
+	StatusRejected:  {},
 	StatusWithdrawn: {},
 }
 
-func (s Status) CanTransitionTo(next Status) bool {
-	allowed, ok := allowedTransitions[s]
+func (s Status) CanTransitionTo(next Status, actor Actor) bool {
+	available, ok := transitions[s]
 	if !ok {
 		return false
 	}
 
-	_, ok = allowed[next]
+	for _, t := range available {
+		if t.To != next {
+			continue
+		}
 
-	return ok
+		if slices.Contains(t.Actors, actor) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s Status) AvailableTransitions(actor Actor) []Status {
+	available, ok := transitions[s]
+	if !ok {
+		return nil
+	}
+
+	res := make([]Status, 0, len(available))
+
+	for _, t := range available {
+		if slices.Contains(t.Actors, actor) {
+			res = append(res, t.To)
+		}
+	}
+
+	return res
 }

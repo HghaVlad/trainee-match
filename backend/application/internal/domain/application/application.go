@@ -39,34 +39,15 @@ func NewSubmitted(
 }
 
 func (a *Application) Withdraw(when time.Time) error {
-	return a.ChangeStatus(StatusWithdrawn, when)
+	return a.ChangeStatus(StatusWithdrawn, ActorCandidate, when)
 }
 
-func (a *Application) MarkSeen(when time.Time) error {
-	return a.ChangeStatus(StatusSeen, when)
-}
-
-func (a *Application) InviteToInterview(when time.Time) error {
-	return a.ChangeStatus(StatusInterview, when)
-}
-
-func (a *Application) Reject(when time.Time) error {
-	return a.ChangeStatus(StatusRejected, when)
-}
-
-func (a *Application) MakeOffer(when time.Time) error {
-	return a.ChangeStatus(StatusOffer, when)
-}
-
-func (a *Application) ChangeStatus(
-	next Status,
-	when time.Time,
-) error {
+func (a *Application) ChangeStatus(next Status, actor Actor, when time.Time) error {
 	if a.Status == next {
 		return ErrStatusAlreadySet
 	}
 
-	if !a.Status.CanTransitionTo(next) {
+	if !a.Status.CanTransitionTo(next, actor) {
 		return ErrInvalidStatusTransition
 	}
 

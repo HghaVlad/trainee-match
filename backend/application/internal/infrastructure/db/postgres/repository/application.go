@@ -55,43 +55,47 @@ func (a *ApplicationRepo) Create(ctx context.Context, app application.Applicatio
 	return nil
 }
 
-func (a *ApplicationRepo) GetByIDCandidateViewWithDetails(
+func (a *ApplicationRepo) GetCandidateDetailedView(
 	ctx context.Context,
 	appID, candID uuid.UUID,
-) (*views.CandidateViewWithDetails, error) {
+) (*views.CandidateDetailedView, error) {
 	q := a.getter.DefaultTrOrDB(ctx, a.db)
 
-	const query = `SELECT a.id, a.status, a.cover_letter, a.created_at, a.updated_at,
-        		v.id, v.company_id, v.company_name, v.title,
-        		s.resume_data, s.email, s.full_name, s.telegram, s.created_at,
-        		COALESCE(
-					json_agg(json_build_object(
-							'status', h.status,
-							'changed_by_role', h.changed_by_role,
-							'created_at', h.created_at
-						)
-						ORDER BY h.created_at
-					) FILTER (WHERE h.id IS NOT NULL), '[]'
-				) AS status_history
+	const query = `
+		SELECT a.id, a.status, a.cover_letter, a.created_at, a.updated_at,
+        	v.id, v.company_id, v.company_name, v.title,
+        	s.resume_data, s.email, s.full_name, s.telegram, s.created_at,
+        	COALESCE(h.status_history, '[]') AS status_history
+
 		FROM applications a
 		LEFT JOIN vacancy_projection v ON v.id = a.vacancy_id
 		JOIN application_snapshots s ON a.snapshot_id = s.id
-		JOIN application_status_history h ON h.application_id = a.id
- 		WHERE a.id = $1 AND a.candidate_id = $2
- 		GROUP BY a.id, a.status, a.cover_letter, a.created_at, a.updated_at,
-        		v.id, v.company_id, v.company_name, v.title,
-        		s.resume_data, s.email, s.full_name, s.telegram, s.created_at`
+		
+		LEFT JOIN LATERAL (
+		    SELECT json_agg(
+		    	json_build_object(
+					'status', h.status,
+					'created_at', h.created_at, 
+					'changed_by_role', h.changed_by_role
+				)
+				ORDER BY h.created_at 
+			) AS status_history
+		    FROM application_status_history h
+    		WHERE h.application_id = a.id
+		) h ON TRUE
+		
+ 		WHERE a.id = $1 AND a.candidate_id = $2`
 
 	row := q.QueryRow(ctx, query, appID, candID)
 
-	view, err := scanCandidateViewWithDetails(row)
+	view, err := scanCandidateDetailedView(row)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, application.ErrNotFound
 		}
 
-		return nil, fmt.Errorf("get application candidate view with details: %w", err)
+		return nil, fmt.Errorf("get candidate detailed app view: %w", err)
 	}
 
 	return view, nil
@@ -125,6 +129,55 @@ func (a *ApplicationRepo) GetForUpdateByCandidate(
 	}
 
 	return &app, nil
+}
+
+func (a *ApplicationRepo) GetHrDetailedView(
+	ctx context.Context,
+	appID, hrID uuid.UUID,
+) (*views.HrDetailedView, error) {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+		SELECT a.id, a.status, a.cover_letter, a.created_at, a.updated_at,
+        		v.id, v.title,
+        		s.resume_data, s.email, s.full_name, s.telegram, s.created_at,
+        		COALESCE(h.status_history, '[]') AS status_history
+		
+		FROM applications a
+		LEFT JOIN vacancy_projection v ON v.id = a.vacancy_id
+		JOIN application_snapshots s ON a.snapshot_id = s.id
+		JOIN company_members cm ON cm.company_id = a.company_id
+		
+		LEFT JOIN LATERAL (
+		    SELECT json_agg(
+		    	json_build_object(
+					'status', h.status,
+					'created_at', h.created_at,
+					'comment', h.comment,  
+					'changed_by_role', h.changed_by_role,
+					'changed_by_user_id', h.changed_by_user_id
+				)
+				ORDER BY h.created_at 
+			) AS status_history
+		    FROM application_status_history h
+    		WHERE h.application_id = a.id
+		) h ON TRUE
+		
+		WHERE a.id = $1 AND cm.user_id = $2`
+
+	row := q.QueryRow(ctx, query, appID, hrID)
+
+	view, err := scanHrDetailedView(row)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, application.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("get hr detailed app view: %w", err)
+	}
+
+	return view, nil
 }
 
 func (a *ApplicationRepo) UpdateStatus(
@@ -303,9 +356,9 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 	return items, nil
 }
 
-func scanCandidateViewWithDetails(row pgx.Row) (*views.CandidateViewWithDetails, error) {
+func scanCandidateDetailedView(row pgx.Row) (*views.CandidateDetailedView, error) {
 	var (
-		view             views.CandidateViewWithDetails
+		view             views.CandidateDetailedView
 		resumeDataRaw    []byte
 		statusHistoryRaw []byte
 	)
@@ -321,18 +374,50 @@ func scanCandidateViewWithDetails(row pgx.Row) (*views.CandidateViewWithDetails,
 
 	err = json.Unmarshal(resumeDataRaw, &view.Snapshot.ResumeData)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unmarshal snapshot resume data: %w",
-			err,
-		)
+		return nil, fmt.Errorf("unmarshal snapshot resume data: %w", err)
 	}
 
 	err = json.Unmarshal(statusHistoryRaw, &view.StatusHistory)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"unmarshal status history: %w",
-			err,
-		)
+		return nil, fmt.Errorf("unmarshal status history: %w", err)
+	}
+
+	if view.StatusHistory == nil {
+		view.StatusHistory = []views.StatusChangeCandidateView{}
+	}
+
+	return &view, nil
+}
+
+func scanHrDetailedView(row pgx.Row) (*views.HrDetailedView, error) {
+	var (
+		view             views.HrDetailedView
+		resumeDataRaw    []byte
+		statusHistoryRaw []byte
+	)
+
+	err := row.Scan(&view.AppID, &view.Status, &view.CoverLetter, &view.CreatedAt, &view.UpdatedAt,
+		&view.VacancyID, &view.VacancyTitle,
+		&resumeDataRaw, &view.Snapshot.Email, &view.Snapshot.FullName,
+		&view.Snapshot.Telegram, &view.Snapshot.CreatedAt,
+		&statusHistoryRaw,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(resumeDataRaw, &view.Snapshot.ResumeData)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal snapshot resume data: %w", err)
+	}
+
+	err = json.Unmarshal(statusHistoryRaw, &view.StatusHistory)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal status history: %w", err)
+	}
+
+	if view.StatusHistory == nil {
+		view.StatusHistory = []views.StatusChangeHrFullView{}
 	}
 
 	return &view, nil

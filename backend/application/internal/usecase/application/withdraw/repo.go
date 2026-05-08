@@ -23,10 +23,10 @@ type appRepo interface {
 		updAt time.Time,
 	) error
 
-	GetByIDCandidateViewWithDetails(
+	GetCandidateDetailedView(
 		ctx context.Context,
 		appID, candID uuid.UUID,
-	) (*views.CandidateViewWithDetails, error)
+	) (*views.CandidateDetailedView, error)
 }
 
 type appStatusHistoryRepo interface {
