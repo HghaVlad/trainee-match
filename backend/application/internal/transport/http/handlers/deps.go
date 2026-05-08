@@ -14,11 +14,12 @@ import (
 )
 
 type Deps struct {
-	Apply              applyUC
-	ListCandidateApps  listCandidateAppsUC
-	GetCandidateViewUC getCandidateViewUC
-	ListHrApps         listHrAppsUC
-	Logger             *slog.Logger
+	Apply               applyUC
+	ListCandidateApps   listCandidateAppsUC
+	GetCandidateViewUC  getCandidateViewUC
+	GetCandiStatHistory listCandidateStatusHistoryUC
+	ListHrApps          listHrAppsUC
+	Logger              *slog.Logger
 }
 
 type applyUC interface {
@@ -27,6 +28,14 @@ type applyUC interface {
 
 type getCandidateViewUC interface {
 	Execute(ctx context.Context, appID uuid.UUID, ident identity.Identity) (*appviews.CandidateViewWithDetails, error)
+}
+
+type listCandidateStatusHistoryUC interface {
+	Execute(
+		ctx context.Context,
+		appID uuid.UUID,
+		ident identity.Identity,
+	) ([]appviews.StatusChangeCandidateFullView, error)
 }
 
 type listCandidateAppsUC interface {

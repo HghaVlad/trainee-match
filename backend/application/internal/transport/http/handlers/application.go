@@ -16,20 +16,22 @@ import (
 )
 
 type Handler struct {
-	apply             applyUC
-	listCandidateApps listCandidateAppsUC
-	getCandidateView  getCandidateViewUC
-	listHrApps        listHrAppsUC
-	logger            *slog.Logger
+	apply                applyUC
+	listCandidateApps    listCandidateAppsUC
+	getCandidateView     getCandidateViewUC
+	listCandiStatHistory listCandidateStatusHistoryUC
+	listHrApps           listHrAppsUC
+	logger               *slog.Logger
 }
 
 func NewHandler(deps *Deps) *Handler {
 	return &Handler{
-		apply:             deps.Apply,
-		listCandidateApps: deps.ListCandidateApps,
-		getCandidateView:  deps.GetCandidateViewUC,
-		listHrApps:        deps.ListHrApps,
-		logger:            deps.Logger,
+		apply:                deps.Apply,
+		listCandidateApps:    deps.ListCandidateApps,
+		getCandidateView:     deps.GetCandidateViewUC,
+		listCandiStatHistory: deps.GetCandiStatHistory,
+		listHrApps:           deps.ListHrApps,
+		logger:               deps.Logger,
 	}
 }
 
@@ -60,7 +62,7 @@ func (h *Handler) GetMyApplication(
 
 	resp, err := h.getCandidateView.Execute(ctx, appID, *ident)
 	if err != nil {
-		return getCandViewErrToResponse(err)
+		return handleCandViewErr(err)
 	}
 
 	return oapi.GetMyApplication200JSONResponse{
@@ -72,8 +74,15 @@ func (h *Handler) GetMyApplicationHistory(
 	ctx context.Context,
 	request oapi.GetMyApplicationHistoryRequestObject,
 ) (oapi.GetMyApplicationHistoryResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	ident := middleware.IdentityFromContext(ctx)
+	appID := request.ApplicationId
+
+	history, err := h.listCandiStatHistory.Execute(ctx, appID, *ident)
+	if err != nil {
+		return handleCandiHistoryErr(err)
+	}
+
+	return mappers.CandidateHistoryFullToHTTP(history), nil
 }
 
 func (h *Handler) ListMyApplications(
@@ -86,7 +95,7 @@ func (h *Handler) ListMyApplications(
 	resp, err := h.listCandidateApps.Execute(ctx, req, *ident)
 	if err != nil {
 		return handleListMyAppErr(err)
-	} // TODO: add normal errors
+	}
 
 	return mappers.CandidateListResponseToHTTP(resp), nil
 }
@@ -109,7 +118,7 @@ func (h *Handler) ListCompanyApplications(
 	resp, err := h.listHrApps.Execute(ctx, req, *ident)
 
 	if err != nil {
-		return hrCompListErrToResponse(err)
+		return handleHrCompListErr(err)
 	}
 
 	return oapi.ListCompanyApplications200JSONResponse(mappers.HrListResponseToHTTP(resp)), nil
@@ -125,7 +134,7 @@ func (h *Handler) ListVacancyApplications(
 	resp, err := h.listHrApps.Execute(ctx, req, *ident)
 
 	if err != nil {
-		return hrVacListErrToResponse(err)
+		return handleHrVacListErr(err)
 	}
 
 	return oapi.ListVacancyApplications200JSONResponse(mappers.HrListResponseToHTTP(resp)), nil
@@ -242,7 +251,7 @@ func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error)
 	}
 }
 
-func getCandViewErrToResponse(err error) (oapi.GetMyApplicationResponseObject, error) {
+func handleCandViewErr(err error) (oapi.GetMyApplicationResponseObject, error) {
 	switch {
 	case errors.Is(err, application.ErrResumeAccessDenied),
 		errors.Is(err, identity.ErrCandidateRoleRequired):
@@ -287,7 +296,27 @@ func handleListMyAppErr(err error) (oapi.ListMyApplicationsResponseObject, error
 	}
 }
 
-func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
+func handleCandiHistoryErr(err error) (oapi.GetMyApplicationHistoryResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrCandidateRoleRequired):
+		return oapi.GetMyApplicationHistory403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, application.ErrNotFound):
+		return oapi.GetMyApplicationHistory404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleHrCompListErr(err error) (oapi.ListCompanyApplicationsResponseObject, error) {
 	switch {
 	case errors.Is(err, cursors.ErrUnsupportedOrder),
 		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):
@@ -319,7 +348,7 @@ func hrCompListErrToResponse(err error) (oapi.ListCompanyApplicationsResponseObj
 	}
 }
 
-func hrVacListErrToResponse(err error) (oapi.ListVacancyApplicationsResponseObject, error) {
+func handleHrVacListErr(err error) (oapi.ListVacancyApplicationsResponseObject, error) {
 	switch {
 	case errors.Is(err, cursors.ErrUnsupportedOrder),
 		errors.Is(err, listhrsummary.ErrCompanyOrVacancyRequired):

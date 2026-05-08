@@ -806,7 +806,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CandidateApplicationStatusHistoryItem'
+            $ref: '#/components/schemas/CandidateApplicationStatusHistoryWithCommentItem'
 
     HrApplicationHistoryResponse:
       type: object
@@ -1034,6 +1034,27 @@ components:
             - candidate
             - hr
             - system
+        createdAt:
+          type: string
+          format: date-time
+
+    CandidateApplicationStatusHistoryWithCommentItem:
+      type: object
+      required:
+        - status
+        - changedByRole
+        - createdAt
+      properties:
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        changedByRole:
+          type: string
+          enum:
+            - candidate
+            - hr
+            - system
+        comment:
+          type: string
         createdAt:
           type: string
           format: date-time

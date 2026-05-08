@@ -63,7 +63,7 @@ func CandidateViewWithDetailsToHTTP(view *views.CandidateViewWithDetails) oapi.C
 			},
 		},
 
-		StatusHistory: mapCandidateHistory(view.StatusHistory),
+		StatusHistory: CandidateHistoryToHTTP(view.StatusHistory),
 	}
 }
 
@@ -77,7 +77,7 @@ func mapCandidateAllowedActions(actions []views.AllowedAction) []oapi.CandidateA
 	return result
 }
 
-func mapCandidateHistory(items []views.StatusChangeCandidateView) []oapi.CandidateApplicationStatusHistoryItem {
+func CandidateHistoryToHTTP(items []views.StatusChangeCandidateView) []oapi.CandidateApplicationStatusHistoryItem {
 	result := make([]oapi.CandidateApplicationStatusHistoryItem, 0, len(items))
 
 	for _, item := range items {
@@ -89,6 +89,24 @@ func mapCandidateHistory(items []views.StatusChangeCandidateView) []oapi.Candida
 	}
 
 	return result
+}
+
+func CandidateHistoryFullToHTTP(items []views.StatusChangeCandidateFullView,
+) oapi.GetMyApplicationHistory200JSONResponse {
+	data := make([]oapi.CandidateApplicationStatusHistoryWithCommentItem, 0, len(items))
+
+	for _, item := range items {
+		data = append(data, oapi.CandidateApplicationStatusHistoryWithCommentItem{
+			ChangedByRole: oapi.CandidateApplicationStatusHistoryWithCommentItemChangedByRole(item.ChangedByRole),
+			CreatedAt:     item.CreatedAt,
+			Status:        oapi.ApplicationStatus(item.Status),
+			Comment:       item.Comment,
+		})
+	}
+
+	return oapi.GetMyApplicationHistory200JSONResponse{
+		Data: data,
+	}
 }
 
 func emailToOAPI(email *string) *openapitypes.Email {

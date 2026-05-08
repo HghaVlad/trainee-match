@@ -36,6 +36,13 @@ type StatusChangeCandidateView struct {
 	CreatedAt     time.Time          `json:"created_at"`
 }
 
+type StatusChangeCandidateFullView struct {
+	Status        application.Status
+	ChangedByRole application.Actor
+	Comment       *string
+	CreatedAt     time.Time
+}
+
 type ApplicationSnapshot struct {
 	ResumeData projection.ResumeData
 	Email      string

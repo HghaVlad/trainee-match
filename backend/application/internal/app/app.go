@@ -19,6 +19,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
@@ -61,6 +62,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	)
 	listCandidateAppsUC := listcandidatesummary.NewUsecase(appRepo)
 	getCandidateView := getcandidateview.NewUsecase(appRepo)
+	getCandiAppHistory := candidatehistory.NewUsecase(appStatusHistoryRepo)
 
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
 
@@ -70,11 +72,12 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	}
 
 	deps := &handlers.Deps{
-		Apply:              applyUC,
-		ListCandidateApps:  listCandidateAppsUC,
-		GetCandidateViewUC: getCandidateView,
-		ListHrApps:         listHrApps,
-		Logger:             logger,
+		Apply:               applyUC,
+		ListCandidateApps:   listCandidateAppsUC,
+		GetCandidateViewUC:  getCandidateView,
+		GetCandiStatHistory: getCandiAppHistory,
+		ListHrApps:          listHrApps,
+		Logger:              logger,
 	}
 
 	hand := handlers.NewHandler(deps)

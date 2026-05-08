@@ -283,6 +283,7 @@ type hrSummaryListQuery struct {
 	limitPos   int
 }
 
+//nolint:gocognit // query and args builder
 func buildHrSummaryListQuery(
 	hrUserID uuid.UUID,
 	statuses []application.Status,
