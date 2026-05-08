@@ -51,34 +51,6 @@ func (p *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*proj
 	return &vacancy, nil
 }
 
-func (p *VacancyProjection) GetCompanyIDByVacancyID(
-	ctx context.Context,
-	vacancyID uuid.UUID,
-) (uuid.UUID, error) {
-	q := p.getter.DefaultTrOrDB(ctx, p.db)
-
-	const query = `
-		SELECT company_id
-		FROM vacancy_projection
-		WHERE id = $1
-	`
-
-	var companyID uuid.UUID
-
-	err := q.QueryRow(ctx, query, vacancyID).
-		Scan(&companyID)
-
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return uuid.Nil, projection.ErrVacancyNotFound
-		}
-
-		return uuid.Nil, fmt.Errorf("get vacancy company id: %w", err)
-	}
-
-	return companyID, nil
-}
-
 // CheckHrAccess returns companyID if success,
 // projection.ErrVacancyNotFound otherwise
 func (p *VacancyProjection) CheckHrAccess(

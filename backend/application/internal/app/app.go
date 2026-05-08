@@ -18,6 +18,7 @@ import (
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
@@ -74,6 +75,8 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	hrUpdateStatus := hrupdstatus.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
 	getHistoryHrView := hrhistory.NewUsecase(appStatusHistoryRepo)
 
+	analyticsSummary := summary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
 		return nil, err
@@ -89,6 +92,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		GetHrDetailedView:   getHrDetailedView,
 		HrUpdateStatus:      hrUpdateStatus,
 		GetHistoryHrView:    getHistoryHrView,
+		AnalyticsSummary:    analyticsSummary,
 		Logger:              logger,
 	}
 

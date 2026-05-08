@@ -38,4 +38,4 @@ func WriteError(
 	}
 }
 
-var InternalServerError = errors.New("internal server error")
+var ErrInternalServerError = errors.New("internal server error")

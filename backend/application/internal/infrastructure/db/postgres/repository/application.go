@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 )
@@ -84,7 +87,7 @@ func (a *ApplicationRepo) GetCandidateDetailedView(
     		WHERE h.application_id = a.id
 		) h ON TRUE
 		
- 		WHERE a.id = $1 AND a.candidate_id = $2` // TODO: fix
+ 		WHERE a.id = $1 AND a.candidate_id = $2`
 
 	row := q.QueryRow(ctx, query, appID, candID)
 
@@ -385,6 +388,64 @@ func (a *ApplicationRepo) ListHrAppSummaries(
 	return items, nil
 }
 
+func (a *ApplicationRepo) GetCompanyAnalyticsSummary(
+	ctx context.Context,
+	compID uuid.UUID,
+) (*summary.Summary, error) {
+	const query = `
+		SELECT COUNT(*) FILTER (WHERE status = 'submitted') AS submitted,
+		    COUNT(*) FILTER (WHERE status = 'seen') AS seen,
+			COUNT(*) FILTER (WHERE status = 'interview') AS interview,
+			COUNT(*) FILTER (WHERE status = 'offer') AS offer,
+			COUNT(*) FILTER (WHERE status = 'rejected') AS rejected,
+			COUNT(*) FILTER (WHERE status = 'withdrawn') AS withdrawn
+		FROM applications
+		WHERE company_id = $1`
+
+	var sum summary.Summary
+	row := a.db.QueryRow(ctx, query, compID)
+	err := scanSummary(row, &sum)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, projection.ErrCompanyNotFound
+		}
+
+		return nil, fmt.Errorf("get company analytics summary: %w", err)
+	}
+
+	return &sum, nil
+}
+
+func (a *ApplicationRepo) GetVacancyAnalyticsSummary(
+	ctx context.Context,
+	vacID uuid.UUID,
+) (*summary.Summary, error) {
+	const query = `
+		SELECT COUNT(*) FILTER (WHERE status = 'submitted') AS submitted,
+		    COUNT(*) FILTER (WHERE status = 'seen') AS seen,
+			COUNT(*) FILTER (WHERE status = 'interview') AS interview,
+			COUNT(*) FILTER (WHERE status = 'offer') AS offer,
+			COUNT(*) FILTER (WHERE status = 'rejected') AS rejected,
+			COUNT(*) FILTER (WHERE status = 'withdrawn') AS withdrawn
+		FROM applications
+		WHERE vacancy_id = $1`
+
+	var sum summary.Summary
+	row := a.db.QueryRow(ctx, query, vacID)
+	err := scanSummary(row, &sum)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, projection.ErrVacancyNotFound
+		}
+
+		return nil, fmt.Errorf("get vacancy analytics summary: %w", err)
+	}
+
+	return &sum, nil
+}
+
 func scanCandidateDetailedView(row pgx.Row) (*views.CandidateDetailedView, error) {
 	var (
 		view             views.CandidateDetailedView
@@ -455,6 +516,11 @@ func scanHrDetailedView(row pgx.Row) (*views.HrDetailedView, error) {
 func scanApp(row pgx.Row, app *application.Application) error {
 	return row.Scan(&app.ID, &app.ResumeID, &app.CandidateID, &app.VacancyID, &app.CompanyID,
 		&app.SnapshotID, &app.Status, &app.CoverLetter, &app.CreatedAt, &app.UpdatedAt)
+}
+
+func scanSummary(row pgx.Row, sum *summary.Summary) error {
+	return row.Scan(&sum.SubmittedCount, &sum.SeenCount, &sum.InterviewCount,
+		&sum.OfferCount, &sum.RejectedCount, &sum.WithdrawnCount)
 }
 
 type hrSummaryListQuery struct {

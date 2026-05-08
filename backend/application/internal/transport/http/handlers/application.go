@@ -27,6 +27,7 @@ type Handler struct {
 	getHrDetailedView   getHrDetailedView
 	hrUpdateStatus      hrUpdateStatus
 	getHistoryHrView    getHistoryHrView
+	analyticsSummary    analyticsSummary
 	logger              *slog.Logger
 }
 
@@ -41,6 +42,7 @@ func NewHandler(deps *Deps) *Handler {
 		getHrDetailedView:   deps.GetHrDetailedView,
 		hrUpdateStatus:      deps.HrUpdateStatus,
 		getHistoryHrView:    deps.GetHistoryHrView,
+		analyticsSummary:    deps.AnalyticsSummary,
 		logger:              deps.Logger,
 	}
 }
@@ -218,6 +220,40 @@ func (h *Handler) GetHrApplicationHistory(
 	}, nil
 }
 
+func (h *Handler) GetCompanyAnalyticsSummary(
+	ctx context.Context,
+	request oapi.GetCompanyAnalyticsSummaryRequestObject,
+) (oapi.GetCompanyAnalyticsSummaryResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	compID := request.CompanyId
+
+	sum, err := h.analyticsSummary.GetByCompany(ctx, compID, *ident)
+	if err != nil {
+		return handleCompanyAnalyticsSummary(err)
+	}
+
+	return oapi.GetCompanyAnalyticsSummary200JSONResponse{
+		Data: mappers.AnalyticsSummaryToHTTP(*sum),
+	}, nil
+}
+
+func (h *Handler) GetVacancyAnalyticsSummary(
+	ctx context.Context,
+	request oapi.GetVacancyAnalyticsSummaryRequestObject,
+) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	vacID := request.VacancyId
+
+	sum, err := h.analyticsSummary.GetByVacancy(ctx, vacID, *ident)
+	if err != nil {
+		return handleVacancyAnalyticsSummary(err)
+	}
+
+	return oapi.GetVacancyAnalyticsSummary200JSONResponse{
+		Data: mappers.AnalyticsSummaryToHTTP(*sum),
+	}, nil
+}
+
 func (h *Handler) GetCompanyDynamics(
 	ctx context.Context,
 	request oapi.GetCompanyDynamicsRequestObject,
@@ -234,14 +270,6 @@ func (h *Handler) GetCompanyStatusFunnel(
 	panic("implement me")
 }
 
-func (h *Handler) GetCompanyAnalyticsSummary(
-	ctx context.Context,
-	request oapi.GetCompanyAnalyticsSummaryRequestObject,
-) (oapi.GetCompanyAnalyticsSummaryResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
 func (h *Handler) GetVacancyDynamics(
 	ctx context.Context,
 	request oapi.GetVacancyDynamicsRequestObject,
@@ -254,14 +282,6 @@ func (h *Handler) GetVacancyStatusFunnel(
 	ctx context.Context,
 	request oapi.GetVacancyStatusFunnelRequestObject,
 ) (oapi.GetVacancyStatusFunnelResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (h *Handler) GetVacancyAnalyticsSummary(
-	ctx context.Context,
-	request oapi.GetVacancyAnalyticsSummaryRequestObject,
-) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
 }
@@ -550,6 +570,46 @@ func handleGetHistoryHrViewErr(err error) (oapi.GetHrApplicationHistoryResponseO
 
 	case errors.Is(err, application.ErrNotFound):
 		return oapi.GetHrApplicationHistory404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleCompanyAnalyticsSummary(err error) (oapi.GetCompanyAnalyticsSummaryResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetCompanyAnalyticsSummary403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, projection.ErrCompanyNotFound):
+		return oapi.GetCompanyAnalyticsSummary404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleVacancyAnalyticsSummary(err error) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
+	switch {
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetVacancyAnalyticsSummary403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, projection.ErrVacancyNotFound):
+		return oapi.GetVacancyAnalyticsSummary404JSONResponse{
 			Error:   "not_found",
 			Message: err.Error(),
 		}, nil

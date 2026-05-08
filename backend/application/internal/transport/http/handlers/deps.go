@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
@@ -25,6 +26,7 @@ type Deps struct {
 	GetHrDetailedView   getHrDetailedView
 	HrUpdateStatus      hrUpdateStatus
 	GetHistoryHrView    getHistoryHrView
+	AnalyticsSummary    analyticsSummary
 	Logger              *slog.Logger
 }
 
@@ -90,4 +92,18 @@ type getHistoryHrView interface {
 		appID uuid.UUID,
 		ident identity.Identity,
 	) ([]appviews.StatusChangeHrFullView, error)
+}
+
+type analyticsSummary interface {
+	GetByCompany(
+		ctx context.Context,
+		compID uuid.UUID,
+		ident identity.Identity,
+	) (*summary.Summary, error)
+
+	GetByVacancy(
+		ctx context.Context,
+		compID uuid.UUID,
+		ident identity.Identity,
+	) (*summary.Summary, error)
 }

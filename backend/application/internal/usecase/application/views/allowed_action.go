@@ -42,11 +42,9 @@ func CandidateAllowedActions(status application.Status) []AllowedAction {
 	res := make([]AllowedAction, 0, len(transitions))
 
 	for _, t := range transitions {
-		//nolint:exhaustive // others won't contribute to res
-
-		switch t {
-		case application.StatusWithdrawn:
+		if t == application.StatusWithdrawn {
 			res = append(res, AllowedActionWithdraw)
+			break
 		}
 	}
 

@@ -17,7 +17,7 @@ func LoggingMiddleware(next nethttp.StrictHTTPHandlerFunc, _ string) nethttp.Str
 		w http.ResponseWriter,
 		r *http.Request,
 		request any,
-	) (response any, err error) {
+	) (any, error) {
 		resp, err := next(ctx, w, r, request)
 		if err != nil {
 			lgr := logger.FromContext(ctx)
@@ -27,7 +27,7 @@ func LoggingMiddleware(next nethttp.StrictHTTPHandlerFunc, _ string) nethttp.Str
 				slog.Any("err", err),
 			)
 
-			return resp, helpers.InternalServerError
+			return resp, helpers.ErrInternalServerError
 		}
 
 		return resp, err
