@@ -11,8 +11,6 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
-
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
@@ -20,6 +18,7 @@ import (
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"

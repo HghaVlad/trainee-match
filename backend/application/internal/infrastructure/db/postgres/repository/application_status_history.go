@@ -10,9 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
-
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 )
 

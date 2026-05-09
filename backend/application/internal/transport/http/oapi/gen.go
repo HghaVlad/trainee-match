@@ -554,21 +554,6 @@ type HrApplicationStatusHistoryItem struct {
 	Status          ApplicationStatus   `json:"status"`
 }
 
-// StatusFunnel defines model for StatusFunnel.
-type StatusFunnel struct {
-	Interview int `json:"interview"`
-	Offer     int `json:"offer"`
-	Rejected  int `json:"rejected"`
-	Seen      int `json:"seen"`
-	Submitted int `json:"submitted"`
-	Withdrawn int `json:"withdrawn"`
-}
-
-// StatusFunnelResponse defines model for StatusFunnelResponse.
-type StatusFunnelResponse struct {
-	Data StatusFunnel `json:"data"`
-}
-
 // VacancyAnalyticsSummaryResponse defines model for VacancyAnalyticsSummaryResponse.
 type VacancyAnalyticsSummaryResponse struct {
 	Data AnalyticsSummary `json:"data"`
@@ -654,12 +639,6 @@ type GetCompanyDynamicsParams struct {
 // GetCompanyDynamicsParamsInterval defines parameters for GetCompanyDynamics.
 type GetCompanyDynamicsParamsInterval string
 
-// GetCompanyStatusFunnelParams defines parameters for GetCompanyStatusFunnel.
-type GetCompanyStatusFunnelParams struct {
-	CreatedFrom *CreatedFromQuery `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
-	CreatedTo   *CreatedToQuery   `form:"createdTo,omitempty" json:"createdTo,omitempty"`
-}
-
 // GetCompanyAnalyticsSummaryParams defines parameters for GetCompanyAnalyticsSummary.
 type GetCompanyAnalyticsSummaryParams struct {
 	CreatedFrom *CreatedFromQuery `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
@@ -691,12 +670,6 @@ type GetVacancyDynamicsParams struct {
 
 // GetVacancyDynamicsParamsInterval defines parameters for GetVacancyDynamics.
 type GetVacancyDynamicsParamsInterval string
-
-// GetVacancyStatusFunnelParams defines parameters for GetVacancyStatusFunnel.
-type GetVacancyStatusFunnelParams struct {
-	CreatedFrom *CreatedFromQuery `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
-	CreatedTo   *CreatedToQuery   `form:"createdTo,omitempty" json:"createdTo,omitempty"`
-}
 
 // GetVacancyAnalyticsSummaryParams defines parameters for GetVacancyAnalyticsSummary.
 type GetVacancyAnalyticsSummaryParams struct {
@@ -757,9 +730,6 @@ type ServerInterface interface {
 	// Get company application dynamics
 	// (GET /api/v1/hr/companies/{companyId}/analytics/dynamics)
 	GetCompanyDynamics(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyDynamicsParams)
-	// Get company funnel by statuses
-	// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-	GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams)
 	// Get company application summary
 	// (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 	GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams)
@@ -769,9 +739,6 @@ type ServerInterface interface {
 	// Get vacancy application dynamics
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 	GetVacancyDynamics(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyDynamicsParams)
-	// Get vacancy funnel by statuses
-	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-	GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams)
 	// Get vacancy application summary
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/summary)
 	GetVacancyAnalyticsSummary(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyAnalyticsSummaryParams)
@@ -838,12 +805,6 @@ func (_ Unimplemented) GetCompanyDynamics(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get company funnel by statuses
-// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-func (_ Unimplemented) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Get company application summary
 // (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 func (_ Unimplemented) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams) {
@@ -859,12 +820,6 @@ func (_ Unimplemented) ListCompanyApplications(w http.ResponseWriter, r *http.Re
 // Get vacancy application dynamics
 // (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 func (_ Unimplemented) GetVacancyDynamics(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyDynamicsParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get vacancy funnel by statuses
-// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-func (_ Unimplemented) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1164,50 +1119,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyDynamics(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// GetCompanyStatusFunnel operation middleware
-func (siw *ServerInterfaceWrapper) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "companyId" -------------
-	var companyId CompanyId
-
-	err = runtime.BindStyledParameterWithOptions("simple", "companyId", chi.URLParam(r, "companyId"), &companyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetCompanyStatusFunnelParams
-
-	// ------------- Optional query parameter "createdFrom" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdFrom", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdFrom", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "createdTo" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdTo", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdTo", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetCompanyStatusFunnel(w, r, companyId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // GetCompanyAnalyticsSummary operation middleware
 func (siw *ServerInterfaceWrapper) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 
@@ -1379,50 +1290,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyDynamics(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetVacancyDynamics(w, r, vacancyId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// GetVacancyStatusFunnel operation middleware
-func (siw *ServerInterfaceWrapper) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "vacancyId" -------------
-	var vacancyId VacancyId
-
-	err = runtime.BindStyledParameterWithOptions("simple", "vacancyId", chi.URLParam(r, "vacancyId"), &vacancyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vacancyId", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetVacancyStatusFunnelParams
-
-	// ------------- Optional query parameter "createdFrom" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdFrom", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdFrom", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "createdTo" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdTo", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdTo", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetVacancyStatusFunnel(w, r, vacancyId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1693,9 +1560,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/dynamics", wrapper.GetCompanyDynamics)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/status-funnel", wrapper.GetCompanyStatusFunnel)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/summary", wrapper.GetCompanyAnalyticsSummary)
 	})
 	r.Group(func(r chi.Router) {
@@ -1703,9 +1567,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/dynamics", wrapper.GetVacancyDynamics)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel", wrapper.GetVacancyStatusFunnel)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/summary", wrapper.GetVacancyAnalyticsSummary)
@@ -2212,60 +2073,6 @@ func (response GetCompanyDynamics404JSONResponse) VisitGetCompanyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyStatusFunnelRequestObject struct {
-	CompanyId CompanyId `json:"companyId"`
-	Params    GetCompanyStatusFunnelParams
-}
-
-type GetCompanyStatusFunnelResponseObject interface {
-	VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error
-}
-
-type GetCompanyStatusFunnel200JSONResponse StatusFunnelResponse
-
-func (response GetCompanyStatusFunnel200JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetCompanyStatusFunnel400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response GetCompanyStatusFunnel400JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetCompanyStatusFunnel401JSONResponse struct{ UnauthorizedErrorJSONResponse }
-
-func (response GetCompanyStatusFunnel401JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetCompanyStatusFunnel403JSONResponse struct{ ForbiddenErrorJSONResponse }
-
-func (response GetCompanyStatusFunnel403JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetCompanyStatusFunnel404JSONResponse ErrorResponse
-
-func (response GetCompanyStatusFunnel404JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type GetCompanyAnalyticsSummaryRequestObject struct {
 	CompanyId CompanyId `json:"companyId"`
 	Params    GetCompanyAnalyticsSummaryParams
@@ -2428,60 +2235,6 @@ func (response GetVacancyDynamics404JSONResponse) VisitGetVacancyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyStatusFunnelRequestObject struct {
-	VacancyId VacancyId `json:"vacancyId"`
-	Params    GetVacancyStatusFunnelParams
-}
-
-type GetVacancyStatusFunnelResponseObject interface {
-	VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error
-}
-
-type GetVacancyStatusFunnel200JSONResponse StatusFunnelResponse
-
-func (response GetVacancyStatusFunnel200JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetVacancyStatusFunnel400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response GetVacancyStatusFunnel400JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetVacancyStatusFunnel401JSONResponse struct{ UnauthorizedErrorJSONResponse }
-
-func (response GetVacancyStatusFunnel401JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetVacancyStatusFunnel403JSONResponse struct{ ForbiddenErrorJSONResponse }
-
-func (response GetVacancyStatusFunnel403JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetVacancyStatusFunnel404JSONResponse ErrorResponse
-
-func (response GetVacancyStatusFunnel404JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type GetVacancyAnalyticsSummaryRequestObject struct {
 	VacancyId VacancyId `json:"vacancyId"`
 	Params    GetVacancyAnalyticsSummaryParams
@@ -2619,9 +2372,6 @@ type StrictServerInterface interface {
 	// Get company application dynamics
 	// (GET /api/v1/hr/companies/{companyId}/analytics/dynamics)
 	GetCompanyDynamics(ctx context.Context, request GetCompanyDynamicsRequestObject) (GetCompanyDynamicsResponseObject, error)
-	// Get company funnel by statuses
-	// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-	GetCompanyStatusFunnel(ctx context.Context, request GetCompanyStatusFunnelRequestObject) (GetCompanyStatusFunnelResponseObject, error)
 	// Get company application summary
 	// (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 	GetCompanyAnalyticsSummary(ctx context.Context, request GetCompanyAnalyticsSummaryRequestObject) (GetCompanyAnalyticsSummaryResponseObject, error)
@@ -2631,9 +2381,6 @@ type StrictServerInterface interface {
 	// Get vacancy application dynamics
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 	GetVacancyDynamics(ctx context.Context, request GetVacancyDynamicsRequestObject) (GetVacancyDynamicsResponseObject, error)
-	// Get vacancy funnel by statuses
-	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-	GetVacancyStatusFunnel(ctx context.Context, request GetVacancyStatusFunnelRequestObject) (GetVacancyStatusFunnelResponseObject, error)
 	// Get vacancy application summary
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/summary)
 	GetVacancyAnalyticsSummary(ctx context.Context, request GetVacancyAnalyticsSummaryRequestObject) (GetVacancyAnalyticsSummaryResponseObject, error)
@@ -2928,33 +2675,6 @@ func (sh *strictHandler) GetCompanyDynamics(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// GetCompanyStatusFunnel operation middleware
-func (sh *strictHandler) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams) {
-	var request GetCompanyStatusFunnelRequestObject
-
-	request.CompanyId = companyId
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetCompanyStatusFunnel(ctx, request.(GetCompanyStatusFunnelRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetCompanyStatusFunnel")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetCompanyStatusFunnelResponseObject); ok {
-		if err := validResponse.VisitGetCompanyStatusFunnelResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // GetCompanyAnalyticsSummary operation middleware
 func (sh *strictHandler) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams) {
 	var request GetCompanyAnalyticsSummaryRequestObject
@@ -3036,33 +2756,6 @@ func (sh *strictHandler) GetVacancyDynamics(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// GetVacancyStatusFunnel operation middleware
-func (sh *strictHandler) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams) {
-	var request GetVacancyStatusFunnelRequestObject
-
-	request.VacancyId = vacancyId
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetVacancyStatusFunnel(ctx, request.(GetVacancyStatusFunnelRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetVacancyStatusFunnel")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetVacancyStatusFunnelResponseObject); ok {
-		if err := validResponse.VisitGetVacancyStatusFunnelResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // GetVacancyAnalyticsSummary operation middleware
 func (sh *strictHandler) GetVacancyAnalyticsSummary(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyAnalyticsSummaryParams) {
 	var request GetVacancyAnalyticsSummaryRequestObject
@@ -3120,54 +2813,56 @@ func (sh *strictHandler) ListVacancyApplications(w http.ResponseWriter, r *http.
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

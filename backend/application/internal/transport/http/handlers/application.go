@@ -293,22 +293,6 @@ func (h *Handler) GetVacancyDynamics(
 	}, nil
 }
 
-func (h *Handler) GetCompanyStatusFunnel(
-	ctx context.Context,
-	request oapi.GetCompanyStatusFunnelRequestObject,
-) (oapi.GetCompanyStatusFunnelResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (h *Handler) GetVacancyStatusFunnel(
-	ctx context.Context,
-	request oapi.GetVacancyStatusFunnelRequestObject,
-) (oapi.GetVacancyStatusFunnelResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
 func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error) {
 	switch {
 	case errors.Is(err, application.ErrCoverLetterTooLong):
