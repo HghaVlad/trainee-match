@@ -9,13 +9,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
 )
 
-type AllowedAction string
-
-const (
-	AllowedActionWithdraw AllowedAction = "withdraw"
-)
-
-type CandidateViewWithDetails struct {
+type CandidateDetailedView struct {
 	AppID          uuid.UUID
 	VacancyID      uuid.UUID
 	CompanyID      uuid.UUID
@@ -34,6 +28,13 @@ type StatusChangeCandidateView struct {
 	Status        application.Status `json:"status"`
 	ChangedByRole application.Actor  `json:"changed_by_role"`
 	CreatedAt     time.Time          `json:"created_at"`
+}
+
+type StatusChangeCandidateFullView struct {
+	Status        application.Status
+	ChangedByRole application.Actor
+	Comment       *string
+	CreatedAt     time.Time
 }
 
 type ApplicationSnapshot struct {

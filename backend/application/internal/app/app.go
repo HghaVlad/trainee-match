@@ -18,10 +18,17 @@ import (
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/candidatehistory"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/getcandidateview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/gethrview"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrhistory"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
 )
 
 type App struct {
@@ -61,8 +68,16 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	)
 	listCandidateAppsUC := listcandidatesummary.NewUsecase(appRepo)
 	getCandidateView := getcandidateview.NewUsecase(appRepo)
+	getCandiAppHistory := candidatehistory.NewUsecase(appStatusHistoryRepo)
+	withdrawApp := withdraw.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
 
 	listHrApps := listhrsummary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+	getHrDetailedView := gethrview.NewUsecase(appRepo)
+	hrUpdateStatus := hrupdstatus.NewUsecase(appRepo, appStatusHistoryRepo, txManager)
+	getHistoryHrView := hrhistory.NewUsecase(appStatusHistoryRepo)
+
+	analyticsSummary := summary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+	dynamicsDashboard := dynamics.NewUsecase(appStatusHistoryRepo, compMemProjRepo, vacProjRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -70,11 +85,18 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	}
 
 	deps := &handlers.Deps{
-		Apply:              applyUC,
-		ListCandidateApps:  listCandidateAppsUC,
-		GetCandidateViewUC: getCandidateView,
-		ListHrApps:         listHrApps,
-		Logger:             logger,
+		Apply:               applyUC,
+		ListCandidateApps:   listCandidateAppsUC,
+		GetCandidateViewUC:  getCandidateView,
+		GetCandiStatHistory: getCandiAppHistory,
+		Withdraw:            withdrawApp,
+		ListHrApps:          listHrApps,
+		GetHrDetailedView:   getHrDetailedView,
+		HrUpdateStatus:      hrUpdateStatus,
+		GetHistoryHrView:    getHistoryHrView,
+		AnalyticsSummary:    analyticsSummary,
+		DynamicsDashboard:   dynamicsDashboard,
+		Logger:              logger,
 	}
 
 	hand := handlers.NewHandler(deps)

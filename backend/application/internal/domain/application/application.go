@@ -6,16 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Status string
-
-const (
-	StatusSubmitted Status = "submitted"
-	StatusSeen      Status = "seen"
-	StatusInterview Status = "interview"
-	StatusRejected  Status = "rejected"
-	StatusOffer     Status = "offer"
-	StatusWithdrawn Status = "withdrawn"
-)
+const MaxCoverLetterLength = 2000
 
 type Application struct {
 	ID          uuid.UUID
@@ -35,6 +26,10 @@ func NewSubmitted(
 	coverLetter *string,
 	when time.Time,
 ) (*Application, error) {
+	if coverLetter != nil && len([]rune(*coverLetter)) > MaxCoverLetterLength {
+		return nil, ErrCoverLetterTooLong
+	}
+
 	return &Application{
 		ID:          uuid.New(),
 		ResumeID:    resumeID,
@@ -47,4 +42,23 @@ func NewSubmitted(
 		CreatedAt:   when,
 		UpdatedAt:   when,
 	}, nil
+}
+
+func (a *Application) Withdraw(when time.Time) error {
+	return a.ChangeStatus(StatusWithdrawn, ActorCandidate, when)
+}
+
+func (a *Application) ChangeStatus(next Status, actor Actor, when time.Time) error {
+	if a.Status == next {
+		return ErrStatusAlreadySet
+	}
+
+	if !a.Status.CanTransitionTo(next, actor) {
+		return ErrInvalidStatusTransition
+	}
+
+	a.Status = next
+	a.UpdatedAt = when
+
+	return nil
 }

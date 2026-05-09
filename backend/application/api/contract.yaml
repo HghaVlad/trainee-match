@@ -19,8 +19,6 @@ tags:
   - name: HR Applications
   - name: Application Analytics
 
-security:
-  - bearerAuth: []
 
 paths:
   /api/v1/applications:
@@ -43,10 +41,16 @@ paths:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy or resume not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Active application for this vacancy already exists
           content:
@@ -71,6 +75,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
 
   /api/v1/applications/{applicationId}:
     get:
@@ -86,10 +96,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/applications/{applicationId}/history:
     get:
@@ -105,10 +123,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/applications/{applicationId}/withdraw:
     post:
@@ -135,10 +161,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidateApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Transition is not allowed
           content:
@@ -167,10 +201,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/applications:
     get:
@@ -192,10 +234,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}:
     get:
@@ -211,10 +261,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationDetailsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}/history:
     get:
@@ -230,10 +288,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HrApplicationHistoryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/applications/{applicationId}/status:
     post:
@@ -266,10 +330,16 @@ paths:
                 $ref: '#/components/schemas/HrApplicationDetailsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Transition is not allowed
           content:
@@ -293,10 +363,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyAnalyticsSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/analytics/summary:
     get:
@@ -314,57 +392,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VacancyAnalyticsSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
-
-  /api/v1/hr/companies/{companyId}/analytics/status-funnel:
-    get:
-      tags: [Application Analytics]
-      summary: Get company funnel by statuses
-      operationId: getCompanyStatusFunnel
-      parameters:
-        - $ref: '#/components/parameters/CompanyId'
-        - $ref: '#/components/parameters/CreatedFromQuery'
-        - $ref: '#/components/parameters/CreatedToQuery'
-      responses:
-        '200':
-          description: Company funnel
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusFunnelResponse'
-        '403':
-          description: Forbidden
-        '404':
-          description: Company not found
-
-  /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel:
-    get:
-      tags: [Application Analytics]
-      summary: Get vacancy funnel by statuses
-      operationId: getVacancyStatusFunnel
-      parameters:
-        - $ref: '#/components/parameters/VacancyId'
-        - $ref: '#/components/parameters/CreatedFromQuery'
-        - $ref: '#/components/parameters/CreatedToQuery'
-      responses:
-        '200':
-          description: Vacancy funnel
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatusFunnelResponse'
-        '403':
-          description: Forbidden
-        '404':
-          description: Vacancy not found
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/companies/{companyId}/analytics/dynamics:
     get:
       tags: [Application Analytics]
       summary: Get company application dynamics
+      description: Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start (0:00 UTC), week start, month start), and empty buckets are included with zero counts
       operationId: getCompanyDynamics
       parameters:
         - $ref: '#/components/parameters/CompanyId'
@@ -378,15 +423,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Company not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics:
     get:
       tags: [Application Analytics]
       summary: Get vacancy application dynamics
+      description: Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start, week start, month start), and empty buckets are included with zero counts
       operationId: getVacancyDynamics
       parameters:
         - $ref: '#/components/parameters/VacancyId'
@@ -400,10 +454,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDynamicsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '403':
-          description: Forbidden
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           description: Vacancy not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -538,11 +600,24 @@ components:
         enum:
           - createdAtDesc
           - updatedAtDesc
+          - candidateFullNameAsc
         default: createdAtDesc
 
   responses:
     BadRequest:
       description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenError:
+      description: Forbidden
       content:
         application/json:
           schema:
@@ -675,7 +750,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/CandidateApplicationStatusHistoryItem'
+            $ref: '#/components/schemas/CandidateApplicationStatusHistoryWithCommentItem'
 
     HrApplicationHistoryResponse:
       type: object
@@ -881,12 +956,113 @@ components:
           type: string
           nullable: true
         resumeData:
-          type: object
-          additionalProperties: true
-          description: Immutable snapshot of resume payload at apply time
+          $ref: '#/components/schemas/ResumeData'
         createdAt:
           type: string
           format: date-time
+
+    ResumeData:
+      type: object
+      description: Immutable snapshot of resume payload at apply time
+      required:
+        - lastName
+        - firstName
+        - middleName
+        - dateOfBirth
+        - email
+        - phone
+        - city
+        - citizenship
+        - education
+        - workExperiences
+        - skillsList
+        - desiredFormat
+        - englishLevel
+
+      properties:
+        lastName:
+          type: string
+        firstName:
+          type: string
+        middleName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        city:
+          type: string
+        citizenship:
+          type: string
+        education:
+          type: array
+          items:
+            $ref: '#/components/schemas/Education'
+        workExperiences:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkExperience'
+        skillsList:
+          type: array
+          items:
+            type: string
+            format: uuid
+        additionalInfo:
+          type: string
+        portfolioLink:
+          type: string
+          format: uri
+        desiredFormat:
+          type: string
+        englishLevel:
+          type: string
+
+    Education:
+      type: object
+      required:
+        - level
+        - university
+        - faculty
+        - specialization
+        - startYear
+        - endYear
+        - format
+      properties:
+        level:
+          type: string
+        university:
+          type: string
+        faculty:
+          type: string
+        specialization:
+          type: string
+        startYear:
+          type: integer
+        endYear:
+          type: integer
+        format:
+          type: string
+
+    WorkExperience:
+      type: object
+      required:
+        - position
+        - company
+        - period
+        - responsibilities
+      properties:
+        position:
+          type: string
+        company:
+          type: string
+        period:
+          type: string
+        responsibilities:
+          type: string
 
     CandidateApplicationStatusHistoryItem:
       type: object
@@ -903,6 +1079,27 @@ components:
             - candidate
             - hr
             - system
+        createdAt:
+          type: string
+          format: date-time
+
+    CandidateApplicationStatusHistoryWithCommentItem:
+      type: object
+      required:
+        - status
+        - changedByRole
+        - createdAt
+      properties:
+        status:
+          $ref: '#/components/schemas/ApplicationStatus'
+        changedByRole:
+          type: string
+          enum:
+            - candidate
+            - hr
+            - system
+        comment:
+          type: string
         createdAt:
           type: string
           format: date-time
@@ -983,37 +1180,6 @@ components:
           type: number
           format: float
           description: Ratio in range [0,1]
-
-    StatusFunnelResponse:
-      type: object
-      required:
-        - data
-      properties:
-        data:
-          $ref: '#/components/schemas/StatusFunnel'
-
-    StatusFunnel:
-      type: object
-      required:
-        - submitted
-        - seen
-        - interview
-        - rejected
-        - offer
-        - withdrawn
-      properties:
-        submitted:
-          type: integer
-        seen:
-          type: integer
-        interview:
-          type: integer
-        rejected:
-          type: integer
-        offer:
-          type: integer
-        withdrawn:
-          type: integer
 
     ApplicationDynamicsResponse:
       type: object

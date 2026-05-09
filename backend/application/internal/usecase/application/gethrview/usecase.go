@@ -1,4 +1,4 @@
-package getcandidateview
+package gethrview
 
 import (
 	"context"
@@ -23,16 +23,16 @@ func (u *Usecase) Execute(
 	ctx context.Context,
 	appID uuid.UUID,
 	ident identity.Identity,
-) (*views.CandidateDetailedView, error) {
-	if ident.Role != identity.RoleCandidate {
-		return nil, identity.ErrCandidateRoleRequired
+) (*views.HrDetailedView, error) {
+	if ident.Role != identity.RoleHR {
+		return nil, identity.ErrHrRoleRequired
 	}
 
-	view, err := u.repo.GetCandidateDetailedView(ctx, appID, ident.UserID)
+	view, err := u.repo.GetHrDetailedView(ctx, appID, ident.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	view.AllowedActions = views.CandidateAllowedActions(view.Status)
+	view.AllowedActions = views.HRAllowedActions(view.Status)
 	return view, nil
 }

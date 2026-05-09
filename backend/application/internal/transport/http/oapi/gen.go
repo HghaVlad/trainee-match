@@ -25,10 +25,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-const (
-	BearerAuthScopes = "bearerAuth.Scopes"
-)
-
 // Defines values for ActorType.
 const (
 	ActorTypeCandidate ActorType = "candidate"
@@ -116,6 +112,27 @@ func (e CandidateApplicationStatusHistoryItemChangedByRole) Valid() bool {
 	}
 }
 
+// Defines values for CandidateApplicationStatusHistoryWithCommentItemChangedByRole.
+const (
+	Candidate CandidateApplicationStatusHistoryWithCommentItemChangedByRole = "candidate"
+	Hr        CandidateApplicationStatusHistoryWithCommentItemChangedByRole = "hr"
+	System    CandidateApplicationStatusHistoryWithCommentItemChangedByRole = "system"
+)
+
+// Valid indicates whether the value is a known member of the CandidateApplicationStatusHistoryWithCommentItemChangedByRole enum.
+func (e CandidateApplicationStatusHistoryWithCommentItemChangedByRole) Valid() bool {
+	switch e {
+	case Candidate:
+		return true
+	case Hr:
+		return true
+	case System:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChangeApplicationStatusRequestStatus.
 const (
 	ChangeApplicationStatusRequestStatusInterview ChangeApplicationStatusRequestStatus = "interview"
@@ -184,13 +201,16 @@ func (e CandidateSortQuery) Valid() bool {
 
 // Defines values for HrSortQuery.
 const (
-	HrSortQueryCreatedAtDesc HrSortQuery = "createdAtDesc"
-	HrSortQueryUpdatedAtDesc HrSortQuery = "updatedAtDesc"
+	HrSortQueryCandidateFullNameAsc HrSortQuery = "candidateFullNameAsc"
+	HrSortQueryCreatedAtDesc        HrSortQuery = "createdAtDesc"
+	HrSortQueryUpdatedAtDesc        HrSortQuery = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the HrSortQuery enum.
 func (e HrSortQuery) Valid() bool {
 	switch e {
+	case HrSortQueryCandidateFullNameAsc:
+		return true
 	case HrSortQueryCreatedAtDesc:
 		return true
 	case HrSortQueryUpdatedAtDesc:
@@ -262,13 +282,16 @@ func (e GetCompanyDynamicsParamsInterval) Valid() bool {
 
 // Defines values for ListCompanyApplicationsParamsSort.
 const (
-	ListCompanyApplicationsParamsSortCreatedAtDesc ListCompanyApplicationsParamsSort = "createdAtDesc"
-	ListCompanyApplicationsParamsSortUpdatedAtDesc ListCompanyApplicationsParamsSort = "updatedAtDesc"
+	ListCompanyApplicationsParamsSortCandidateFullNameAsc ListCompanyApplicationsParamsSort = "candidateFullNameAsc"
+	ListCompanyApplicationsParamsSortCreatedAtDesc        ListCompanyApplicationsParamsSort = "createdAtDesc"
+	ListCompanyApplicationsParamsSortUpdatedAtDesc        ListCompanyApplicationsParamsSort = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the ListCompanyApplicationsParamsSort enum.
 func (e ListCompanyApplicationsParamsSort) Valid() bool {
 	switch e {
+	case ListCompanyApplicationsParamsSortCandidateFullNameAsc:
+		return true
 	case ListCompanyApplicationsParamsSortCreatedAtDesc:
 		return true
 	case ListCompanyApplicationsParamsSortUpdatedAtDesc:
@@ -301,13 +324,16 @@ func (e GetVacancyDynamicsParamsInterval) Valid() bool {
 
 // Defines values for ListVacancyApplicationsParamsSort.
 const (
-	CreatedAtDesc ListVacancyApplicationsParamsSort = "createdAtDesc"
-	UpdatedAtDesc ListVacancyApplicationsParamsSort = "updatedAtDesc"
+	CandidateFullNameAsc ListVacancyApplicationsParamsSort = "candidateFullNameAsc"
+	CreatedAtDesc        ListVacancyApplicationsParamsSort = "createdAtDesc"
+	UpdatedAtDesc        ListVacancyApplicationsParamsSort = "updatedAtDesc"
 )
 
 // Valid indicates whether the value is a known member of the ListVacancyApplicationsParamsSort enum.
 func (e ListVacancyApplicationsParamsSort) Valid() bool {
 	switch e {
+	case CandidateFullNameAsc:
+		return true
 	case CreatedAtDesc:
 		return true
 	case UpdatedAtDesc:
@@ -361,8 +387,8 @@ type ApplicationSnapshot struct {
 	FullName  string               `json:"fullName"`
 
 	// ResumeData Immutable snapshot of resume payload at apply time
-	ResumeData map[string]interface{} `json:"resumeData"`
-	Telegram   *string                `json:"telegram,omitempty"`
+	ResumeData ResumeData `json:"resumeData"`
+	Telegram   *string    `json:"telegram,omitempty"`
 }
 
 // ApplicationSnapshotSummary defines model for ApplicationSnapshotSummary.
@@ -402,7 +428,7 @@ type CandidateApplicationDetailsResponse struct {
 
 // CandidateApplicationHistoryResponse defines model for CandidateApplicationHistoryResponse.
 type CandidateApplicationHistoryResponse struct {
-	Data []CandidateApplicationStatusHistoryItem `json:"data"`
+	Data []CandidateApplicationStatusHistoryWithCommentItem `json:"data"`
 }
 
 // CandidateApplicationListItem defines model for CandidateApplicationListItem.
@@ -434,6 +460,17 @@ type CandidateApplicationStatusHistoryItem struct {
 // CandidateApplicationStatusHistoryItemChangedByRole defines model for CandidateApplicationStatusHistoryItem.ChangedByRole.
 type CandidateApplicationStatusHistoryItemChangedByRole string
 
+// CandidateApplicationStatusHistoryWithCommentItem defines model for CandidateApplicationStatusHistoryWithCommentItem.
+type CandidateApplicationStatusHistoryWithCommentItem struct {
+	ChangedByRole CandidateApplicationStatusHistoryWithCommentItemChangedByRole `json:"changedByRole"`
+	Comment       *string                                                       `json:"comment,omitempty"`
+	CreatedAt     time.Time                                                     `json:"createdAt"`
+	Status        ApplicationStatus                                             `json:"status"`
+}
+
+// CandidateApplicationStatusHistoryWithCommentItemChangedByRole defines model for CandidateApplicationStatusHistoryWithCommentItem.ChangedByRole.
+type CandidateApplicationStatusHistoryWithCommentItemChangedByRole string
+
 // ChangeApplicationStatusRequest defines model for ChangeApplicationStatusRequest.
 type ChangeApplicationStatusRequest struct {
 	Comment *string                              `json:"comment,omitempty"`
@@ -454,6 +491,17 @@ type CreateApplicationRequest struct {
 	CoverLetter *string            `json:"coverLetter,omitempty"`
 	ResumeId    openapi_types.UUID `json:"resumeId"`
 	VacancyId   openapi_types.UUID `json:"vacancyId"`
+}
+
+// Education defines model for Education.
+type Education struct {
+	EndYear        int    `json:"endYear"`
+	Faculty        string `json:"faculty"`
+	Format         string `json:"format"`
+	Level          string `json:"level"`
+	Specialization string `json:"specialization"`
+	StartYear      int    `json:"startYear"`
+	University     string `json:"university"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -517,19 +565,23 @@ type HrApplicationStatusHistoryItem struct {
 	Status          ApplicationStatus   `json:"status"`
 }
 
-// StatusFunnel defines model for StatusFunnel.
-type StatusFunnel struct {
-	Interview int `json:"interview"`
-	Offer     int `json:"offer"`
-	Rejected  int `json:"rejected"`
-	Seen      int `json:"seen"`
-	Submitted int `json:"submitted"`
-	Withdrawn int `json:"withdrawn"`
-}
-
-// StatusFunnelResponse defines model for StatusFunnelResponse.
-type StatusFunnelResponse struct {
-	Data StatusFunnel `json:"data"`
+// ResumeData Immutable snapshot of resume payload at apply time
+type ResumeData struct {
+	AdditionalInfo  *string              `json:"additionalInfo,omitempty"`
+	Citizenship     string               `json:"citizenship"`
+	City            string               `json:"city"`
+	DateOfBirth     openapi_types.Date   `json:"dateOfBirth"`
+	DesiredFormat   string               `json:"desiredFormat"`
+	Education       []Education          `json:"education"`
+	Email           openapi_types.Email  `json:"email"`
+	EnglishLevel    string               `json:"englishLevel"`
+	FirstName       string               `json:"firstName"`
+	LastName        string               `json:"lastName"`
+	MiddleName      string               `json:"middleName"`
+	Phone           string               `json:"phone"`
+	PortfolioLink   *string              `json:"portfolioLink,omitempty"`
+	SkillsList      []openapi_types.UUID `json:"skillsList"`
+	WorkExperiences []WorkExperience     `json:"workExperiences"`
 }
 
 // VacancyAnalyticsSummaryResponse defines model for VacancyAnalyticsSummaryResponse.
@@ -540,6 +592,14 @@ type VacancyAnalyticsSummaryResponse struct {
 // WithdrawApplicationRequest defines model for WithdrawApplicationRequest.
 type WithdrawApplicationRequest struct {
 	Comment *string `json:"comment,omitempty"`
+}
+
+// WorkExperience defines model for WorkExperience.
+type WorkExperience struct {
+	Company          string `json:"company"`
+	Period           string `json:"period"`
+	Position         string `json:"position"`
+	Responsibilities string `json:"responsibilities"`
 }
 
 // ApplicationId defines model for ApplicationId.
@@ -587,6 +647,12 @@ type VacancyId = openapi_types.UUID
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
 
+// ForbiddenError defines model for ForbiddenError.
+type ForbiddenError = ErrorResponse
+
+// UnauthorizedError defines model for UnauthorizedError.
+type UnauthorizedError = ErrorResponse
+
 // ListMyApplicationsParams defines parameters for ListMyApplications.
 type ListMyApplicationsParams struct {
 	Statuses  *CandidateStatusesQuery  `form:"statuses,omitempty" json:"statuses,omitempty"`
@@ -610,12 +676,6 @@ type GetCompanyDynamicsParams struct {
 
 // GetCompanyDynamicsParamsInterval defines parameters for GetCompanyDynamics.
 type GetCompanyDynamicsParamsInterval string
-
-// GetCompanyStatusFunnelParams defines parameters for GetCompanyStatusFunnel.
-type GetCompanyStatusFunnelParams struct {
-	CreatedFrom *CreatedFromQuery `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
-	CreatedTo   *CreatedToQuery   `form:"createdTo,omitempty" json:"createdTo,omitempty"`
-}
 
 // GetCompanyAnalyticsSummaryParams defines parameters for GetCompanyAnalyticsSummary.
 type GetCompanyAnalyticsSummaryParams struct {
@@ -648,12 +708,6 @@ type GetVacancyDynamicsParams struct {
 
 // GetVacancyDynamicsParamsInterval defines parameters for GetVacancyDynamics.
 type GetVacancyDynamicsParamsInterval string
-
-// GetVacancyStatusFunnelParams defines parameters for GetVacancyStatusFunnel.
-type GetVacancyStatusFunnelParams struct {
-	CreatedFrom *CreatedFromQuery `form:"createdFrom,omitempty" json:"createdFrom,omitempty"`
-	CreatedTo   *CreatedToQuery   `form:"createdTo,omitempty" json:"createdTo,omitempty"`
-}
 
 // GetVacancyAnalyticsSummaryParams defines parameters for GetVacancyAnalyticsSummary.
 type GetVacancyAnalyticsSummaryParams struct {
@@ -714,9 +768,6 @@ type ServerInterface interface {
 	// Get company application dynamics
 	// (GET /api/v1/hr/companies/{companyId}/analytics/dynamics)
 	GetCompanyDynamics(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyDynamicsParams)
-	// Get company funnel by statuses
-	// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-	GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams)
 	// Get company application summary
 	// (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 	GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams)
@@ -726,9 +777,6 @@ type ServerInterface interface {
 	// Get vacancy application dynamics
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 	GetVacancyDynamics(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyDynamicsParams)
-	// Get vacancy funnel by statuses
-	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-	GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams)
 	// Get vacancy application summary
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/summary)
 	GetVacancyAnalyticsSummary(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyAnalyticsSummaryParams)
@@ -795,12 +843,6 @@ func (_ Unimplemented) GetCompanyDynamics(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Get company funnel by statuses
-// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-func (_ Unimplemented) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Get company application summary
 // (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 func (_ Unimplemented) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams) {
@@ -816,12 +858,6 @@ func (_ Unimplemented) ListCompanyApplications(w http.ResponseWriter, r *http.Re
 // Get vacancy application dynamics
 // (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 func (_ Unimplemented) GetVacancyDynamics(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyDynamicsParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Get vacancy funnel by statuses
-// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-func (_ Unimplemented) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -850,12 +886,6 @@ type MiddlewareFunc func(http.Handler) http.Handler
 func (siw *ServerInterfaceWrapper) ListMyApplications(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListMyApplicationsParams
@@ -914,12 +944,6 @@ func (siw *ServerInterfaceWrapper) ListMyApplications(w http.ResponseWriter, r *
 // CreateApplication operation middleware
 func (siw *ServerInterfaceWrapper) CreateApplication(w http.ResponseWriter, r *http.Request) {
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateApplication(w, r)
 	}))
@@ -944,12 +968,6 @@ func (siw *ServerInterfaceWrapper) GetMyApplication(w http.ResponseWriter, r *ht
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMyApplication(w, r, applicationId)
@@ -976,12 +994,6 @@ func (siw *ServerInterfaceWrapper) GetMyApplicationHistory(w http.ResponseWriter
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMyApplicationHistory(w, r, applicationId)
 	}))
@@ -1006,12 +1018,6 @@ func (siw *ServerInterfaceWrapper) WithdrawApplication(w http.ResponseWriter, r 
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.WithdrawApplication(w, r, applicationId)
@@ -1038,12 +1044,6 @@ func (siw *ServerInterfaceWrapper) GetHrApplication(w http.ResponseWriter, r *ht
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHrApplication(w, r, applicationId)
 	}))
@@ -1068,12 +1068,6 @@ func (siw *ServerInterfaceWrapper) GetHrApplicationHistory(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applicationId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHrApplicationHistory(w, r, applicationId)
@@ -1100,12 +1094,6 @@ func (siw *ServerInterfaceWrapper) ChangeApplicationStatus(w http.ResponseWriter
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeApplicationStatus(w, r, applicationId)
 	}))
@@ -1130,12 +1118,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyDynamics(w http.ResponseWriter, r *
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCompanyDynamicsParams
@@ -1175,56 +1157,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyDynamics(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// GetCompanyStatusFunnel operation middleware
-func (siw *ServerInterfaceWrapper) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "companyId" -------------
-	var companyId CompanyId
-
-	err = runtime.BindStyledParameterWithOptions("simple", "companyId", chi.URLParam(r, "companyId"), &companyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetCompanyStatusFunnelParams
-
-	// ------------- Optional query parameter "createdFrom" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdFrom", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdFrom", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "createdTo" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdTo", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdTo", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetCompanyStatusFunnel(w, r, companyId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // GetCompanyAnalyticsSummary operation middleware
 func (siw *ServerInterfaceWrapper) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 
@@ -1238,12 +1170,6 @@ func (siw *ServerInterfaceWrapper) GetCompanyAnalyticsSummary(w http.ResponseWri
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCompanyAnalyticsSummaryParams
@@ -1288,12 +1214,6 @@ func (siw *ServerInterfaceWrapper) ListCompanyApplications(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "companyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListCompanyApplicationsParams
@@ -1379,12 +1299,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyDynamics(w http.ResponseWriter, r *
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetVacancyDynamicsParams
 
@@ -1423,56 +1337,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyDynamics(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
-// GetVacancyStatusFunnel operation middleware
-func (siw *ServerInterfaceWrapper) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "vacancyId" -------------
-	var vacancyId VacancyId
-
-	err = runtime.BindStyledParameterWithOptions("simple", "vacancyId", chi.URLParam(r, "vacancyId"), &vacancyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vacancyId", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetVacancyStatusFunnelParams
-
-	// ------------- Optional query parameter "createdFrom" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdFrom", r.URL.Query(), &params.CreatedFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdFrom", Err: err})
-		return
-	}
-
-	// ------------- Optional query parameter "createdTo" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "createdTo", r.URL.Query(), &params.CreatedTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "createdTo", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetVacancyStatusFunnel(w, r, vacancyId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // GetVacancyAnalyticsSummary operation middleware
 func (siw *ServerInterfaceWrapper) GetVacancyAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 
@@ -1486,12 +1350,6 @@ func (siw *ServerInterfaceWrapper) GetVacancyAnalyticsSummary(w http.ResponseWri
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vacancyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetVacancyAnalyticsSummaryParams
@@ -1536,12 +1394,6 @@ func (siw *ServerInterfaceWrapper) ListVacancyApplications(w http.ResponseWriter
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "vacancyId", Err: err})
 		return
 	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListVacancyApplicationsParams
@@ -1746,9 +1598,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/dynamics", wrapper.GetCompanyDynamics)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/status-funnel", wrapper.GetCompanyStatusFunnel)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/companies/{companyId}/analytics/summary", wrapper.GetCompanyAnalyticsSummary)
 	})
 	r.Group(func(r chi.Router) {
@@ -1756,9 +1605,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/dynamics", wrapper.GetVacancyDynamics)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel", wrapper.GetVacancyStatusFunnel)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/hr/vacancies/{vacancyId}/analytics/summary", wrapper.GetVacancyAnalyticsSummary)
@@ -1771,6 +1617,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 }
 
 type BadRequestJSONResponse ErrorResponse
+
+type ForbiddenErrorJSONResponse ErrorResponse
+
+type UnauthorizedErrorJSONResponse ErrorResponse
 
 type ListMyApplicationsRequestObject struct {
 	Params ListMyApplicationsParams
@@ -1785,6 +1635,33 @@ type ListMyApplications200JSONResponse CandidateApplicationListResponse
 func (response ListMyApplications200JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListMyApplications400JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListMyApplications401JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListMyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListMyApplications403JSONResponse) VisitListMyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -1815,20 +1692,31 @@ func (response CreateApplication400JSONResponse) VisitCreateApplicationResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateApplication403Response struct {
+type CreateApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response CreateApplication401JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response CreateApplication403Response) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+type CreateApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response CreateApplication403JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type CreateApplication404Response struct {
-}
+type CreateApplication404JSONResponse ErrorResponse
 
-func (response CreateApplication404Response) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+func (response CreateApplication404JSONResponse) VisitCreateApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type CreateApplication409JSONResponse ErrorResponse
@@ -1857,20 +1745,40 @@ func (response GetMyApplication200JSONResponse) VisitGetMyApplicationResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplication403Response struct {
+type GetMyApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMyApplication400JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetMyApplication403Response) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+type GetMyApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetMyApplication401JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMyApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetMyApplication403JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplication404Response struct {
-}
+type GetMyApplication404JSONResponse ErrorResponse
 
-func (response GetMyApplication404Response) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+func (response GetMyApplication404JSONResponse) VisitGetMyApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetMyApplicationHistoryRequestObject struct {
@@ -1890,20 +1798,40 @@ func (response GetMyApplicationHistory200JSONResponse) VisitGetMyApplicationHist
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplicationHistory403Response struct {
+type GetMyApplicationHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMyApplicationHistory400JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetMyApplicationHistory403Response) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+type GetMyApplicationHistory401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetMyApplicationHistory401JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMyApplicationHistory403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetMyApplicationHistory403JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetMyApplicationHistory404Response struct {
-}
+type GetMyApplicationHistory404JSONResponse ErrorResponse
 
-func (response GetMyApplicationHistory404Response) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+func (response GetMyApplicationHistory404JSONResponse) VisitGetMyApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type WithdrawApplicationRequestObject struct {
@@ -1924,20 +1852,40 @@ func (response WithdrawApplication200JSONResponse) VisitWithdrawApplicationRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type WithdrawApplication403Response struct {
+type WithdrawApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response WithdrawApplication400JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response WithdrawApplication403Response) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+type WithdrawApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response WithdrawApplication401JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type WithdrawApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response WithdrawApplication403JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type WithdrawApplication404Response struct {
-}
+type WithdrawApplication404JSONResponse ErrorResponse
 
-func (response WithdrawApplication404Response) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+func (response WithdrawApplication404JSONResponse) VisitWithdrawApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type WithdrawApplication409JSONResponse ErrorResponse
@@ -1966,20 +1914,40 @@ func (response GetHrApplication200JSONResponse) VisitGetHrApplicationResponse(w 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplication403Response struct {
+type GetHrApplication400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetHrApplication400JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetHrApplication403Response) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+type GetHrApplication401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetHrApplication401JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetHrApplication403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetHrApplication403JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplication404Response struct {
-}
+type GetHrApplication404JSONResponse ErrorResponse
 
-func (response GetHrApplication404Response) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+func (response GetHrApplication404JSONResponse) VisitGetHrApplicationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetHrApplicationHistoryRequestObject struct {
@@ -1999,20 +1967,31 @@ func (response GetHrApplicationHistory200JSONResponse) VisitGetHrApplicationHist
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplicationHistory403Response struct {
+type GetHrApplicationHistory401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetHrApplicationHistory401JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetHrApplicationHistory403Response) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+type GetHrApplicationHistory403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetHrApplicationHistory403JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetHrApplicationHistory404Response struct {
-}
+type GetHrApplicationHistory404JSONResponse ErrorResponse
 
-func (response GetHrApplicationHistory404Response) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+func (response GetHrApplicationHistory404JSONResponse) VisitGetHrApplicationHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ChangeApplicationStatusRequestObject struct {
@@ -2042,20 +2021,31 @@ func (response ChangeApplicationStatus400JSONResponse) VisitChangeApplicationSta
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ChangeApplicationStatus403Response struct {
+type ChangeApplicationStatus401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ChangeApplicationStatus401JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ChangeApplicationStatus403Response) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+type ChangeApplicationStatus403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ChangeApplicationStatus403JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ChangeApplicationStatus404Response struct {
-}
+type ChangeApplicationStatus404JSONResponse ErrorResponse
 
-func (response ChangeApplicationStatus404Response) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+func (response ChangeApplicationStatus404JSONResponse) VisitChangeApplicationStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ChangeApplicationStatus409JSONResponse ErrorResponse
@@ -2085,54 +2075,40 @@ func (response GetCompanyDynamics200JSONResponse) VisitGetCompanyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyDynamics403Response struct {
-}
+type GetCompanyDynamics400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response GetCompanyDynamics403Response) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(403)
-	return nil
-}
-
-type GetCompanyDynamics404Response struct {
-}
-
-func (response GetCompanyDynamics404Response) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(404)
-	return nil
-}
-
-type GetCompanyStatusFunnelRequestObject struct {
-	CompanyId CompanyId `json:"companyId"`
-	Params    GetCompanyStatusFunnelParams
-}
-
-type GetCompanyStatusFunnelResponseObject interface {
-	VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error
-}
-
-type GetCompanyStatusFunnel200JSONResponse StatusFunnelResponse
-
-func (response GetCompanyStatusFunnel200JSONResponse) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetCompanyDynamics400JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyStatusFunnel403Response struct {
+type GetCompanyDynamics401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetCompanyDynamics401JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetCompanyStatusFunnel403Response) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+type GetCompanyDynamics403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetCompanyDynamics403JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyStatusFunnel404Response struct {
-}
+type GetCompanyDynamics404JSONResponse ErrorResponse
 
-func (response GetCompanyStatusFunnel404Response) VisitGetCompanyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetCompanyDynamics404JSONResponse) VisitGetCompanyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetCompanyAnalyticsSummaryRequestObject struct {
@@ -2153,20 +2129,40 @@ func (response GetCompanyAnalyticsSummary200JSONResponse) VisitGetCompanyAnalyti
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyAnalyticsSummary403Response struct {
+type GetCompanyAnalyticsSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCompanyAnalyticsSummary400JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetCompanyAnalyticsSummary403Response) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+type GetCompanyAnalyticsSummary401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetCompanyAnalyticsSummary401JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCompanyAnalyticsSummary403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetCompanyAnalyticsSummary403JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetCompanyAnalyticsSummary404Response struct {
-}
+type GetCompanyAnalyticsSummary404JSONResponse ErrorResponse
 
-func (response GetCompanyAnalyticsSummary404Response) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+func (response GetCompanyAnalyticsSummary404JSONResponse) VisitGetCompanyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListCompanyApplicationsRequestObject struct {
@@ -2187,20 +2183,40 @@ func (response ListCompanyApplications200JSONResponse) VisitListCompanyApplicati
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListCompanyApplications403Response struct {
+type ListCompanyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCompanyApplications400JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ListCompanyApplications403Response) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+type ListCompanyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListCompanyApplications401JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCompanyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListCompanyApplications403JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ListCompanyApplications404Response struct {
-}
+type ListCompanyApplications404JSONResponse ErrorResponse
 
-func (response ListCompanyApplications404Response) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+func (response ListCompanyApplications404JSONResponse) VisitListCompanyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetVacancyDynamicsRequestObject struct {
@@ -2221,54 +2237,40 @@ func (response GetVacancyDynamics200JSONResponse) VisitGetVacancyDynamicsRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyDynamics403Response struct {
-}
+type GetVacancyDynamics400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response GetVacancyDynamics403Response) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(403)
-	return nil
-}
-
-type GetVacancyDynamics404Response struct {
-}
-
-func (response GetVacancyDynamics404Response) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(404)
-	return nil
-}
-
-type GetVacancyStatusFunnelRequestObject struct {
-	VacancyId VacancyId `json:"vacancyId"`
-	Params    GetVacancyStatusFunnelParams
-}
-
-type GetVacancyStatusFunnelResponseObject interface {
-	VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error
-}
-
-type GetVacancyStatusFunnel200JSONResponse StatusFunnelResponse
-
-func (response GetVacancyStatusFunnel200JSONResponse) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetVacancyDynamics400JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyStatusFunnel403Response struct {
+type GetVacancyDynamics401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetVacancyDynamics401JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetVacancyStatusFunnel403Response) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+type GetVacancyDynamics403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetVacancyDynamics403JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyStatusFunnel404Response struct {
-}
+type GetVacancyDynamics404JSONResponse ErrorResponse
 
-func (response GetVacancyStatusFunnel404Response) VisitGetVacancyStatusFunnelResponse(w http.ResponseWriter) error {
+func (response GetVacancyDynamics404JSONResponse) VisitGetVacancyDynamicsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type GetVacancyAnalyticsSummaryRequestObject struct {
@@ -2289,20 +2291,40 @@ func (response GetVacancyAnalyticsSummary200JSONResponse) VisitGetVacancyAnalyti
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyAnalyticsSummary403Response struct {
+type GetVacancyAnalyticsSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetVacancyAnalyticsSummary400JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response GetVacancyAnalyticsSummary403Response) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+type GetVacancyAnalyticsSummary401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response GetVacancyAnalyticsSummary401JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetVacancyAnalyticsSummary403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response GetVacancyAnalyticsSummary403JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type GetVacancyAnalyticsSummary404Response struct {
-}
+type GetVacancyAnalyticsSummary404JSONResponse ErrorResponse
 
-func (response GetVacancyAnalyticsSummary404Response) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+func (response GetVacancyAnalyticsSummary404JSONResponse) VisitGetVacancyAnalyticsSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListVacancyApplicationsRequestObject struct {
@@ -2323,20 +2345,40 @@ func (response ListVacancyApplications200JSONResponse) VisitListVacancyApplicati
 	return json.NewEncoder(w).Encode(response)
 }
 
-type ListVacancyApplications403Response struct {
+type ListVacancyApplications400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListVacancyApplications400JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-func (response ListVacancyApplications403Response) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+type ListVacancyApplications401JSONResponse struct{ UnauthorizedErrorJSONResponse }
+
+func (response ListVacancyApplications401JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListVacancyApplications403JSONResponse struct{ ForbiddenErrorJSONResponse }
+
+func (response ListVacancyApplications403JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(403)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
-type ListVacancyApplications404Response struct {
-}
+type ListVacancyApplications404JSONResponse ErrorResponse
 
-func (response ListVacancyApplications404Response) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+func (response ListVacancyApplications404JSONResponse) VisitListVacancyApplicationsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
-	return nil
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 // StrictServerInterface represents all server handlers.
@@ -2368,9 +2410,6 @@ type StrictServerInterface interface {
 	// Get company application dynamics
 	// (GET /api/v1/hr/companies/{companyId}/analytics/dynamics)
 	GetCompanyDynamics(ctx context.Context, request GetCompanyDynamicsRequestObject) (GetCompanyDynamicsResponseObject, error)
-	// Get company funnel by statuses
-	// (GET /api/v1/hr/companies/{companyId}/analytics/status-funnel)
-	GetCompanyStatusFunnel(ctx context.Context, request GetCompanyStatusFunnelRequestObject) (GetCompanyStatusFunnelResponseObject, error)
 	// Get company application summary
 	// (GET /api/v1/hr/companies/{companyId}/analytics/summary)
 	GetCompanyAnalyticsSummary(ctx context.Context, request GetCompanyAnalyticsSummaryRequestObject) (GetCompanyAnalyticsSummaryResponseObject, error)
@@ -2380,9 +2419,6 @@ type StrictServerInterface interface {
 	// Get vacancy application dynamics
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/dynamics)
 	GetVacancyDynamics(ctx context.Context, request GetVacancyDynamicsRequestObject) (GetVacancyDynamicsResponseObject, error)
-	// Get vacancy funnel by statuses
-	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/status-funnel)
-	GetVacancyStatusFunnel(ctx context.Context, request GetVacancyStatusFunnelRequestObject) (GetVacancyStatusFunnelResponseObject, error)
 	// Get vacancy application summary
 	// (GET /api/v1/hr/vacancies/{vacancyId}/analytics/summary)
 	GetVacancyAnalyticsSummary(ctx context.Context, request GetVacancyAnalyticsSummaryRequestObject) (GetVacancyAnalyticsSummaryResponseObject, error)
@@ -2677,33 +2713,6 @@ func (sh *strictHandler) GetCompanyDynamics(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// GetCompanyStatusFunnel operation middleware
-func (sh *strictHandler) GetCompanyStatusFunnel(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyStatusFunnelParams) {
-	var request GetCompanyStatusFunnelRequestObject
-
-	request.CompanyId = companyId
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetCompanyStatusFunnel(ctx, request.(GetCompanyStatusFunnelRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetCompanyStatusFunnel")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetCompanyStatusFunnelResponseObject); ok {
-		if err := validResponse.VisitGetCompanyStatusFunnelResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // GetCompanyAnalyticsSummary operation middleware
 func (sh *strictHandler) GetCompanyAnalyticsSummary(w http.ResponseWriter, r *http.Request, companyId CompanyId, params GetCompanyAnalyticsSummaryParams) {
 	var request GetCompanyAnalyticsSummaryRequestObject
@@ -2785,33 +2794,6 @@ func (sh *strictHandler) GetVacancyDynamics(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// GetVacancyStatusFunnel operation middleware
-func (sh *strictHandler) GetVacancyStatusFunnel(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyStatusFunnelParams) {
-	var request GetVacancyStatusFunnelRequestObject
-
-	request.VacancyId = vacancyId
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetVacancyStatusFunnel(ctx, request.(GetVacancyStatusFunnelRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetVacancyStatusFunnel")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetVacancyStatusFunnelResponseObject); ok {
-		if err := validResponse.VisitGetVacancyStatusFunnelResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // GetVacancyAnalyticsSummary operation middleware
 func (sh *strictHandler) GetVacancyAnalyticsSummary(w http.ResponseWriter, r *http.Request, vacancyId VacancyId, params GetVacancyAnalyticsSummaryParams) {
 	var request GetVacancyAnalyticsSummaryRequestObject
@@ -2869,53 +2851,61 @@ func (sh *strictHandler) ListVacancyApplications(w http.ResponseWriter, r *http.
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xcTXPbONL+Kyi875GxlMlcVjcnMxl7KzvJ2t6dQ+IDRLYsTEiAAUDZLJf++xYAEgRJ",
-	"iKRk2XE+TglNAA10P/2Jpu5xzLOcM2BK4sU9zokgGSgQ5uk0z1MaE0U5O0/0HyjDC5wTtcYRZiQDvMCk",
-	"NSbCAr4UVECCF0oUEGEZryEjevKKi4wovMBFQfVIVeZ6AakEZTd4u43wG8ISmhAFb3iWE1aeJ/8uQJSO",
-	"8hfz5EjH9Sh8IJlLLtQgBcmFai2ewIoUqV49FkAUJKfqN5AxjjCwIsOLj72/F3niPV8P70cRVUiQbk9w",
-	"l6c8AbxYkVRCFN5jNam1T6ogMyL8fwErvMD/N2vkPLPD5MwTr6WMt257RAhS6mepylT/QbNVPzvR7MCD",
-	"L5QHYcHy8a3g2TAImnFhGGjGvlA0gyEyV3wKkSt+EIlCSC7c+gnIWNBccx0v8PucfCkAxWYMEqAKwSBB",
-	"yxLlAjaUFxKlVCokQOacSU0huEEzv7W7/kbOxDMB/Jn4FpB+Jv5LYsLiMTO0qUftaYbOmQKxIeng4rQa",
-	"tEMoCSk9UdinW4DPOMIZZ2od5v87mtFhHKR6RJjmL/MIZ+SOZprmy7l+oqx6csT0tm9AGGqOizsshs+/",
-	"wy3GVk+2OmLg8JokF/ClAKn0U8yZAmb+6zms2d9SK+G9R2YIRb8LwcVFrYiGZFuZX5MEiYqofltNNK40",
-	"VlxcmT3fN6pTG34c4bXR3lIqyAJCi/ApI2mpaCwviywjVnK54DkIRe2JSazoBjyoS88MOIFEmhcbEJJy",
-	"dsUtBinc9i3ThV4DUYYEYTeAPs6jl9c4auSwSjlRjSBYkS37679frUAccW1a7/cNL6w4++fjmubAewF/",
-	"Q6wgGRgiAdjQ62KZUTW8hOKKpOPCuKVqnQhyu5vc1teKj4F1o5Dke5v0D9XjY5cpLSb2NrkLQiHRN1Dm",
-	"S03BQLnZ6G8lIxmN5QdO7enbkF4W8WdQl4oINdXhRrVDGpDN80DR3qL3udE5ZkBGh4p7osScHewJLSHq",
-	"IM/cxkLPQXeYYaiM7PWSkVyueQBYLmiZDivICE1bw+1fIsyKNCVLHTtYp9WbuirS9E/j7O77LwXIIoPf",
-	"KqaRJKF66yT94G3Yrtu2oedZVihNFsnqmIivkF0N5aRMOUkQUUj7uxK1T9VwS0EKN4JkmvbIOToCcIeK",
-	"HCO8o0QeiydKaadje0bCOgq7pnPGxqpexOCMeqXgvm57al1rtG8XglGFSz1P05TfQnIaW3Q1FOv5I9M9",
-	"NQZFaCoD8YlPQk62EDu2GAjgYz81HYkX3eidoo75BsQ7UMoGMKO4OQCldNpOpWfGpmY59RST19Qo2jtF",
-	"slPPqFS8yhX2k1h3zWqlcx3kBgToUsfpLNz4ycUoJ6vRV1SlEM6RfZU1a1Tci1ppSmudqFXz8GHlia7L",
-	"y6irDj6AfE6ETMSA2o275X0lV+vzZAccWqQ69pGChgMB9pADvKNSmVX73um4VufxrMjhZuD708uH6ZoG",
-	"wyNC2WEtYCLXRP4Jd362sOQ8BWIcIoM7ZauN+8cniY3a6vWnsqKvdn0FWeskP3ldXvD04PLHAXpxMOA7",
-	"nHFIax9kLI57Y0b3lveKUj07klUlqozcvQN2o9Z48ct8Ph88m4sMJ0SD12MgqJYNHsfqT7cM9TB/0ytq",
-	"TbfRhvcedwf42orjuuV3m2whueZCoQykJDeAVoJnyMETKY7OLnA0QS42A9rP6k0a3eFLu2Za0QzxqV2z",
-	"7AupCdaHMs/esqCXtXV7kuWpvfhhq5TGKnTSiq/tCaemaoW8eiwiqQCSlAjuqFQSrbhAak0lqo47yha7",
-	"rYZeiCNnYmeukxHx+dLqUcY30K5tWW0yKPgM73fok1n+8XKh7t6DSdDPtOWwtKUlue86X3mcrCSE/Ie5",
-	"h6AuTXYRrdnHTUD2hcpBWx5IOZ6jzjoX/kOmGp5KHagxR0wqwjB6ZtnEiA6NpxGD2HLXrVsvbv+PBBGG",
-	"ybibbKLzx3CpXzlXsau9LRiDtM956l8S77gpG74k230/NnLBOnJzNuHS7DgV8zCrHubdWkyf7CKqborn",
-	"kof9VTFrWiY2OcPd9kgZvMSFoKq81LuuLoiBCBCnhV6ofnpba9w//7qqW1iMaTNvG+1bK5XbLg7KVryf",
-	"G/5+p0Do3PD0w7lJRfxMJSOM3IA+zskn9om9LiRlICUSRQoSCVilBlZoWdoM5vTD+eITe4GIl1bGhKE1",
-	"2QDiLC0RZ4BIPyXKQdTpj5lvR9StUIgIWCCH8QhpiEfIIVxPsfnhrKGrhYmodPeGep+ti0JEWIKou18k",
-	"KwXilohE6uXOLszGSRzr83pblfYcmlO22EZBots1CEBqDaXeKsogW4KQn7QaKuuC/QsvdKm3HYNml/ax",
-	"tpcAL/DLk1cnc2NscmAkp3iBX53MT17hyDQTGSzMSE5nm5cz0mm6uAEDOY1E18qKtVf8V9lpmfC7Xz+G",
-	"NaYZMtvRtrmNps/s9LlOmeo1E04Y7nV67bOvpk9we93pq/plPj9aQ9VobTXQY+XmtKBn7UN9gWyki7Ky",
-	"PSTCitxoyXprtABwvY1wzmUALb1qU9WqBlK95kl5PIbsqmpt2wZZBx7bnmBePqpguhldQDa+JlcBh9bZ",
-	"Xy1kQgTdCWZev56Z8qpvkN9ysaRJAsyO+LU/onKOyLTSmkYIxhVa8YJVG/nH0zUDBspb3XpWp97VAfGp",
-	"tcfcr36NAXgbBc3g7L7Vpr/daRb/gLZV3Nsotj8ZeHLrMQGkQQOC6kLo4djzwe+hriXSP6Brlhzh4wl3",
-	"tm4KX5OE3FR/vilZd0s6Q7J+saGS6lim5s2Ty9lGbI7+EcXtOnR0wF25r86WbVGvis8Ez7phpAlNXRRp",
-	"HgCY/teLJHHUwVEg9j8Kho7vVweylG2/dfwZGCkfZE0+enTQPrFLvBKESXPJpNMPvY+q3NxRn1pcHR3a",
-	"U2nW4mAf2KpNPWe7OFhzD0jg7OIreb0AVRMOmXvVWqpnF4eLc4rXC90IfDPSneDuzi6+gp/b7eSOLOCm",
-	"Rjrs5ZSzMjXE2u4NvfhUzOevwPm4/ptW/aT/ui4a1o5yxzz/jT/FjXJvTekx/KqZ2PO/OzpMnqkPHumH",
-	"mZThfj3DaTeLqrL602a135bztnIOmIU97ICrH87uXQ/fdkbqKvUsqT4VGTL2VW2t/qpk//Keax6cUDlr",
-	"f8s5pdTW/bx5+pz6W+VHdT1DX/yEEi3LrLabrzl/OPLrZYf8TzxEuoGcr0TuumNv4Fkkv1i5m7IR9LXu",
-	"eB4Vgc8dUMF7swEkVSx+GuxYYmhZIu8b8yMjp/m6aQQzvcu4Hxo3Y32nQ8aonoNk05vyxJZIOhkeBU5T",
-	"r7Zqrj3ofmsfGHV/0mHSlM7vKzwRWr/yJZv/KxxPlz2OXqv1sfuYjttc0LXujpdlrT97xIn2ZsRoievN",
-	"2jdOrEB4cJzY/LzFzzhxNE6sL+iOHCfWyw5Z580Q6X3N8xjwJseJ1c4fFCfuhcDvJU6sRf7gOHEf7Bwh",
-	"ThxFznicuKMF7MfGzVhf3JAxOmKceKglOjRO3AGnqXFizbWHxIl7weiAOPFnzPdIMV/AGT+mEw7GfP3e",
-	"lkDM5/V+GkD6XZ8frzVDJYhNDddCpFV3p1zMtKqcVN+cncQ8M+yvSN3Xv0C24zZRC7Ya0d2U9yqsp9vr",
-	"7f8CAAD//0sQHyNcUwAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -14,11 +14,10 @@ import (
 type appRepo interface {
 	ListHrAppSummaries(
 		ctx context.Context,
+		hrID uuid.UUID,
 		statuses []application.Status,
-		companyID *uuid.UUID,
-		vacancyID *uuid.UUID,
-		createdFrom *time.Time,
-		createdTo *time.Time,
+		companyID, vacancyID *uuid.UUID,
+		createdFrom, createdTo *time.Time,
 		order cursors.HrSummaryOrder,
 		cursor any,
 		limit int,
@@ -30,5 +29,6 @@ type memProjRepo interface {
 }
 
 type vacProjRepo interface {
-	GetCompanyIDByVacancyID(ctx context.Context, vacancyID uuid.UUID) (uuid.UUID, error)
+	// CheckHrAccess returns companyID if success, projection.ErrVacancyNotFound otherwise
+	CheckHrAccess(ctx context.Context, userID, vacancyID uuid.UUID) (uuid.UUID, error)
 }
