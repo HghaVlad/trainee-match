@@ -10,5 +10,5 @@ export interface DtoShortResumeResponse {
   candidate_id?: string;
   id?: string;
   name?: string;
-  status?: number;
+  status?: string;
 }

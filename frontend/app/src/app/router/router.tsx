@@ -50,6 +50,7 @@ const CompanyApplicationDetailPage = lazy(
 const CompanyVacancyApplicationsPage = lazy(
   () => import('@/pages/company/vacancies/applications'),
 )
+const HomePage = lazy(() => import('@/pages/home'))
 
 function lazyEl(El: React.LazyExoticComponent<() => React.JSX.Element>) {
   return (
@@ -73,7 +74,7 @@ const router = createBrowserRouter([
         loader: redirectIfAuth,
         element: lazyEl(RegisterPage),
       },
-      { path: '/', element: <Placeholder name="Home" /> },
+      { path: '/', element: lazyEl(HomePage) },
       { path: '/vacancies', element: lazyEl(VacanciesPage) },
       { path: '/vacancies/:vacancyId', element: lazyEl(VacancyDetailPage) },
       { path: '/companies', element: lazyEl(CompaniesPage) },

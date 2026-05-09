@@ -10,5 +10,5 @@ import type { DtoResumeData } from './dtoResumeData';
 export interface DtoCreateResumeRequest {
   data?: DtoResumeData;
   name?: string;
-  status?: number;
+  status?: string;
 }

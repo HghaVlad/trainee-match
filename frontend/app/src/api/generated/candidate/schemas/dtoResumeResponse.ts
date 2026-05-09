@@ -12,5 +12,5 @@ export interface DtoResumeResponse {
   data?: DtoResumeData;
   id?: string;
   name?: string;
-  status?: number;
+  status?: string;
 }

@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "codegen": "tsx ../scripts/codegen.ts",
     "codegen:check": "pnpm codegen && git diff --exit-code src/api/generated",
+    "sync:swagger": "tsx ../scripts/sync-swagger.ts",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",

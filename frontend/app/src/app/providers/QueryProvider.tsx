@@ -52,7 +52,7 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {import.meta.env.DEV && <ReactQueryDevtools />}
+      {}
     </QueryClientProvider>
   )
 }

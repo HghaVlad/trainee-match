@@ -11,5 +11,5 @@ export interface DtoUpdateResumeRequest {
   data?: DtoPatchResumeData;
   id?: string;
   name?: string;
-  status?: number;
+  status?: string;
 }

@@ -58,9 +58,9 @@ const sources: SpecSource[] = [
   },
   {
     name: 'application',
-    http: [],
+    http: ['http://localhost:8086/swagger/doc.json'],
     files: [
-      'backend/application/api/docs/openapi.yaml',
+      'backend/application/api/contract.yaml',
       'backend/application/docs/openapi.yaml',
     ],
     outputs: { yaml: 'openapi-application.yaml' },
@@ -93,6 +93,68 @@ function fetchHttp(url: string, timeoutMs = 4000): Promise<string> {
 
 function jsonToYaml(jsonText: string): string {
   return jsonText
+}
+
+/**
+ * cleanSwaggerDefinitions — shortens Go‑package‑path definition names produced by swaggo.
+ *
+ * swaggo emits definition names like
+ *   github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse
+ * which orval translates into ~100‑char TypeScript identifiers.
+ *
+ * This function renames every definition matching a long Go‑import prefix
+ * to the shorter form `dto.{ShortName}` and updates all $ref pointers.
+ */
+function cleanSwaggerDefinitions(raw: string): string {
+  let obj: Record<string, unknown>
+  try {
+    obj = JSON.parse(raw)
+  } catch {
+    return raw
+  }
+
+  const defs = obj?.definitions as Record<string, unknown> | undefined
+  if (!defs) return raw
+
+  const goPkgPattern = /^github_com_HghaVlad_trainee-match_backend_.+\.(.+)$/
+  const renameMap = new Map<string, string>()
+
+  for (const key of Object.keys(defs)) {
+    const match = key.match(goPkgPattern)
+    if (match) {
+      const short = `dto.${match[1]}`
+      renameMap.set(key, short)
+    }
+  }
+
+  if (renameMap.size === 0) return raw
+
+  for (const [oldKey, newKey] of renameMap) {
+    defs[newKey] = defs[oldKey]
+    delete defs[oldKey]
+    console.log(`  ↻ definition: ${oldKey} → ${newKey}`)
+  }
+
+  function walkRefs(node: unknown): void {
+    if (Array.isArray(node)) {
+      for (const item of node) walkRefs(item)
+    } else if (node && typeof node === 'object') {
+      const record = node as Record<string, unknown>
+      if (typeof record['$ref'] === 'string') {
+        for (const [oldKey, newKey] of renameMap) {
+          const oldRef = `#/definitions/${oldKey}`
+          if (record['$ref'] === oldRef) {
+            record['$ref'] = `#/definitions/${newKey}`
+            break
+          }
+        }
+      }
+      for (const val of Object.values(record)) walkRefs(val)
+    }
+  }
+  walkRefs(obj)
+
+  return JSON.stringify(obj, null, 2)
 }
 
 interface Resolved {
@@ -134,10 +196,13 @@ async function main(): Promise<void> {
     }
     console.log(`  ✓ source: ${resolved.source}`)
 
+    const cleanedBody =
+      resolved.isJson ? cleanSwaggerDefinitions(resolved.body) : resolved.body
+
     if (spec.outputs.json) {
       const out = path.join(swaggerDir, spec.outputs.json)
       const text = resolved.isJson
-        ? resolved.body
+        ? cleanedBody
         : JSON.stringify({ note: 'binary YAML — keep yaml output' }, null, 2)
       if (resolved.isJson) writeFileSync(out, text)
       else console.warn(`    skip ${spec.outputs.json} (source is YAML)`)
@@ -145,7 +210,7 @@ async function main(): Promise<void> {
 
     if (spec.outputs.yaml) {
       const out = path.join(swaggerDir, spec.outputs.yaml)
-      const text = resolved.isJson ? jsonToYaml(resolved.body) : resolved.body
+      const text = resolved.isJson ? jsonToYaml(cleanedBody) : resolved.body
       writeFileSync(out, text)
       console.log(`  → ${out}`)
     }

@@ -165,7 +165,7 @@ function ResumeRow({
     try {
       await patch.mutateAsync({
         id,
-        data: { status: 'published' as unknown as number },
+        data: { status: 'published' },
       })
       await Promise.all([
         qc.invalidateQueries({ queryKey: getGetResumeQueryKey() }),
@@ -186,7 +186,7 @@ function ResumeRow({
     try {
       await patch.mutateAsync({
         id,
-        data: { status: 'draft' as unknown as number },
+        data: { status: 'draft' },
       })
       if (isDefault) setDefaultResumeId(undefined)
       await Promise.all([
