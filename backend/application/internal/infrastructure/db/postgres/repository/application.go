@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
@@ -407,10 +405,6 @@ func (a *ApplicationRepo) GetCompanyAnalyticsSummary(
 	err := scanSummary(row, &sum)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, projection.ErrCompanyNotFound
-		}
-
 		return nil, fmt.Errorf("get company analytics summary: %w", err)
 	}
 
@@ -436,10 +430,6 @@ func (a *ApplicationRepo) GetVacancyAnalyticsSummary(
 	err := scanSummary(row, &sum)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, projection.ErrVacancyNotFound
-		}
-
 		return nil, fmt.Errorf("get vacancy analytics summary: %w", err)
 	}
 

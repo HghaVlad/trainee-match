@@ -60,7 +60,7 @@ func (h *Handler) CreateApplication(
 	resp, err := h.apply.Execute(ctx, req, *ident)
 
 	if err != nil {
-		return applyErrToResponse(err)
+		return handleApplyErr(err)
 	}
 
 	return oapi.CreateApplication201JSONResponse{
@@ -293,7 +293,7 @@ func (h *Handler) GetVacancyDynamics(
 	}, nil
 }
 
-func applyErrToResponse(err error) (oapi.CreateApplicationResponseObject, error) {
+func handleApplyErr(err error) (oapi.CreateApplicationResponseObject, error) {
 	switch {
 	case errors.Is(err, application.ErrCoverLetterTooLong):
 		return oapi.CreateApplication400JSONResponse{
@@ -409,7 +409,7 @@ func handleCandiHistoryErr(err error) (oapi.GetMyApplicationHistoryResponseObjec
 
 func handleWithdrawErr(err error) (oapi.WithdrawApplicationResponseObject, error) {
 	switch {
-	case errors.Is(err, application.ErrCoverLetterTooLong):
+	case errors.Is(err, application.ErrStatusChangeCommentTooLong):
 		return oapi.WithdrawApplication400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
 				Error:   "bad_request",
@@ -532,7 +532,7 @@ func handleHrViewErr(err error) (oapi.GetHrApplicationResponseObject, error) {
 func handleHrUpdStatus(err error) (oapi.ChangeApplicationStatusResponseObject, error) {
 	switch {
 	case errors.Is(err, application.ErrInvalidStatus),
-		errors.Is(err, application.ErrCoverLetterTooLong):
+		errors.Is(err, application.ErrStatusChangeCommentTooLong):
 		return oapi.ChangeApplicationStatus400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
 				Error:   "bad_request",
@@ -632,7 +632,7 @@ func handleCompanyDynamicsErr(err error) (oapi.GetCompanyDynamicsResponseObject,
 		errors.Is(err, dynamics.ErrInvalidInterval):
 		return oapi.GetCompanyDynamics400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
-				Error:   "forbidden",
+				Error:   "bad_request",
 				Message: err.Error(),
 			},
 		}, nil
@@ -662,7 +662,7 @@ func handleVacancyDynamicsErr(err error) (oapi.GetVacancyDynamicsResponseObject,
 		errors.Is(err, dynamics.ErrInvalidInterval):
 		return oapi.GetVacancyDynamics400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
-				Error:   "forbidden",
+				Error:   "bad_request",
 				Message: err.Error(),
 			},
 		}, nil

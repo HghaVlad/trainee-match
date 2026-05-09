@@ -14,7 +14,7 @@ type Request struct {
 
 func (r *Request) validate() error {
 	if r.CoverLetter != nil && len([]rune(*r.CoverLetter)) > application.MaxCoverLetterLength {
-		return application.ErrStatusChangeCommentTooLong
+		return application.ErrCoverLetterTooLong
 	}
 
 	return nil

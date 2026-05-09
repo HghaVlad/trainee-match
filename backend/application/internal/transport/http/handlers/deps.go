@@ -105,7 +105,7 @@ type analyticsSummary interface {
 
 	GetByVacancy(
 		ctx context.Context,
-		compID uuid.UUID,
+		vacID uuid.UUID,
 		ident identity.Identity,
 	) (*summary.Summary, error)
 }

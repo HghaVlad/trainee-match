@@ -55,7 +55,8 @@ func (r *AppStatusHistoryRepo) GetHistoryCandiView(
 	const query = `SELECT sh.status, sh.changed_by_role, sh.created_at, sh.comment
 			FROM application_status_history sh
 			JOIN applications a ON sh.application_id = a.id
-			WHERE application_id = $1 AND a.candidate_id = $2`
+			WHERE application_id = $1 AND a.candidate_id = $2
+			ORDER BY sh.created_at, sh.id`
 
 	rows, err := q.Query(ctx, query, appID, candID)
 
@@ -96,7 +97,8 @@ func (r *AppStatusHistoryRepo) GetHistoryHrView(
 		FROM application_status_history sh
 		JOIN applications a ON sh.application_id = a.id
 		JOIN company_members cm ON cm.company_id = a.company_id
-		WHERE application_id = $1 AND cm.user_id = $2`
+		WHERE application_id = $1 AND cm.user_id = $2
+		ORDER BY sh.created_at, sh.id`
 
 	rows, err := q.Query(ctx, query, appID, hrID)
 

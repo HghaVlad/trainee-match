@@ -24,7 +24,7 @@ func AnalyticsSummaryToHTTP(sum summary.Summary) oapi.AnalyticsSummary {
 func DynamicsCompPeriodToUC(request oapi.GetCompanyDynamicsRequestObject) dynamics.Period {
 	period := dynamics.Period{
 		From: request.Params.CreatedFrom,
-		To:   request.Params.CreatedFrom,
+		To:   request.Params.CreatedTo,
 	}
 
 	if request.Params.Interval == nil {
