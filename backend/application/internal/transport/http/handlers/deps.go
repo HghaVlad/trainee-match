@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/summary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/apply"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
@@ -27,6 +29,7 @@ type Deps struct {
 	HrUpdateStatus      hrUpdateStatus
 	GetHistoryHrView    getHistoryHrView
 	AnalyticsSummary    analyticsSummary
+	DynamicsDashboard   dynamicsDashboard
 	Logger              *slog.Logger
 }
 
@@ -106,4 +109,20 @@ type analyticsSummary interface {
 		compID uuid.UUID,
 		ident identity.Identity,
 	) (*summary.Summary, error)
+}
+
+type dynamicsDashboard interface {
+	GetDashboardByCompany(
+		ctx context.Context,
+		compID uuid.UUID,
+		period dynamics.Period,
+		iden identity.Identity,
+	) ([]dynamics.Bucket, error)
+
+	GetDashboardByVacancy(
+		ctx context.Context,
+		vacID uuid.UUID,
+		period dynamics.Period,
+		iden identity.Identity,
+	) ([]dynamics.Bucket, error)
 }

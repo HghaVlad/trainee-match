@@ -11,6 +11,8 @@ import (
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
@@ -76,6 +78,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	getHistoryHrView := hrhistory.NewUsecase(appStatusHistoryRepo)
 
 	analyticsSummary := summary.NewUsecase(appRepo, compMemProjRepo, vacProjRepo)
+	dynamicsDashboard := dynamics.NewUsecase(appStatusHistoryRepo, compMemProjRepo, vacProjRepo)
 
 	authMiddleware, err := middleware.NewAuthMiddleware(ctx, cfg.HTTP)
 	if err != nil {
@@ -93,6 +96,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		HrUpdateStatus:      hrUpdateStatus,
 		GetHistoryHrView:    getHistoryHrView,
 		AnalyticsSummary:    analyticsSummary,
+		DynamicsDashboard:   dynamicsDashboard,
 		Logger:              logger,
 	}
 

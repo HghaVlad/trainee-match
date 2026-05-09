@@ -1,6 +1,10 @@
 package views
 
-import "github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+import (
+	"slices"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+)
 
 type AllowedAction string
 
@@ -41,11 +45,8 @@ func CandidateAllowedActions(status application.Status) []AllowedAction {
 	transitions := status.AvailableTransitions(application.ActorCandidate)
 	res := make([]AllowedAction, 0, len(transitions))
 
-	for _, t := range transitions {
-		if t == application.StatusWithdrawn {
-			res = append(res, AllowedActionWithdraw)
-			break
-		}
+	if slices.Contains(transitions, application.StatusWithdrawn) {
+		res = append(res, AllowedActionWithdraw)
 	}
 
 	return res

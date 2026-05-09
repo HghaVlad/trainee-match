@@ -467,6 +467,7 @@ paths:
     get:
       tags: [Application Analytics]
       summary: Get company application dynamics
+      description: Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start (0:00 UTC), week start, month start), and empty buckets are included with zero counts
       operationId: getCompanyDynamics
       parameters:
         - $ref: '#/components/parameters/CompanyId'
@@ -497,6 +498,7 @@ paths:
     get:
       tags: [Application Analytics]
       summary: Get vacancy application dynamics
+      description: Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start, week start, month start), and empty buckets are included with zero counts
       operationId: getVacancyDynamics
       parameters:
         - $ref: '#/components/parameters/VacancyId'

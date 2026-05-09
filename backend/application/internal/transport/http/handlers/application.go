@@ -10,6 +10,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/mappers"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/oapi"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/analytics/dynamics"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/hrupdstatus"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
@@ -28,6 +29,7 @@ type Handler struct {
 	hrUpdateStatus      hrUpdateStatus
 	getHistoryHrView    getHistoryHrView
 	analyticsSummary    analyticsSummary
+	dynamicsDashboard   dynamicsDashboard
 	logger              *slog.Logger
 }
 
@@ -43,6 +45,7 @@ func NewHandler(deps *Deps) *Handler {
 		hrUpdateStatus:      deps.HrUpdateStatus,
 		getHistoryHrView:    deps.GetHistoryHrView,
 		analyticsSummary:    deps.AnalyticsSummary,
+		dynamicsDashboard:   deps.DynamicsDashboard,
 		logger:              deps.Logger,
 	}
 }
@@ -246,7 +249,7 @@ func (h *Handler) GetVacancyAnalyticsSummary(
 
 	sum, err := h.analyticsSummary.GetByVacancy(ctx, vacID, *ident)
 	if err != nil {
-		return handleVacancyAnalyticsSummary(err)
+		return handleVacancyAnalyticsSummaryErr(err)
 	}
 
 	return oapi.GetVacancyAnalyticsSummary200JSONResponse{
@@ -258,22 +261,42 @@ func (h *Handler) GetCompanyDynamics(
 	ctx context.Context,
 	request oapi.GetCompanyDynamicsRequestObject,
 ) (oapi.GetCompanyDynamicsResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
-}
+	ident := middleware.IdentityFromContext(ctx)
+	compID := request.CompanyId
+	period := mappers.DynamicsCompPeriodToUC(request)
 
-func (h *Handler) GetCompanyStatusFunnel(
-	ctx context.Context,
-	request oapi.GetCompanyStatusFunnelRequestObject,
-) (oapi.GetCompanyStatusFunnelResponseObject, error) {
-	// TODO implement me
-	panic("implement me")
+	dashboard, err := h.dynamicsDashboard.GetDashboardByCompany(ctx, compID, period, *ident)
+	if err != nil {
+		return handleCompanyDynamicsErr(err)
+	}
+
+	return oapi.GetCompanyDynamics200JSONResponse{
+		Data: mappers.DynamicsDashboardToHTTP(dashboard),
+	}, nil
 }
 
 func (h *Handler) GetVacancyDynamics(
 	ctx context.Context,
 	request oapi.GetVacancyDynamicsRequestObject,
 ) (oapi.GetVacancyDynamicsResponseObject, error) {
+	ident := middleware.IdentityFromContext(ctx)
+	vacID := request.VacancyId
+	period := mappers.DynamicsVacPeriodToUC(request)
+
+	dashboard, err := h.dynamicsDashboard.GetDashboardByVacancy(ctx, vacID, period, *ident)
+	if err != nil {
+		return handleVacancyDynamicsErr(err)
+	}
+
+	return oapi.GetVacancyDynamics200JSONResponse{
+		Data: mappers.DynamicsDashboardToHTTP(dashboard),
+	}, nil
+}
+
+func (h *Handler) GetCompanyStatusFunnel(
+	ctx context.Context,
+	request oapi.GetCompanyStatusFunnelRequestObject,
+) (oapi.GetCompanyStatusFunnelResponseObject, error) {
 	// TODO implement me
 	panic("implement me")
 }
@@ -598,7 +621,7 @@ func handleCompanyAnalyticsSummary(err error) (oapi.GetCompanyAnalyticsSummaryRe
 	return nil, err
 }
 
-func handleVacancyAnalyticsSummary(err error) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
+func handleVacancyAnalyticsSummaryErr(err error) (oapi.GetVacancyAnalyticsSummaryResponseObject, error) {
 	switch {
 	case errors.Is(err, identity.ErrHrRoleRequired):
 		return oapi.GetVacancyAnalyticsSummary403JSONResponse{
@@ -610,6 +633,66 @@ func handleVacancyAnalyticsSummary(err error) (oapi.GetVacancyAnalyticsSummaryRe
 
 	case errors.Is(err, projection.ErrVacancyNotFound):
 		return oapi.GetVacancyAnalyticsSummary404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleCompanyDynamicsErr(err error) (oapi.GetCompanyDynamicsResponseObject, error) {
+	switch {
+	case errors.Is(err, dynamics.ErrInvalidPeriod),
+		errors.Is(err, dynamics.ErrPeriodTooLarge),
+		errors.Is(err, dynamics.ErrInvalidInterval):
+		return oapi.GetCompanyDynamics400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetCompanyDynamics403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, projection.ErrCompanyNotFound):
+		return oapi.GetCompanyDynamics404JSONResponse{
+			Error:   "not_found",
+			Message: err.Error(),
+		}, nil
+	}
+
+	return nil, err
+}
+
+func handleVacancyDynamicsErr(err error) (oapi.GetVacancyDynamicsResponseObject, error) {
+	switch {
+	case errors.Is(err, dynamics.ErrInvalidPeriod),
+		errors.Is(err, dynamics.ErrPeriodTooLarge),
+		errors.Is(err, dynamics.ErrInvalidInterval):
+		return oapi.GetVacancyDynamics400JSONResponse{
+			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, identity.ErrHrRoleRequired):
+		return oapi.GetVacancyDynamics403JSONResponse{
+			ForbiddenErrorJSONResponse: oapi.ForbiddenErrorJSONResponse{
+				Error:   "forbidden",
+				Message: err.Error(),
+			},
+		}, nil
+
+	case errors.Is(err, projection.ErrVacancyNotFound):
+		return oapi.GetVacancyDynamics404JSONResponse{
 			Error:   "not_found",
 			Message: err.Error(),
 		}, nil
