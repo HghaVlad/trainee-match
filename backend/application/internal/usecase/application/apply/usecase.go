@@ -165,7 +165,7 @@ func buildFullCandidateView(
 			Email:      appSnap.Email,
 			FullName:   appSnap.FullName,
 			Telegram:   appSnap.Telegram,
-			CreatedAt:  appSnap.CreatedAt, // TODO: not really tbh
+			CreatedAt:  appSnap.CreatedAt,
 		},
 		CreatedAt: app.CreatedAt,
 		UpdatedAt: app.UpdatedAt,

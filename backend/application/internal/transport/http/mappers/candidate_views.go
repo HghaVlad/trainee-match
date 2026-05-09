@@ -53,15 +53,7 @@ func CandidateDetailedViewToHTTP(view *views.CandidateDetailedView) oapi.Candida
 		CreatedAt:      view.CreatedAt,
 		UpdatedAt:      view.UpdatedAt,
 
-		Snapshot: oapi.ApplicationSnapshot{
-			Email:     emailToOAPI(&view.Snapshot.Email),
-			FullName:  view.Snapshot.FullName,
-			Telegram:  view.Snapshot.Telegram,
-			CreatedAt: view.Snapshot.CreatedAt,
-			ResumeData: map[string]any{
-				"resumeData": view.Snapshot.ResumeData,
-			},
-		},
+		Snapshot: snapshotToHTTP(view.Snapshot),
 
 		StatusHistory: CandidateHistoryToHTTP(view.StatusHistory),
 	}

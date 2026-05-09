@@ -956,12 +956,113 @@ components:
           type: string
           nullable: true
         resumeData:
-          type: object
-          additionalProperties: true
-          description: Immutable snapshot of resume payload at apply time
+          $ref: '#/components/schemas/ResumeData'
         createdAt:
           type: string
           format: date-time
+
+    ResumeData:
+      type: object
+      description: Immutable snapshot of resume payload at apply time
+      required:
+        - lastName
+        - firstName
+        - middleName
+        - dateOfBirth
+        - email
+        - phone
+        - city
+        - citizenship
+        - education
+        - workExperiences
+        - skillsList
+        - desiredFormat
+        - englishLevel
+
+      properties:
+        lastName:
+          type: string
+        firstName:
+          type: string
+        middleName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        city:
+          type: string
+        citizenship:
+          type: string
+        education:
+          type: array
+          items:
+            $ref: '#/components/schemas/Education'
+        workExperiences:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkExperience'
+        skillsList:
+          type: array
+          items:
+            type: string
+            format: uuid
+        additionalInfo:
+          type: string
+        portfolioLink:
+          type: string
+          format: uri
+        desiredFormat:
+          type: string
+        englishLevel:
+          type: string
+
+    Education:
+      type: object
+      required:
+        - level
+        - university
+        - faculty
+        - specialization
+        - startYear
+        - endYear
+        - format
+      properties:
+        level:
+          type: string
+        university:
+          type: string
+        faculty:
+          type: string
+        specialization:
+          type: string
+        startYear:
+          type: integer
+        endYear:
+          type: integer
+        format:
+          type: string
+
+    WorkExperience:
+      type: object
+      required:
+        - position
+        - company
+        - period
+        - responsibilities
+      properties:
+        position:
+          type: string
+        company:
+          type: string
+        period:
+          type: string
+        responsibilities:
+          type: string
 
     CandidateApplicationStatusHistoryItem:
       type: object
