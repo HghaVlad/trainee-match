@@ -11,12 +11,12 @@ import (
 )
 
 type LocalRegistry struct {
-	client     RealRegistryClient
+	client     *RealRegistryClient
 	subjects   map[string]int      // subject -> schemaId
 	parsedByID map[int]avro.Schema // shemaId -> schema
 }
 
-func NewLocalRegistry(ctx context.Context, client RealRegistryClient) (*LocalRegistry, error) {
+func NewLocalRegistry(ctx context.Context, client *RealRegistryClient) (*LocalRegistry, error) {
 	schemas, err := loadAllSchemas()
 
 	if err != nil {

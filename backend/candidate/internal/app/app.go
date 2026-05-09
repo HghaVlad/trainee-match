@@ -3,6 +3,11 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"log/slog"
 	"net/http"
 	"time"
@@ -26,6 +31,7 @@ import (
 type App struct {
 	server *http.Server
 	Db     *pgxpool.Pool
+	Relay  *outbox.Relay
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -41,9 +47,19 @@ func Build(conf *config.Config) (*App, error) {
 	candidateRepo := repository.NewCandidateRepo(pgPool)
 	resumeRepo := repository.NewResumeRepo(pgPool)
 	skillRepo := repository.NewSkillRepo(pgPool)
+	outboxRepository := repository.NewOutbox(pgPool, trmpgx.DefaultCtxGetter)
+
+	schemaRegistryClient := schemaregistry.NewClient(conf.SchemaRegistry.BaseURL)
+	schemalLocalRegistry, err := schemaregistry.NewLocalRegistry(context.Background(), schemaRegistryClient)
+	if err != nil {
+		return nil, err
+	}
+	encoder := schemaregistry.NewEncoder(schemalLocalRegistry)
+
+	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepository, encoder)
 
 	createCandidateUC := create_candidate.New(candidateRepo)
-	updateCandidateUC := update_candidate.New(candidateRepo)
+	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
 
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
@@ -66,9 +82,21 @@ func Build(conf *config.Config) (*App, error) {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	kafkaClient, err := kafka.NewClient(conf.Kafka)
+	if err != nil {
+		return nil, err
+	}
+
+	kafkaLogger := slog.Logger{}
+	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, &kafkaLogger)
+	trManager := manager.Must(trmpgx.NewFactory(pgPool))
+	relayLogger := slog.Logger{}
+	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, &relayLogger, trManager)
+
 	return &App{
 		server: httpServer,
 		Db:     pgPool,
+		Relay:  outboxRelay,
 	}, nil
 }
 
@@ -79,6 +107,9 @@ func (app *App) Run() error {
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("http listening server err", "error", err)
 	}
+
+	go app.Relay.Run(context.Background())
+
 	return err
 }
 

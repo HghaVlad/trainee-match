@@ -2,6 +2,7 @@ package update_candidate
 
 import (
 	"context"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
@@ -14,11 +15,12 @@ type CandidateRepo interface {
 }
 
 type UseCase struct {
-	repo CandidateRepo
+	repo   CandidateRepo
+	writer *outbox.Writer
 }
 
-func New(repo CandidateRepo) *UseCase {
-	return &UseCase{repo: repo}
+func New(repo CandidateRepo, writer *outbox.Writer) *UseCase {
+	return &UseCase{repo: repo, writer: writer}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) (*CandidateResponse, error) {

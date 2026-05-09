@@ -20,23 +20,23 @@ func NewEncoder(registry *LocalRegistry) *Encoder {
 	return &Encoder{registry}
 }
 
-func (en *Encoder) ResumeUpdatedToBytes(ev domain.ResumeUpdatedEvent) ([]byte, error) {
+func (en *Encoder) ResumeUpdatedToBytes(ev domain.ResumeUpdatedEvent) ([]byte, int, error) {
 	return en.EventToBytes(ResumeUpdatedEvent, ev)
 }
 
-func (en *Encoder) EventToBytes(subject string, event any) ([]byte, error) {
+func (en *Encoder) EventToBytes(subject string, event any) ([]byte, int, error) {
 	schemaID, err := en.registry.GetSchemaIDBySubject(subject)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	schema, err := en.registry.GetSchemaByID(schemaID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	encodedEvent, err := avro.Marshal(schema, event)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	const magicByteAndUint32 = 5
@@ -45,7 +45,7 @@ func (en *Encoder) EventToBytes(subject string, event any) ([]byte, error) {
 	writeConfluentWireSchemaID(bytes, schemaID)
 	copy(bytes[magicByteAndUint32:], encodedEvent)
 
-	return encodedEvent, nil
+	return encodedEvent, schemaID, nil
 }
 
 // writes [0][schemaID] - payload to be appended
