@@ -14,6 +14,8 @@ const (
 	ActorSystem    Actor = "system"
 )
 
+const MaxCommentLength = 1000
+
 type StatusChange struct {
 	ID              uuid.UUID
 	ApplicationID   uuid.UUID

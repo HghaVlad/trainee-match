@@ -14,4 +14,5 @@ type CompanyMember struct {
 
 var (
 	ErrCompanyMemberNotFound = errors.New("company member not found")
+	ErrCompanyNotFound       = errors.New("company not found")
 )

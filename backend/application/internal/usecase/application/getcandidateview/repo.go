@@ -9,8 +9,10 @@ import (
 )
 
 type repo interface {
-	GetByIDCandidateViewWithDetails(
+	// GetCandidateDetailedView returns detailed view,
+	// if candidate doesn't own this application, returns application.ErrNotFound
+	GetCandidateDetailedView(
 		ctx context.Context,
 		appID, candID uuid.UUID,
-	) (*views.CandidateViewWithDetails, error)
+	) (*views.CandidateDetailedView, error)
 }

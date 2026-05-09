@@ -1075,6 +1075,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/members/me": {
+            "get": {
+                "description": "Me returns company member view, with role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "member"
+                ],
+                "summary": "Me returns company member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}/members/{user-id}": {
             "delete": {
                 "description": "removes company member. Requires admin role in company. Admin can't remove themselves if they are the only admin left.",
@@ -1478,7 +1531,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CompanyMemberListItem": {
+        "dto.CompanyMemberFullView": {
             "type": "object",
             "properties": {
                 "companyId": {
@@ -1520,7 +1573,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.CompanyMemberListItem"
+                        "$ref": "#/definitions/dto.CompanyMemberFullView"
                     }
                 }
             }

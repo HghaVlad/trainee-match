@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	appmiddleware "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
@@ -27,7 +27,7 @@ func NewRouter(
 	)
 
 	oapi.HandlerFromMux(
-		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{}),
+		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{appmiddleware.LoggingMiddleware}),
 		router,
 	)
 

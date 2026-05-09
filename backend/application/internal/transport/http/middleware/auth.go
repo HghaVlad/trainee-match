@@ -115,7 +115,12 @@ func (m *AuthMiddleware) FakeHandler(next http.Handler) http.Handler {
 
 		for _, cookie := range cookies {
 			if cookie.Name == "user_id" {
-				ident.UserID = uuid.MustParse(cookie.Value)
+				id, err := uuid.Parse(cookie.Value)
+				if err != nil {
+					helpers.WriteError(ctx, w, http.StatusUnauthorized, unauthorized, "invalid uuid", nil)
+					return
+				}
+				ident.UserID = id
 			}
 
 			if cookie.Name == "role" {

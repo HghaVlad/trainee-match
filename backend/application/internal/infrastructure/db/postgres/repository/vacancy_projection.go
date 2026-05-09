@@ -25,8 +25,8 @@ func NewVacancyProjection(db *pgxpool.Pool, getter *trmpgx.CtxGetter) *VacancyPr
 	}
 }
 
-func (v *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*projection.Vacancy, error) {
-	q := v.getter.DefaultTrOrDB(ctx, v.db)
+func (p *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*projection.Vacancy, error) {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
 
 	const query = `
 		SELECT id, company_id, company_name, title, status, created_at, updated_at
@@ -51,29 +51,29 @@ func (v *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*proj
 	return &vacancy, nil
 }
 
-func (r *VacancyProjection) GetCompanyIDByVacancyID(
+// CheckHrAccess returns companyID if success,
+// projection.ErrVacancyNotFound otherwise
+func (p *VacancyProjection) CheckHrAccess(
 	ctx context.Context,
-	vacancyID uuid.UUID,
+	userID, vacancyID uuid.UUID,
 ) (uuid.UUID, error) {
-	q := r.getter.DefaultTrOrDB(ctx, r.db)
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
 
-	const query = `
-		SELECT company_id
-		FROM vacancy_projection
-		WHERE id = $1
-	`
+	const query = `SELECT v.company_id
+		FROM vacancy_projection v
+		JOIN company_members cm ON cm.company_id = v.company_id
+		WHERE v.id = $1 AND cm.user_id = $2`
 
 	var companyID uuid.UUID
 
-	err := q.QueryRow(ctx, query, vacancyID).
-		Scan(&companyID)
+	err := q.QueryRow(ctx, query, vacancyID, userID).Scan(&companyID)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.Nil, projection.ErrVacancyNotFound
 		}
 
-		return uuid.Nil, fmt.Errorf("get vacancy company id: %w", err)
+		return uuid.Nil, fmt.Errorf("check hr access company id: %w", err)
 	}
 
 	return companyID, nil

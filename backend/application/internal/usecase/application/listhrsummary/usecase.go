@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/application"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/views"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/cursors"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/identity"
@@ -26,8 +26,8 @@ func NewUsecase(repo appRepo, memRepo memProjRepo, vacRepo vacProjRepo) *Usecase
 }
 
 func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Identity) (*Response, error) {
-	if err := u.authorize(ctx, req.CompanyID, req.VacancyID, ident); err != nil {
-		return nil, err
+	if ident.Role != identity.RoleHR {
+		return nil, identity.ErrHrRoleRequired
 	}
 
 	req.normalize()
@@ -41,18 +41,19 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 	}
 
 	items, err := u.appRepo.ListHrAppSummaries(
-		ctx,
-		req.Statuses,
-		req.CompanyID,
-		req.VacancyID,
-		req.CreatedFrom,
-		req.CreatedTo,
-		req.Order,
-		cursor,
-		req.Limit+1,
+		ctx, ident.UserID, req.Statuses,
+		req.CompanyID, req.VacancyID,
+		req.CreatedFrom, req.CreatedTo,
+		req.Order, cursor, req.Limit+1,
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(items) == 0 {
+		if err := u.authorize(ctx, req.CompanyID, req.VacancyID, ident); err != nil {
+			return nil, err
+		}
 	}
 
 	nextCursor, items := getNextCursor(items, req.Limit, req.Order)
@@ -69,17 +70,17 @@ func (u *Usecase) Execute(ctx context.Context, req Request, ident identity.Ident
 }
 
 func (u *Usecase) authorize(ctx context.Context, compID, vacID *uuid.UUID, ident identity.Identity) error {
-	if ident.Role != identity.RoleHR {
-		return identity.ErrHrRoleRequired
-	}
-
 	if vacID != nil {
-		cID, err := u.vacRepo.GetCompanyIDByVacancyID(ctx, *vacID)
+		realCompID, err := u.vacRepo.CheckHrAccess(ctx, ident.UserID, *vacID)
 		if err != nil {
 			return err
 		}
 
-		compID = &cID
+		if compID != nil && *compID != realCompID {
+			return projection.ErrVacancyNotFound
+		}
+
+		return nil
 	}
 
 	if compID != nil {
@@ -89,7 +90,7 @@ func (u *Usecase) authorize(ctx context.Context, compID, vacID *uuid.UUID, ident
 		}
 
 		if !ok {
-			return application.ErrAccessDenied
+			return projection.ErrCompanyNotFound
 		}
 
 		return nil
