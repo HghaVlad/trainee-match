@@ -21,7 +21,7 @@ CREATE TABLE outbox
     started_at      TIMESTAMPTZ
 );
 
-CREATE TABLE aggregate_sequences
+CREATE TABLE outbox_seq
 (
     aggregate_id UUID PRIMARY KEY,
     current_seq  BIGINT NOT NULL DEFAULT 0

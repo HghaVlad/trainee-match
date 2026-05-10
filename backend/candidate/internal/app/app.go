@@ -3,14 +3,19 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
-	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+	"log"
 	"log/slog"
 	"net/http"
 	"time"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
@@ -25,13 +30,13 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
-	server *http.Server
-	Db     *pgxpool.Pool
-	Relay  *outbox.Relay
+	server      *http.Server
+	Db          *pgxpool.Pool
+	Relay       *outbox.Relay
+	relayCancel context.CancelFunc
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -87,11 +92,11 @@ func Build(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	kafkaLogger := slog.Logger{}
-	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, &kafkaLogger)
+	kafkaLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
+	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, kafkaLogger)
 	trManager := manager.Must(trmpgx.NewFactory(pgPool))
-	relayLogger := slog.Logger{}
-	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, &relayLogger, trManager)
+	relayLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
+	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
 
 	return &App{
 		server: httpServer,
@@ -101,6 +106,9 @@ func Build(conf *config.Config) (*App, error) {
 }
 
 func (app *App) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	app.relayCancel = cancel
+	go app.Relay.Run(ctx)
 
 	slog.Info("Server started")
 	err := app.server.ListenAndServe()
@@ -108,12 +116,13 @@ func (app *App) Run() error {
 		slog.Error("http listening server err", "error", err)
 	}
 
-	go app.Relay.Run(context.Background())
-
 	return err
 }
 
 func (app *App) Shutdown(ctx context.Context) {
+	if app.relayCancel != nil {
+		app.relayCancel()
+	}
 	err := app.server.Shutdown(ctx)
 	if err != nil {
 		slog.Error("shutdown error", "error", err)

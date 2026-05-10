@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Outbox struct {
@@ -43,6 +44,9 @@ func bindOutboxEnv(v *viper.Viper) error {
 		return err
 	}
 	if err := v.BindEnv("OUTBOX.BASE_RETRY_DELAY", "OUTBOX_MESSAGE_BASE_RETRY_DELAY"); err != nil {
+		return err
+	}
+	if err := v.BindEnv("OUTBOX.RESET_STALE_TIME", "OUTBOX_RESET_STALE_TIME"); err != nil {
 		return err
 	}
 	return nil

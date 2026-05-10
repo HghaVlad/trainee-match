@@ -3,11 +3,13 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
+	"time"
+
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
 )
 
 type Outbox struct {
@@ -23,8 +25,8 @@ func (r *Outbox) Create(ctx context.Context, msg outbox.Message) error {
 
 	conn := r.getter.DefaultTrOrDB(ctx, r.db)
 
-	const querySeqRow = `INSERT INTO outbox_seq (aggregate_id, seq) VALUES ($1, 1) ON CONFLICT (aggregate_id)
-     DO UPDATE SET seq = outbox_seq.seq + 1 RETURNING seq`
+	const querySeqRow = `INSERT INTO outbox_seq (aggregate_id, current_seq) VALUES ($1, 1) ON CONFLICT (aggregate_id)
+     DO UPDATE SET current_seq = outbox_seq.current_seq + 1 RETURNING current_seq`
 
 	var seq int
 	err := conn.QueryRow(ctx, querySeqRow, msg.AggregateID).Scan(&seq)
@@ -61,13 +63,17 @@ func (r *Outbox) Create(ctx context.Context, msg outbox.Message) error {
 	return nil
 }
 
-func (r *Outbox) ListPendingAndSetProcessing(ctx context.Context, limit int, workerNumber, totalWorkers int) ([]outbox.Message, error) {
+func (r *Outbox) ListPendingAndSetProcessing(
+	ctx context.Context,
+	limit int,
+	workerNumber, totalWorkers int,
+) ([]outbox.Message, error) {
 	conn := r.getter.DefaultTrOrDB(ctx, r.db)
 
 	rows, err := conn.Query(ctx,
 		`SELECT id, aggregate_id, aggregate_seq, topic, event_type, schema_id,
 		        headers, key, payload, status, attempt_count, created_at,
-		        sent_at, last_error, next_attempt_at, failed_at, started_at
+		        sent_at, last_error, next_attempt_at, failed_at
 		 FROM outbox
 		 WHERE status = 'pending'
 		   AND next_attempt_at <= now()
@@ -81,7 +87,6 @@ func (r *Outbox) ListPendingAndSetProcessing(ctx context.Context, limit int, wor
 		return nil, fmt.Errorf("query pending: %w", err)
 	}
 	defer rows.Close()
-
 	var msgs []outbox.Message
 	for rows.Next() {
 		var m outbox.Message
@@ -164,7 +169,7 @@ func (r *Outbox) Save(ctx context.Context, msgs []outbox.Message) error {
             started_at      = NULL
          FROM UNNEST(
             $1::uuid[],
-            $2::text[],
+            $2::outbox_status[],
             $3::bigint[],
             $4::timestamptz[],
             $5::text[],

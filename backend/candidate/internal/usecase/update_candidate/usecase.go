@@ -2,10 +2,13 @@ package update_candidate
 
 import (
 	"context"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 //go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
@@ -58,6 +61,12 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 	}
 
 	candidate, err = uc.repo.Update(ctx, candidate)
+	if err != nil {
+		return nil, err
+	}
+
+	event := events.NewCandidateUpserted(candidate)
+	err = uc.writer.WriteCandidateUpserted(ctx, *event)
 	if err != nil {
 		return nil, err
 	}

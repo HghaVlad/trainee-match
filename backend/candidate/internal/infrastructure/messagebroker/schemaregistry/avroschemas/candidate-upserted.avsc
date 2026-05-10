@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "CandidateUpdated",
+  "name": "CandidateUpserted",
   "namespace": "traineematch.candidate",
   "fields": [
     {

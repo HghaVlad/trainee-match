@@ -2,11 +2,13 @@ package outbox
 
 import (
 	"context"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 )
 
 type RelayRepository interface {
@@ -23,7 +25,13 @@ type Relay struct {
 	trManager *manager.Manager
 }
 
-func NewRelay(repo RelayRepository, producer Producer, config config.Outbox, logger *slog.Logger, trmanager *manager.Manager) *Relay {
+func NewRelay(
+	repo RelayRepository,
+	producer Producer,
+	config config.Outbox,
+	logger *slog.Logger,
+	trmanager *manager.Manager,
+) *Relay {
 	return &Relay{repo: repo, producer: producer, cfg: config, logger: logger, trManager: trmanager}
 }
 
@@ -38,9 +46,11 @@ func (r *Relay) Run(ctx context.Context) {
 			r.runWorker(ctx, i)
 		}()
 	}
-	wg.Go(func() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 		r.runResetStaleProcessor(ctx)
-	})
+	}()
 	wg.Wait()
 }
 
@@ -80,7 +90,12 @@ func (r *Relay) process(ctx context.Context, workerNumber int) int {
 	var messages []Message
 	var err error
 	err = r.trManager.Do(ctx, func(ctx context.Context) error {
-		messages, err = r.repo.ListPendingAndSetProcessing(ctx, r.cfg.RelayBatchSize, workerNumber, r.cfg.RelayWorkerCount)
+		messages, err = r.repo.ListPendingAndSetProcessing(
+			ctx,
+			r.cfg.RelayBatchSize,
+			workerNumber,
+			r.cfg.RelayWorkerCount,
+		)
 		return err
 	})
 	if err != nil {
@@ -140,10 +155,13 @@ func (r *Relay) runResetStaleProcessor(ctx context.Context) {
 		case <-t.C:
 			err := r.repo.ResetStaleProcessing(ctx, r.cfg.ResetStaleTime)
 			if err != nil {
-				r.logger.WarnContext(ctx, "Error resetting stale processor after timeout", slog.String("reason", err.Error()))
+				r.logger.WarnContext(
+					ctx,
+					"Error resetting stale processor after timeout",
+					slog.String("reason", err.Error()),
+				)
 			}
 		}
 
 	}
 }
-

@@ -5,11 +5,14 @@ import (
 
 	"github.com/hamba/avro/v2"
 
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 var (
-	ResumeUpdatedEvent = "resume-updated-value"
+	ResumeUpdatedEvent     = "resume-updated-value"
+	CandidateUpsertedEvent = "candidate-upserted-value"
 )
 
 type Encoder struct {
@@ -22,6 +25,10 @@ func NewEncoder(registry *LocalRegistry) *Encoder {
 
 func (en *Encoder) ResumeUpdatedToBytes(ev domain.ResumeUpdatedEvent) ([]byte, int, error) {
 	return en.EventToBytes(ResumeUpdatedEvent, ev)
+}
+
+func (en *Encoder) CandidateUpsertedToBytes(ev events.CandidateUpserted) ([]byte, int, error) {
+	return en.EventToBytes(CandidateUpsertedEvent, ev)
 }
 
 func (en *Encoder) EventToBytes(subject string, event any) ([]byte, int, error) {

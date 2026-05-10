@@ -3,11 +3,13 @@ package kafka
 import (
 	"context"
 	"errors"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/twmb/franz-go/pkg/kerr"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 
@@ -31,12 +33,13 @@ func (pr *Producer) Close() {
 }
 
 func (pr *Producer) ProduceOutBox(ctx context.Context, messages []outbox.Message) []outbox.ProduceResult {
+	ctx, cancel := withDefaultTimeout(ctx, 10*time.Second)
+	defer cancel()
 
 	wg := sync.WaitGroup{}
 
 	results := make([]outbox.ProduceResult, len(messages))
 	for i, m := range messages {
-
 		results[i] = outbox.ProduceResult{MsgID: messages[i].ID}
 
 		newRecord := kgo.Record{
@@ -66,11 +69,16 @@ func (pr *Producer) ProduceOutBox(ctx context.Context, messages []outbox.Message
 				results[i].Unretryable = true
 			}
 		})
-
 	}
 	wg.Wait()
 	return results
+}
 
+func withDefaultTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, timeout)
 }
 
 func mapHeadersWithEventType(msg outbox.Message) []kgo.RecordHeader {
