@@ -3,8 +3,12 @@ package create_resume
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 //go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
@@ -22,17 +26,30 @@ type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
+type EventWriter interface {
+	WriteResumeUpserted(ctx context.Context, ev events.ResumeUpserted) error
+}
 type UseCase struct {
 	resumeRepo    ResumeRepo
 	skillRepo     SkillRepo
 	candidateRepo CandidateRepo
+	writer        EventWriter
+	trManager     *manager.Manager
 }
 
-func New(resumeRepo ResumeRepo, skillRepo SkillRepo, candidateRepo CandidateRepo) *UseCase {
+func New(
+	resumeRepo ResumeRepo,
+	skillRepo SkillRepo,
+	candidateRepo CandidateRepo,
+	writer EventWriter,
+	trManager *manager.Manager,
+) *UseCase {
 	return &UseCase{
 		resumeRepo:    resumeRepo,
 		skillRepo:     skillRepo,
 		candidateRepo: candidateRepo,
+		writer:        writer,
+		trManager:     trManager,
 	}
 }
 
@@ -71,11 +88,15 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 			return Response{}, domain.ErrSkillNotFound
 		}
 	}
-
-	id, err := uc.resumeRepo.Create(ctx, resume)
-	if err != nil {
-		return Response{}, err
-	}
+	var id uuid.UUID
+	err = uc.trManager.Do(ctx, func(ctx context.Context) error {
+		id, err = uc.resumeRepo.Create(ctx, resume)
+		if err != nil {
+			return err
+		}
+		resume.ID = id
+		return uc.writer.WriteResumeUpserted(ctx, events.NewResumeUpserted(*resume))
+	})
 
 	return Response{ID: id, CandidateID: candidate.ID}, nil
 }

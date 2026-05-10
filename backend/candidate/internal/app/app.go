@@ -13,7 +13,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -54,6 +54,8 @@ func Build(conf *config.Config) (*App, error) {
 	skillRepo := repository.NewSkillRepo(pgPool)
 	outboxRepository := repository.NewOutbox(pgPool, trmpgx.DefaultCtxGetter)
 
+	trManager := manager.Must(trmpgx.NewFactory(pgPool))
+
 	schemaRegistryClient := schemaregistry.NewClient(conf.SchemaRegistry.BaseURL)
 	schemalLocalRegistry, err := schemaregistry.NewLocalRegistry(context.Background(), schemaRegistryClient)
 	if err != nil {
@@ -63,13 +65,13 @@ func Build(conf *config.Config) (*App, error) {
 
 	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepository, encoder)
 
-	createCandidateUC := create_candidate.New(candidateRepo)
-	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter)
+	createCandidateUC := create_candidate.New(candidateRepo, outboxWriter, trManager)
+	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter, trManager)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
 
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
-	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo)
-	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo)
+	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
+	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
 
 	getSkillUC := get_skill.New(skillRepo)
 
@@ -94,7 +96,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	kafkaLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
 	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, kafkaLogger)
-	trManager := manager.Must(trmpgx.NewFactory(pgPool))
+
 	relayLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
 	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
 

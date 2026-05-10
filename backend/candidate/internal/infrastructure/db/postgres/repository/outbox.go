@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/outbox"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 )
 
 type Outbox struct {

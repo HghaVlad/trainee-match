@@ -6,13 +6,13 @@ import (
 	"github.com/hamba/avro/v2"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
-
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 var (
-	ResumeUpdatedEvent     = "resume-updated-value"
+	ResumeUpsertedEvent    = "resume-upserted-value"
 	CandidateUpsertedEvent = "candidate-upserted-value"
+	ResumeDeletedEvent     = "resume-deleted-value"
+	CandidateDeletedEvent  = "candidate-deleted-value"
 )
 
 type Encoder struct {
@@ -23,12 +23,20 @@ func NewEncoder(registry *LocalRegistry) *Encoder {
 	return &Encoder{registry}
 }
 
-func (en *Encoder) ResumeUpdatedToBytes(ev domain.ResumeUpdatedEvent) ([]byte, int, error) {
-	return en.EventToBytes(ResumeUpdatedEvent, ev)
+func (en *Encoder) ResumeUpdatedToBytes(ev events.ResumeUpserted) ([]byte, int, error) {
+	return en.EventToBytes(ResumeUpsertedEvent, ev)
 }
 
 func (en *Encoder) CandidateUpsertedToBytes(ev events.CandidateUpserted) ([]byte, int, error) {
 	return en.EventToBytes(CandidateUpsertedEvent, ev)
+}
+
+func (en *Encoder) ResumeDeletedToBytes(ev events.ResumeDeleted) ([]byte, int, error) {
+	return en.EventToBytes(ResumeDeletedEvent, ev)
+}
+
+func (en *Encoder) CandidateDeletedToBytes(ev events.CandidateDeleted) ([]byte, int, error) {
+	return en.EventToBytes(CandidateDeletedEvent, ev)
 }
 
 func (en *Encoder) EventToBytes(subject string, event any) ([]byte, int, error) {

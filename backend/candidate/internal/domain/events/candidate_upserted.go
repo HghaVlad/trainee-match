@@ -17,13 +17,12 @@ type CandidateUpserted struct {
 	OccurredAt  time.Time `avro:"occurred_at"`
 }
 
-// NewCandidateUpsertedEvent создаёт событие из доменной сущности Candidate
-func NewCandidateUpserted(c domain.Candidate) *CandidateUpserted {
-	evt := &CandidateUpserted{
+func NewCandidateUpserted(c domain.Candidate, fullName, email string) CandidateUpserted {
+	evt := CandidateUpserted{
 		EventID:     uuid.New(),
 		CandidateID: c.ID,
-		FullName:    "full name",
-		Email:       "email",
+		FullName:    fullName,
+		Email:       email,
 		OccurredAt:  time.Now().UTC(),
 	}
 
