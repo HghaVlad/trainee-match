@@ -14,6 +14,7 @@ type Config struct {
 	SchemaRegistry SchemaRegistry `mapstructure:"SCHEMA_REGISTRY"`
 	Addr           string         `mapstructure:"ADDR"`
 	JWKUrl         string         `mapstructure:"JWKURL"`
+	GrpcAddr string `mapstructure:"GRPCADDR"`
 }
 
 func Load() (*Config, error) {
@@ -58,6 +59,9 @@ func bindAddrAndAuthEnv(v *viper.Viper) error {
 	if err := v.BindEnv("JWKUrl", "JWKURL"); err != nil {
 		return err
 	}
+	if err := v.BindEnv("GrpcAddr", "GRPCADDR"); err != nil{
+		return err
+	}
 	return nil
 }
 
@@ -80,6 +84,7 @@ func unmarshalConfig(v *viper.Viper) (*Config, error) {
 	))); err != nil {
 		return nil, err
 	}
+
 	return &cfg, nil
 }
 

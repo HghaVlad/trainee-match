@@ -15,12 +15,14 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/me"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
 type MemberHandler struct {
+	me     *me.Usecase
 	add    *add.Usecase
 	list   *list.Usecase
 	update *update.Usecase
@@ -28,17 +30,51 @@ type MemberHandler struct {
 }
 
 func NewMemberHandler(
+	me *me.Usecase,
 	add *add.Usecase,
 	list *list.Usecase,
 	update *update.Usecase,
 	del *remove.Usecase,
 ) *MemberHandler {
 	return &MemberHandler{
+		me:     me,
 		add:    add,
 		list:   list,
 		update: update,
 		delete: del,
 	}
+}
+
+// Me godoc
+// @Summary Me returns company member
+// @Description Me returns company member view, with role
+// @Tags member
+// @Accept json
+// @Produce json
+// @Param id path string true "Company ID"
+// @Success 200
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{id}/members/me [get]
+func (h *MemberHandler) Me(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	compID := middleware.UUIDFromContext(ctx, "company-id")
+
+	mem, err := h.me.Execute(ctx, compID, *iden)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to get company member me",
+				"user_id", iden.UserID)
+		}
+		return
+	}
+
+	resp := mappers.CompanyMemberToFullDto(*mem)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
 // Add godoc
