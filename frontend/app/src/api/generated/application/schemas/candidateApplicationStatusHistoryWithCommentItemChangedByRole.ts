@@ -13,11 +13,11 @@ Business rules reflected by this API:
  * OpenAPI spec version: 1.3.0
  */
 
-export type HrSortQueryParameter = typeof HrSortQueryParameter[keyof typeof HrSortQueryParameter];
+export type CandidateApplicationStatusHistoryWithCommentItemChangedByRole = typeof CandidateApplicationStatusHistoryWithCommentItemChangedByRole[keyof typeof CandidateApplicationStatusHistoryWithCommentItemChangedByRole];
 
 
-export const HrSortQueryParameter = {
-  createdAtDesc: 'createdAtDesc',
-  updatedAtDesc: 'updatedAtDesc',
-  candidateFullNameAsc: 'candidateFullNameAsc',
+export const CandidateApplicationStatusHistoryWithCommentItemChangedByRole = {
+  candidate: 'candidate',
+  hr: 'hr',
+  system: 'system',
 } as const;

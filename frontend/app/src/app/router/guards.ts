@@ -30,15 +30,12 @@ export async function requireCompanyMember({ request, params }: LoaderFunctionAr
   const companyId = params.companyId
   if (!companyId || companyId === 'me') return redirect('/company')
 
-  let { companies, user } = useSessionStore.getState()
-  if (!companies.some((c) => c.id === companyId)) {
-    try {
-      await refreshCompanies()
-    } catch {
-      void 0
-    }
-    ;({ companies, user } = useSessionStore.getState())
+  try {
+    await refreshCompanies()
+  } catch {
+    void 0
   }
+  const { companies, user } = useSessionStore.getState()
   const membership = companies.find((c) => c.id === companyId)
   if (!membership) {
     if (user && readActiveCompanyId(user.id) === companyId) return null

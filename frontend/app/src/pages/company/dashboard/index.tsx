@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import {
   useGetCompanyAnalyticsSummary,
-  useGetCompanyStatusFunnel,
   useGetCompanyDynamics,
 } from '@/api/generated/application/application-analytics/application-analytics'
 import { IntervalQueryParameter } from '@/api/generated/application/schemas'
@@ -19,7 +18,6 @@ import {
   AnalyticsDateRange,
   type AnalyticsRangeValue,
   SummaryCards,
-  StatusFunnelChart,
   DynamicsChart,
 } from '@/features/analytics'
 import { AppError } from '@/shared/api/http/client'
@@ -54,9 +52,6 @@ function Dashboard({ companyId }: { companyId: string }) {
   const summaryQ = useGetCompanyAnalyticsSummary(companyId, summaryParams, {
     query: { retry: false },
   })
-  const funnelQ = useGetCompanyStatusFunnel(companyId, summaryParams, {
-    query: { retry: false },
-  })
   const dynamicsQ = useGetCompanyDynamics(companyId, dynamicsParams, {
     query: { retry: false },
   })
@@ -75,7 +70,6 @@ function Dashboard({ companyId }: { companyId: string }) {
   }
 
   const summaryNotFound = isNotFound(summaryQ.error)
-  const funnelNotFound = isNotFound(funnelQ.error)
   const dynamicsNotFound = isNotFound(dynamicsQ.error)
 
   return (
@@ -83,7 +77,7 @@ function Dashboard({ companyId }: { companyId: string }) {
       <div className="space-y-1">
         <h1 className="text-2xl font-bold">Аналитика компании</h1>
         <p className="text-sm text-muted-foreground">
-          Сводка, воронка и динамика откликов.
+          Сводка и динамика откликов.
         </p>
       </div>
 
@@ -113,29 +107,6 @@ function Dashboard({ companyId }: { companyId: string }) {
         ) : (
           <SummaryCards summary={summaryQ.data.data} />
         )}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Воронка статусов</h2>
-        <Card>
-          <CardContent className="p-4">
-            {funnelQ.isLoading ? (
-              <LoadingState />
-            ) : funnelQ.isError && !funnelNotFound ? (
-              <ErrorState
-                onRetry={() => {
-                  funnelQ.refetch().catch(notify)
-                }}
-              />
-            ) : funnelNotFound || !funnelQ.data ? (
-              <p className="text-sm text-muted-foreground">
-                Откликов в выбранном периоде нет.
-              </p>
-            ) : (
-              <StatusFunnelChart funnel={funnelQ.data.data} />
-            )}
-          </CardContent>
-        </Card>
       </section>
 
       <section className="space-y-2">

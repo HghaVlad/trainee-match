@@ -12,7 +12,7 @@ Business rules reflected by this API:
 
  * OpenAPI spec version: 1.3.0
  */
-import type { ApplicationSnapshotResumeData } from './applicationSnapshotResumeData';
+import type { ResumeData } from './resumeData';
 
 export interface ApplicationSnapshot {
   fullName: string;
@@ -20,7 +20,6 @@ export interface ApplicationSnapshot {
   email: string | null;
   /** @nullable */
   telegram?: string | null;
-  /** Immutable snapshot of resume payload at apply time */
-  resumeData: ApplicationSnapshotResumeData;
+  resumeData: ResumeData;
   createdAt: string;
 }

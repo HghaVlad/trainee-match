@@ -94,14 +94,14 @@ export function VacancyActions({
           const first = query.queryKey[0]
           return typeof first === 'string' && first === listPrefix
         },
-        refetchType: 'active',
+        refetchType: 'all',
       }),
       qc.invalidateQueries({
         queryKey: getGetCompaniesCompanyIdVacanciesVacancyIdQueryKey(
           companyId,
           vacancyId,
         ),
-        refetchType: 'active',
+        refetchType: 'all',
       }),
     ])
   }
@@ -147,7 +147,7 @@ export function VacancyActions({
           const first = query.queryKey[0]
           return typeof first === 'string' && first === listPrefix
         },
-        refetchType: 'active',
+        refetchType: 'all',
       })
       toast({ title: 'Вакансия удалена' })
       setConfirmDelete(false)

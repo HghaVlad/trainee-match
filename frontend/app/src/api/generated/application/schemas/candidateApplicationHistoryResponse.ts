@@ -12,8 +12,8 @@ Business rules reflected by this API:
 
  * OpenAPI spec version: 1.3.0
  */
-import type { CandidateApplicationStatusHistoryItem } from './candidateApplicationStatusHistoryItem';
+import type { CandidateApplicationStatusHistoryWithCommentItem } from './candidateApplicationStatusHistoryWithCommentItem';
 
 export interface CandidateApplicationHistoryResponse {
-  data: CandidateApplicationStatusHistoryItem[];
+  data: CandidateApplicationStatusHistoryWithCommentItem[];
 }

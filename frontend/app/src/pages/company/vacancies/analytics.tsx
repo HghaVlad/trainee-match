@@ -3,7 +3,6 @@ import { Link, Navigate, useParams } from 'react-router'
 import { useGetCompaniesCompanyIdVacanciesVacancyId } from '@/api/generated/company/vacancy/vacancy'
 import {
   useGetVacancyAnalyticsSummary,
-  useGetVacancyStatusFunnel,
   useGetVacancyDynamics,
 } from '@/api/generated/application/application-analytics/application-analytics'
 import { IntervalQueryParameter } from '@/api/generated/application/schemas'
@@ -20,7 +19,6 @@ import {
   AnalyticsDateRange,
   type AnalyticsRangeValue,
   SummaryCards,
-  StatusFunnelChart,
   DynamicsChart,
 } from '@/features/analytics'
 import { AppError } from '@/shared/api/http/client'
@@ -69,7 +67,6 @@ function View({
   }
 
   const summaryQ = useGetVacancyAnalyticsSummary(vacancyId, summaryParams)
-  const funnelQ = useGetVacancyStatusFunnel(vacancyId, summaryParams)
   const dynamicsQ = useGetVacancyDynamics(vacancyId, dynamicsParams)
 
   function notify(e: unknown) {
@@ -93,7 +90,7 @@ function View({
         </Link>
         <h1 className="text-2xl font-bold">Аналитика: {title}</h1>
         <p className="text-sm text-muted-foreground">
-          Сводка, воронка и динамика откликов по вакансии.
+          Сводка и динамика откликов по вакансии.
         </p>
       </div>
 
@@ -119,25 +116,6 @@ function View({
         ) : (
           <SummaryCards summary={summaryQ.data.data} />
         )}
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Воронка статусов</h2>
-        <Card>
-          <CardContent className="p-4">
-            {funnelQ.isLoading ? (
-              <LoadingState />
-            ) : funnelQ.isError || !funnelQ.data ? (
-              <ErrorState
-                onRetry={() => {
-                  funnelQ.refetch().catch(notify)
-                }}
-              />
-            ) : (
-              <StatusFunnelChart funnel={funnelQ.data.data} />
-            )}
-          </CardContent>
-        </Card>
       </section>
 
       <section className="space-y-2">

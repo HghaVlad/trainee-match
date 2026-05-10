@@ -29,14 +29,15 @@ import type {
 
 import type {
   ApplicationDynamicsResponse,
+  BadRequestResponse,
   CompanyAnalyticsSummaryResponse,
+  ErrorResponse,
+  ForbiddenErrorResponse,
   GetCompanyAnalyticsSummaryParams,
   GetCompanyDynamicsParams,
-  GetCompanyStatusFunnelParams,
   GetVacancyAnalyticsSummaryParams,
   GetVacancyDynamicsParams,
-  GetVacancyStatusFunnelParams,
-  StatusFunnelResponse,
+  UnauthorizedErrorResponse,
   VacancyAnalyticsSummaryResponse
 } from '../schemas';
 
@@ -73,7 +74,7 @@ export const getGetCompanyAnalyticsSummaryQueryKey = (companyId: string,
     }
 
 
-export const getGetCompanyAnalyticsSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = void>(companyId: string,
+export const getGetCompanyAnalyticsSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(companyId: string,
     params?: GetCompanyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError, TData>>, }
 ) => {
 
@@ -93,10 +94,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetCompanyAnalyticsSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>>
-export type GetCompanyAnalyticsSummaryQueryError = void
+export type GetCompanyAnalyticsSummaryQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = void>(
+export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params: undefined |  GetCompanyAnalyticsSummaryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
@@ -107,7 +108,7 @@ export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = void>(
+export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
@@ -118,7 +119,7 @@ export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = void>(
+export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -127,7 +128,7 @@ export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
  * @summary Get company application summary
  */
 
-export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = void>(
+export function useGetCompanyAnalyticsSummary<TData = Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyAnalyticsSummary>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -173,7 +174,7 @@ export const getGetVacancyAnalyticsSummaryQueryKey = (vacancyId: string,
     }
 
 
-export const getGetVacancyAnalyticsSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = void>(vacancyId: string,
+export const getGetVacancyAnalyticsSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(vacancyId: string,
     params?: GetVacancyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError, TData>>, }
 ) => {
 
@@ -193,10 +194,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetVacancyAnalyticsSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>>
-export type GetVacancyAnalyticsSummaryQueryError = void
+export type GetVacancyAnalyticsSummaryQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = void>(
+export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params: undefined |  GetVacancyAnalyticsSummaryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
@@ -207,7 +208,7 @@ export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = void>(
+export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
@@ -218,7 +219,7 @@ export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = void>(
+export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -227,7 +228,7 @@ export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
  * @summary Get vacancy application summary
  */
 
-export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = void>(
+export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyAnalyticsSummaryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyAnalyticsSummary>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -246,206 +247,7 @@ export function useGetVacancyAnalyticsSummary<TData = Awaited<ReturnType<typeof 
 
 
 /**
- * @summary Get company funnel by statuses
- */
-export const getCompanyStatusFunnel = (
-    companyId: string,
-    params?: GetCompanyStatusFunnelParams,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<StatusFunnelResponse>(
-      {url: `/hr/companies/${companyId}/analytics/status-funnel`, method: 'GET',
-        params, signal
-    },
-      );
-    }
-
-
-
-
-export const getGetCompanyStatusFunnelQueryKey = (companyId: string,
-    params?: GetCompanyStatusFunnelParams,) => {
-    return [
-    `/hr/companies/${companyId}/analytics/status-funnel`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetCompanyStatusFunnelQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError = void>(companyId: string,
-    params?: GetCompanyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetCompanyStatusFunnelQueryKey(companyId,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompanyStatusFunnel>>> = ({ signal }) => getCompanyStatusFunnel(companyId,params, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(companyId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetCompanyStatusFunnelQueryResult = NonNullable<Awaited<ReturnType<typeof getCompanyStatusFunnel>>>
-export type GetCompanyStatusFunnelQueryError = void
-
-
-export function useGetCompanyStatusFunnel<TData = Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError = void>(
- companyId: string,
-    params: undefined |  GetCompanyStatusFunnelParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCompanyStatusFunnel>>,
-          TError,
-          Awaited<ReturnType<typeof getCompanyStatusFunnel>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyStatusFunnel<TData = Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError = void>(
- companyId: string,
-    params?: GetCompanyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCompanyStatusFunnel>>,
-          TError,
-          Awaited<ReturnType<typeof getCompanyStatusFunnel>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyStatusFunnel<TData = Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError = void>(
- companyId: string,
-    params?: GetCompanyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Get company funnel by statuses
- */
-
-export function useGetCompanyStatusFunnel<TData = Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError = void>(
- companyId: string,
-    params?: GetCompanyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyStatusFunnel>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetCompanyStatusFunnelQueryOptions(companyId,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-/**
- * @summary Get vacancy funnel by statuses
- */
-export const getVacancyStatusFunnel = (
-    vacancyId: string,
-    params?: GetVacancyStatusFunnelParams,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<StatusFunnelResponse>(
-      {url: `/hr/vacancies/${vacancyId}/analytics/status-funnel`, method: 'GET',
-        params, signal
-    },
-      );
-    }
-
-
-
-
-export const getGetVacancyStatusFunnelQueryKey = (vacancyId: string,
-    params?: GetVacancyStatusFunnelParams,) => {
-    return [
-    `/hr/vacancies/${vacancyId}/analytics/status-funnel`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetVacancyStatusFunnelQueryOptions = <TData = Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError = void>(vacancyId: string,
-    params?: GetVacancyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetVacancyStatusFunnelQueryKey(vacancyId,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVacancyStatusFunnel>>> = ({ signal }) => getVacancyStatusFunnel(vacancyId,params, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(vacancyId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetVacancyStatusFunnelQueryResult = NonNullable<Awaited<ReturnType<typeof getVacancyStatusFunnel>>>
-export type GetVacancyStatusFunnelQueryError = void
-
-
-export function useGetVacancyStatusFunnel<TData = Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError = void>(
- vacancyId: string,
-    params: undefined |  GetVacancyStatusFunnelParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getVacancyStatusFunnel>>,
-          TError,
-          Awaited<ReturnType<typeof getVacancyStatusFunnel>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyStatusFunnel<TData = Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError = void>(
- vacancyId: string,
-    params?: GetVacancyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getVacancyStatusFunnel>>,
-          TError,
-          Awaited<ReturnType<typeof getVacancyStatusFunnel>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyStatusFunnel<TData = Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError = void>(
- vacancyId: string,
-    params?: GetVacancyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Get vacancy funnel by statuses
- */
-
-export function useGetVacancyStatusFunnel<TData = Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError = void>(
- vacancyId: string,
-    params?: GetVacancyStatusFunnelParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyStatusFunnel>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetVacancyStatusFunnelQueryOptions(vacancyId,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-/**
+ * Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start (0:00 UTC), week start, month start), and empty buckets are included with zero counts
  * @summary Get company application dynamics
  */
 export const getCompanyDynamics = (
@@ -473,7 +275,7 @@ export const getGetCompanyDynamicsQueryKey = (companyId: string,
     }
 
 
-export const getGetCompanyDynamicsQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = void>(companyId: string,
+export const getGetCompanyDynamicsQueryOptions = <TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(companyId: string,
     params?: GetCompanyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyDynamics>>, TError, TData>>, }
 ) => {
 
@@ -493,10 +295,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetCompanyDynamicsQueryResult = NonNullable<Awaited<ReturnType<typeof getCompanyDynamics>>>
-export type GetCompanyDynamicsQueryError = void
+export type GetCompanyDynamicsQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = void>(
+export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params: undefined |  GetCompanyDynamicsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyDynamics>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
@@ -507,7 +309,7 @@ export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompa
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = void>(
+export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyDynamics>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
@@ -518,7 +320,7 @@ export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompa
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = void>(
+export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyDynamics>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -527,7 +329,7 @@ export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompa
  * @summary Get company application dynamics
  */
 
-export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = void>(
+export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompanyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  companyId: string,
     params?: GetCompanyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompanyDynamics>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -546,6 +348,7 @@ export function useGetCompanyDynamics<TData = Awaited<ReturnType<typeof getCompa
 
 
 /**
+ * Returns application status dynamics grouped into time buckets (day, week, month) for the selected company or vacancy. If createdFrom/createdTo are omitted, the endpoint uses sensible defaults based on the interval (e.g. last 30 days for day, last 3 months for week, last 12 months for month). Date boundaries are normalized to bucket starts (day start, week start, month start), and empty buckets are included with zero counts
  * @summary Get vacancy application dynamics
  */
 export const getVacancyDynamics = (
@@ -573,7 +376,7 @@ export const getGetVacancyDynamicsQueryKey = (vacancyId: string,
     }
 
 
-export const getGetVacancyDynamicsQueryOptions = <TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = void>(vacancyId: string,
+export const getGetVacancyDynamicsQueryOptions = <TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(vacancyId: string,
     params?: GetVacancyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyDynamics>>, TError, TData>>, }
 ) => {
 
@@ -593,10 +396,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetVacancyDynamicsQueryResult = NonNullable<Awaited<ReturnType<typeof getVacancyDynamics>>>
-export type GetVacancyDynamicsQueryError = void
+export type GetVacancyDynamicsQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = void>(
+export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params: undefined |  GetVacancyDynamicsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyDynamics>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
@@ -607,7 +410,7 @@ export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacan
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = void>(
+export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyDynamics>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
@@ -618,7 +421,7 @@ export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacan
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = void>(
+export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyDynamics>>, TError, TData>>, }
  , queryClient?: QueryClient
@@ -627,7 +430,7 @@ export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacan
  * @summary Get vacancy application dynamics
  */
 
-export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = void>(
+export function useGetVacancyDynamics<TData = Awaited<ReturnType<typeof getVacancyDynamics>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  vacancyId: string,
     params?: GetVacancyDynamicsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacancyDynamics>>, TError, TData>>, }
  , queryClient?: QueryClient

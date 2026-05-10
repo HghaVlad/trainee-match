@@ -38,7 +38,9 @@ import type {
   CandidateApplicationListResponse,
   CreateApplicationRequest,
   ErrorResponse,
+  ForbiddenErrorResponse,
   ListMyApplicationsParams,
+  UnauthorizedErrorResponse,
   WithdrawApplicationRequest
 } from '../schemas';
 
@@ -66,7 +68,7 @@ export const createApplication = (
 
 
 
-export const getCreateApplicationMutationOptions = <TError = BadRequestResponse | void | ErrorResponse,
+export const getCreateApplicationMutationOptions = <TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApplication>>, TError,{data: CreateApplicationRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof createApplication>>, TError,{data: CreateApplicationRequest}, TContext> => {
 
@@ -95,12 +97,12 @@ const {mutation: mutationOptions} = options ?
 
     export type CreateApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof createApplication>>>
     export type CreateApplicationMutationBody = CreateApplicationRequest
-    export type CreateApplicationMutationError = BadRequestResponse | void | ErrorResponse
+    export type CreateApplicationMutationError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
     /**
  * @summary Apply to vacancy
  */
-export const useCreateApplication = <TError = BadRequestResponse | void | ErrorResponse,
+export const useCreateApplication = <TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createApplication>>, TError,{data: CreateApplicationRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createApplication>>,
@@ -136,7 +138,7 @@ export const getListMyApplicationsQueryKey = (params?: ListMyApplicationsParams,
     }
 
 
-export const getListMyApplicationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyApplications>>, TError = unknown>(params?: ListMyApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>>, }
+export const getListMyApplicationsQueryOptions = <TData = Awaited<ReturnType<typeof listMyApplications>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse>(params?: ListMyApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -155,10 +157,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type ListMyApplicationsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyApplications>>>
-export type ListMyApplicationsQueryError = unknown
+export type ListMyApplicationsQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse
 
 
-export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = unknown>(
+export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse>(
  params: undefined |  ListMyApplicationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listMyApplications>>,
@@ -168,7 +170,7 @@ export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyAp
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = unknown>(
+export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse>(
  params?: ListMyApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listMyApplications>>,
@@ -178,7 +180,7 @@ export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyAp
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = unknown>(
+export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse>(
  params?: ListMyApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -186,7 +188,7 @@ export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyAp
  * @summary List my applications
  */
 
-export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = unknown>(
+export function useListMyApplications<TData = Awaited<ReturnType<typeof listMyApplications>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse>(
  params?: ListMyApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyApplications>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -228,7 +230,7 @@ export const getGetMyApplicationQueryKey = (applicationId: string,) => {
     }
 
 
-export const getGetMyApplicationQueryOptions = <TData = Awaited<ReturnType<typeof getMyApplication>>, TError = void>(applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>>, }
+export const getGetMyApplicationQueryOptions = <TData = Awaited<ReturnType<typeof getMyApplication>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -247,10 +249,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetMyApplicationQueryResult = NonNullable<Awaited<ReturnType<typeof getMyApplication>>>
-export type GetMyApplicationQueryError = void
+export type GetMyApplicationQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = void>(
+export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyApplication>>,
@@ -260,7 +262,7 @@ export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyAppli
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = void>(
+export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyApplication>>,
@@ -270,7 +272,7 @@ export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyAppli
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = void>(
+export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -278,7 +280,7 @@ export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyAppli
  * @summary Get my application details
  */
 
-export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = void>(
+export function useGetMyApplication<TData = Awaited<ReturnType<typeof getMyApplication>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplication>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -320,7 +322,7 @@ export const getGetMyApplicationHistoryQueryKey = (applicationId: string,) => {
     }
 
 
-export const getGetMyApplicationHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = void>(applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>>, }
+export const getGetMyApplicationHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
@@ -339,10 +341,10 @@ const {query: queryOptions} = options ?? {};
 }
 
 export type GetMyApplicationHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getMyApplicationHistory>>>
-export type GetMyApplicationHistoryQueryError = void
+export type GetMyApplicationHistoryQueryError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
 
-export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = void>(
+export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyApplicationHistory>>,
@@ -352,7 +354,7 @@ export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof get
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = void>(
+export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getMyApplicationHistory>>,
@@ -362,7 +364,7 @@ export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof get
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = void>(
+export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -370,7 +372,7 @@ export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof get
  * @summary Get my application status history
  */
 
-export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = void>(
+export function useGetMyApplicationHistory<TData = Awaited<ReturnType<typeof getMyApplicationHistory>>, TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse>(
  applicationId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyApplicationHistory>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -412,7 +414,7 @@ export const withdrawApplication = (
 
 
 
-export const getWithdrawApplicationMutationOptions = <TError = void | ErrorResponse,
+export const getWithdrawApplicationMutationOptions = <TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawApplication>>, TError,{applicationId: string;data?: WithdrawApplicationRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof withdrawApplication>>, TError,{applicationId: string;data?: WithdrawApplicationRequest}, TContext> => {
 
@@ -441,12 +443,12 @@ const {mutation: mutationOptions} = options ?
 
     export type WithdrawApplicationMutationResult = NonNullable<Awaited<ReturnType<typeof withdrawApplication>>>
     export type WithdrawApplicationMutationBody = WithdrawApplicationRequest | undefined
-    export type WithdrawApplicationMutationError = void | ErrorResponse
+    export type WithdrawApplicationMutationError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse
 
     /**
  * @summary Withdraw my application
  */
-export const useWithdrawApplication = <TError = void | ErrorResponse,
+export const useWithdrawApplication = <TError = BadRequestResponse | UnauthorizedErrorResponse | ForbiddenErrorResponse | ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawApplication>>, TError,{applicationId: string;data?: WithdrawApplicationRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof withdrawApplication>>,

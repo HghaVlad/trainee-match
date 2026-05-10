@@ -13,11 +13,9 @@ Business rules reflected by this API:
  * OpenAPI spec version: 1.3.0
  */
 
-export type HrSortQueryParameter = typeof HrSortQueryParameter[keyof typeof HrSortQueryParameter];
-
-
-export const HrSortQueryParameter = {
-  createdAtDesc: 'createdAtDesc',
-  updatedAtDesc: 'updatedAtDesc',
-  candidateFullNameAsc: 'candidateFullNameAsc',
-} as const;
+export interface WorkExperience {
+  position: string;
+  company: string;
+  period: string;
+  responsibilities: string;
+}

@@ -12,12 +12,12 @@ Business rules reflected by this API:
 
  * OpenAPI spec version: 1.3.0
  */
+import type { ApplicationStatus } from './applicationStatus';
+import type { CandidateApplicationStatusHistoryWithCommentItemChangedByRole } from './candidateApplicationStatusHistoryWithCommentItemChangedByRole';
 
-export type HrSortQueryParameter = typeof HrSortQueryParameter[keyof typeof HrSortQueryParameter];
-
-
-export const HrSortQueryParameter = {
-  createdAtDesc: 'createdAtDesc',
-  updatedAtDesc: 'updatedAtDesc',
-  candidateFullNameAsc: 'candidateFullNameAsc',
-} as const;
+export interface CandidateApplicationStatusHistoryWithCommentItem {
+  status: ApplicationStatus;
+  changedByRole: CandidateApplicationStatusHistoryWithCommentItemChangedByRole;
+  comment?: string;
+  createdAt: string;
+}

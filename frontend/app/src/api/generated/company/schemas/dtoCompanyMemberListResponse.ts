@@ -5,9 +5,9 @@
  * company microservice
  * OpenAPI spec version: 1.0
  */
-import type { DtoCompanyMemberListItem } from './dtoCompanyMemberListItem';
+import type { DtoCompanyMemberFullView } from './dtoCompanyMemberFullView';
 
 export interface DtoCompanyMemberListResponse {
   hasMore?: boolean;
-  members?: DtoCompanyMemberListItem[];
+  members?: DtoCompanyMemberFullView[];
 }

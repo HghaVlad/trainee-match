@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { makeUser, registerAndLogin } from './helpers'
+import { makeUser, registerAndLogin, registerViaApi } from './helpers'
 
 async function setupCandidateAndProfile(page: Page) {
   const u = makeUser('Candidate')
@@ -387,5 +387,57 @@ test.describe('wave 5 — HR vacancy invalidation', () => {
     await expect(page.getByText('Опубликовано').first()).toBeVisible({
       timeout: 15_000,
     })
+  })
+})
+
+test.describe('wave 5 — company members', () => {
+  test('#14: admin adds a recruiter by username', async ({ page }) => {
+    const admin = makeUser('Company')
+    await registerAndLogin(page, admin)
+    const companyId = await createCompany(page)
+
+    const target = makeUser('Company')
+    await registerViaApi(target)
+
+    const requests: string[] = []
+    page.on('request', (req) => {
+      const url = new URL(req.url())
+      if (url.pathname.includes('/companies/')) {
+        requests.push(`${req.method()} ${url.pathname}`)
+      }
+    })
+    page.on('response', (res) => {
+      const url = new URL(res.url())
+      if (url.pathname.includes('/companies/') && res.status() >= 400) {
+        requests.push(`FAIL ${res.status()} ${url.pathname}`)
+      }
+    })
+
+    await page.goto(`/company/${companyId}/members`)
+    await expect(page.getByText('Команда')).toBeVisible({
+      timeout: 10_000,
+    })
+    await page.waitForTimeout(500)
+    console.log('=== COMPANY REQUESTS ===', requests.join(' | '))
+
+    await page.getByRole('button', { name: 'Добавить' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+
+    const usernameInput = page.getByRole('dialog').getByLabel('Username')
+    await usernameInput.fill(target.username)
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          new URL(r.url()).pathname ===
+            `/api/v1/companies/${companyId}/members` &&
+          r.request().method() === 'POST',
+        { timeout: 15_000 },
+      ),
+      page.getByRole('dialog').getByRole('button', { name: 'Добавить' }).click(),
+    ])
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByText(target.username)).toBeVisible({ timeout: 10_000 })
   })
 })

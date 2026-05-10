@@ -1,8 +1,8 @@
 import { useSessionStore } from './sessionStore'
 import type { SessionUser } from './sessionStore'
 import { AppError } from '@/shared/api/http/client'
-import { fetchCompaniesMe } from '@/shared/api/companies/companiesMe'
 import { readActiveCompanyId, writeActiveCompanyId } from './types'
+import { refreshCompanies } from './refreshCompanies'
 import { postAuthMe } from '@/api/generated/auth/auth/auth'
 import type { DtoUserResponse } from '@/api/generated/auth/schemas'
 
@@ -30,12 +30,12 @@ async function fetchCurrentUser(): Promise<SessionUser | null> {
 }
 
 async function loadCompaniesForUser(user: SessionUser): Promise<void> {
-  const { setCompanies, setActiveCompany } = useSessionStore.getState()
+  const { setActiveCompany } = useSessionStore.getState()
   try {
-    const { data } = await fetchCompaniesMe({ limit: 100 })
-    setCompanies(data)
+    await refreshCompanies()
+    const { companies } = useSessionStore.getState()
     const stored = readActiveCompanyId(user.id)
-    if (data.length === 0) {
+    if (companies.length === 0) {
       if (stored) {
         setActiveCompany(stored)
       } else {
@@ -43,12 +43,13 @@ async function loadCompaniesForUser(user: SessionUser): Promise<void> {
       }
       return
     }
-    const restored = stored && data.some((c) => c.id === stored) ? stored : data[0]!.id
+    const restored =
+      stored && companies.some((c) => c.id === stored) ? stored : companies[0]!.id
     setActiveCompany(restored)
     writeActiveCompanyId(user.id, restored)
   } catch {
-    setCompanies([])
-    setActiveCompany(undefined)
+    useSessionStore.getState().setCompanies([])
+    useSessionStore.getState().setActiveCompany(undefined)
   }
 }
 

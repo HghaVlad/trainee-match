@@ -97,14 +97,14 @@ function EditView({
             companyId,
             vacancyId,
           ),
-          refetchType: 'active',
+          refetchType: 'all',
         }),
         qc.invalidateQueries({
           predicate: (query) => {
             const first = query.queryKey[0]
             return typeof first === 'string' && first === listPrefix
           },
-          refetchType: 'active',
+          refetchType: 'all',
         }),
       ])
       toast({ title: 'Вакансия сохранена' })

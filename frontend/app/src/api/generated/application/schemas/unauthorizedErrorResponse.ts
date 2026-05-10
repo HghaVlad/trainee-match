@@ -12,12 +12,9 @@ Business rules reflected by this API:
 
  * OpenAPI spec version: 1.3.0
  */
+import type { ErrorResponse } from './errorResponse';
 
-export type HrSortQueryParameter = typeof HrSortQueryParameter[keyof typeof HrSortQueryParameter];
-
-
-export const HrSortQueryParameter = {
-  createdAtDesc: 'createdAtDesc',
-  updatedAtDesc: 'updatedAtDesc',
-  candidateFullNameAsc: 'candidateFullNameAsc',
-} as const;
+/**
+ * Unauthorized
+ */
+export type UnauthorizedErrorResponse = ErrorResponse;
