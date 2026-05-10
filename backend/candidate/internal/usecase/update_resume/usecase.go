@@ -2,7 +2,6 @@ package update_resume
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/google/uuid"

@@ -73,7 +73,7 @@ func Build(conf *config.Config) (*App, error) {
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
 	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
-	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo)
+	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo, outboxWriter, trManager)
 
 	getSkillUC := get_skill.New(skillRepo)
 
