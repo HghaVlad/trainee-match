@@ -77,6 +77,21 @@ services:
       ADDR: 0.0.0.0:8081
       JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
 
+      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      KAFKA_CLIENT_ID: candidate-service
+      KAFKA_PRODUCER_ACKS: all
+      KAFKA_PRODUCER_LINGER: 10ms
+      KAFKA_CANDIDATE_TOPIC: candidate.events
+      KAFKA_RESUME_TOPIC: resume.events
+      KAFKA_MAX_ATTEMPTS: 5
+      OUTBOX_RELAY_MIN_SLEEP: 50ms
+      OUTBOX_RELAY_MAX_SLEEP: 5s
+      OUTBOX_RELAY_WORKER_COUNT: 3
+      OUTBOX_RELAY_BATCH_SIZE: 100
+      OUTBOX_MESSAGE_BASE_RETRY_DELAY: 5s
+      OUTBOX_RESET_STALE_TIME: 60s
+      SCHEMA_REGISTRY_BASE_URL: http://schema-registry:8081
+
     ports:
       - "8081:8081"
     depends_on:
@@ -240,9 +255,9 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-    depends_on:
-      kafka-init:
-        condition: service_completed_successfully
+#    depends_on:
+#      kafka-init:
+#        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
       interval: 5s
