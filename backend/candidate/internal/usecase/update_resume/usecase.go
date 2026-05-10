@@ -65,7 +65,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 	if resume.CandidateId != candidate.ID {
 		return domain.ErrForbidden
 	}
-	fmt.Println("Original resume", resume)
+
 	if req.Name != nil {
 		resume.Name = *req.Name
 	}
@@ -76,6 +76,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		}
 		resume.Status = status
 	}
+
 	if req.Data != nil {
 		if req.Data.SkillsList != nil {
 			ok, err := uc.skillRepo.AreSkillsExist(ctx, *req.Data.SkillsList)
@@ -154,7 +155,6 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		}
 	}
 
-	fmt.Println("Updated resume:", resume)
 	if err := resume.Validate(); err != nil {
 		return err
 	}

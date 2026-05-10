@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"github.com/spf13/viper"
 )
 
@@ -14,8 +15,8 @@ type DB struct {
 }
 
 func (db *DB) GetPostgresURL() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		db.User, db.Password, db.Host, db.Port, db.DbName)
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",
+		db.User, db.Password, net.JoinHostPort(db.Host, fmt.Sprint(db.Port)), db.DbName)
 }
 
 func bindEnvDB(v *viper.Viper) error {

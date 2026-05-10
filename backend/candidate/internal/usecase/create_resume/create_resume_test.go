@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume/mocks"
 
 	"github.com/google/uuid"
 )
@@ -83,7 +84,6 @@ func TestExecute(t *testing.T) {
 			req:  func() *Request { r := *validReq; r.Data.City = ""; r.Data.SkillsList = nil; return &r }(),
 			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
-
 			},
 			expectedID:    uuid.Nil,
 			expectedError: domain.ErrInvalidCityFormat,
@@ -93,7 +93,6 @@ func TestExecute(t *testing.T) {
 			req:  func() *Request { r := *validReq; r.Data.Citizenship = ""; r.Data.SkillsList = nil; return &r }(),
 			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
-
 			},
 			expectedID:    uuid.Nil,
 			expectedError: domain.ErrInvalidCitizenship,

@@ -28,6 +28,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
 )
@@ -72,11 +73,12 @@ func Build(conf *config.Config) (*App, error) {
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
 	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
+	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo)
 
 	getSkillUC := get_skill.New(skillRepo)
 
 	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
-	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC)
+	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 

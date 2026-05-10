@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
 )
 
 func Connect(ctx context.Context, conf *config.DB) (*pgxpool.Pool, error) {
