@@ -10,7 +10,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/services/outbox"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/common/outbox"
 )
 
 type Producer struct {

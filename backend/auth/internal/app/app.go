@@ -16,7 +16,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/keycloack"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/services/outbox"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/common/outbox"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"

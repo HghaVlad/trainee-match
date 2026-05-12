@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/services/outbox"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/common/outbox"
 )
 
 const (
