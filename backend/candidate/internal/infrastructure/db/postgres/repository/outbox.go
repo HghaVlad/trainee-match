@@ -58,7 +58,7 @@ func (r *Outbox) Create(ctx context.Context, msg outbox.Message) error {
 		msg.NextAttemptAt,
 	)
 	if err != nil {
-		return fmt.Errorf("create outbox: update seq: %w", err)
+		return fmt.Errorf("create outbox: %w", err)
 	}
 	return nil
 }
@@ -78,7 +78,7 @@ func (r *Outbox) ListPendingAndSetProcessing(
 		 WHERE status = 'pending'
 		   AND next_attempt_at <= now()
 		   AND abs(hashtext(aggregate_id::text)) % $2 = $3
-		 ORDER BY id
+		 ORDER BY aggregate_seq
 		 LIMIT $1
 		 FOR UPDATE SKIP LOCKED`,
 		limit, totalWorkers, workerNumber,
@@ -113,14 +113,19 @@ func (r *Outbox) ListPendingAndSetProcessing(
 
 	// Обновляем статус и время старта
 	now := time.Now().UTC()
-	for _, m := range msgs {
-		_, err = conn.Exec(ctx,
-			`UPDATE outbox SET status = 'processing', started_at = $1 WHERE id = $2`,
-			now, m.ID,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("mark processing: %w", err)
-		}
+	ids := make([]uuid.UUID, len(msgs))
+	for i, m := range msgs {
+		ids[i] = m.ID
+	}
+	_, err = conn.Exec(ctx,
+		`UPDATE outbox o
+		 SET status = 'processing', started_at = $1
+		 FROM UNNEST($2::uuid[]) AS t(id)
+		 WHERE o.id = t.id`,
+		now, ids,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("mark processing: %w", err)
 	}
 
 	// Возвращаем сообщения с обновлёнными полями

@@ -108,10 +108,7 @@ func (r *Relay) process(ctx context.Context, workerNumber int) int {
 		r.updateMessageWithResult(&messages[i], result)
 	}
 
-	err = r.trManager.Do(ctx, func(ctx context.Context) error {
-		err = r.repo.Save(ctx, messages)
-		return err
-	})
+	err = r.repo.Save(ctx, messages)
 	if err != nil {
 		r.logger.WarnContext(ctx, "Error saving messages", slog.String("reason", err.Error()))
 	}
@@ -136,7 +133,7 @@ func (r *Relay) updateMessageWithResult(message *Message, result ProduceResult) 
 	}
 
 	message.Status = StatusPending
-	delay := r.cfg.BaseRetryDelay * (1 << (message.AttemptCount)) // i. e. 5 10 20 40 80 160 ...
+	delay := r.cfg.BaseRetryDelay * (1 << (message.AttemptCount)) // i. e. for BaseRetryDelay=5s 5 10 20 40 80 160 ...
 	message.NextAttemptAt = time.Now().UTC().Add(delay)
 }
 

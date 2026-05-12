@@ -34,10 +34,11 @@ import (
 )
 
 type App struct {
-	server      *http.Server
-	Db          *pgxpool.Pool
-	Relay       *outbox.Relay
-	relayCancel context.CancelFunc
+	server        *http.Server
+	Db            *pgxpool.Pool
+	Relay         *outbox.Relay
+	relayCancel   context.CancelFunc
+	KafkaProducer *kafka.Producer
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -103,9 +104,10 @@ func Build(conf *config.Config) (*App, error) {
 	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
 
 	return &App{
-		server: httpServer,
-		Db:     pgPool,
-		Relay:  outboxRelay,
+		server:        httpServer,
+		Db:            pgPool,
+		Relay:         outboxRelay,
+		KafkaProducer: kafkaProducer,
 	}, nil
 }
 
@@ -127,6 +129,7 @@ func (app *App) Shutdown(ctx context.Context) {
 	if app.relayCancel != nil {
 		app.relayCancel()
 	}
+	app.KafkaProducer.Close()
 	err := app.server.Shutdown(ctx)
 	if err != nil {
 		slog.Error("shutdown error", "error", err)

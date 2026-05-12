@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 type Config struct {
@@ -14,7 +15,7 @@ type Config struct {
 	SchemaRegistry SchemaRegistry `mapstructure:"SCHEMA_REGISTRY"`
 	Addr           string         `mapstructure:"ADDR"`
 	JWKUrl         string         `mapstructure:"JWKURL"`
-	GrpcAddr string `mapstructure:"GRPCADDR"`
+	GrpcAddr       string         `mapstructure:"GRPCADDR"`
 }
 
 func Load() (*Config, error) {
@@ -59,7 +60,7 @@ func bindAddrAndAuthEnv(v *viper.Viper) error {
 	if err := v.BindEnv("JWKUrl", "JWKURL"); err != nil {
 		return err
 	}
-	if err := v.BindEnv("GrpcAddr", "GRPCADDR"); err != nil{
+	if err := v.BindEnv("GrpcAddr", "GRPCADDR"); err != nil {
 		return err
 	}
 	return nil
@@ -67,7 +68,7 @@ func bindAddrAndAuthEnv(v *viper.Viper) error {
 
 // readConfigFile attempts to read a local config.env file (if present)
 func readConfigFile(v *viper.Viper) {
-	v.SetConfigName("config")
+	v.SetConfigName(".env")
 	v.SetConfigType("env")
 	v.AddConfigPath(".")
 

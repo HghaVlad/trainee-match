@@ -11,7 +11,7 @@ import (
 type EventType string
 
 const (
-	EventTypeResumeDeleted     EventType = "resume_deleted"
+	EventTypeResumeDeleted     EventType = "ResumeDeleted"
 	EventTypeResumeUpserted    EventType = "ResumeUpserted"
 	EventTypeCandidateUpserted EventType = "CandidateUpserted"
 	EventTypeCandidateDeleted  EventType = "CandidateDeleted"
@@ -54,7 +54,7 @@ func (w *Writer) WriteResumeUpserted(ctx context.Context, ev events.ResumeUpsert
 
 	err = w.repo.Create(ctx, newMessage)
 	if err != nil {
-		return fmt.Errorf("write vacancy published outbox: %w ", err)
+		return fmt.Errorf("write resume upserted outbox: %w ", err)
 	}
 	return nil
 }

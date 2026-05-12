@@ -16,6 +16,6 @@ func NewResumeDeleted(resumeId uuid.UUID) ResumeDeleted {
 	return ResumeDeleted{
 		EventID:    uuid.New(),
 		ResumeID:   resumeId,
-		OccurredAt: time.Now(),
+		OccurredAt: time.Now().UTC(),
 	}
 }

@@ -60,7 +60,7 @@ func (en *Encoder) EventToBytes(subject string, event any) ([]byte, int, error) 
 	writeConfluentWireSchemaID(bytes, schemaID)
 	copy(bytes[magicByteAndUint32:], encodedEvent)
 
-	return encodedEvent, schemaID, nil
+	return bytes, schemaID, nil
 }
 
 // writes [0][schemaID] - payload to be appended
