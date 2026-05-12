@@ -12,10 +12,11 @@ import (
 // Relay is a group of workers that take messages from outbox repo
 // and call broker producer, manage the results.
 type Relay struct {
-	producer Producer
-	repo     RelayRepo
-	cfg      config.Outbox
-	logger   *slog.Logger
+	producer  Producer
+	repo      RelayRepo
+	cfg       config.Outbox
+	logger    *slog.Logger
+	trManager TrManager
 }
 
 type RelayRepo interface {
@@ -23,8 +24,18 @@ type RelayRepo interface {
 	Save(ctx context.Context, msgs []Message) error
 }
 
-func NewRelay(producer Producer, repo RelayRepo, cfg config.Outbox, logger *slog.Logger) *Relay {
-	return &Relay{producer: producer, repo: repo, cfg: cfg, logger: logger}
+type TrManager interface {
+	Do(context.Context, func(ctx context.Context) error) error
+}
+
+func NewRelay(
+	producer Producer,
+	repo RelayRepo,
+	cfg config.Outbox,
+	logger *slog.Logger,
+	trManager TrManager,
+) *Relay {
+	return &Relay{producer: producer, repo: repo, cfg: cfg, logger: logger, trManager: trManager}
 }
 
 // Run launches workers, is a blocking operation, stopped by ctx.Done.
@@ -32,11 +43,9 @@ func (re *Relay) Run(ctx context.Context) {
 	wg := sync.WaitGroup{}
 
 	for range re.cfg.RelayWorkerCount {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			re.runWorker(ctx)
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -45,24 +54,29 @@ func (re *Relay) Run(ctx context.Context) {
 func (re *Relay) Process(ctx context.Context) int {
 	processed := 0
 
-	msgs, err := re.repo.ListPending(ctx, re.cfg.BatchSize)
+	err := re.trManager.Do(ctx, func(ctx context.Context) error {
+		msgs, err := re.repo.ListPending(ctx, re.cfg.BatchSize)
+		if err != nil {
+			re.logger.WarnContext(ctx, "outbox list pending fail", "err", err)
+			return nil
+		}
+
+		if len(msgs) == 0 {
+			return nil
+		}
+
+		results := re.producer.ProduceOutbox(ctx, msgs)
+		re.updateMsgsFromResults(msgs, results)
+
+		if err := re.repo.Save(ctx, msgs); err != nil {
+			re.logger.WarnContext(ctx, "relay outbox messages save fail", "cnt", len(msgs), "err", err)
+		}
+		processed = len(msgs)
+		return nil
+	})
 	if err != nil {
-		re.logger.WarnContext(ctx, "outbox list pending fail", "err", err)
-		return processed
+		re.logger.WarnContext(ctx, "relay process fail", "err", err)
 	}
-
-	if len(msgs) == 0 {
-		return processed
-	}
-
-	results := re.producer.ProduceOutbox(ctx, msgs)
-	re.updateMsgsFromResults(msgs, results)
-
-	if err := re.repo.Save(ctx, msgs); err != nil {
-		re.logger.WarnContext(ctx, "relay outbox messages save fail", "cnt", len(msgs), "err", err)
-	}
-
-	processed = len(msgs)
 	return processed
 }
 

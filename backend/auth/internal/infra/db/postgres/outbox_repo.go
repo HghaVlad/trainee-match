@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -20,11 +21,12 @@ const (
 )
 
 type OutboxRepo struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	getter *trmpgx.CtxGetter
 }
 
-func NewOutboxRepo(pool *pgxpool.Pool) *OutboxRepo {
-	return &OutboxRepo{pool: pool}
+func NewOutboxRepo(pool *pgxpool.Pool, getter *trmpgx.CtxGetter) *OutboxRepo {
+	return &OutboxRepo{pool: pool, getter: getter}
 }
 
 func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
@@ -33,7 +35,9 @@ func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 		return fmt.Errorf("marshal headers: %w", err)
 	}
 
-	_, err = r.pool.Exec(ctx, `
+	conn := r.getter.DefaultTrOrDB(ctx, r.pool)
+
+	_, err = conn.Exec(ctx, `
 		INSERT INTO outbox_messages (
 			id,
 			aggregate_id,
@@ -76,7 +80,10 @@ func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 }
 
 func (r *OutboxRepo) ListPending(ctx context.Context, batchSize int) ([]outbox.Message, error) {
-	rows, err := r.pool.Query(ctx, `
+
+	conn := r.getter.DefaultTrOrDB(ctx, r.pool)
+
+	rows, err := conn.Query(ctx, `
 		WITH picked AS (
 			SELECT id
 			FROM outbox_messages
@@ -116,6 +123,8 @@ func (r *OutboxRepo) ListPending(ctx context.Context, batchSize int) ([]outbox.M
 }
 
 func (r *OutboxRepo) Save(ctx context.Context, msgs []outbox.Message) error {
+	conn := r.getter.DefaultTrOrDB(ctx, r.pool)
+
 	batch := &pgx.Batch{}
 
 	for i := range msgs {
@@ -139,7 +148,7 @@ func (r *OutboxRepo) Save(ctx context.Context, msgs []outbox.Message) error {
 		)
 	}
 
-	br := r.pool.SendBatch(ctx, batch)
+	br := conn.SendBatch(ctx, batch)
 	defer br.Close()
 
 	for range msgs {

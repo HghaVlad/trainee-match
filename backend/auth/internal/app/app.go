@@ -4,6 +4,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/config"
 	deliveryhttp "github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http"
@@ -18,7 +22,7 @@ import (
 
 type App struct {
 	Config      *config.Config
-	httpRouter  http.Handler
+	httpServer  *http.Server
 	outboxRelay *outbox.Relay
 }
 
@@ -50,14 +54,15 @@ func Build(conf *config.Config) *App {
 	}
 
 	pgPool, err := postgres.NewPool(context.Background(), conf.Postgres)
+	trManager := manager.Must(trmpgx.NewFactory(pgPool))
 	if err != nil {
 		panic(err)
 	}
 
 	kProducer := kafka.NewProducer(kClient)
-	outboxRepo := postgres.NewOutboxRepo(pgPool)
+	outboxRepo := postgres.NewOutboxRepo(pgPool, trmpgx.DefaultCtxGetter)
 	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepo, schemaEncoder)
-	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, conf.Outbox, slog.Default())
+	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, conf.Outbox, slog.Default(), trManager)
 
 	authService := services.NewAuth(keycloakClient, outboxWriter)
 
@@ -68,9 +73,16 @@ func Build(conf *config.Config) *App {
 			conf.KeyCloak.RefreshTokenExpires,
 		),
 	}
-	httpRouter := deliveryhttp.NewRouter(&deps)
+	handler := deliveryhttp.NewRouter(&deps)
 
-	return &App{Config: conf, httpRouter: httpRouter, outboxRelay: outboxRelay}
+	server := &http.Server{
+		Addr:         conf.Addr,
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	return &App{Config: conf, httpServer: server, outboxRelay: outboxRelay}
 }
 
 func (app *App) Run() {
@@ -81,7 +93,7 @@ func (app *App) Run() {
 		go app.outboxRelay.Run(ctx)
 	}
 
-	err := http.ListenAndServe(app.Config.Addr, app.httpRouter)
+	err := app.httpServer.ListenAndServe()
 	if err != nil {
 		panic(err)
 	}

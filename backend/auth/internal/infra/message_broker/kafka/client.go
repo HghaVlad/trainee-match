@@ -9,7 +9,6 @@ import (
 )
 
 func NewClient(config config.Kafka) (*kgo.Client, error) {
-
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(config.Brokers...),
 		kgo.ClientID(config.ClientID),

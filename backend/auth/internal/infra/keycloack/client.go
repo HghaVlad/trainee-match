@@ -11,7 +11,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 )
 
-var ErrorInvalidToken = errors.New("invalid access token")
+var ErrInvalidToken = errors.New("invalid access token")
+
+const CandidateRoleName = "Candidate"
+const CompanyRoleName = "Company"
 
 type Client struct {
 	client *gocloak.GoCloak
@@ -24,8 +27,8 @@ type Client struct {
 	adminPass    string
 }
 
-func NewClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
-	client := gocloak.NewClient(clientUrl)
+func NewClient(clientURL, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
+	client := gocloak.NewClient(clientURL)
 	keycloakClient := &Client{
 		client:       client,
 		realm:        realm,
@@ -49,7 +52,6 @@ func (kc *Client) loginAdmin(ctx context.Context) error {
 	}
 	kc.token = newToken
 	return nil
-
 }
 
 func (kc *Client) ensureAdminTokenValid(ctx context.Context) error {
@@ -87,42 +89,42 @@ func (kc *Client) CreateUser(ctx context.Context, user domain.User, password str
 		Enabled:   gocloak.BoolP(true),
 	}
 
-	userId, err := kc.client.CreateUser(ctx, kc.token.AccessToken, kc.realm, newUser)
+	userID, err := kc.client.CreateUser(ctx, kc.token.AccessToken, kc.realm, newUser)
 	if err != nil {
 		return "", err
 	}
 
-	if err = kc.client.SetPassword(ctx, kc.token.AccessToken, userId, kc.realm, password, false); err != nil {
-		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userId)
+	if err = kc.client.SetPassword(ctx, kc.token.AccessToken, userID, kc.realm, password, false); err != nil {
+		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userID)
 		return "", err
 	}
 
-	if err = kc.addRole(ctx, userId, user.Role); err != nil {
-		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userId)
+	if err = kc.addRole(ctx, userID, user.Role); err != nil {
+		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userID)
 		return "", err
 	}
 
-	return userId, err
+	return userID, err
 }
 
-func (kc *Client) addRole(ctx context.Context, userId, roleName string) error {
+func (kc *Client) addRole(ctx context.Context, userID, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
-	if roleName == "Candidate" {
+	if roleName == CandidateRoleName {
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
-			Name: gocloak.StringP("Candidate"),
+			Name: gocloak.StringP(CandidateRoleName),
 		}
-	} else if roleName == "Company" {
+	} else if roleName == CompanyRoleName {
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
-			Name: gocloak.StringP("Company"),
+			Name: gocloak.StringP(CompanyRoleName),
 		}
 	} else {
 		return fmt.Errorf("the roleName is not valid: %s", roleName)
 	}
 
-	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userId, roles)
+	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
 
 }
 
@@ -165,10 +167,10 @@ func (kc *Client) validateToken(ctx context.Context, token string) error {
 
 	istResult, err := kc.client.RetrospectToken(ctx, token, kc.clientID, kc.clientSecret, kc.realm)
 	if err != nil {
-		return ErrorInvalidToken
+		return ErrInvalidToken
 	}
 	if !(*istResult.Active) {
-		return ErrorInvalidToken
+		return ErrInvalidToken
 	}
 
 	return nil
@@ -179,18 +181,18 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 		return nil, err
 	}
 
-	user_info, err := kc.client.GetUserInfo(ctx, token, kc.realm)
+	userInfo, err := kc.client.GetUserInfo(ctx, token, kc.realm)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := kc.client.GetUserByID(ctx, kc.token.AccessToken, kc.realm, *user_info.Sub)
+	user, err := kc.client.GetUserByID(ctx, kc.token.AccessToken, kc.realm, *userInfo.Sub)
 	if err != nil {
 		return nil, err
 	}
 
 	return &domain.User{
-		Id:        *user_info.Sub,
+		Id:        *userInfo.Sub,
 		FirstName: *user.FirstName,
 		LastName:  *user.LastName,
 		Email:     *user.Email,
