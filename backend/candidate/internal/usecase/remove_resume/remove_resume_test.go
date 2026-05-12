@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume/mocks"
 )
 
 var (
@@ -26,13 +26,13 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           Request
-		mockSetup     func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo)
+		mockSetup     func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo)
 		expectedError error
 	}{
 		{
 			name: "success",
 			req:  Request{ResumeId: resumeID, UserId: userID},
-			mockSetup: func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo) {
 				candidateRepo.On("GetByUserID", ctx, userID).
 					Return(domain.Candidate{ID: candidateID, UserId: userID}, nil).
 					Once()
@@ -45,7 +45,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "candidate not found",
 			req:  Request{ResumeId: resumeID, UserId: userID},
-			mockSetup: func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo) {
 				candidateRepo.On("GetByUserID", ctx, userID).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Once()
@@ -55,7 +55,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "candidate repo error",
 			req:  Request{ResumeId: resumeID, UserId: userID},
-			mockSetup: func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo) {
 				candidateRepo.On("GetByUserID", ctx, userID).
 					Return(domain.Candidate{}, ErrCandidateDb).
 					Once()
@@ -65,7 +65,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "resume not found",
 			req:  Request{ResumeId: resumeID, UserId: userID},
-			mockSetup: func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo) {
 				candidateRepo.On("GetByUserID", ctx, userID).
 					Return(domain.Candidate{ID: candidateID, UserId: userID}, nil).
 					Once()
@@ -78,7 +78,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "resume repo error",
 			req:  Request{ResumeId: resumeID, UserId: userID},
-			mockSetup: func(candidateRepo *mocks.CandidateRepo, resumeRepo *mocks.ResumeRepo) {
+			mockSetup: func(candidateRepo *MockCandidateRepo, resumeRepo *MockResumeRepo) {
 				candidateRepo.On("GetByUserID", ctx, userID).
 					Return(domain.Candidate{ID: candidateID, UserId: userID}, nil).
 					Once()
@@ -92,13 +92,23 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			candidateRepo := &mocks.CandidateRepo{}
-			resumeRepo := &mocks.ResumeRepo{}
+			candidateRepo := &MockCandidateRepo{}
+			resumeRepo := &MockResumeRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(candidateRepo, resumeRepo)
 			}
 
-			uc := New(resumeRepo, candidateRepo)
+			writer := &MockEventWriter{}
+			writer.On("WriteResumeDeleted", context.Background(), mock.AnythingOfType("events.ResumeDeleted")).
+				Return(nil)
+
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := New(resumeRepo, candidateRepo, writer, trManager)
 			err := uc.RemoveResume(ctx, tt.req)
 
 			if tt.expectedError == nil {

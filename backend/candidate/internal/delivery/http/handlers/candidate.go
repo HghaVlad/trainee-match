@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -98,6 +99,8 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	candidateID, err := c.create.Execute(r.Context(), &create_candidate.Request{
 		UserID:   user.Id,
+		FullName: fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+		Email:    user.Email,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
@@ -159,6 +162,8 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	// Call update usecase — let it resolve the candidate owned by the user if ID is not provided
 	updatedCandidate, err := c.update.Execute(r.Context(), user.Id, &update_candidate.Request{
 		UserID:   &user.Id,
+		FullName: fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+		Email:    user.Email,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,

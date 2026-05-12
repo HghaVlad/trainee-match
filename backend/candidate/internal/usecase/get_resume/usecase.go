@@ -8,13 +8,11 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
 	GetByCandidateId(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error)
 }
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
