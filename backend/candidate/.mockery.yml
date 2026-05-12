@@ -1,0 +1,72 @@
+template: testify
+packages:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+      EventWriter:
+      TrManager:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+      SkillRepo:
+      CandidateRepo:
+      EventWriter:
+      TrManager:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+      CandidateRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      SkillRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+      CandidateRepo:
+      EventWriter:
+      TrManager:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+      EventWriter:
+      TrManager:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+      SkillRepo:
+      CandidateRepo:
+      EventWriter:
+      TrManager:
