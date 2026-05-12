@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }

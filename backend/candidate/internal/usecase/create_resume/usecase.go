@@ -3,7 +3,6 @@ package create_resume
 import (
 	"context"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
@@ -11,17 +10,14 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	Create(ctx context.Context, resume *domain.Resume) (uuid.UUID, error)
 }
 
-//go:generate mockery --name=SkillRepo --output=mocks --outpkg=mocks
 type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
@@ -29,12 +25,17 @@ type CandidateRepo interface {
 type EventWriter interface {
 	WriteResumeUpserted(ctx context.Context, ev events.ResumeUpserted) error
 }
+
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
 type UseCase struct {
 	resumeRepo    ResumeRepo
 	skillRepo     SkillRepo
 	candidateRepo CandidateRepo
 	writer        EventWriter
-	trManager     *manager.Manager
+	trManager     TrManager
 }
 
 func New(
@@ -42,7 +43,7 @@ func New(
 	skillRepo SkillRepo,
 	candidateRepo CandidateRepo,
 	writer EventWriter,
-	trManager *manager.Manager,
+	trManager TrManager,
 ) *UseCase {
 	return &UseCase{
 		resumeRepo:    resumeRepo,
@@ -97,6 +98,9 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 		resume.ID = id
 		return uc.writer.WriteResumeUpserted(ctx, events.NewResumeUpserted(*resume))
 	})
+	if err != nil {
+		return Response{}, err
+	}
 
 	return Response{ID: id, CandidateID: candidate.ID}, nil
 }

@@ -3,8 +3,6 @@ package update_candidate
 import (
 	"context"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
@@ -12,7 +10,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error)
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
@@ -22,13 +19,17 @@ type EventWriter interface {
 	WriteCandidateUpserted(ctx context.Context, ev events.CandidateUpserted) error
 }
 
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
 type UseCase struct {
 	repo      CandidateRepo
 	writer    EventWriter
-	trManager *manager.Manager
+	trManager TrManager
 }
 
-func New(repo CandidateRepo, writer EventWriter, trManager *manager.Manager) *UseCase {
+func New(repo CandidateRepo, writer EventWriter, trManager TrManager) *UseCase {
 	return &UseCase{repo: repo, writer: writer, trManager: trManager}
 }
 

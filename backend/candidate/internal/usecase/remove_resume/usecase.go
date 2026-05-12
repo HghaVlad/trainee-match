@@ -3,7 +3,6 @@ package remove_resume
 import (
 	"context"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
@@ -11,12 +10,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	Remove(ctx context.Context, resumeId uuid.UUID, candidateId uuid.UUID) error
 }
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
@@ -25,14 +22,18 @@ type EventWriter interface {
 	WriteResumeDeleted(ctx context.Context, ev events.ResumeDeleted) error
 }
 
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
 type Usecase struct {
 	resumeRepo    ResumeRepo
 	candidateRepo CandidateRepo
 	writer        EventWriter
-	trManager     *manager.Manager
+	trManager     TrManager
 }
 
-func New(resumeRepo ResumeRepo, candidateRepo CandidateRepo, writer EventWriter, trManager *manager.Manager) *Usecase {
+func New(resumeRepo ResumeRepo, candidateRepo CandidateRepo, writer EventWriter, trManager TrManager) *Usecase {
 	return &Usecase{resumeRepo: resumeRepo, candidateRepo: candidateRepo, writer: writer, trManager: trManager}
 }
 
