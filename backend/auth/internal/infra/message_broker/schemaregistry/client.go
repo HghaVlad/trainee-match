@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	contentType    = "application/vnd.schemaregistry.v1+json"
-	defaultTimeout = 10 * time.Second
+	ContentType    = "application/vnd.schemaregistry.v1+json"
+	DefaultTimeout = 10 * time.Second
 )
 
 type schemaRequest struct {
@@ -27,16 +27,16 @@ type schemaVersionResponse struct {
 }
 
 type RealRegistryClient struct {
-	baseUrl    string
+	baseURL    string
 	httpClient *http.Client
 }
 
-func NewClient(baseUrl string) *RealRegistryClient {
-	return &RealRegistryClient{baseUrl: baseUrl, httpClient: &http.Client{Timeout: defaultTimeout}}
+func NewClient(baseURL string) *RealRegistryClient {
+	return &RealRegistryClient{baseURL: baseURL, httpClient: &http.Client{Timeout: DefaultTimeout}}
 }
 
 func (client *RealRegistryClient) RegisterSchema(ctx context.Context, subject, schema string) (int, error) {
-	url := fmt.Sprintf("%s/subjects/%s/versions", client.baseUrl, subject)
+	url := fmt.Sprintf("%s/subjects/%s/versions", client.baseURL, subject)
 
 	request := schemaRequest{
 		Schema: schema,
@@ -50,7 +50,7 @@ func (client *RealRegistryClient) RegisterSchema(ctx context.Context, subject, s
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Content-Type", ContentType)
 
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
@@ -58,14 +58,14 @@ func (client *RealRegistryClient) RegisterSchema(ctx context.Context, subject, s
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return 0, errors.New("Schema registration failed: " + resp.Status)
+		return 0, errors.New("schema registration failed: " + resp.Status)
 	}
 	var response schemaVersionResponse
 	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return 0, err
 	}
 	if response.ID == 0 {
-		return 0, errors.New("Schema registration failed")
+		return 0, errors.New("schema registration failed")
 	}
 	return response.ID, nil
 }

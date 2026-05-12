@@ -18,5 +18,4 @@ func main() {
 	application := app.Build(conf)
 
 	application.Run()
-
 }

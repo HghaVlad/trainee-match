@@ -1,15 +1,15 @@
 package config
 
 import (
-	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	KeyCloak KeyCloack `mapstructure:"KC"`
-	Addr     string    `mapstructure:"ADDR"`
+	KeyCloak       KeyCloak       `mapstructure:"KC"`
+	Addr           string         `mapstructure:"ADDR"`
 	Kafka          Kafka          `mapstructure:"KAFKA"`
 	SchemaRegistry SchemaRegistry `mapstructure:"SCHEMA_REGISTRY"`
 	Outbox         Outbox         `mapstructure:"OUTBOX"`
@@ -62,7 +62,7 @@ func Load() (*Config, error) {
 	v.AddConfigPath(".")
 
 	if err := v.ReadInConfig(); err == nil {
-		fmt.Printf("Found file %s. Using config from file\n", v.ConfigFileUsed())
+		slog.Debug("found file %s. Using config from file\n", v.ConfigFileUsed())
 	}
 
 	var cfg Config

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -16,7 +17,7 @@ func BuildDBURL(cfg config.Postgres) string {
 	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s",
 		cfg.User,
 		cfg.Password,
-		net.JoinHostPort(cfg.Host, fmt.Sprint(cfg.Port)),
+		net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
 		cfg.DBName,
 		cfg.SSLMode,
 	)

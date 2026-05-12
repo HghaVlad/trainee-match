@@ -17,7 +17,7 @@ type AuthRepo interface {
 	Logout(ctx context.Context, token string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
 	GetUserInfo(ctx context.Context, token string) (*domain.User, error)
-	GetUserRole(ctx context.Context, token string, userId string) (string, error)
+	GetUserRole(ctx context.Context, token string, userID string) (string, error)
 }
 
 type OutboxWriter interface {

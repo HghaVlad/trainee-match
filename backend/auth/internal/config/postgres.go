@@ -8,4 +8,3 @@ type Postgres struct {
 	DBName   string `mapstructure:"DB_NAME"`
 	SSLMode  string `mapstructure:"SSL_MODE"`
 }
-

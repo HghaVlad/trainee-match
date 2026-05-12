@@ -110,22 +110,22 @@ func (kc *Client) CreateUser(ctx context.Context, user domain.User, password str
 func (kc *Client) addRole(ctx context.Context, userID, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
-	if roleName == CandidateRoleName {
+	switch {
+	case roleName == CandidateRoleName:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
 			Name: gocloak.StringP(CandidateRoleName),
 		}
-	} else if roleName == CompanyRoleName {
+	case roleName == CompanyRoleName:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
 			Name: gocloak.StringP(CompanyRoleName),
 		}
-	} else {
+	default:
 		return fmt.Errorf("the roleName is not valid: %s", roleName)
 	}
 
 	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
-
 }
 
 func (kc *Client) Login(ctx context.Context, username, password string) (*gocloak.JWT, error) {
@@ -200,22 +200,21 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 	}, nil
 }
 
-func (kc *Client) GetUserRole(ctx context.Context, token string, userId string) (string, error) {
+func (kc *Client) GetUserRole(ctx context.Context, token string, userID string) (string, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return "", err
 	}
 
-	roles, err := kc.client.GetCompositeRealmRolesByUserID(ctx, kc.token.AccessToken, kc.realm, userId)
+	roles, err := kc.client.GetCompositeRealmRolesByUserID(ctx, kc.token.AccessToken, kc.realm, userID)
 	if err != nil {
 		return "", err
 	}
 	for _, role := range roles {
-		if *role.Name == "Candidate" {
-			return "Candidate", nil
-		} else if *role.Name == "Company" {
-			return "Company", nil
+		switch *role.Name {
+		case CandidateRoleName, CompanyRoleName:
+			return *role.Name, nil
 		}
 	}
 
-	return "", fmt.Errorf("user role not found")
+	return "", errors.New("user role not found")
 }

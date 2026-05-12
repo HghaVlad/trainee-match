@@ -1,6 +1,6 @@
 package config
 
-type KeyCloack struct {
+type KeyCloak struct {
 	Realm         string `mapstructure:"realm"`
 	ClientID      string `mapstructure:"client_id"`
 	ClientSecret  string `mapstructure:"client_secret"`
