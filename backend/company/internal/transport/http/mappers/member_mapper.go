@@ -1,6 +1,7 @@
 package mappers
 
 import (
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -34,10 +35,10 @@ func CompanyUpdateMemberReqToUC(
 }
 
 func CompanyMemberListRespToDto(resp list.Response) dto.CompanyMemberListResponse {
-	members := make([]dto.CompanyMemberListItem, len(resp.Members))
+	members := make([]dto.CompanyMemberFullView, len(resp.Members))
 
 	for i, m := range resp.Members {
-		members[i] = dto.CompanyMemberListItem{
+		members[i] = dto.CompanyMemberFullView{
 			UserID:    m.UserID,
 			CompanyID: m.CompanyID,
 			Username:  m.Username,
@@ -49,5 +50,15 @@ func CompanyMemberListRespToDto(resp list.Response) dto.CompanyMemberListRespons
 	return dto.CompanyMemberListResponse{
 		Members: members,
 		HasMore: resp.HasMore,
+	}
+}
+
+func CompanyMemberToFullDto(view views.MemberFullView) dto.CompanyMemberFullView {
+	return dto.CompanyMemberFullView{
+		UserID:    view.Member.UserID,
+		CompanyID: view.Member.CompanyID,
+		Username:  view.Username,
+		Email:     view.Email,
+		Role:      view.Member.Role,
 	}
 }

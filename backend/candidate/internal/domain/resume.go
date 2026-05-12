@@ -31,38 +31,38 @@ type Resume struct {
 }
 
 type Education struct {
-	Level          string `json:"level"`
-	University     string `json:"university"`
-	Faculty        string `json:"faculty"`
-	Specialization string `json:"specialization"`
-	StartYear      int    `json:"start_year"`
-	EndYear        int    `json:"end_year"`
-	Format         string `json:"format"`
+	Level          string `avro:"level"`
+	University     string `avro:"university"`
+	Faculty        string `avro:"faculty"`
+	Specialization string `avro:"specialization"`
+	StartYear      int    `avro:"start_year"`
+	EndYear        int    `avro:"end_year"`
+	Format         string `avro:"format"`
 }
 
 type WorkExperience struct {
-	Position         string `json:"position"`
-	Company          string `json:"company"`
-	Period           string `json:"period"`
-	Responsibilities string `json:"responsibilities"`
+	Position         string `avro:"position"`
+	Company          string `avro:"company"`
+	Period           string `avro:"period"`
+	Responsibilities string `avro:"responsibilities"`
 }
 
 type ResumeData struct {
-	LastName        string           `json:"last_name"`
-	FirstName       string           `json:"first_name"`
-	MiddleName      string           `json:"middle_name"`
-	DateOfBirth     time.Time        `json:"date_of_birth"`
-	Email           string           `json:"email"`
-	Phone           string           `json:"phone"`
-	City            string           `json:"city"`
-	Citizenship     string           `json:"citizenship"`
-	Education       []Education      `json:"education"`
-	WorkExperiences []WorkExperience `json:"work_experiences"`
-	SkillsList      []uuid.UUID      `json:"skills_list"`
-	AdditionalInfo  string           `json:"additional_info"`
-	PortfolioLink   string           `json:"portfolio_link"`
-	DesiredFormat   string           `json:"desired_format"`
-	EnglishLevel    string           `json:"english_level"`
+	LastName        string           `avro:"last_name"`
+	FirstName       string           `avro:"first_name"`
+	MiddleName      string           `avro:"middle_name"`
+	DateOfBirth     time.Time        `avro:"date_of_birth"`
+	Email           string           `avro:"email"`
+	Phone           string           `avro:"phone"`
+	City            string           `avro:"city"`
+	Citizenship     string           `avro:"citizenship"`
+	Education       []Education      `avro:"education"`
+	WorkExperiences []WorkExperience `avro:"work_experiences"`
+	SkillsList      []uuid.UUID      `avro:"skills_list"`
+	AdditionalInfo  string           `avro:"additional_info"`
+	PortfolioLink   string           `avro:"portfolio_link"`
+	DesiredFormat   string           `avro:"desired_format"`
+	EnglishLevel    string           `avro:"english_level"`
 }
 
 // Validate for Education entry

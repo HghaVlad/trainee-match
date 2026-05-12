@@ -1,0 +1,20 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_USE_MSW: ${VITE_USE_MSW:-false}
+        SYNC_SWAGGER: ${SYNC_SWAGGER:-false}
+    image: trainee-match-frontend:local
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    environment:
+      AUTH_URL: ${AUTH_URL:-http://host.docker.internal:8000}
+      CANDIDATE_URL: ${CANDIDATE_URL:-http://host.docker.internal:8081}
+      COMPANY_URL: ${COMPANY_URL:-http://host.docker.internal:8088}
+      APPLICATION_URL: ${APPLICATION_URL:-http://host.docker.internal:8086}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

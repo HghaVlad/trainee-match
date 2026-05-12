@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill/mocks"
 	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 var (
@@ -23,26 +23,26 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockSetup     func(repo *mocks.SkillRepo)
+		mockSetup     func(repo *MockSkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid get",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domainSkill, nil).Once()
 			},
 			expectedError: nil,
 		},
 		{
 			name: "not found",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
 			},
 			expectedError: domain.ErrSkillNotFound,
 		},
 		{
 			name: "repo error",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domain.Skill{}, ErrDb).Once()
 			},
 			expectedError: ErrDb,
@@ -51,7 +51,7 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.SkillRepo{}
+			repo := &MockSkillRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo)
 			}
@@ -78,19 +78,19 @@ func TestExecuteList(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockSetup     func(repo *mocks.SkillRepo)
+		mockSetup     func(repo *MockSkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid list",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("List", ctx).Return(domainSkills, nil).Once()
 			},
 			expectedError: nil,
 		},
 		{
 			name: "repo error",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("List", ctx).Return(nil, ErrDb).Once()
 			},
 			expectedError: ErrDb,
@@ -99,7 +99,7 @@ func TestExecuteList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.SkillRepo{}
+			repo := &MockSkillRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo)
 			}

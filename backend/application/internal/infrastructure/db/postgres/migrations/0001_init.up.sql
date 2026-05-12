@@ -40,8 +40,6 @@ CREATE TABLE application_snapshots
     email        TEXT        NOT NULL,
     telegram     TEXT,
 
-    hash         TEXT        NOT NULL UNIQUE, -- deduplication
-
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -105,8 +103,8 @@ CREATE TABLE candidate_projection
 (
     id         UUID PRIMARY KEY,
 
-    full_name  TEXT,
-    email      TEXT,
+    full_name  TEXT NOT NULL,
+    email      TEXT NOT NULL,
     telegram   TEXT,
 
     created_at TIMESTAMPTZ,
@@ -157,8 +155,3 @@ CREATE TABLE company_members
 
     PRIMARY KEY (user_id, company_id)
 );
-
-CREATE INDEX idx_company_members_user ON company_members (user_id);
-
--- company_id in applications/company_members has no local компаний-таблицы;
--- FK добавлять не к чему, это остаётся на уровне интеграции с company-сервисом.

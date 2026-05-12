@@ -128,12 +128,31 @@ services:
       GRPCADDR: 0.0.0.0:8085
       JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
 
+      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      KAFKA_CLIENT_ID: candidate-service
+      KAFKA_PRODUCER_ACKS: all
+      KAFKA_PRODUCER_LINGER: 10ms
+      KAFKA_CANDIDATE_TOPIC: candidate.events
+      KAFKA_RESUME_TOPIC: resume.events
+      KAFKA_MAX_ATTEMPTS: 5
+      OUTBOX_RELAY_MIN_SLEEP: 50ms
+      OUTBOX_RELAY_MAX_SLEEP: 5s
+      OUTBOX_RELAY_WORKER_COUNT: 3
+      OUTBOX_RELAY_BATCH_SIZE: 100
+      OUTBOX_MESSAGE_BASE_RETRY_DELAY: 5s
+      OUTBOX_RESET_STALE_TIME: 60s
+      SCHEMA_REGISTRY_BASE_URL: http://schema-registry:8081
+
     ports:
       - "8081:8081"
       - "8085:8085"
     depends_on:
-      - candidate-db
-      - auth-service
+      candidate-db:
+        condition: service_healthy
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
 
   company-postgres:
     image: postgres:17
@@ -177,23 +196,6 @@ services:
       timeout: 3s
       retries: 5
 
-  application-postgres:
-    image: postgres:17
-    ports:
-      - "5434:5432"
-    environment:
-      POSTGRES_DB: application_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - application-pg-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d application_db" ]
-      interval: 20s
-      timeout: 5s
-      retries: 15
-      start_period: 10s
-
   company-service:
     build:
       context: ./company
@@ -208,25 +210,56 @@ services:
         condition: service_completed_successfully
       redis-cache:
         condition: service_healthy
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
 
-  application-service:
-    build:
-      context: ./application
-    environment:
-      DB_HOST: application-postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: application_db
-      ADDR: 0.0.0.0:8086
-      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
-
+  application-postgres:
+    image: postgres:17
     ports:
-      - "8086:8086"
+      - "5434:5432"
+    env_file:
+      - application/.env
+    volumes:
+      - application-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${APPLICATION_PGS_USER} -d ${APPLICATION_PGS_NAME}"  ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  application-postgres-migrate:
+    image: migrate/migrate
+    volumes:
+      - ./application/internal/infrastructure/db/postgres/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://${APPLICATION_PGS_USER}:${APPLICATION_PGS_PASS}@application-postgres:5432/${APPLICATION_PGS_NAME}?sslmode=disable",
+      "up"
+    ]
     depends_on:
       application-postgres:
         condition: service_healthy
 
+  application-service:
+    build:
+      context: ./application
+    env_file:
+      - application/.env
+
+    ports:
+      - "8086:8080"
+    depends_on:
+      application-postgres:
+        condition: service_healthy
+      application-postgres-migrate:
+        condition: service_completed_successfully
+      schema-registry-init:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
 
 
   kafka-1:
@@ -300,7 +333,7 @@ services:
 
   kafka-init:
     image: apache/kafka:4.2.0
-    entrypoint: [ "/bin/bash", "-x", "/scripts/kafka-init.sh" ]
+    entrypoint: [ "/bin/bash", "/scripts/kafka-init.sh" ]
     volumes:
       - ./scripts/kafka-init.sh:/scripts/kafka-init.sh:ro
     depends_on:
@@ -356,7 +389,6 @@ services:
         condition: service_healthy
 
 
-
 volumes:
   keycloak-db-data:
   candidate-db-data:
@@ -367,4 +399,3 @@ volumes:
   kafka_2_data:
   kafka_3_data:
   auth-pg-data:
-

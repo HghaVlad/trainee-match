@@ -67,6 +67,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						Post("/", deps.MemberHandler.Add)
 
 					r.With(compmiddleware.LoggingMiddleware).
+						Get("/me", deps.MemberHandler.Me)
+
+					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.MemberHandler.List)
 
 					r.With(compmiddleware.UUIDMiddleware("user-id"),

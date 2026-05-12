@@ -3,37 +3,50 @@ package update_resume
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
 )
 
-//go:generate mockery --name=ResumeRepo --output=mocks --outpkg=mocks
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
 	Update(ctx context.Context, resume *domain.Resume) error
 }
 
-//go:generate mockery --name=SkillRepo --output=mocks --outpkg=mocks
 type SkillRepo interface {
 	AreSkillsExist(ctx context.Context, ids []uuid.UUID) (bool, error)
 }
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
+}
+
+type EventWriter interface {
+	WriteResumeUpserted(ctx context.Context, ev events.ResumeUpserted) error
+}
+
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
 }
 
 type UseCase struct {
 	resumeRepo    ResumeRepo
 	skillRepo     SkillRepo
 	candidateRepo CandidateRepo
+	writer        EventWriter
+	trManager     TrManager
 }
 
-func New(resumeRepo ResumeRepo, skillRepo SkillRepo, candidateRepo CandidateRepo) *UseCase {
+func New(resumeRepo ResumeRepo, skillRepo SkillRepo, candidateRepo CandidateRepo,
+	writer EventWriter,
+	trManager TrManager) *UseCase {
 	return &UseCase{
 		resumeRepo:    resumeRepo,
 		skillRepo:     skillRepo,
 		candidateRepo: candidateRepo,
+		writer:        writer,
+		trManager:     trManager,
 	}
 }
 
@@ -62,6 +75,7 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		}
 		resume.Status = status
 	}
+
 	if req.Data != nil {
 		if req.Data.SkillsList != nil {
 			ok, err := uc.skillRepo.AreSkillsExist(ctx, *req.Data.SkillsList)
@@ -144,10 +158,13 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) error {
 		return err
 	}
 
-	err = uc.resumeRepo.Update(ctx, &resume)
-	if err != nil {
-		return err
-	}
+	err = uc.trManager.Do(ctx, func(ctx context.Context) error {
+		err = uc.resumeRepo.Update(ctx, &resume)
+		if err != nil {
+			return err
+		}
+		return uc.writer.WriteResumeUpserted(ctx, events.NewResumeUpserted(resume))
+	})
 
-	return nil
+	return err
 }
