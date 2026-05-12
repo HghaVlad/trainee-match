@@ -72,7 +72,7 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	user.Id = id
+	user.ID = id
 
 	helpers.RespondJSON(w, http.StatusOK, user)
 }
@@ -179,7 +179,7 @@ func (h *Auth) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := dto.UserResponse{
-		Id:        user.Id,
+		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
 		FirstName: user.FirstName,

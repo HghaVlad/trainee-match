@@ -62,7 +62,7 @@ func Load() (*Config, error) {
 	v.AddConfigPath(".")
 
 	if err := v.ReadInConfig(); err == nil {
-		slog.Debug("found file %s. Using config from file\n", v.ConfigFileUsed())
+		slog.Debug("found file Using config from file", "configFile", v.ConfigFileUsed())
 	}
 
 	var cfg Config

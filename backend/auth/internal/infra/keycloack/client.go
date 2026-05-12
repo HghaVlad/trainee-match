@@ -192,7 +192,7 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 	}
 
 	return &domain.User{
-		Id:        *userInfo.Sub,
+		ID:        *userInfo.Sub,
 		FirstName: *user.FirstName,
 		LastName:  *user.LastName,
 		Email:     *user.Email,
@@ -200,7 +200,7 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 	}, nil
 }
 
-func (kc *Client) GetUserRole(ctx context.Context, token string, userID string) (string, error) {
+func (kc *Client) GetUserRole(ctx context.Context, _ string, userID string) (string, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return "", err
 	}

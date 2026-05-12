@@ -78,7 +78,7 @@ func (a *Auth) GetUserMe(ctx context.Context, token string) (*domain.User, error
 	if err != nil {
 		return nil, err
 	}
-	role, err := a.repo.GetUserRole(ctx, token, user.Id)
+	role, err := a.repo.GetUserRole(ctx, token, user.ID)
 	if err != nil {
 		return nil, err
 	}

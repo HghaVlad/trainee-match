@@ -2,7 +2,8 @@ package helpers
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
+
 	"net/http"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
@@ -13,7 +14,7 @@ func RespondJSON(w http.ResponseWriter, status int, payload any) {
 	w.WriteHeader(status)
 
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		log.Printf("json encode error: %v", err)
+		slog.Error("json encode error", "error", err)
 	}
 }
 

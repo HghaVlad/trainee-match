@@ -16,7 +16,6 @@ type EventType string
 
 const (
 	EventTypeUserCreated EventType = "UserCreated"
-	defaultMaxAttempts             = 5
 )
 
 type WriterRepo interface {
@@ -79,7 +78,7 @@ func (w *Writer) createDefaultMsg(
 		SchemaID:      schemaIDFromPayload(payload),
 		EventType:     evType,
 		Status:        StatusPending,
-		MaxAttempts:   defaultMaxAttempts,
+		MaxAttempts:   w.cfg.MaxRetries,
 		CreatedAt:     occurredAt,
 		NextAttemptAt: occurredAt,
 	}

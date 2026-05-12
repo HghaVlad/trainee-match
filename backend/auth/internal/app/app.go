@@ -54,11 +54,10 @@ func Build(conf *config.Config) *App {
 	}
 
 	pgPool, err := postgres.NewPool(context.Background(), conf.Postgres)
-	trManager := manager.Must(trmpgx.NewFactory(pgPool))
 	if err != nil {
 		panic(err)
 	}
-
+	trManager := manager.Must(trmpgx.NewFactory(pgPool))
 	kProducer := kafka.NewProducer(kClient)
 	outboxRepo := postgres.NewOutboxRepo(pgPool, trmpgx.DefaultCtxGetter)
 	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepo, schemaEncoder)

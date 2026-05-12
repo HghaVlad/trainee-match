@@ -89,7 +89,7 @@ func (r *OutboxRepo) ListPending(ctx context.Context, batchSize int) ([]outbox.M
 			FROM outbox_messages
 			WHERE status = $1
 				AND next_attempt_at <= now()
-			ORDER BY created_at
+			ORDER BY aggregate_seq
 			LIMIT $2
 			FOR UPDATE SKIP LOCKED
 		)
