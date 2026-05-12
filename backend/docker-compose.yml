@@ -324,6 +324,18 @@ services:
       schema-registry:
         condition: service_healthy
 
+  nginx-api-gw:
+    build: ./api-gateway
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    depends_on:
+      - auth-service
+      - candidate-service
+      - company-service
+      - application-service
+
 
 volumes:
   keycloak-db-data:
