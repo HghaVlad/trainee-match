@@ -8,30 +8,64 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
 )
 
-type AuthService interface {
-	Register(ctx context.Context, user domain.User, password string) (string, error)
-	Login(ctx context.Context, username, password string) (*gocloak.JWT, error)
-	Logout(ctx context.Context, token string) error
-	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
-	GetUserMe(ctx context.Context, token string) (*domain.User, error)
+type RegisterUseCase interface {
+	Execute(ctx context.Context, req *register.Request) (uuid.UUID, error)
+}
+
+type LoginUseCase interface {
+	Execute(ctx context.Context, req *login.Request) (*gocloak.JWT, error)
+}
+
+type LogoutUseCase interface {
+	Execute(ctx context.Context, req *logout.Request) error
+}
+
+type RefreshTokenUseCase interface {
+	Execute(ctx context.Context, req *refresh_token.Request) (*gocloak.JWT, error)
+}
+
+type GetUserMeUseCase interface {
+	Execute(ctx context.Context, req *get_user_me.Request) (*domain.User, error)
 }
 
 type Auth struct {
-	authClient          AuthService
+	registerUC          RegisterUseCase
+	loginUC             LoginUseCase
+	logoutUC            LogoutUseCase
+	refreshTokenUC      RefreshTokenUseCase
+	getUserMeUC         GetUserMeUseCase
 	validate            *validator.Validate
 	AccessTokenExpires  int
 	RefreshTokenExpires int
 }
 
-func NewAuthHandler(authClient AuthService, accessTokenExpires, refreshTokenExpires int) *Auth {
+func NewAuthHandler(
+	registerUC RegisterUseCase,
+	loginUC LoginUseCase,
+	logoutUC LogoutUseCase,
+	refreshTokenUC RefreshTokenUseCase,
+	getUserMeUC GetUserMeUseCase,
+	accessTokenExpires,
+	refreshTokenExpires int,
+) *Auth {
 	return &Auth{
-		authClient:          authClient,
+		registerUC:          registerUC,
+		loginUC:             loginUC,
+		logoutUC:            logoutUC,
+		refreshTokenUC:      refreshTokenUC,
+		getUserMeUC:         getUserMeUC,
 		validate:            validator.New(),
 		AccessTokenExpires:  accessTokenExpires,
 		RefreshTokenExpires: refreshTokenExpires,
@@ -67,12 +101,19 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		Role:      request.Role,
 	}
 
-	id, err := h.authClient.Register(r.Context(), user, request.Password)
+	id, err := h.registerUC.Execute(r.Context(), &register.Request{
+		FirstName: request.FirstName,
+		LastName:  request.LastName,
+		Email:     request.Email,
+		Username:  request.Username,
+		Password:  request.Password,
+		Role:      request.Role,
+	})
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	user.ID = id
+	user.ID = id.String()
 
 	helpers.RespondJSON(w, http.StatusOK, user)
 }
@@ -97,7 +138,10 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.authClient.Login(r.Context(), request.Username, request.Password)
+	token, err := h.loginUC.Execute(r.Context(), &login.Request{
+		Username: request.Username,
+		Password: request.Password,
+	})
 
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
@@ -124,7 +168,9 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newToken, err := h.authClient.RefreshToken(r.Context(), token)
+	newToken, err := h.refreshTokenUC.Execute(r.Context(), &refresh_token.Request{
+		RefreshToken: token,
+	})
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -156,7 +202,7 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 		return
 	}
-	_ = h.authClient.Logout(r.Context(), refreshToken)
+	_ = h.logoutUC.Execute(r.Context(), &logout.Request{Token: refreshToken})
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 }
 
@@ -166,7 +212,7 @@ func (h *Auth) GetMe(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusBadRequest, "missing access token")
 		return
 	}
-	user, err := h.authClient.GetUserMe(r.Context(), token)
+	user, err := h.getUserMeUC.Execute(r.Context(), &get_user_me.Request{Token: token})
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return

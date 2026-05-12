@@ -16,8 +16,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/keycloack"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/services"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/services/outbox"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
 )
 
 type App struct {
@@ -63,11 +67,19 @@ func Build(conf *config.Config) *App {
 	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepo, schemaEncoder)
 	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, conf.Outbox, slog.Default(), trManager)
 
-	authService := services.NewAuth(keycloakClient, outboxWriter)
+	authRegisterUC := register.New(keycloakClient, outboxWriter)
+	authLoginUC := login.New(keycloakClient)
+	authLogoutUC := logout.New(keycloakClient)
+	authRefreshUC := refresh_token.New(keycloakClient)
+	authGetMeUC := get_user_me.New(keycloakClient)
 
 	deps := deliveryhttp.RouterDeps{
 		AuthHandler: handlers.NewAuthHandler(
-			authService,
+			authRegisterUC,
+			authLoginUC,
+			authLogoutUC,
+			authRefreshUC,
+			authGetMeUC,
 			conf.KeyCloak.AccessTokenExpires,
 			conf.KeyCloak.RefreshTokenExpires,
 		),
