@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate/mocks"
 
 	"github.com/google/uuid"
 )
@@ -33,14 +32,14 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		request       *Request
-		mockSetup     func(repo *mocks.CandidateRepo)
+		mockSetup     func(repo *MockCandidateRepo)
 		expectedID    uuid.UUID
 		expectedError error
 	}{
 		{
 			name:    "valid request",
 			request: validRequest,
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validRequest.UserID).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Maybe()
@@ -58,7 +57,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -73,7 +72,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -88,7 +87,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validRequest.UserID).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Maybe()
@@ -108,7 +107,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -123,7 +122,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -138,7 +137,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validRequest.UserID).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Maybe()
@@ -158,7 +157,7 @@ func TestExecute(t *testing.T) {
 				City:     "",
 				Birthday: time.Date(1990, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -173,7 +172,7 @@ func TestExecute(t *testing.T) {
 				City:     "Valid City",
 				Birthday: time.Now().Add(24 * time.Hour),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validUserID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Maybe()
 			},
 			expectedID:    uuid.Nil,
@@ -182,7 +181,7 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "Create returns repo error",
 			request: validRequest,
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, validRequest.UserID).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Maybe()
@@ -195,10 +194,20 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.CandidateRepo{}
+			repo := &MockCandidateRepo{}
 			tt.mockSetup(repo)
 
-			uc := New(repo)
+			writer := &MockEventWriter{}
+			writer.On("WriteCandidateUpserted", context.Background(), mock.AnythingOfType("events.CandidateUpserted")).
+				Return(nil)
+
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := New(repo, writer, trManager)
 			id, err := uc.Execute(ctx, tt.request)
 			if tt.expectedError != nil {
 				require.Error(t, err)

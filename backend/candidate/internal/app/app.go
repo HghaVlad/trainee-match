@@ -3,9 +3,17 @@ package app
 import (
 	"context"
 	"errors"
+	"log"
 	"log/slog"
 	"net/http"
 	"time"
+
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -26,8 +34,11 @@ import (
 )
 
 type App struct {
-	server *http.Server
-	Db     *pgxpool.Pool
+	server        *http.Server
+	Db            *pgxpool.Pool
+	Relay         *outbox.Relay
+	relayCancel   context.CancelFunc
+	KafkaProducer *kafka.Producer
 }
 
 func Build(conf *config.Config) (*App, error) {
@@ -43,15 +54,27 @@ func Build(conf *config.Config) (*App, error) {
 	candidateRepo := repository.NewCandidateRepo(pgPool)
 	resumeRepo := repository.NewResumeRepo(pgPool)
 	skillRepo := repository.NewSkillRepo(pgPool)
+	outboxRepository := repository.NewOutbox(pgPool, trmpgx.DefaultCtxGetter)
 
-	createCandidateUC := create_candidate.New(candidateRepo)
-	updateCandidateUC := update_candidate.New(candidateRepo)
+	trManager := manager.Must(trmpgx.NewFactory(pgPool))
+
+	schemaRegistryClient := schemaregistry.NewClient(conf.SchemaRegistry.BaseURL)
+	schemalLocalRegistry, err := schemaregistry.NewLocalRegistry(context.Background(), schemaRegistryClient)
+	if err != nil {
+		return nil, err
+	}
+	encoder := schemaregistry.NewEncoder(schemalLocalRegistry)
+
+	outboxWriter := outbox.NewWriter(conf.Outbox, outboxRepository, encoder)
+
+	createCandidateUC := create_candidate.New(candidateRepo, outboxWriter, trManager)
+	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter, trManager)
 	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
 
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
-	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo)
-	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo)
-	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo)
+	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
+	updateResumeUC := update_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
+	removeResumeUC := remove_resume.New(resumeRepo, candidateRepo, outboxWriter, trManager)
 
 	getSkillUC := get_skill.New(skillRepo)
 
@@ -69,22 +92,44 @@ func Build(conf *config.Config) (*App, error) {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	kafkaClient, err := kafka.NewClient(conf.Kafka)
+	if err != nil {
+		return nil, err
+	}
+
+	kafkaLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
+	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, kafkaLogger)
+
+	relayLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
+	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
+
 	return &App{
-		server: httpServer,
-		Db:     pgPool,
+		server:        httpServer,
+		Db:            pgPool,
+		Relay:         outboxRelay,
+		KafkaProducer: kafkaProducer,
 	}, nil
 }
 
 func (app *App) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	app.relayCancel = cancel
+	go app.Relay.Run(ctx)
+
 	slog.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("http listening server err", "error", err)
 	}
+
 	return err
 }
 
 func (app *App) Shutdown(ctx context.Context) {
+	if app.relayCancel != nil {
+		app.relayCancel()
+	}
+	app.KafkaProducer.Close()
 	err := app.server.Shutdown(ctx)
 	if err != nil {
 		slog.Error("shutdown error", "error", err)

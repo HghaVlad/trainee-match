@@ -4,22 +4,35 @@ import (
 	"context"
 	"errors"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
+//go:generate mockery
 type CandidateRepo interface {
 	Create(ctx context.Context, candidate *domain.Candidate) (uuid.UUID, error)
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
-type UseCase struct {
-	repo CandidateRepo
+type EventWriter interface {
+	WriteCandidateUpserted(ctx context.Context, ev events.CandidateUpserted) error
 }
 
-func New(repo CandidateRepo) *UseCase {
-	return &UseCase{repo: repo}
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
+type UseCase struct {
+	repo      CandidateRepo
+	writer    EventWriter
+	trManager TrManager
+}
+
+func New(repo CandidateRepo, writer EventWriter, trManager TrManager) *UseCase {
+	return &UseCase{repo: repo, writer: writer, trManager: trManager}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error) {
@@ -40,11 +53,18 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error)
 		return uuid.Nil, err
 	}
 
-	id, err := uc.repo.Create(ctx, candidate)
+	err := uc.trManager.Do(ctx, func(ctx context.Context) error {
+		id, err := uc.repo.Create(ctx, candidate)
+		if err != nil {
+			return err
+		}
+		candidate.ID = id
+		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(*candidate, req.FullName, req.Email))
+	})
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	return id, nil
+	return candidate.ID, nil
 
 }
