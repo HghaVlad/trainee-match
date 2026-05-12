@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var (
+const (
 	ContentType    = "application/vnd.schemaregistry.v1+json"
 	DefaultTimeout = 10 * time.Second
 )

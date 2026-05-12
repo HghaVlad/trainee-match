@@ -1,4 +1,4 @@
-package login
+package login_test
 
 import (
 	"context"
@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login/mocks"
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
-	validReq := &Request{
+	validReq := &login.Request{
 		Username: "user",
 		Password: "password",
 	}
@@ -25,13 +27,13 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		req           *Request
+		req           *login.Request
 		mockSetup     func(*mocks.MockAuthRepo)
 		expectedToken *gocloak.JWT
 		expectedError error
 	}{
 		{
-			name: "valid request",
+			name: "valid login.Request",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
 				repo.On("Login", mock.Anything, validReq.Username, validReq.Password).Return(validToken, nil).Once()
@@ -42,7 +44,9 @@ func TestExecute(t *testing.T) {
 			name: "auth error",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
-				repo.On("Login", mock.Anything, validReq.Username, validReq.Password).Return((*gocloak.JWT)(nil), errAuth).Once()
+				repo.On("Login", mock.Anything, validReq.Username, validReq.Password).
+					Return((*gocloak.JWT)(nil), errAuth).
+					Once()
 			},
 			expectedToken: nil,
 			expectedError: errAuth,
@@ -63,7 +67,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo)
 			}
 
-			usecase := New(repo)
+			usecase := login.New(repo)
 			testCtx := ctx
 			if errors.Is(tt.expectedError, context.Canceled) {
 				var cancel context.CancelFunc
@@ -85,4 +89,3 @@ func TestExecute(t *testing.T) {
 		})
 	}
 }
-

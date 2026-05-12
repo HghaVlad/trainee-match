@@ -1,4 +1,4 @@
-package get_user_me
+package getuser
 
 type Request struct {
 	Token string `json:"token"`

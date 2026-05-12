@@ -13,10 +13,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+	getuser "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+	refreshtoken "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
 )
 
@@ -33,11 +33,11 @@ type LogoutUseCase interface {
 }
 
 type RefreshTokenUseCase interface {
-	Execute(ctx context.Context, req *refresh_token.Request) (*gocloak.JWT, error)
+	Execute(ctx context.Context, req *refreshtoken.Request) (*gocloak.JWT, error)
 }
 
 type GetUserMeUseCase interface {
-	Execute(ctx context.Context, req *get_user_me.Request) (*domain.User, error)
+	Execute(ctx context.Context, req *getuser.Request) (*domain.User, error)
 }
 
 type Auth struct {
@@ -168,7 +168,7 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newToken, err := h.refreshTokenUC.Execute(r.Context(), &refresh_token.Request{
+	newToken, err := h.refreshTokenUC.Execute(r.Context(), &refreshtoken.Request{
 		RefreshToken: token,
 	})
 	if err != nil {
@@ -212,7 +212,7 @@ func (h *Auth) GetMe(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondError(w, http.StatusBadRequest, "missing access token")
 		return
 	}
-	user, err := h.getUserMeUC.Execute(r.Context(), &get_user_me.Request{Token: token})
+	user, err := h.getUserMeUC.Execute(r.Context(), &getuser.Request{Token: token})
 	if err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, err.Error())
 		return

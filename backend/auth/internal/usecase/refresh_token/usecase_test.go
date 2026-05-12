@@ -1,4 +1,4 @@
-package refresh_token
+package refreshtoken_test
 
 import (
 	"context"
@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	refreshtoken "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token/mocks"
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
-	validReq := &Request{RefreshToken: "refresh"}
+	validReq := &refreshtoken.Request{RefreshToken: "refresh"}
 	var (
 		errAuth = errors.New("auth error")
 	)
@@ -22,13 +24,13 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		req           *Request
+		req           *refreshtoken.Request
 		mockSetup     func(*mocks.MockAuthRepo)
 		expectedToken *gocloak.JWT
 		expectedError error
 	}{
 		{
-			name: "valid request",
+			name: "valid refreshtoken.Request",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
 				repo.On("RefreshToken", mock.Anything, validReq.RefreshToken).Return(validToken, nil).Once()
@@ -39,7 +41,9 @@ func TestExecute(t *testing.T) {
 			name: "auth error",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
-				repo.On("RefreshToken", mock.Anything, validReq.RefreshToken).Return((*gocloak.JWT)(nil), errAuth).Once()
+				repo.On("RefreshToken", mock.Anything, validReq.RefreshToken).
+					Return((*gocloak.JWT)(nil), errAuth).
+					Once()
 			},
 			expectedToken: nil,
 			expectedError: errAuth,
@@ -60,7 +64,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo)
 			}
 
-			usecase := New(repo)
+			usecase := refreshtoken.New(repo)
 			testCtx := ctx
 			if errors.Is(tt.expectedError, context.Canceled) {
 				var cancel context.CancelFunc
@@ -82,4 +86,3 @@ func TestExecute(t *testing.T) {
 		})
 	}
 }
-

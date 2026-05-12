@@ -1,4 +1,4 @@
-package refresh_token
+package refreshtoken
 
 import (
 	"context"

@@ -1,21 +1,24 @@
-package register
+package register_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
+
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register/mocks"
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
-	validReq := &Request{
+	validReq := &register.Request{
 		FirstName: "Ivan",
 		LastName:  "Petrov",
 		Email:     "ivan.petrov@example.com",
@@ -32,23 +35,25 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		req           *Request
+		req           *register.Request
 		mockSetup     func(*mocks.MockAuthRepo, *mocks.MockOutboxWriter)
 		expectedID    uuid.UUID
 		expectedError error
 	}{
 		{
-			name: "valid request",
+			name: "valid register.Request",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo, writer *mocks.MockOutboxWriter) {
-				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).Return(userID.String(), nil).Once()
+				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).
+					Return(userID.String(), nil).
+					Once()
 				writer.On("WriteUserCreated", mock.Anything, mock.Anything).Return(nil).Once()
 			},
 			expectedID: userID,
 		},
 		{
 			name: "invalid email",
-			req: func() *Request {
+			req: func() *register.Request {
 				req := *validReq
 				req.Email = "not-an-email"
 				return &req
@@ -58,7 +63,7 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "short password",
-			req: func() *Request {
+			req: func() *register.Request {
 				req := *validReq
 				req.Password = "short"
 				return &req
@@ -68,7 +73,7 @@ func TestExecute(t *testing.T) {
 		},
 		{
 			name: "missing name",
-			req: func() *Request {
+			req: func() *register.Request {
 				req := *validReq
 				req.FirstName = ""
 				return &req
@@ -79,8 +84,10 @@ func TestExecute(t *testing.T) {
 		{
 			name: "duplicate email error",
 			req:  validReq,
-			mockSetup: func(repo *mocks.MockAuthRepo, writer *mocks.MockOutboxWriter) {
-				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).Return("", domain.ErrEmailAlreadyExists).Once()
+			mockSetup: func(repo *mocks.MockAuthRepo, _ *mocks.MockOutboxWriter) {
+				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).
+					Return("", domain.ErrEmailAlreadyExists).
+					Once()
 			},
 			expectedID:    uuid.Nil,
 			expectedError: domain.ErrEmailAlreadyExists,
@@ -88,7 +95,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "db error",
 			req:  validReq,
-			mockSetup: func(repo *mocks.MockAuthRepo, writer *mocks.MockOutboxWriter) {
+			mockSetup: func(repo *mocks.MockAuthRepo, _ *mocks.MockOutboxWriter) {
 				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).Return("", errDB).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -98,7 +105,9 @@ func TestExecute(t *testing.T) {
 			name: "outbox error",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo, writer *mocks.MockOutboxWriter) {
-				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).Return(userID.String(), nil).Once()
+				repo.On("CreateUser", mock.Anything, mock.Anything, validReq.Password).
+					Return(userID.String(), nil).
+					Once()
 				writer.On("WriteUserCreated", mock.Anything, mock.Anything).Return(errOutbox).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -121,7 +130,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo, writer)
 			}
 
-			usecase := New(repo, writer)
+			usecase := register.New(repo, writer)
 			testCtx := ctx
 			if errors.Is(tt.expectedError, context.Canceled) {
 				var cancel context.CancelFunc
@@ -144,4 +153,3 @@ func TestExecute(t *testing.T) {
 		})
 	}
 }
-

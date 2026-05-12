@@ -17,10 +17,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/infra/message_broker/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/common/outbox"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+	getuser "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
-	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+	refreshtoken "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
 )
 
@@ -70,8 +70,8 @@ func Build(conf *config.Config) *App {
 	authRegisterUC := register.New(keycloakClient, outboxWriter)
 	authLoginUC := login.New(keycloakClient)
 	authLogoutUC := logout.New(keycloakClient)
-	authRefreshUC := refresh_token.New(keycloakClient)
-	authGetMeUC := get_user_me.New(keycloakClient)
+	authRefreshUC := refreshtoken.New(keycloakClient)
+	authGetMeUC := getuser.New(keycloakClient)
 
 	deps := deliveryhttp.RouterDeps{
 		AuthHandler: handlers.NewAuthHandler(

@@ -1,4 +1,4 @@
-package get_user_me
+package getuser_test
 
 import (
 	"context"
@@ -8,13 +8,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	getuser "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me/mocks"
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
-	validReq := &Request{Token: "access"}
+	validReq := &getuser.Request{Token: "access"}
 	var (
 		errAuth = errors.New("auth error")
 		errRole = errors.New("role error")
@@ -37,13 +39,13 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		req           *Request
+		req           *getuser.Request
 		mockSetup     func(*mocks.MockAuthRepo)
 		expectedUser  *domain.User
 		expectedError error
 	}{
 		{
-			name: "valid request",
+			name: "valid getuser.Request",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
 				user := baseUser()
@@ -87,7 +89,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo)
 			}
 
-			usecase := New(repo)
+			usecase := getuser.New(repo)
 			testCtx := ctx
 			if errors.Is(tt.expectedError, context.Canceled) {
 				var cancel context.CancelFunc

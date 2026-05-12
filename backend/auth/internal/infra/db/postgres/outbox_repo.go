@@ -80,7 +80,6 @@ func (r *OutboxRepo) Create(ctx context.Context, msg outbox.Message) error {
 }
 
 func (r *OutboxRepo) ListPending(ctx context.Context, batchSize int) ([]outbox.Message, error) {
-
 	conn := r.getter.DefaultTrOrDB(ctx, r.pool)
 
 	rows, err := conn.Query(ctx, `

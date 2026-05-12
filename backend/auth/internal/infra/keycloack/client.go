@@ -110,13 +110,13 @@ func (kc *Client) CreateUser(ctx context.Context, user domain.User, password str
 func (kc *Client) addRole(ctx context.Context, userID, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
-	switch {
-	case roleName == CandidateRoleName:
+	switch roleName {
+	case CandidateRoleName:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
 			Name: gocloak.StringP(CandidateRoleName),
 		}
-	case roleName == CompanyRoleName:
+	case CompanyRoleName:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
 			Name: gocloak.StringP(CompanyRoleName),

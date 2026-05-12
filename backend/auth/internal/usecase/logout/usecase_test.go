@@ -1,4 +1,4 @@
-package logout
+package logout_test
 
 import (
 	"context"
@@ -8,24 +8,26 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout/mocks"
 )
 
 func TestExecute(t *testing.T) {
 	ctx := context.Background()
-	validReq := &Request{Token: "refresh"}
+	validReq := &logout.Request{Token: "refresh"}
 	var (
 		errAuth = errors.New("auth error")
 	)
 
 	tests := []struct {
 		name          string
-		req           *Request
+		req           *logout.Request
 		mockSetup     func(*mocks.MockAuthRepo)
 		expectedError error
 	}{
 		{
-			name: "valid request",
+			name: "valid logout.Request",
 			req:  validReq,
 			mockSetup: func(repo *mocks.MockAuthRepo) {
 				repo.On("Logout", mock.Anything, validReq.Token).Return(nil).Once()
@@ -54,7 +56,7 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo)
 			}
 
-			usecase := New(repo)
+			usecase := logout.New(repo)
 			testCtx := ctx
 			if errors.Is(tt.expectedError, context.Canceled) {
 				var cancel context.CancelFunc
@@ -74,4 +76,3 @@ func TestExecute(t *testing.T) {
 		})
 	}
 }
-
