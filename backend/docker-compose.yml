@@ -46,7 +46,7 @@ services:
       KC_ADMIN_USERNAME: admin
       KC_ADMIN_PASSWORD: admin
     ports:
-      - "8000:8080"
+      - "8000:8000"
     depends_on:
         - keycloak
 
@@ -72,7 +72,7 @@ services:
     env_file:
       - ./candidate/.env
     ports:
-      - "8081:8080"
+      - "8081:8081"
     depends_on:
       candidate-db:
         condition: service_healthy
