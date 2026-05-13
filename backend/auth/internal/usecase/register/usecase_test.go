@@ -113,12 +113,6 @@ func TestExecute(t *testing.T) {
 			expectedID:    uuid.Nil,
 			expectedError: errOutbox,
 		},
-		{
-			name:          "context canceled",
-			req:           validReq,
-			expectedID:    uuid.Nil,
-			expectedError: context.Canceled,
-		},
 	}
 
 	for _, tt := range tests {

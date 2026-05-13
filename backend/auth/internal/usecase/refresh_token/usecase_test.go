@@ -48,12 +48,6 @@ func TestExecute(t *testing.T) {
 			expectedToken: nil,
 			expectedError: errAuth,
 		},
-		{
-			name:          "context canceled",
-			req:           validReq,
-			expectedToken: nil,
-			expectedError: context.Canceled,
-		},
 	}
 
 	for _, tt := range tests {

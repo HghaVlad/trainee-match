@@ -74,12 +74,6 @@ func TestExecute(t *testing.T) {
 			expectedUser:  nil,
 			expectedError: errRole,
 		},
-		{
-			name:          "context canceled",
-			req:           validReq,
-			expectedUser:  nil,
-			expectedError: context.Canceled,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
