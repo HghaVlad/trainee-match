@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest"
+                            "$ref": "#/definitions/dto.CandidateCreateRequest"
                         }
                     }
                 ],
@@ -43,31 +43,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "400": {
                         "description": "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -90,7 +90,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest"
+                            "$ref": "#/definitions/dto.CandidateUpdateRequest"
                         }
                     }
                 ],
@@ -98,31 +98,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "400": {
                         "description": "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -144,25 +144,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -186,26 +186,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ShortResumeResponse"
+                                "$ref": "#/definitions/dto.ShortResumeResponse"
                             }
                         }
                     },
                     "401": {
                         "description": "unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "candidate not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -230,7 +230,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest"
+                            "$ref": "#/definitions/dto.CreateResumeRequest"
                         }
                     }
                 ],
@@ -238,25 +238,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -287,31 +287,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -346,31 +346,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -400,7 +400,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest"
+                            "$ref": "#/definitions/dto.UpdateResumeRequest"
                         }
                     }
                 ],
@@ -408,37 +408,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -462,14 +462,14 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse"
+                                "$ref": "#/definitions/dto.SkillResponse"
                             }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -500,25 +500,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse"
+                            "$ref": "#/definitions/dto.SkillResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -549,7 +549,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest": {
+        "dto.CandidateCreateRequest": {
             "type": "object",
             "properties": {
                 "birthday": {
@@ -566,7 +566,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse": {
+        "dto.CandidateResponse": {
             "type": "object",
             "properties": {
                 "birthday": {
@@ -589,7 +589,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest": {
+        "dto.CandidateUpdateRequest": {
             "type": "object",
             "properties": {
                 "birthday": {
@@ -606,11 +606,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest": {
+        "dto.CreateResumeRequest": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData"
+                    "$ref": "#/definitions/dto.ResumeData"
                 },
                 "name": {
                     "type": "string"
@@ -620,7 +620,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education": {
+        "dto.Education": {
             "type": "object",
             "properties": {
                 "end_year": {
@@ -646,7 +646,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse": {
+        "dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -654,7 +654,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.PatchResumeData": {
+        "dto.PatchResumeData": {
             "type": "object",
             "properties": {
                 "additional_info": {
@@ -675,7 +675,7 @@ const docTemplate = `{
                 "education": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education"
+                        "$ref": "#/definitions/dto.Education"
                     }
                 },
                 "email": {
@@ -708,12 +708,12 @@ const docTemplate = `{
                 "work_experiences": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience"
+                        "$ref": "#/definitions/dto.WorkExperience"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData": {
+        "dto.ResumeData": {
             "type": "object",
             "properties": {
                 "additional_info": {
@@ -734,7 +734,7 @@ const docTemplate = `{
                 "education": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education"
+                        "$ref": "#/definitions/dto.Education"
                     }
                 },
                 "email": {
@@ -768,19 +768,19 @@ const docTemplate = `{
                 "work_experiences": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience"
+                        "$ref": "#/definitions/dto.WorkExperience"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse": {
+        "dto.ResumeResponse": {
             "type": "object",
             "properties": {
                 "candidate_id": {
                     "type": "string"
                 },
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData"
+                    "$ref": "#/definitions/dto.ResumeData"
                 },
                 "id": {
                     "type": "string"
@@ -793,7 +793,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ShortResumeResponse": {
+        "dto.ShortResumeResponse": {
             "type": "object",
             "properties": {
                 "candidate_id": {
@@ -810,7 +810,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse": {
+        "dto.SkillResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -821,11 +821,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest": {
+        "dto.UpdateResumeRequest": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.PatchResumeData"
+                    "$ref": "#/definitions/dto.PatchResumeData"
                 },
                 "id": {
                     "type": "string"
@@ -838,7 +838,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience": {
+        "dto.WorkExperience": {
             "type": "object",
             "properties": {
                 "company": {
