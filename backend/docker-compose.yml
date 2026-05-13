@@ -319,8 +319,11 @@ services:
     build: ./api-gateway
     ports:
       - "80:80"
+      - "443:443"
     env_file:
       - .env
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro # enable for https if u are on the machine
     depends_on:
       - auth-service
       - candidate-service
