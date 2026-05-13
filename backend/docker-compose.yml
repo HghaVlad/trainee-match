@@ -103,12 +103,10 @@ services:
       - "5432:5432"
     volumes:
       - candidate-db-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: candidate_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - ./candidate/.env
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d candidate_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${CANDIDATE_PGS_USER} -d ${CANDIDATE_PGS_NAME}" ]
       interval: 20s
       timeout: 5s
       retries: 15
@@ -118,31 +116,8 @@ services:
     build:
       context: .
       dockerfile: candidate/Dockerfile
-    environment:
-      DB_HOST: candidate-db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: candidate_db
-      ADDR: 0.0.0.0:8081
-      GRPCADDR: 0.0.0.0:8085
-      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
-
-      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
-      KAFKA_CLIENT_ID: candidate-service
-      KAFKA_PRODUCER_ACKS: all
-      KAFKA_PRODUCER_LINGER: 10ms
-      KAFKA_CANDIDATE_TOPIC: candidate.events
-      KAFKA_RESUME_TOPIC: resume.events
-      KAFKA_MAX_ATTEMPTS: 5
-      OUTBOX_RELAY_MIN_SLEEP: 50ms
-      OUTBOX_RELAY_MAX_SLEEP: 5s
-      OUTBOX_RELAY_WORKER_COUNT: 3
-      OUTBOX_RELAY_BATCH_SIZE: 100
-      OUTBOX_MESSAGE_BASE_RETRY_DELAY: 5s
-      OUTBOX_RESET_STALE_TIME: 60s
-      SCHEMA_REGISTRY_BASE_URL: http://schema-registry:8081
-
+    env_file:
+      - ./candidate/.env
     ports:
       - "8081:8081"
       - "8085:8085"
@@ -387,6 +362,21 @@ services:
     depends_on:
       schema-registry:
         condition: service_healthy
+
+  nginx-api-gw:
+    build: ./api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro # enable for https if u are on the machine
+    depends_on:
+      - auth-service
+      - candidate-service
+      - company-service
+      - application-service
 
 
 volumes:
