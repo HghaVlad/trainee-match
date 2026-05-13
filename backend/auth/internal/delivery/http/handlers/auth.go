@@ -78,7 +78,7 @@ func NewAuthHandler(
 // @Accept json
 // @Produce json
 // @Param input body dto.RegisterUserRequest true "User registration data"
-// @Success 200 {object} domain.User
+// @Success 200 {object} dto.UserResponse
 // @Failure 400 {object} dto.ErrorResponse "invalid request"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/register [post]
@@ -93,14 +93,6 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{
-		FirstName: request.FirstName,
-		LastName:  request.LastName,
-		Email:     request.Email,
-		Username:  request.Username,
-		Role:      request.Role,
-	}
-
 	id, err := h.registerUC.Execute(r.Context(), &register.Request{
 		FirstName: request.FirstName,
 		LastName:  request.LastName,
@@ -110,12 +102,20 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		Role:      request.Role,
 	})
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
-	user.ID = id.String()
 
-	helpers.RespondJSON(w, http.StatusOK, user)
+	response := dto.UserResponse{
+		ID:        id.String(),
+		FirstName: request.FirstName,
+		LastName:  request.LastName,
+		Email:     request.Email,
+		Username:  request.Username,
+		Role:      request.Role,
+	}
+
+	helpers.RespondJSON(w, http.StatusOK, response)
 }
 
 // Login godoc
@@ -144,7 +144,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 	helpers.SetTokenPairToCookies(w, token.AccessToken, token.RefreshToken, h.AccessTokenExpires, h.RefreshTokenExpires)
@@ -164,7 +164,7 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	token := helpers.GetRefreshTokenFromCookies(r)
 	if token == "" {
-		helpers.RespondError(w, http.StatusBadRequest, "missing refresh token")
+		helpers.RespondError(w, http.StatusUnauthorized, "missing access token")
 		return
 	}
 
@@ -172,7 +172,7 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: token,
 	})
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 	helpers.SetTokenPairToCookies(
@@ -191,7 +191,6 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} dto.MessageResponse
-// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/logout [post]
@@ -202,19 +201,32 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 		return
 	}
-	_ = h.logoutUC.Execute(r.Context(), &logout.Request{Token: refreshToken})
+	err := h.logoutUC.Execute(r.Context(), &logout.Request{Token: refreshToken})
+	if err != nil {
+		helpers.RespondSmartError(w, err)
+		return
+	}
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 }
 
+// GetMe godoc
+// @Summary Returns user info
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/me [get]
 func (h *Auth) GetMe(w http.ResponseWriter, r *http.Request) {
 	token := helpers.GetAccessTokenFromCookies(r)
 	if token == "" {
-		helpers.RespondError(w, http.StatusBadRequest, "missing access token")
+		helpers.RespondError(w, http.StatusUnauthorized, "missing access token")
 		return
 	}
 	user, err := h.getUserMeUC.Execute(r.Context(), &getuser.Request{Token: token})
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 

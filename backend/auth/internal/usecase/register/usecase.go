@@ -34,12 +34,6 @@ func New(repo AuthRepo, outboxWriter OutboxWriter) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error) {
-	if err := ctx.Err(); err != nil {
-		return uuid.Nil, err
-	}
-	if req == nil {
-		return uuid.Nil, domain.ErrInvalidName
-	}
 	if err := req.Validate(uc.validate); err != nil {
 		return uuid.Nil, err
 	}

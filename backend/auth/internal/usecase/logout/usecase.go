@@ -15,11 +15,5 @@ func New(repo AuthRepo) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if req == nil {
-		return context.Canceled
-	}
 	return uc.repo.Logout(ctx, req.Token)
 }

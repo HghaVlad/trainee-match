@@ -21,12 +21,6 @@ func New(repo AuthRepo) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) (*domain.User, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if req == nil {
-		return nil, context.Canceled
-	}
 	user, err := uc.repo.GetUserInfo(ctx, req.Token)
 	if err != nil {
 		return nil, err

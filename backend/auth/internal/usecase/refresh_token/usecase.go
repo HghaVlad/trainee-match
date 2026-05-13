@@ -19,11 +19,5 @@ func New(repo AuthRepo) *UseCase {
 }
 
 func (uc *UseCase) Execute(ctx context.Context, req *Request) (*gocloak.JWT, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if req == nil {
-		return nil, context.Canceled
-	}
 	return uc.repo.RefreshToken(ctx, req.RefreshToken)
 }
