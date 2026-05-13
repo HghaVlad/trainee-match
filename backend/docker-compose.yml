@@ -45,10 +45,57 @@ services:
       KC_CLIENT_SECRET: UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8
       KC_ADMIN_USERNAME: admin
       KC_ADMIN_PASSWORD: admin
+
+      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      KAFKA_CLIENT_ID: auth
+      KAFKA_PRODUCER_ACKS: all
+      KAFKA_PRODUCER_LINGER: 10ms
+      KAFKA_USER_TOPIC: user.events
+
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+
+      OUTBOX_USER_TOPIC: user.events
+      OUTBOX_BASE_RETRY_DELAY: 5s
+      OUTBOX_MAX_RETRIES: 5
+      OUTBOX_BATCH_SIZE: 100
+      OUTBOX_RELAY_MIN_SLEEP: 50ms
+      OUTBOX_RELAY_MAX_SLEEP: 5s
+      OUTBOX_RELAY_WORKER_COUNT: 2
+
+      POSTGRES_HOST: auth-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB_NAME: auth_db
+      POSTGRES_SSL_MODE: disable
     ports:
       - "8000:8000"
     depends_on:
-        - keycloak
+      keycloak:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      schema-registry:
+        condition: service_healthy
+      auth-postgres:
+        condition: service_healthy
+
+  auth-postgres:
+    image: postgres:17
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d auth_db" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   candidate-db:
     image: postgres:17
@@ -73,6 +120,7 @@ services:
       - ./candidate/.env
     ports:
       - "8081:8081"
+      - "8085:8085"
     depends_on:
       candidate-db:
         condition: service_healthy
@@ -340,3 +388,4 @@ volumes:
   kafka_1_data:
   kafka_2_data:
   kafka_3_data:
+  auth-pg-data:

@@ -1,15 +1,19 @@
 package config
 
 import (
-	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	KeyCloack KeyCloack `mapstructure:"KC"`
-	Addr      string    `mapstructure:"ADDR"`
+	KeyCloak       KeyCloak       `mapstructure:"KC"`
+	Addr           string         `mapstructure:"ADDR"`
+	Kafka          Kafka          `mapstructure:"KAFKA"`
+	SchemaRegistry SchemaRegistry `mapstructure:"SCHEMA_REGISTRY"`
+	Outbox         Outbox         `mapstructure:"OUTBOX"`
+	Postgres       Postgres       `mapstructure:"POSTGRES"`
 }
 
 func Load() (*Config, error) {
@@ -30,12 +34,35 @@ func Load() (*Config, error) {
 
 	v.SetDefault("ADDR", "0.0.0.0:8000")
 
+	v.SetDefault("KAFKA.BROKERS", []string{"localhost:9092"})
+	v.SetDefault("KAFKA.CLIENT_ID", "auth")
+	v.SetDefault("KAFKA.PRODUCER_ACKS", "all")
+	v.SetDefault("KAFKA.PRODUCER_LINGER", "10ms")
+	v.SetDefault("KAFKA.USER_TOPIC", "user-created")
+
+	v.SetDefault("SCHEMA_REGISTRY.URL", "http://localhost:8081")
+
+	v.SetDefault("OUTBOX.USER_TOPIC", "user-created")
+	v.SetDefault("OUTBOX.BASE_RETRY_DELAY", "5s")
+	v.SetDefault("OUTBOX.MAX_RETRIES", 5)
+	v.SetDefault("OUTBOX.BATCH_SIZE", 100)
+	v.SetDefault("OUTBOX.RELAY_MIN_SLEEP", "50ms")
+	v.SetDefault("OUTBOX.RELAY_MAX_SLEEP", "5s")
+	v.SetDefault("OUTBOX.RELAY_WORKER_COUNT", 2)
+
+	v.SetDefault("POSTGRES.HOST", "auth-postgres")
+	v.SetDefault("POSTGRES.PORT", 5432)
+	v.SetDefault("POSTGRES.USER", "postgres")
+	v.SetDefault("POSTGRES.PASSWORD", "postgres")
+	v.SetDefault("POSTGRES.DB_NAME", "auth_db")
+	v.SetDefault("POSTGRES.SSL_MODE", "disable")
+
 	v.SetConfigName("config")
 	v.SetConfigType("env")
 	v.AddConfigPath(".")
 
 	if err := v.ReadInConfig(); err == nil {
-		fmt.Printf("Found file %s. Using config from file\n", v.ConfigFileUsed())
+		slog.Debug("found file Using config from file", "configFile", v.ConfigFileUsed())
 	}
 
 	var cfg Config

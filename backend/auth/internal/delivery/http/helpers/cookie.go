@@ -5,7 +5,11 @@ import (
 	"time"
 )
 
-func SetTokenPairToCookies(w http.ResponseWriter, accessToken, refreshToken string, accessTokenExpires, refreshTokenExpires int) {
+func SetTokenPairToCookies(
+	w http.ResponseWriter,
+	accessToken, refreshToken string,
+	accessTokenExpires, refreshTokenExpires int,
+) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
