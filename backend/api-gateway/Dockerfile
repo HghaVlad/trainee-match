@@ -1,5 +1,5 @@
 FROM nginx:1.27-alpine
 
-COPY nginx-http.conf /etc/nginx/nginx.conf
+COPY nginx-https.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
