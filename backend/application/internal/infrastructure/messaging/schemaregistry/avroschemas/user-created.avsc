@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "UserCreated",
+  "namespace": "traineematch.user",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "user_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "username", "type": "string" },
+    { "name": "email", "type": "string" },
+    {
+      "name": "role",
+      "type": {
+        "type": "enum",
+        "name": "Role",
+        "symbols": ["Company", "Candidate", "Admin"]
+      }
+    },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}

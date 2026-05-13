@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "CompanyDeleted",
+  "namespace": "traineematch.company",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "company_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}

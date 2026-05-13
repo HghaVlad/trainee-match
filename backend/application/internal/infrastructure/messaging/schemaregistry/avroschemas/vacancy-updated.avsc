@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "VacancyUpdated",
+  "namespace": "traineematch.vacancy",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "vacancy_id", "type": {"type": "string", "logicalType": "uuid"} },
+    { "name": "title", "type": "string" },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}
