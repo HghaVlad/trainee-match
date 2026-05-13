@@ -8,30 +8,64 @@ import (
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/helpers"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
+	getuser "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout"
+	refreshtoken "github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register"
 )
 
-type AuthService interface {
-	Register(ctx context.Context, user domain.User, password string) (string, error)
-	Login(ctx context.Context, username, password string) (*gocloak.JWT, error)
-	Logout(ctx context.Context, token string) error
-	RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error)
-	GetUserMe(ctx context.Context, token string) (*domain.User, error)
+type RegisterUseCase interface {
+	Execute(ctx context.Context, req *register.Request) (uuid.UUID, error)
+}
+
+type LoginUseCase interface {
+	Execute(ctx context.Context, req *login.Request) (*gocloak.JWT, error)
+}
+
+type LogoutUseCase interface {
+	Execute(ctx context.Context, req *logout.Request) error
+}
+
+type RefreshTokenUseCase interface {
+	Execute(ctx context.Context, req *refreshtoken.Request) (*gocloak.JWT, error)
+}
+
+type GetUserMeUseCase interface {
+	Execute(ctx context.Context, req *getuser.Request) (*domain.User, error)
 }
 
 type Auth struct {
-	authClient          AuthService
+	registerUC          RegisterUseCase
+	loginUC             LoginUseCase
+	logoutUC            LogoutUseCase
+	refreshTokenUC      RefreshTokenUseCase
+	getUserMeUC         GetUserMeUseCase
 	validate            *validator.Validate
 	AccessTokenExpires  int
 	RefreshTokenExpires int
 }
 
-func NewAuthHandler(authClient AuthService, accessTokenExpires, refreshTokenExpires int) *Auth {
+func NewAuthHandler(
+	registerUC RegisterUseCase,
+	loginUC LoginUseCase,
+	logoutUC LogoutUseCase,
+	refreshTokenUC RefreshTokenUseCase,
+	getUserMeUC GetUserMeUseCase,
+	accessTokenExpires,
+	refreshTokenExpires int,
+) *Auth {
 	return &Auth{
-		authClient:          authClient,
+		registerUC:          registerUC,
+		loginUC:             loginUC,
+		logoutUC:            logoutUC,
+		refreshTokenUC:      refreshTokenUC,
+		getUserMeUC:         getUserMeUC,
 		validate:            validator.New(),
 		AccessTokenExpires:  accessTokenExpires,
 		RefreshTokenExpires: refreshTokenExpires,
@@ -44,7 +78,7 @@ func NewAuthHandler(authClient AuthService, accessTokenExpires, refreshTokenExpi
 // @Accept json
 // @Produce json
 // @Param input body dto.RegisterUserRequest true "User registration data"
-// @Success 200 {object} domain.User
+// @Success 200 {object} dto.UserResponse
 // @Failure 400 {object} dto.ErrorResponse "invalid request"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/register [post]
@@ -59,7 +93,21 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := domain.User{
+	id, err := h.registerUC.Execute(r.Context(), &register.Request{
+		FirstName: request.FirstName,
+		LastName:  request.LastName,
+		Email:     request.Email,
+		Username:  request.Username,
+		Password:  request.Password,
+		Role:      request.Role,
+	})
+	if err != nil {
+		helpers.RespondSmartError(w, err)
+		return
+	}
+
+	response := dto.UserResponse{
+		ID:        id.String(),
 		FirstName: request.FirstName,
 		LastName:  request.LastName,
 		Email:     request.Email,
@@ -67,14 +115,7 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 		Role:      request.Role,
 	}
 
-	id, err := h.authClient.Register(r.Context(), user, request.Password)
-	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	user.Id = id
-
-	helpers.RespondJSON(w, http.StatusOK, user)
+	helpers.RespondJSON(w, http.StatusOK, response)
 }
 
 // Login godoc
@@ -97,10 +138,13 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.authClient.Login(r.Context(), request.Username, request.Password)
+	token, err := h.loginUC.Execute(r.Context(), &login.Request{
+		Username: request.Username,
+		Password: request.Password,
+	})
 
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 	helpers.SetTokenPairToCookies(w, token.AccessToken, token.RefreshToken, h.AccessTokenExpires, h.RefreshTokenExpires)
@@ -120,13 +164,15 @@ func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	token := helpers.GetRefreshTokenFromCookies(r)
 	if token == "" {
-		helpers.RespondError(w, http.StatusBadRequest, "missing refresh token")
+		helpers.RespondError(w, http.StatusUnauthorized, "missing access token")
 		return
 	}
 
-	newToken, err := h.authClient.RefreshToken(r.Context(), token)
+	newToken, err := h.refreshTokenUC.Execute(r.Context(), &refreshtoken.Request{
+		RefreshToken: token,
+	})
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 	helpers.SetTokenPairToCookies(
@@ -145,7 +191,6 @@ func (h *Auth) RefreshToken(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} dto.MessageResponse
-// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/logout [post]
@@ -156,24 +201,37 @@ func (h *Auth) Logout(w http.ResponseWriter, r *http.Request) {
 		helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 		return
 	}
-	_ = h.authClient.Logout(r.Context(), refreshToken)
+	err := h.logoutUC.Execute(r.Context(), &logout.Request{Token: refreshToken})
+	if err != nil {
+		helpers.RespondSmartError(w, err)
+		return
+	}
 	helpers.RespondJSON(w, http.StatusOK, dto.MessageResponse{Message: "Successfully log out"})
 }
 
+// GetMe godoc
+// @Summary Returns user info
+// @Tags auth
+// @Produce json
+// @Success 200 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/me [get]
 func (h *Auth) GetMe(w http.ResponseWriter, r *http.Request) {
 	token := helpers.GetAccessTokenFromCookies(r)
 	if token == "" {
-		helpers.RespondError(w, http.StatusBadRequest, "missing access token")
+		helpers.RespondError(w, http.StatusUnauthorized, "missing access token")
 		return
 	}
-	user, err := h.authClient.GetUserMe(r.Context(), token)
+	user, err := h.getUserMeUC.Execute(r.Context(), &getuser.Request{Token: token})
 	if err != nil {
-		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		helpers.RespondSmartError(w, err)
 		return
 	}
 
 	response := dto.UserResponse{
-		Id:        user.Id,
+		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
 		FirstName: user.FirstName,

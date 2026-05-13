@@ -63,7 +63,7 @@ func (s *CandidateService) GetResumeById(
 	req *candidatepb.GetResumeByIdRequest,
 ) (*candidatepb.GetResumeResponse, error) {
 	if req == nil || req.ResumeId == "" || req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "resume_id and user_id is required")
+		return nil, status.Error(codes.InvalidArgument, "resume_id and user_id are required")
 	}
 
 	rid, err := uuid.Parse(req.ResumeId)
