@@ -6,16 +6,19 @@ import (
 	"sync"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
 )
 
 type Consumer struct {
 	mu        sync.Mutex
 	consumers map[string]map[int32]*PartitionConsumer
-	Client *kgo.Client
+	Client    *kgo.Client
+	handler   *eventhandler.Handler
 }
 
-func NewConsumer() *Consumer {
-	return &Consumer{consumers: make(map[string]map[int32]*PartitionConsumer)}
+func NewConsumer(handler *eventhandler.Handler) *Consumer {
+	return &Consumer{consumers: make(map[string]map[int32]*PartitionConsumer), handler: handler}
 }
 
 func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[string][]int32) {
@@ -27,10 +30,10 @@ func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[strin
 			c.consumers[topic] = make(map[int32]*PartitionConsumer)
 		}
 		for _, partition := range partitions {
-			if _, ok := c.consumers[topic][partition]; !ok {
+			if _, ok := c.consumers[topic][partition]; ok {
 				continue
 			}
-			pr := NewPartitionConsumer()
+			pr := NewPartitionConsumer(c.handler)
 			c.consumers[topic][partition] = pr
 
 			go pr.ConsumePartition(topic, partition)
@@ -92,7 +95,6 @@ func (c *Consumer) Poll(ctx context.Context) {
 			if topicConsumers == nil {
 				return
 			}
-
 			partitionTopic.EachPartition(func(partition kgo.FetchPartition) {
 				pr, ok := topicConsumers[partition.Partition]
 				if !ok {

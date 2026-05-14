@@ -15,11 +15,11 @@ const (
 )
 
 type Client struct {
-	conf       *config.SchemaRegistry
+	conf       config.SchemaRegistry
 	httpClient *http.Client
 }
 
-func NewClient(conf *config.SchemaRegistry) *Client {
+func NewClient(conf config.SchemaRegistry) *Client {
 	return &Client{conf: conf, httpClient: &http.Client{Timeout: conf.TimeOut}}
 }
 

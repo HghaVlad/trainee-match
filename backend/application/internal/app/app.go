@@ -7,9 +7,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/kafka"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
@@ -32,9 +39,10 @@ import (
 )
 
 type App struct {
-	httpServer *http.Server
-	pgDB       *pgxpool.Pool
-	logger     *slog.Logger
+	httpServer    *http.Server
+	pgDB          *pgxpool.Pool
+	logger        *slog.Logger
+	kafkaConsumer *kafka.Consumer
 }
 
 func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
@@ -55,6 +63,13 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	compMemProjRepo := repository.NewCompanyMemberProjection(pgDB, txGetter)
 
 	appSnapHasher := hash.NewAppSnapshotHasher()
+
+	schemaRegistryClient := schemaregistry.NewClient(cfg.SchemaRegistry)
+	localRegistry, err := schemaregistry.NewLocalRegistry(ctx, schemaRegistryClient)
+	if err != nil {
+		return nil, err
+	}
+	decoder := schemaregistry.NewDecoder(localRegistry)
 
 	applyUC := apply.NewUsecase(
 		appRepo,
@@ -101,6 +116,19 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	hand := handlers.NewHandler(deps)
 
+	//Event usecases
+	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
+
+	// Kafka
+	eventHandler := eventhandler.NewHandler(decoder, resumeUpserted)
+
+	consumer := kafka.NewConsumer(eventHandler)
+	kafkaConsumerClient, err := kafka.NewClientForConsumer(cfg.Kafka, consumer)
+	if err != nil {
+		return nil, err
+	}
+	consumer.Client = kafkaConsumerClient
+
 	router := apphttp.NewRouter(hand, authMiddleware, logger)
 
 	httpServer := &http.Server{
@@ -111,21 +139,36 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	}
 
 	return &App{
-		httpServer: httpServer,
-		logger:     logger,
-		pgDB:       pgDB,
+		httpServer:    httpServer,
+		logger:        logger,
+		pgDB:          pgDB,
+		kafkaConsumer: consumer,
 	}, nil
 }
 
 func (app *App) Run(ctx context.Context) error {
-	app.logger.InfoContext(ctx, "starting http server", "addr", app.httpServer.Addr)
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		app.logger.InfoContext(ctx, "starting http server", "addr", app.httpServer.Addr)
 
-	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		app.logger.Info("starting the kafka consumer")
+		app.kafkaConsumer.Poll(ctx)
+		app.logger.Info("finishing the kafka consumer")
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		return err
 	}
 
-	app.logger.InfoContext(ctx, "http server stopped")
-	return nil
+	return g.Wait()
 }
 
 func (app *App) Shutdown(ctx context.Context) {

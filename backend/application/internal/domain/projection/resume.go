@@ -20,3 +20,27 @@ type Resume struct {
 var (
 	ErrResumeNotFound = errors.New("resume projection not found")
 )
+
+type ResumeUpsertedEvent struct {
+	EventID     uuid.UUID    `avro:"event_id"`
+	ResumeID    uuid.UUID    `avro:"resume_id"`
+	OccurredAt  time.Time    `avro:"occurred_at"`
+	CandidateID uuid.UUID    `avro:"candidate_id"`
+	Name        string       `avro:"name"`
+	Data        ResumeData   `avro:"data"`
+	Status      ResumeStatus `avro:"status"`
+	CreatedAt   *time.Time   `avro:"created_at"`
+	UpdatedAt   *time.Time   `avro:"updated_at"`
+}
+
+func (ev ResumeUpsertedEvent) ToResume() Resume {
+	return Resume{
+		ID:          ev.ResumeID,
+		CandidateID: ev.CandidateID,
+		Name:        ev.Name,
+		Data:        ev.Data,
+		Status:      ev.Status,
+		CreatedAt:   ev.CreatedAt,
+		UpdatedAt:   ev.UpdatedAt,
+	}
+}

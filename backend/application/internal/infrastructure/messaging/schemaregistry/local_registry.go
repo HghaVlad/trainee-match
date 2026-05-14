@@ -32,7 +32,7 @@ func NewLocalRegistry(ctx context.Context, realClient *Client) (*LocalRegistry, 
 
 		avroSchema, err := avro.Parse(schema)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse avro schema: %v", err)
+			return nil, fmt.Errorf("failed to parse avro schema: %w", err)
 		}
 		avroSchemas[id] = avroSchema
 	}
@@ -64,13 +64,13 @@ func parseSchemasFS() (map[string]string, error) {
 
 	files, err := schemasFS.ReadDir(".")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read schemas dir: %v", err)
+		return nil, fmt.Errorf("failed to read schemas dir: %w", err)
 	}
 	for _, f := range files {
 		name := strings.TrimSuffix(f.Name(), ".avsc") + "-value"
 		content, err := schemasFS.ReadFile(f.Name())
 		if err != nil {
-			return nil, fmt.Errorf("failed to read schemas file: %v", err)
+			return nil, fmt.Errorf("failed to read schemas file: %w", err)
 		}
 		schemas[name] = string(content)
 	}

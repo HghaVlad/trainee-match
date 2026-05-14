@@ -3,6 +3,6 @@ package config
 import "time"
 
 type SchemaRegistry struct {
-	BaseURL string
-	TimeOut time.Duration
+	BaseURL string        `mapstructure:"base_url"`
+	TimeOut time.Duration `mapstructure:"timeout"`
 }

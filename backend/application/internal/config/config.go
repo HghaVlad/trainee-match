@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	DB   DB   `mapstructure:"db"`
-	HTTP HTTP `mapstructure:"http"`
+	DB             DB             `mapstructure:"db"`
+	HTTP           HTTP           `mapstructure:"http"`
+	Kafka          Kafka          `mapstructure:"kafka"`
+	SchemaRegistry SchemaRegistry `mapstructure:"schema_registry"`
 }
 
 func Load() (*Config, error) {
@@ -28,6 +30,14 @@ func Load() (*Config, error) {
 	_ = v.BindEnv("db.name")
 	_ = v.BindEnv("http.addr")
 	_ = v.BindEnv("http.jwkurl")
+
+	_ = v.BindEnv("kafka.BROKERS")
+	_ = v.BindEnv("kafka.CLIENT_ID")
+	_ = v.BindEnv("kafka.CONSUMER_GROUP")
+	_ = v.BindEnv("kafka.CONSUMER_TOPICS")
+	_ = v.BindEnv("kafka.PRODUCER_ACKS")
+	_ = v.BindEnv("kafka.PRODUCER_LINGER")
+	_ = v.BindEnv("schema_registry.base_url")
 
 	var cfg Config
 

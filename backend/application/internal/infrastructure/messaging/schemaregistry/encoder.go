@@ -27,7 +27,7 @@ func (en *Encoder) eventToByte(subject string, event any) ([]byte, error) {
 
 	encodedEvent, err := avro.Marshal(schema, event)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding event for subject '%s': %v", subject, err)
+		return nil, fmt.Errorf("error encoding event for subject '%s': %w", subject, err)
 	}
 
 	const magicByteAndUint32 = 5
