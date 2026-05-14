@@ -43,7 +43,7 @@ func (cl *Client) LookUpSchemaID(ctx context.Context, subject string, schema str
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return -1, fmt.Errorf("schema registry returned non-200 status code: %d", resp.StatusCode)
 	}
 
