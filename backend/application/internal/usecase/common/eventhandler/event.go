@@ -6,3 +6,11 @@ type Event struct {
 	Key     []byte
 	Payload []byte
 }
+
+type ResultStatus string
+
+const (
+	ResultStatusSuccess ResultStatus = "success"
+	ResultStatusRetry   ResultStatus = "error"
+	ResultStatusDLQ     ResultStatus = "dlq"
+)

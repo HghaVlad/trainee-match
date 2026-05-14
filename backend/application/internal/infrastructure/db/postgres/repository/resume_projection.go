@@ -93,3 +93,15 @@ func (r *ResumeProjection) Save(ctx context.Context, resume *projection.Resume) 
 
 	return nil
 }
+
+func (r *ResumeProjection) Delete(ctx context.Context, resumeID uuid.UUID) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `DELETE FROM resume_projection WHERE id = $1`
+
+	_, err := q.Exec(ctx, query, resumeID)
+	if err != nil {
+		return fmt.Errorf("delete resume projection: %w", err)
+	}
+	return nil
+}

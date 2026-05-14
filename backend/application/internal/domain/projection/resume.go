@@ -44,3 +44,9 @@ func (ev ResumeUpsertedEvent) ToResume() Resume {
 		UpdatedAt:   ev.UpdatedAt,
 	}
 }
+
+type ResumeDeletedEvent struct {
+	EventID    uuid.UUID `avro:"event_id"`
+	ResumeID   uuid.UUID `avro:"resume_id"`
+	OccurredAt time.Time `avro:"occurred_at"`
+}

@@ -34,6 +34,40 @@ func (d *Decoder) DecodeResumeUpsertedEvent(_ context.Context, data []byte) (pro
 	return event, nil
 }
 
+func (d *Decoder) DecodeResumeDeletedEvent(_ context.Context, data []byte) (projection.ResumeDeletedEvent, error) {
+	schemaID := getSchemaID(data)
+	schema, err := d.registry.GetSchemaByID(schemaID)
+	if err != nil {
+		return projection.ResumeDeletedEvent{}, err
+	}
+
+	var event projection.ResumeDeletedEvent
+	err = avro.Unmarshal(schema, data[5:], &event)
+	if err != nil {
+		return projection.ResumeDeletedEvent{}, fmt.Errorf("failed to unmarshal avro event: %w", err)
+	}
+
+	return event, nil
+}
+
+func (d *Decoder) DecodeCandidateUpsertedEvent(
+	_ context.Context,
+	data []byte,
+) (projection.CandidateUpsertedEvent, error) {
+	schemaID := getSchemaID(data)
+	schema, err := d.registry.GetSchemaByID(schemaID)
+	if err != nil {
+		return projection.CandidateUpsertedEvent{}, err
+	}
+
+	var event projection.CandidateUpsertedEvent
+	err = avro.Unmarshal(schema, data[5:], &event)
+	if err != nil {
+		return projection.CandidateUpsertedEvent{}, fmt.Errorf("failed to unmarshal avro event: %w", err)
+	}
+	return event, nil
+}
+
 func getSchemaID(bytes []byte) int {
 	bytes = bytes[1:] // magic byte
 	schemaID := binary.BigEndian.Uint32(bytes)

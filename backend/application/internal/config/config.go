@@ -12,6 +12,7 @@ type Config struct {
 	HTTP           HTTP           `mapstructure:"http"`
 	Kafka          Kafka          `mapstructure:"kafka"`
 	SchemaRegistry SchemaRegistry `mapstructure:"schema_registry"`
+	KafkaHandling  KafkaHandling  `mapstructure:"kafka_handling"`
 }
 
 func Load() (*Config, error) {
@@ -38,6 +39,9 @@ func Load() (*Config, error) {
 	_ = v.BindEnv("kafka.PRODUCER_ACKS")
 	_ = v.BindEnv("kafka.PRODUCER_LINGER")
 	_ = v.BindEnv("schema_registry.base_url")
+
+	_ = v.BindEnv("kafka_handling.retry_delay")
+	_ = v.BindEnv("kafka_handling.retry_count")
 
 	var cfg Config
 

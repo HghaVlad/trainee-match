@@ -3,6 +3,7 @@ package schemaregistry
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/hamba/avro/v2"
@@ -62,13 +63,13 @@ func (reg *LocalRegistry) GetSchemaByID(id int) (avro.Schema, error) {
 func parseSchemasFS() (map[string]string, error) {
 	schemas := make(map[string]string)
 
-	files, err := schemasFS.ReadDir(".")
+	files, err := schemasFS.ReadDir("avroschemas")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read schemas dir: %w", err)
 	}
 	for _, f := range files {
 		name := strings.TrimSuffix(f.Name(), ".avsc") + "-value"
-		content, err := schemasFS.ReadFile(f.Name())
+		content, err := schemasFS.ReadFile(path.Join("avroschemas", f.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read schemas file: %w", err)
 		}

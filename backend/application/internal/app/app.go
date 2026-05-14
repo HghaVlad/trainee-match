@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
 
@@ -118,9 +121,17 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	//Event usecases
 	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
+	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
+	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
 
 	// Kafka
-	eventHandler := eventhandler.NewHandler(decoder, resumeUpserted)
+	eventHandler := eventhandler.NewHandler(
+		decoder,
+		cfg.KafkaHandling,
+		resumeUpserted,
+		resumeDeleted,
+		candidateUpserted,
+	)
 
 	consumer := kafka.NewConsumer(eventHandler)
 	kafkaConsumerClient, err := kafka.NewClientForConsumer(cfg.Kafka, consumer)
