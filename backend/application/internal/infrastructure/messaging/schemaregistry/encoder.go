@@ -5,6 +5,12 @@ import (
 	"fmt"
 
 	"github.com/hamba/avro/v2"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/dlq"
+)
+
+const (
+	dlqSubject = "dlq-value"
 )
 
 type Encoder struct {
@@ -13,6 +19,10 @@ type Encoder struct {
 
 func NewEncoder(registry *LocalRegistry) *Encoder {
 	return &Encoder{registry: registry}
+}
+
+func (en *Encoder) DLQToBytes(message dlq.Message) ([]byte, error) {
+	return en.eventToByte(dlqSubject, message)
 }
 
 func (en *Encoder) eventToByte(subject string, event any) ([]byte, error) {

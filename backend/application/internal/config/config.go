@@ -38,7 +38,9 @@ func Load() (*Config, error) {
 	_ = v.BindEnv("kafka.CONSUMER_TOPICS")
 	_ = v.BindEnv("kafka.PRODUCER_ACKS")
 	_ = v.BindEnv("kafka.PRODUCER_LINGER")
+	_ = v.BindEnv("kafka.DLQ_TOPIC")
 	_ = v.BindEnv("schema_registry.base_url")
+	_ = v.BindEnv("schema_registry.timeout")
 
 	_ = v.BindEnv("kafka_handling.retry_delay")
 	_ = v.BindEnv("kafka_handling.retry_count")

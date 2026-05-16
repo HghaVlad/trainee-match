@@ -11,4 +11,5 @@ type Kafka struct {
 
 	ProducerAcks   string        `mapstructure:"PRODUCER_ACKS"`
 	ProducerLinger time.Duration `mapstructure:"PRODUCER_LINGER"`
+	DLQTopic       string        `mapstructure:"DLQ_TOPIC"`
 }

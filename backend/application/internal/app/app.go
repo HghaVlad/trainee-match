@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/dlq"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
@@ -46,6 +48,7 @@ type App struct {
 	pgDB          *pgxpool.Pool
 	logger        *slog.Logger
 	kafkaConsumer *kafka.Consumer
+	kafkaProducer *kafka.Producer
 }
 
 func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
@@ -73,6 +76,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		return nil, err
 	}
 	decoder := schemaregistry.NewDecoder(localRegistry)
+	encoder := schemaregistry.NewEncoder(localRegistry)
 
 	applyUC := apply.NewUsecase(
 		appRepo,
@@ -124,10 +128,19 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
 	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
 
-	// Kafka
+	// Kafka Producer
+	kafkaProducerClient, err := kafka.NewClientForProducer(cfg.Kafka)
+	if err != nil {
+		return nil, err
+	}
+	kafkaProducer := kafka.NewProducer(kafkaProducerClient, cfg.Kafka)
+	dlqSender := dlq.NewSender(kafkaProducer, encoder)
+
+	// Kafka Consumer
 	eventHandler := eventhandler.NewHandler(
 		decoder,
 		cfg.KafkaHandling,
+		dlqSender,
 		resumeUpserted,
 		resumeDeleted,
 		candidateUpserted,
@@ -192,6 +205,9 @@ func (app *App) Shutdown(ctx context.Context) {
 	}
 
 	app.pgDB.Close()
+
+	app.kafkaProducer.Shutdown()
+	app.kafkaConsumer.Shutdown()
 
 	app.logger.InfoContext(ctx, "app gracefully stopped")
 }
