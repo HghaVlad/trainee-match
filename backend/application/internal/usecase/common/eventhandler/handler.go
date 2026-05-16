@@ -13,26 +13,50 @@ import (
 )
 
 type Handler struct {
-	decoder           Decoder
-	cfg               config.KafkaHandling
-	dLQSender         DLQSender
-	resumeUpserted    ResumeUpsertedUsecase
-	ResumeDeleted     ResumeDeletedUsecase
-	candidateUpserted CandidateUpsertedUsecase
+	decoder              Decoder
+	cfg                  config.KafkaHandling
+	dLQSender            DLQSender
+	resumeUpserted       ResumeUpsertedUsecase
+	ResumeDeleted        ResumeDeletedUsecase
+	candidateUpserted    CandidateUpsertedUsecase
+	companyUpdated       CompanyUpdatedUsecase
+	companyDeleted       CompanyDeletedUsecase
+	companyMemberAdded   CompanyMemberAddedUsecase
+	companyMemberRemoved CompanyMemberRemovedUsecase
+	vacancyPublished     VacancyPublishedUsecase
+	vacancyArchived      VacancyArchivedUsecase
+	vacancyUpdated       VacancyUpdatedUsecase
 }
 
-func NewHandler(decoder Decoder, cfg config.KafkaHandling, sender DLQSender,
+func NewHandler(
+	decoder Decoder,
+	cfg config.KafkaHandling,
+	sender DLQSender,
 	resumeUpsertedUsecase ResumeUpsertedUsecase,
 	resumeDeletedUsecase ResumeDeletedUsecase,
 	candidateUpsertedUsecase CandidateUpsertedUsecase,
+	companyUpdatedUsecase CompanyUpdatedUsecase,
+	companyDeletedUsecase CompanyDeletedUsecase,
+	companyMemberAddedUsecase CompanyMemberAddedUsecase,
+	companyMemberRemovedUsecase CompanyMemberRemovedUsecase,
+	vacancyPublishedUsecase VacancyPublishedUsecase,
+	vacancyArchivedUsecase VacancyArchivedUsecase,
+	vacancyUpdatedUsecase VacancyUpdatedUsecase,
 ) *Handler {
 	return &Handler{
-		decoder:           decoder,
-		cfg:               cfg,
-		dLQSender:         sender,
-		resumeUpserted:    resumeUpsertedUsecase,
-		ResumeDeleted:     resumeDeletedUsecase,
-		candidateUpserted: candidateUpsertedUsecase,
+		decoder:              decoder,
+		cfg:                  cfg,
+		dLQSender:            sender,
+		resumeUpserted:       resumeUpsertedUsecase,
+		ResumeDeleted:        resumeDeletedUsecase,
+		candidateUpserted:    candidateUpsertedUsecase,
+		companyUpdated:       companyUpdatedUsecase,
+		companyDeleted:       companyDeletedUsecase,
+		companyMemberAdded:   companyMemberAddedUsecase,
+		companyMemberRemoved: companyMemberRemovedUsecase,
+		vacancyPublished:     vacancyPublishedUsecase,
+		vacancyArchived:      vacancyArchivedUsecase,
+		vacancyUpdated:       vacancyUpdatedUsecase,
 	}
 }
 
@@ -62,6 +86,20 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 			status, err = h.handleResumeDeletedEvent(ctx, event.Payload)
 		case "CandidateUpserted":
 			status, err = h.handleCandidateUpsertedEvent(ctx, event.Payload)
+		case "CompanyUpdated":
+			status, err = h.handleCompanyUpdatedEvent(ctx, event.Payload)
+		case "CompanyDeleted":
+			status, err = h.handleCompanyDeletedEvent(ctx, event.Payload)
+		case "CompanyMemberAdded":
+			status, err = h.handleCompanyMemberAddedEvent(ctx, event.Payload)
+		case "CompanyMemberRemoved":
+			status, err = h.handleCompanyMemberRemovedEvent(ctx, event.Payload)
+		case "VacancyPublished":
+			status, err = h.handleVacancyPublishedEvent(ctx, event.Payload)
+		case "VacancyArchived":
+			status, err = h.handleVacancyArchivedEvent(ctx, event.Payload)
+		case "VacancyUpdated":
+			status, err = h.handleVacancyUpdatedEvent(ctx, event.Payload)
 		default:
 			slog.Warn("Unknown event type: %s", eventType)
 			return
@@ -116,6 +154,97 @@ func (h *Handler) handleCandidateUpsertedEvent(ctx context.Context, payload []by
 	}
 
 	err = h.candidateUpserted.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleCompanyUpdatedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeCompanyUpdatedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.companyUpdated.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleCompanyDeletedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeCompanyDeletedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.companyDeleted.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleCompanyMemberAddedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeCompanyMemberAddedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.companyMemberAdded.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleCompanyMemberRemovedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeCompanyMemberRemovedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.companyMemberRemoved.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleVacancyPublishedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeVacancyPublishedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.vacancyPublished.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleVacancyArchivedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeVacancyArchivedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.vacancyArchived.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleVacancyUpdatedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeVacancyUpdatedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.vacancyUpdated.Execute(ctx, event)
 	if err != nil {
 		return ResultStatusRetry, err
 	}

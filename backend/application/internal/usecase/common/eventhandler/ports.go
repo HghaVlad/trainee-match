@@ -11,6 +11,13 @@ type Decoder interface {
 	DecodeResumeUpsertedEvent(ctx context.Context, data []byte) (projection.ResumeUpsertedEvent, error)
 	DecodeResumeDeletedEvent(ctx context.Context, data []byte) (projection.ResumeDeletedEvent, error)
 	DecodeCandidateUpsertedEvent(ctx context.Context, data []byte) (projection.CandidateUpsertedEvent, error)
+	DecodeCompanyUpdatedEvent(ctx context.Context, data []byte) (projection.CompanyUpdatedEvent, error)
+	DecodeCompanyDeletedEvent(ctx context.Context, data []byte) (projection.CompanyDeletedEvent, error)
+	DecodeCompanyMemberAddedEvent(ctx context.Context, data []byte) (projection.CompanyMemberAddedEvent, error)
+	DecodeCompanyMemberRemovedEvent(ctx context.Context, data []byte) (projection.CompanyMemberRemovedEvent, error)
+	DecodeVacancyPublishedEvent(ctx context.Context, data []byte) (projection.VacancyPublishedEvent, error)
+	DecodeVacancyArchivedEvent(ctx context.Context, data []byte) (projection.VacancyArchivedEvent, error)
+	DecodeVacancyUpdatedEvent(ctx context.Context, data []byte) (projection.VacancyUpdatedEvent, error)
 }
 
 type DLQSender interface {
@@ -27,4 +34,32 @@ type ResumeDeletedUsecase interface {
 
 type CandidateUpsertedUsecase interface {
 	Execute(ctx context.Context, event projection.CandidateUpsertedEvent) error
+}
+
+type CompanyUpdatedUsecase interface {
+	Execute(ctx context.Context, event projection.CompanyUpdatedEvent) error
+}
+
+type CompanyDeletedUsecase interface {
+	Execute(ctx context.Context, event projection.CompanyDeletedEvent) error
+}
+
+type CompanyMemberAddedUsecase interface {
+	Execute(ctx context.Context, event projection.CompanyMemberAddedEvent) error
+}
+
+type CompanyMemberRemovedUsecase interface {
+	Execute(ctx context.Context, event projection.CompanyMemberRemovedEvent) error
+}
+
+type VacancyPublishedUsecase interface {
+	Execute(ctx context.Context, event projection.VacancyPublishedEvent) error
+}
+
+type VacancyArchivedUsecase interface {
+	Execute(ctx context.Context, event projection.VacancyArchivedEvent) error
+}
+
+type VacancyUpdatedUsecase interface {
+	Execute(ctx context.Context, event projection.VacancyUpdatedEvent) error
 }

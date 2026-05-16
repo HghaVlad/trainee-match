@@ -16,8 +16,15 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companydeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberadded"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberremoved"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companyupdated"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyarchived"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancypublished"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyupdated"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
 
@@ -127,6 +134,13 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
 	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
 	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
+	companyUpdated := companyupdated.NewUsecase(vacProjRepo)
+	companyDeleted := companydeleted.NewUsecase(compMemProjRepo, vacProjRepo)
+	companyMemberAdded := companymemberadded.NewUsecase(compMemProjRepo)
+	companyMemberRemoved := companymemberremoved.NewUsecase(compMemProjRepo)
+	vacancyPublished := vacancypublished.NewUsecase(vacProjRepo)
+	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo)
+	vacancyUpdated := vacancyupdated.NewUsecase(vacProjRepo)
 
 	// Kafka Producer
 	kafkaProducerClient, err := kafka.NewClientForProducer(cfg.Kafka)
@@ -144,6 +158,13 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		resumeUpserted,
 		resumeDeleted,
 		candidateUpserted,
+		companyUpdated,
+		companyDeleted,
+		companyMemberAdded,
+		companyMemberRemoved,
+		vacancyPublished,
+		vacancyArchived,
+		vacancyUpdated,
 	)
 
 	consumer := kafka.NewConsumer(eventHandler)
