@@ -246,7 +246,7 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /companies/{id}/moderation [patch]
+// @Router /admin/companies/{id}/moderation [patch]
 func (h *CompanyHandler) UpdateModeration(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -321,6 +321,7 @@ func (h *CompanyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, identity.ErrAdminRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		helpers.RespondError(ctx, w, http.StatusForbidden, err)

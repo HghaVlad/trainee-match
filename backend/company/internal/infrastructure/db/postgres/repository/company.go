@@ -22,6 +22,8 @@ type CompanyRepository struct {
 	db *pgxpool.Pool
 }
 
+// TODO: SELECTS should ignore not ok mod status (maybe select and then check for candidates if it is okay and return 404 otherwise)
+
 func NewCompanyRepository(db *pgxpool.Pool) *CompanyRepository {
 	return &CompanyRepository{db: db}
 }

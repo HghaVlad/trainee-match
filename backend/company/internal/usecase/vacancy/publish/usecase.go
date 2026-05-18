@@ -46,6 +46,8 @@ func NewUsecase(
 	}
 }
 
+// TODO: check if mod status is okay (maybe)
+
 // Execute publishes vacancy, thus makes it available for candidates.
 // Increases company open vacancies count and creates vacancy.PublishedEvent, if vacancy wasn't published.
 // Returns vacacny.ErrNotFound if it was.

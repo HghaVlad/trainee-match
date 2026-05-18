@@ -24,6 +24,8 @@ type VacancyRepo struct {
 	db *pgxpool.Pool
 }
 
+// TODO: ensure vacancies have mod status ok when selected
+
 func NewVacancyRepo(db *pgxpool.Pool) *VacancyRepo {
 	return &VacancyRepo{db: db}
 }

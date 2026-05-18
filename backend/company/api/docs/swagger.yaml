@@ -364,6 +364,15 @@ definitions:
           $ref: '#/definitions/dto.VacancyListItemResponse'
         type: array
     type: object
+  dto.VacancyModerationUpdateRequest:
+    properties:
+      status:
+        enum:
+        - ok
+        - hidden
+        example: hidden
+        type: string
+    type: object
   dto.VacancyPublicResponse:
     properties:
       city:
@@ -496,6 +505,98 @@ info:
   title: 'Trainee Match: Company Service API'
   version: "1.0"
 paths:
+  /admin/companies/{id}/moderation:
+    patch:
+      consumes:
+      - application/json
+      description: Updates moderation status of company. Only platform admin can do
+        this
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderation update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyModerationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update company moderation status
+      tags:
+      - admin-company
+  /admin/vacancies/{id}/moderation:
+    patch:
+      consumes:
+      - application/json
+      description: Updates moderation status of vacancy. Only platform admin can do
+        this
+      parameters:
+      - description: Vacancy ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderation update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyModerationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update vacancy moderation status
+      tags:
+      - admin-vacancy
   /companies:
     get:
       consumes:
@@ -1295,52 +1396,6 @@ paths:
       summary: Me returns company member
       tags:
       - member
-  /companies/{id}/moderation:
-    patch:
-      consumes:
-      - application/json
-      description: Updates moderation status of company. Only platform admin can do
-        this
-      parameters:
-      - description: Company ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Moderation update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CompanyModerationUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Update company moderation status
-      tags:
-      - admin-company
   /companies/me:
     get:
       consumes:

@@ -164,3 +164,7 @@ type VacancyUpdateRequest struct {
 
 	InternshipToOffer *bool `json:"internshipToOffer,omitempty" example:"true"`
 }
+
+type VacancyModerationUpdateRequest struct {
+	Status string `json:"status" enums:"ok,hidden" example:"hidden"`
+}

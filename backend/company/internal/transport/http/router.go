@@ -45,11 +45,6 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
 
-					r.With(deps.AuthMiddleware.Handler,
-						compmiddleware.BindJSONBodyMiddleware[dto.CompanyModerationUpdateRequest](),
-						compmiddleware.LoggingMiddleware).
-						Patch("/moderation", deps.CompanyHandler.UpdateModeration)
-
 					r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)
 				})
@@ -122,6 +117,20 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			r.With(compmiddleware.UUIDMiddleware("id"), compmiddleware.LoggingMiddleware).
 				Get("/{id}", deps.VacancyHandler.GetPublishedByID)
+		})
+
+	router.With(compmiddleware.TimeoutMiddleware(10*time.Second),
+		deps.AuthMiddleware.FakeHandler). // TODO: change to actual handler
+		Route("/api/v1/admin", func(r chi.Router) {
+			r.With(compmiddleware.UUIDMiddleware("id"),
+				compmiddleware.BindJSONBodyMiddleware[dto.CompanyModerationUpdateRequest](),
+				compmiddleware.LoggingMiddleware).
+				Patch("/companies/{id}/moderation", deps.CompanyHandler.UpdateModeration)
+
+			r.With(compmiddleware.UUIDMiddleware("id"),
+				compmiddleware.BindJSONBodyMiddleware[dto.VacancyModerationUpdateRequest](),
+				compmiddleware.LoggingMiddleware).
+				Patch("/vacancies/{id}/moderation", deps.VacancyHandler.UpdateModeration)
 		})
 
 	addHello(router)
