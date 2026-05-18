@@ -262,29 +262,41 @@ func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uu
 	return nil
 }
 
-func (repo *CompanyRepository) UpdateModerationStatus(
+func (repo *CompanyRepository) UpdateModerationStatusAndGetOld(
 	ctx context.Context,
 	companyID uuid.UUID,
 	status company.ModerationStatus,
-) error {
-	const query = `
-		UPDATE companies
-		SET moderation_status = $1
-		WHERE id = $2
-	`
-
+) (company.ModerationStatus, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
-	cmd, err := q.Exec(ctx, query, status, companyID)
+	const query = `
+		WITH old AS (
+			SELECT moderation_status
+			FROM companies
+			WHERE id = $1
+		)
+		UPDATE companies
+		SET moderation_status = $2
+		FROM old
+		WHERE id = $1
+		RETURNING old.moderation_status`
+
+	var oldStatus company.ModerationStatus
+
+	err := q.QueryRow(ctx, query, companyID, status).Scan(&oldStatus)
+
 	if err != nil {
-		return fmt.Errorf("update company moderation status: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", company.ErrCompanyNotFound
+		}
+
+		return "", fmt.Errorf(
+			"update company moderation status: %w",
+			err,
+		)
 	}
 
-	if cmd.RowsAffected() == 0 {
-		return company.ErrCompanyNotFound
-	}
-
-	return nil
+	return oldStatus, nil
 }
 
 func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {

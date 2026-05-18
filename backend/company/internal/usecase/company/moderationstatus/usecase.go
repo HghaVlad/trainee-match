@@ -32,8 +32,6 @@ func NewUsecase(
 	}
 }
 
-// TODO: make deduplication of hide hide
-
 func (u *Usecase) Execute(
 	ctx context.Context,
 	req *Request,
@@ -46,30 +44,37 @@ func (u *Usecase) Execute(
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
-	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		err := u.authorize(identity)
+	now := time.Now().UTC()
+
+	err := u.authorize(identity)
+	if err != nil {
+		return err
+	}
+
+	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		oldStatus, err := u.compRepo.UpdateModerationStatusAndGetOld(ctx, req.ID, req.Status)
 		if err != nil {
 			return err
 		}
 
-		err = u.compRepo.UpdateModerationStatus(ctx, req.ID, req.Status)
+		if oldStatus == req.Status {
+			return nil
+		}
+
+		err = u.createModerationUpdatedEvent(ctx, req.ID, req.Status, now)
 		if err != nil {
 			return err
 		}
-
-		err = u.createModerationUpdatedEvent(
-			ctx,
-			req.ID,
-			req.Status,
-		)
-		if err != nil {
-			return err
-		}
-
-		u.cache.Del(ctx, req.ID)
 
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
+
+	u.cache.Del(ctx, req.ID)
+	return nil
 }
 
 func (u *Usecase) authorize(ident *identity.Identity) error {
@@ -84,12 +89,13 @@ func (u *Usecase) createModerationUpdatedEvent(
 	ctx context.Context,
 	companyID uuid.UUID,
 	status company.ModerationStatus,
+	when time.Time,
 ) error {
 	ev := company.ModerationUpdatedEvent{
 		EventID:          uuid.New(),
 		CompanyID:        companyID,
 		ModerationStatus: status,
-		OccurredAt:       time.Now().UTC(),
+		OccurredAt:       when,
 	}
 
 	return u.outboxWriter.WriteCompanyModerationUpdated(ctx, ev)

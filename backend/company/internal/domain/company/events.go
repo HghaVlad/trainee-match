@@ -16,7 +16,7 @@ type UpdatedEvent struct {
 type ModerationUpdatedEvent struct {
 	EventID          uuid.UUID        `avro:"event_id"`
 	CompanyID        uuid.UUID        `avro:"company_id"`
-	ModerationStatus ModerationStatus `avro:"status"`
+	ModerationStatus ModerationStatus `avro:"moderation_status"`
 	OccurredAt       time.Time        `avro:"occurred_at"`
 }
 

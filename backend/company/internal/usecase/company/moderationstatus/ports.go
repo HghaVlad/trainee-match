@@ -9,7 +9,11 @@ import (
 )
 
 type companyRepo interface {
-	UpdateModerationStatus(ctx context.Context, companyID uuid.UUID, status company.ModerationStatus) error
+	UpdateModerationStatusAndGetOld(
+		ctx context.Context,
+		companyID uuid.UUID,
+		status company.ModerationStatus,
+	) (company.ModerationStatus, error)
 }
 
 type outboxWriter interface {
