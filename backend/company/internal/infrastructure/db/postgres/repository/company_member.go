@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,6 +14,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 )
 
 type CompanyMemberRepo struct {

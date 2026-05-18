@@ -24,8 +24,9 @@ const (
 	EventTypeRecruiterAdded   EventType = "CompanyMemberAdded"
 	EventTypeRecruiterRemoved EventType = "CompanyMemberRemoved"
 
-	EventTypeCompanyDeleted EventType = "CompanyDeleted"
-	EventTypeCompanyUpdated EventType = "CompanyUpdated"
+	EventTypeCompanyModerationUpdated EventType = "CompanyModerationUpdated"
+	EventTypeCompanyDeleted           EventType = "CompanyDeleted"
+	EventTypeCompanyUpdated           EventType = "CompanyUpdated"
 )
 
 const defaultMaxAttempts = 5
@@ -185,6 +186,35 @@ func (w *Writer) WriteCompanyUpdated(ctx context.Context, ev company.UpdatedEven
 	if err != nil {
 		return fmt.Errorf("write recruiter added outbox: %w ", err)
 	}
+	return nil
+}
+
+func (w *Writer) WriteCompanyModerationUpdated(
+	ctx context.Context,
+	ev company.ModerationUpdatedEvent,
+) error {
+	payload, err := w.encoder.CompanyModerationUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("encode company moderation updated: %w", err)
+	}
+
+	key := ev.CompanyID[:]
+
+	msg := w.createDefaultMsg(
+		ev.CompanyID,
+		payload,
+		key,
+		w.cfg.CompanyTopic,
+		EventTypeCompanyModerationUpdated,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write company moderation updated outbox: %w", err)
+	}
+
 	return nil
 }
 

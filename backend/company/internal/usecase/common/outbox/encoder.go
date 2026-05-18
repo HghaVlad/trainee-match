@@ -14,6 +14,7 @@ type Encoder interface {
 	CompanyMemberAddedToBytes(ev member.AddedEvent) ([]byte, error)
 	CompanyMemberRemovedToBytes(ev member.RemovedEvent) ([]byte, error)
 
-	CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error)
 	CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error)
+	CompanyModerationUpdatedToBytes(ev company.ModerationUpdatedEvent) ([]byte, error)
+	CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error)
 }

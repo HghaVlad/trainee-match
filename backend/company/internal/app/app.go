@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	membme "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/me"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -32,10 +31,12 @@ import (
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	listcompmy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/moderationstatus"
 	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 	addmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	listmember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
+	membme "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/me"
 	removemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/remove"
 	updatemember "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
@@ -120,6 +121,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListMemUc := listmember.NewUsecase(memRepo)
 	compDeleteMemberUc := removemember.NewUsecase(memRepo, outboxWriter, txManager)
 	compUpdateMemberUc := updatemember.NewUsecase(memRepo)
+	compUpdModerationUc := moderationstatus.NewUsecase(compRepo, outboxWriter, txManager, compCache)
 
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
@@ -153,6 +155,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compCreateUc,
 		compListUc,
 		compListMy,
+		compUpdModerationUc,
 		compUpdateUc,
 		compDeleteUc,
 	)

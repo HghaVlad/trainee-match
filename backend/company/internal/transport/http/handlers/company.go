@@ -19,6 +19,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
@@ -29,6 +30,7 @@ type CompanyHandler struct {
 	list    *list.Usecase
 	listMy  *listmy.Usecase
 	update  *update.Usecase
+	updMod  *moderationstatus.Usecase
 	delete  *remove.Usecase
 }
 
@@ -37,6 +39,7 @@ func NewCompanyHandler(
 	create *create.Usecase,
 	list *list.Usecase,
 	listMy *listmy.Usecase,
+	updMod *moderationstatus.Usecase,
 	upd *update.Usecase,
 	del *remove.Usecase,
 ) *CompanyHandler {
@@ -46,6 +49,7 @@ func NewCompanyHandler(
 		list:    list,
 		listMy:  listMy,
 		update:  upd,
+		updMod:  updMod,
 		delete:  del,
 	}
 }
@@ -228,6 +232,42 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateModeration godoc
+// @Summary Update company moderation status
+// @Description Updates moderation status of company. Only platform admin can do this
+// @Tags admin-company
+// @Accept json
+// @Produce json
+// @Param id path string true "Company ID"
+// @Param request body dto.CompanyModerationUpdateRequest true "Moderation update request"
+// @Success 204
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{id}/moderation [patch]
+func (h *CompanyHandler) UpdateModeration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	iden := middleware.IdentityFromContext(ctx)
+	id := middleware.UUIDFromContext(ctx, "id")
+	dtoReq := middleware.BodyFromContext[dto.CompanyModerationUpdateRequest](ctx)
+
+	req := &moderationstatus.Request{ID: id, Status: company.ModerationStatus(dtoReq.Status)}
+
+	err := h.updMod.Execute(ctx, req, iden)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update company moderation", "id", id)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Delete godoc
 // @Summary Delete company
 // @Description Deletes company by id
@@ -274,7 +314,8 @@ func (h *CompanyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 		errors.Is(err, company.ErrCompanyInvalidDescriptionLen),
 		errors.Is(err, company.ErrCompanyInvalidNameLen),
 		errors.Is(err, member.ErrInvalidUserID),
-		errors.Is(err, member.ErrInvalidCompanyMemberRole):
+		errors.Is(err, member.ErrInvalidCompanyMemberRole),
+		errors.Is(err, company.ErrInvalidModerationStatus):
 		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
 		return true
 

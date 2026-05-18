@@ -17,8 +17,9 @@ const (
 	vacancyArchivedSubject  = "vacancy-archived-value"
 	vacancyUpdatedSubject   = "vacancy-updated-value"
 
-	companyUpdatedSubject = "company-updated-value"
-	companyDeletedSubject = "company-deleted-value"
+	companyUpdatedSubject           = "company-updated-value"
+	companyModerationUpdatedSubject = "company-moderation-updated-value"
+	companyDeletedSubject           = "company-deleted-value"
 
 	companyMemberAddedSubject   = "company-member-added-value"
 	companyMemberRemovedSubject = "company-member-removed-value"
@@ -74,6 +75,10 @@ func (en *Encoder) CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error
 }
 
 func (en *Encoder) CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, companyUpdatedSubject)
+}
+
+func (en *Encoder) CompanyModerationUpdatedToBytes(ev company.ModerationUpdatedEvent) ([]byte, error) {
 	return en.eventToBytes(ev, companyUpdatedSubject)
 }
 

@@ -23,6 +23,7 @@ type RouterDeps struct {
 	Logger         *slog.Logger
 }
 
+//nolint:funlen // global routing func
 func NewRouter(deps *RouterDeps) http.Handler {
 	router := chi.NewRouter()
 
@@ -43,6 +44,11 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
+
+					r.With(deps.AuthMiddleware.Handler,
+						compmiddleware.BindJSONBodyMiddleware[dto.CompanyModerationUpdateRequest](),
+						compmiddleware.LoggingMiddleware).
+						Patch("/moderation", deps.CompanyHandler.UpdateModeration)
 
 					r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)

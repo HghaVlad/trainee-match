@@ -45,3 +45,7 @@ type CompanyUpdateRequest struct {
 	Description *string `json:"description"    example:"New description"`
 	Website     *string `json:"website"        example:"https://google.com"`
 }
+
+type CompanyModerationUpdateRequest struct {
+	Status string `json:"status" enums:"ok,hidden" example:"hidden"`
+}

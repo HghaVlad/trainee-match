@@ -3,8 +3,9 @@ package me
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 )
 
 type repo interface {
