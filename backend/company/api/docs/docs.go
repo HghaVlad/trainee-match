@@ -1069,6 +1069,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/me": {
+            "get": {
+                "description": "Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Get company by member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyMemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}/members": {
             "get": {
                 "description": "List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.",
@@ -1664,6 +1714,47 @@ const docTemplate = `{
                 },
                 "nextCursor": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.CompanyMemResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "We make the world a better place"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "logoURL": {
+                    "type": "string",
+                    "example": "http://domain/minio/6icinimmck...mksk"
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "example": "hidden"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "openVacanciesCount": {
+                    "type": "integer",
+                    "example": 13
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "website": {
+                    "type": "string",
+                    "example": "https://www.google.com"
                 }
             }
         },

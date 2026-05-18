@@ -31,6 +31,7 @@ import (
 	getcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	listcomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	listcompmy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/memget"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/moderationstatus"
 	removecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	updatecomp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
@@ -112,6 +113,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	dlqSender := dlq.NewSender(cfg.Kafka, kProducer, schemaEncoder)
 
 	compGetByIDUc := getcomp.NewGetByIDUsecase(compRepo, compCache)
+	compGetByMem := memget.NewUsecase(compRepo)
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, txManager)
@@ -162,6 +164,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 
 	companyHandler := handlers.NewCompanyHandler(
 		compGetByIDUc,
+		compGetByMem,
 		compCreateUc,
 		compListUc,
 		compListMy,

@@ -19,23 +19,26 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/listmy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/memget"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
 type CompanyHandler struct {
-	getByID *get.Usecase
-	create  *create.Usecase
-	list    *list.Usecase
-	listMy  *listmy.Usecase
-	update  *update.Usecase
-	updMod  *moderationstatus.Usecase
-	delete  *remove.Usecase
+	getByID  *get.Usecase
+	getByMem *memget.Usecase
+	create   *create.Usecase
+	list     *list.Usecase
+	listMy   *listmy.Usecase
+	update   *update.Usecase
+	updMod   *moderationstatus.Usecase
+	delete   *remove.Usecase
 }
 
 func NewCompanyHandler(
 	get *get.Usecase,
+	getByMem *memget.Usecase,
 	create *create.Usecase,
 	list *list.Usecase,
 	listMy *listmy.Usecase,
@@ -44,13 +47,14 @@ func NewCompanyHandler(
 	del *remove.Usecase,
 ) *CompanyHandler {
 	return &CompanyHandler{
-		getByID: get,
-		create:  create,
-		list:    list,
-		listMy:  listMy,
-		update:  upd,
-		updMod:  updMod,
-		delete:  del,
+		getByID:  get,
+		getByMem: getByMem,
+		create:   create,
+		list:     list,
+		listMy:   listMy,
+		update:   upd,
+		updMod:   updMod,
+		delete:   del,
 	}
 }
 
@@ -81,6 +85,37 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := mappers.GetCompRespToDto(comp)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
+}
+
+// GetByMember
+// @Summary Get company by member
+// @Description Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member
+// @Tags company
+// @Accept json
+// @Produce json
+// @Param id path string true "Company ID (UUID)"
+// @Success 200 {object} dto.CompanyMemResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{id}/me [get]
+func (h *CompanyHandler) GetByMember(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := middleware.UUIDFromContext(ctx, "id")
+	ident := middleware.IdentityFromContext(ctx)
+
+	comp, err := h.getByMem.Execute(ctx, id, ident)
+
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to get company", "id", id)
+		}
+		return
+	}
+
+	resp := mappers.GetCompanyMemToDto(comp)
 	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 

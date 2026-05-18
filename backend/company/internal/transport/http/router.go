@@ -40,6 +40,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				Route("/{id}", func(r chi.Router) {
 					r.Get("/", deps.CompanyHandler.GetByID)
 
+					r.With(deps.AuthMiddleware.FakeHandler, // TODO: change to actual handler
+						compmiddleware.LoggingMiddleware).
+						Get("/me", deps.CompanyHandler.GetByMember)
+
 					r.With(deps.AuthMiddleware.Handler,
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest](),
 						compmiddleware.LoggingMiddleware).

@@ -50,6 +50,36 @@ definitions:
       nextCursor:
         type: string
     type: object
+  dto.CompanyMemResponse:
+    properties:
+      createdAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      description:
+        example: We make the world a better place
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logoURL:
+        example: http://domain/minio/6icinimmck...mksk
+        type: string
+      moderationStatus:
+        example: hidden
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      openVacanciesCount:
+        example: 13
+        type: integer
+      updatedAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
   dto.CompanyMemberFullView:
     properties:
       companyId:
@@ -1170,6 +1200,40 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Update company
+      tags:
+      - company
+  /companies/{id}/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns company by id with moderation status, only for members,
+        even if it's hidden. Returns 404 if user is not member
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyMemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get company by member
       tags:
       - company
   /companies/{id}/members:
