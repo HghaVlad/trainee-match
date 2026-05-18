@@ -14,9 +14,9 @@ func NewClient(cfg config.Redis) (*redis.Client, error) {
 	opts := &redis.Options{
 		Addr:         cfg.Host + ":" + cfg.Port,
 		DialTimeout:  2 * time.Second,
-		ReadTimeout:  200 * time.Millisecond,
-		WriteTimeout: 200 * time.Millisecond,
-		PoolTimeout:  500 * time.Millisecond,
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
+		PoolTimeout:  1 * time.Second,
 	}
 
 	rdb := redis.NewClient(opts)

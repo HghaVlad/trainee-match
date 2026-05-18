@@ -61,11 +61,13 @@ func (u *Usecase) Execute(
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
-	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, compID, identity); err != nil {
-			return err
-		}
+	if err := u.authorize(ctx, compID, identity); err != nil {
+		return err
+	}
 
+	updated := false
+
+	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		oldStatus, err := u.vacRepo.ArchiveAndGetOldStatus(ctx, vacID, compID)
 		if err != nil {
 			return err
@@ -89,10 +91,19 @@ func (u *Usecase) Execute(
 			u.compCache.Del(ctx, compID)
 		}
 
-		u.vacCache.Del(ctx, vacID)
-		u.pubVacCache.Del(ctx, vacID)
+		updated = true
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if updated {
+		u.vacCache.Del(ctx, vacID)
+		u.pubVacCache.Del(ctx, vacID)
+	}
+
+	return nil
 }
 
 // only member of company can archive vacancy

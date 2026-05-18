@@ -49,7 +49,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(deps.AuthMiddleware.Handler,
+			r.With(deps.AuthMiddleware.FakeHandler, // TODO: change to actual handler
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest](),
 				compmiddleware.LoggingMiddleware).
 				Post("/", deps.CompanyHandler.Create)
@@ -85,7 +85,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			// /company/{company-id}/vacancies
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
-				With(deps.AuthMiddleware.Handler).
+				With(deps.AuthMiddleware.FakeHandler). // TODO: change to actual handler
 				Route("/{company-id}/vacancies", func(r chi.Router) {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)

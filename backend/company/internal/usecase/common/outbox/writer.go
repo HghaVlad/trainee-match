@@ -17,9 +17,10 @@ import (
 type EventType string
 
 const (
-	EventTypeVacancyPublished EventType = "VacancyPublished"
-	EventTypeVacancyArchived  EventType = "VacancyArchived"
-	EventTypeVacancyUpdated   EventType = "VacancyUpdated"
+	EventTypeVacancyPublished         EventType = "VacancyPublished"
+	EventTypeVacancyArchived          EventType = "VacancyArchived"
+	EventTypeVacancyUpdated           EventType = "VacancyUpdated"
+	EventTypeVacancyModerationUpdated           = "VacancyModerationUpdated"
 
 	EventTypeRecruiterAdded   EventType = "CompanyMemberAdded"
 	EventTypeRecruiterRemoved EventType = "CompanyMemberRemoved"
@@ -113,6 +114,30 @@ func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEven
 	err = w.repo.Create(ctx, msg)
 	if err != nil {
 		return fmt.Errorf("write vacancy updated outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteVacancyModerationUpdated(ctx context.Context, ev vacancy.ModerationUpdatedEvent) error {
+	payload, err := w.encoder.VacancyModerationUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy moderation updated outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		ev.VacancyID,
+		payload,
+		key,
+		w.cfg.VacancyTopic,
+		EventTypeVacancyModerationUpdated,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy moderation updated outbox: %w ", err)
 	}
 	return nil
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
@@ -34,6 +35,7 @@ type VacancyHandler struct {
 	update           *update.Usecase
 	publish          *publish.Usecase
 	archive          *archive.Usecase
+	upMod            *moderationstatus.Usecase
 	del              *remove.Usecase
 }
 
@@ -46,6 +48,7 @@ func NewVacancyHandler(
 	update *update.Usecase,
 	publish *publish.Usecase,
 	archive *archive.Usecase,
+	upMod *moderationstatus.Usecase,
 	del *remove.Usecase,
 ) *VacancyHandler {
 	return &VacancyHandler{
@@ -57,6 +60,7 @@ func NewVacancyHandler(
 		update:           update,
 		publish:          publish,
 		archive:          archive,
+		upMod:            upMod,
 		del:              del,
 	}
 }
@@ -391,17 +395,13 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 // @Router /admin/vacancies/{id}/moderation [patch]
 func (h *VacancyHandler) UpdateModeration(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	iden := middleware.IdentityFromContext(ctx)
 	vacancyID := middleware.UUIDFromContext(ctx, "id")
+	dtoReq := middleware.BodyFromContext[dto.VacancyModerationUpdateRequest](ctx)
 
-	// dtoReq := middleware.BodyFromContext[dto.VacancyModerationUpdateRequest](ctx)
+	req := &moderationstatus.Request{ID: vacancyID, Status: vacancy.ModerationStatus(dtoReq.Status)}
 
-	// req :=
-
-	//err := h.updateModeration.Execute(ctx, req, iden)
-	_ = iden
-	var err error
+	err := h.upMod.Execute(ctx, req, iden)
 
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)

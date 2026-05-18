@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -266,6 +267,7 @@ func (repo *CompanyRepository) UpdateModerationStatusAndGetOld(
 	ctx context.Context,
 	companyID uuid.UUID,
 	status company.ModerationStatus,
+	when time.Time,
 ) (company.ModerationStatus, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -276,14 +278,14 @@ func (repo *CompanyRepository) UpdateModerationStatusAndGetOld(
 			WHERE id = $1
 		)
 		UPDATE companies
-		SET moderation_status = $2
+		SET moderation_status = $2, updated_at = $3
 		FROM old
 		WHERE id = $1
 		RETURNING old.moderation_status`
 
 	var oldStatus company.ModerationStatus
 
-	err := q.QueryRow(ctx, query, companyID, status).Scan(&oldStatus)
+	err := q.QueryRow(ctx, query, companyID, status, when).Scan(&oldStatus)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -45,14 +45,14 @@ func (u *Usecase) Execute(
 	defer cancel()
 
 	now := time.Now().UTC()
+	upd := false
 
-	err := u.authorize(identity)
-	if err != nil {
+	if err := u.authorize(identity); err != nil {
 		return err
 	}
 
-	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		oldStatus, err := u.compRepo.UpdateModerationStatusAndGetOld(ctx, req.ID, req.Status)
+	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		oldStatus, err := u.compRepo.UpdateModerationStatusAndGetOld(ctx, req.ID, req.Status, now)
 		if err != nil {
 			return err
 		}
@@ -66,6 +66,7 @@ func (u *Usecase) Execute(
 			return err
 		}
 
+		upd = true
 		return nil
 	})
 
@@ -73,7 +74,10 @@ func (u *Usecase) Execute(
 		return err
 	}
 
-	u.cache.Del(ctx, req.ID)
+	if upd {
+		u.cache.Del(ctx, req.ID)
+	}
+
 	return nil
 }
 

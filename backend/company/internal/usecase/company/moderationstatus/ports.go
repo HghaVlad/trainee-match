@@ -2,6 +2,7 @@ package moderationstatus
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -13,6 +14,7 @@ type companyRepo interface {
 		ctx context.Context,
 		companyID uuid.UUID,
 		status company.ModerationStatus,
+		when time.Time,
 	) (company.ModerationStatus, error)
 }
 

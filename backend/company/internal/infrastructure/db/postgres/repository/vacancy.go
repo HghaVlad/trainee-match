@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -17,6 +18,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 )
 
@@ -488,6 +490,46 @@ func (repo *VacancyRepo) ArchiveAndGetOldStatus(ctx context.Context, vacID, comp
 	}
 
 	return status, nil
+}
+
+func (repo *VacancyRepo) UpdateModerationStatus(
+	ctx context.Context,
+	vacancyID uuid.UUID,
+	status vacancy.ModerationStatus,
+	when time.Time,
+) (*moderationstatus.UpdateModerationResult, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `
+		WITH old AS (
+			SELECT company_id, status, moderation_status
+			FROM vacancies
+			WHERE id = $1
+		)
+		UPDATE vacancies v
+		SET moderation_status = $2,
+			updated_at = CASE WHEN old.moderation_status <> $2 THEN $3 ELSE v.updated_at END
+		FROM old
+		WHERE v.id = $1 AND v.status = 'published'
+		RETURNING old.company_id, old.status, old.moderation_status`
+
+	var res moderationstatus.UpdateModerationResult
+
+	err := q.QueryRow(ctx, query, vacancyID, status, when).Scan(
+		&res.CompanyID,
+		&res.VacancyStatus,
+		&res.OldModerationStatus,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, vacancy.ErrVacancyNotFound
+		}
+
+		return nil, fmt.Errorf("update vacancy moderation status: %w", err)
+	}
+
+	return &res, nil
 }
 
 func (repo *VacancyRepo) Delete(ctx context.Context, vacancyID uuid.UUID, companyID uuid.UUID) error {

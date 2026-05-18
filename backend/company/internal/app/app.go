@@ -46,6 +46,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	vmoderationstatus "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	removevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 	updatevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
@@ -140,6 +141,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		publicVacCache,
 		compCache,
 	)
+	vacUpdModStatus := vmoderationstatus.NewUsecase(
+		vacRepo,
+		compRepo,
+		outboxWriter,
+		txManager,
+		vacCache,
+		publicVacCache,
+		compCache,
+	)
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	userHrCreate := userhr.NewCreatedUsecase(hrProjRepo)
@@ -175,6 +185,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		vacUpdate,
 		vacPublish,
 		vacArchive,
+		vacUpdModStatus,
 		vacDelete,
 	)
 
