@@ -20,7 +20,7 @@ const (
 	EventTypeVacancyPublished         EventType = "VacancyPublished"
 	EventTypeVacancyArchived          EventType = "VacancyArchived"
 	EventTypeVacancyUpdated           EventType = "VacancyUpdated"
-	EventTypeVacancyModerationUpdated           = "VacancyModerationUpdated"
+	EventTypeVacancyModerationUpdated EventType = "VacancyModerationUpdated"
 
 	EventTypeRecruiterAdded   EventType = "CompanyMemberAdded"
 	EventTypeRecruiterRemoved EventType = "CompanyMemberRemoved"

@@ -141,7 +141,7 @@ func (repo *VacancyRepo) GetByIDForUpdate(
     id, company_id, title, description, work_format, city,
     duration_from_days, duration_to_days, employment_type,
     hours_per_week_from, hours_per_week_to, flexible_schedule, is_paid,
-    salary_from, salary_to, internship_to_offer, status, created_by_user_id,
+    salary_from, salary_to, internship_to_offer, status, moderation_status, created_by_user_id,
     published_at, created_at, updated_at
 	FROM vacancies 
 	WHERE id = $1 AND company_id = $2

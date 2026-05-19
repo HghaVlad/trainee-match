@@ -66,6 +66,7 @@ func (u *Usecase) Execute(
 	}
 
 	updated := false
+	compUpd := false
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		oldStatus, err := u.vacRepo.ArchiveAndGetOldStatus(ctx, vacID, compID)
@@ -88,7 +89,7 @@ func (u *Usecase) Execute(
 				return err
 			}
 
-			u.compCache.Del(ctx, compID)
+			compUpd = true
 		}
 
 		updated = true
@@ -101,6 +102,10 @@ func (u *Usecase) Execute(
 	if updated {
 		u.vacCache.Del(ctx, vacID)
 		u.pubVacCache.Del(ctx, vacID)
+	}
+
+	if compUpd {
+		u.compCache.Del(ctx, compID)
 	}
 
 	return nil
