@@ -32,7 +32,7 @@ func NewClientForConsumer(cfg config.Kafka, consumer *Consumer) (*kgo.Client, er
 
 		kgo.ConsumerGroup(cfg.ConsumerGroup),
 		kgo.ConsumeTopics(cfg.ConsumerTopics...),
-
+		kgo.DisableAutoCommit(),
 		kgo.OnPartitionsAssigned(consumer.Assigned),
 		kgo.OnPartitionsRevoked(consumer.Revoked),
 		kgo.OnPartitionsLost(consumer.Revoked),

@@ -33,7 +33,7 @@ func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[strin
 			if _, ok := c.consumers[topic][partition]; ok {
 				continue
 			}
-			pr := NewPartitionConsumer(c.handler)
+			pr := NewPartitionConsumer(topic, partition, c.Client, c.handler)
 			c.consumers[topic][partition] = pr
 
 			go pr.ConsumePartition(topic, partition)
