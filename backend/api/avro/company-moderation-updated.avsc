@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "CompanyModerationUpdated",
+  "namespace": "traineematch.company",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "company_id", "type": {"type": "string", "logicalType": "uuid"} },
+    {
+      "name": "moderation_status",
+      "type": {
+        "type": "enum",
+        "name": "ModerationStatus",
+        "symbols": ["hidden", "ok"]
+      }
+    },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "VacancyModerationUpdated",
+  "namespace": "traineematch.vacancy",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid"}},
+    { "name": "vacancy_id", "type": {"type": "string", "logicalType": "uuid"} },
+    {
+      "name": "moderation_status",
+      "type": {
+        "type": "enum",
+        "name": "ModerationStatus",
+        "symbols": ["hidden", "ok"]
+      }
+    },
+    { "name": "occurred_at", "type": {"type": "long",  "logicalType": "timestamp-millis" } }
+  ]
+}

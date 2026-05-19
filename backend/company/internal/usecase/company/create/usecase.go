@@ -15,16 +15,23 @@ import (
 // Usecase of company creation.
 // Adds creator as an admin member of company.
 type Usecase struct {
-	compRepo   CompanyRepo
-	memberRepo CompanyMemberRepo
-	txManager  common.TxManager
+	compRepo     CompanyRepo
+	memberRepo   CompanyMemberRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
 }
 
-func NewUsecase(compRepo CompanyRepo, memberRepo CompanyMemberRepo, txManager common.TxManager) *Usecase {
+func NewUsecase(
+	compRepo CompanyRepo,
+	memberRepo CompanyMemberRepo,
+	outboxWriter outboxWriter,
+	txManager common.TxManager,
+) *Usecase {
 	return &Usecase{
-		compRepo:   compRepo,
-		memberRepo: memberRepo,
-		txManager:  txManager,
+		compRepo:     compRepo,
+		memberRepo:   memberRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
 	}
 }
 
@@ -63,7 +70,12 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 			return err
 		}
 
-		return u.memberRepo.Create(ctx, memb)
+		err = u.memberRepo.Create(ctx, memb)
+		if err != nil {
+			return err
+		}
+
+		return u.createMemberAddedEvent(ctx, *memb)
 	})
 
 	if err != nil {
@@ -75,4 +87,16 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 	}
 
 	return resp, nil
+}
+
+func (u *Usecase) createMemberAddedEvent(ctx context.Context, memb member.CompanyMember) error {
+	ev := member.AddedEvent{
+		EventID:    uuid.New(),
+		UserID:     memb.UserID,
+		CompanyID:  memb.CompanyID,
+		Role:       memb.Role,
+		OccurredAt: time.Now().UTC(),
+	}
+
+	return u.outboxWriter.WriteCompanyMemberAdded(ctx, ev)
 }

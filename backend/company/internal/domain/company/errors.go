@@ -8,3 +8,4 @@ var ErrCompanyAlreadyExists = errors.New("company with this name already exists"
 
 var ErrCompanyInvalidNameLen = errors.New("invalid company name length")
 var ErrCompanyInvalidDescriptionLen = errors.New("invalid company description length")
+var ErrInvalidModerationStatus = errors.New("invalid moderation status")

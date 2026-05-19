@@ -25,3 +25,5 @@ var ErrEmptyCompaniesFilter = errors.New("empty companies filter")
 var ErrEmptyCityFilter = errors.New("empty city filter")
 
 var ErrInvalidSalaryOrderForUnpaid = errors.New("unpaid vacancies don't support this order")
+
+var ErrInvalidModerationStatus = errors.New("invalid moderation status")

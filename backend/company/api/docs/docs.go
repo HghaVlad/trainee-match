@@ -15,6 +15,142 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/companies/{id}/moderation": {
+            "patch": {
+                "description": "Updates moderation status of company. Only platform admin can do this",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-company"
+                ],
+                "summary": "Update company moderation status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Moderation update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyModerationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/vacancies/{id}/moderation": {
+            "patch": {
+                "description": "Updates moderation status of vacancy. Only platform admin can do this",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-vacancy"
+                ],
+                "summary": "Update vacancy moderation status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Moderation update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyModerationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies": {
             "get": {
                 "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc",
@@ -933,6 +1069,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/me": {
+            "get": {
+                "description": "Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Get company by member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyMemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}/members": {
             "get": {
                 "description": "List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.",
@@ -1531,6 +1717,47 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CompanyMemResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "We make the world a better place"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "logoURL": {
+                    "type": "string",
+                    "example": "http://domain/minio/6icinimmck...mksk"
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "example": "hidden"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "openVacanciesCount": {
+                    "type": "integer",
+                    "example": 13
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "website": {
+                    "type": "string",
+                    "example": "https://www.google.com"
+                }
+            }
+        },
         "dto.CompanyMemberFullView": {
             "type": "object",
             "properties": {
@@ -1575,6 +1802,19 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.CompanyMemberFullView"
                     }
+                }
+            }
+        },
+        "dto.CompanyModerationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "hidden"
                 }
             }
         },
@@ -1675,6 +1915,14 @@ const docTemplate = `{
                 "isPaid": {
                     "type": "boolean",
                     "example": true
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
                 },
                 "salaryFrom": {
                     "type": "integer",
@@ -1853,6 +2101,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
+                },
                 "publishedAt": {
                     "type": "string",
                     "example": "2026-01-20T10:00:00Z"
@@ -1953,6 +2209,19 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.VacancyListItemResponse"
                     }
+                }
+            }
+        },
+        "dto.VacancyModerationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "hidden"
                 }
             }
         },

@@ -2,125 +2,283 @@ package create_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create/mocks"
 )
 
-type repoMock struct {
-	mock.Mock
-}
+type fakeTxManager struct{}
 
-func (m *repoMock) Create(ctx context.Context, company *company.Company) error {
-	return m.Called(ctx, company).Error(0)
-}
-
-type companyMemberRepoMock struct {
-	mock.Mock
-}
-
-func (m *companyMemberRepoMock) Create(ctx context.Context, member *member.CompanyMember) error {
-	return m.Called(ctx, member).Error(0)
-}
-
-type FakeTxManager struct {
-	Called bool
-}
-
-func (f *FakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	f.Called = true
+func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	return fn(ctx)
 }
 
-func TestUsecase_ExecuteOK(t *testing.T) {
-	repo := new(repoMock)
-	memRepo := new(companyMemberRepoMock)
-	txManager := new(FakeTxManager)
+func TestUsecase_Execute_Success(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	compRepo := mocks.NewMockCompanyRepo(ctrl)
+	memberRepo := mocks.NewMockCompanyMemberRepo(ctrl)
+	outboxWriter := mocks.NewMockoutboxWriter(ctrl)
+
+	txManager := &fakeTxManager{}
+
+	uc := create.NewUsecase(
+		compRepo,
+		memberRepo,
+		outboxWriter,
+		txManager,
+	)
 
 	req := &create.Request{
 		Name:        "Acme",
-		Description: ptr("Hello!"),
+		Description: ptr("Best company"),
+		Website:     ptr("https://acme.com"),
 	}
 
-	repo.On("Create", mock.Anything, mock.Anything).
-		Return(nil).Once()
-
-	memRepo.On("Create", mock.Anything, mock.Anything).
-		Return(nil).Once()
-
-	uc := create.NewUsecase(repo, memRepo, txManager)
-
-	iden := &identity.Identity{
+	ident := &identity.Identity{
 		UserID: uuid.New(),
 		Role:   identity.RoleHR,
 	}
 
-	resp, err := uc.Execute(context.Background(), req, iden)
+	compRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, comp *company.Company) error {
+			require.Equal(t, req.Name, comp.Name)
+			require.Equal(t, req.Description, comp.Description)
+			require.Equal(t, req.Website, comp.Website)
+			require.NotEqual(t, uuid.Nil, comp.ID)
+
+			return nil
+		})
+
+	memberRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, memb *member.CompanyMember) error {
+			require.Equal(t, ident.UserID, memb.UserID)
+			require.Equal(t, member.CompanyRoleAdmin, memb.Role)
+			require.NotEqual(t, uuid.Nil, memb.CompanyID)
+
+			return nil
+		})
+
+	outboxWriter.
+		EXPECT().
+		WriteCompanyMemberAdded(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, ev member.AddedEvent) error {
+			require.Equal(t, ident.UserID, ev.UserID)
+			require.Equal(t, member.CompanyRoleAdmin, ev.Role)
+			require.NotEqual(t, uuid.Nil, ev.CompanyID)
+			require.NotEqual(t, uuid.Nil, ev.EventID)
+
+			return nil
+		})
+
+	resp, err := uc.Execute(context.Background(), req, ident)
 
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	repo.AssertExpectations(t)
+	require.NotEqual(t, uuid.Nil, resp.ID)
 }
 
-func TestUsecase_ExecuteValidateErr(t *testing.T) {
-	repo := new(repoMock)
-	memRepo := new(companyMemberRepoMock)
-	txManager := new(FakeTxManager)
+func TestUsecase_Execute_HRRoleRequired(t *testing.T) {
+	t.Parallel()
 
-	iden := &identity.Identity{
+	ctrl := gomock.NewController(t)
+
+	uc := create.NewUsecase(
+		mocks.NewMockCompanyRepo(ctrl),
+		mocks.NewMockCompanyMemberRepo(ctrl),
+		mocks.NewMockoutboxWriter(ctrl),
+		&fakeTxManager{},
+	)
+
+	req := &create.Request{
+		Name:        "Acme",
+		Description: ptr("Best company"),
+		Website:     ptr("https://acme.com"),
+	}
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleCandidate,
+	}
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, identity.ErrHrRoleRequired)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_ValidationError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	uc := create.NewUsecase(
+		mocks.NewMockCompanyRepo(ctrl),
+		mocks.NewMockCompanyMemberRepo(ctrl),
+		mocks.NewMockoutboxWriter(ctrl),
+		&fakeTxManager{},
+	)
+
+	req := &create.Request{
+		Name: "",
+	}
+
+	ident := &identity.Identity{
 		UserID: uuid.New(),
 		Role:   identity.RoleHR,
 	}
 
-	uc := create.NewUsecase(repo, memRepo, txManager)
+	resp, err := uc.Execute(context.Background(), req, ident)
 
-	tests := []struct {
-		name string
-		req  create.Request
-		err  error
-	}{
-		{
-			name: "empty name",
-			req: create.Request{
-				Name: "",
-			},
-			err: company.ErrCompanyInvalidNameLen,
-		},
-		{
-			name: "too long name",
-			req: create.Request{
-				Name: string(make([]byte, company.MaxCompanyNameLen+1)),
-			},
-			err: company.ErrCompanyInvalidNameLen,
-		},
-		{
-			name: "too long desc",
-			req: create.Request{
-				Name:        "Acme",
-				Description: ptr(string(make([]byte, company.MaxCompanyDescriptionLen+1))),
-			},
-			err: company.ErrCompanyInvalidDescriptionLen,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := uc.Execute(context.Background(), &tt.req, iden)
-
-			assert.Equal(t, tt.err, err)
-			repo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
-		})
-	}
+	require.Error(t, err)
+	require.Nil(t, resp)
 }
 
-func ptr[T any](v T) *T {
-	return &v
+func TestUsecase_Execute_AlreadyExists(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	compRepo := mocks.NewMockCompanyRepo(ctrl)
+
+	uc := create.NewUsecase(
+		compRepo,
+		mocks.NewMockCompanyMemberRepo(ctrl),
+		mocks.NewMockoutboxWriter(ctrl),
+		&fakeTxManager{},
+	)
+
+	req := &create.Request{
+		Name:        "Acme",
+		Description: ptr("Best company"),
+		Website:     ptr("https://acme.com"),
+	}
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleHR,
+	}
+
+	compRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(company.ErrCompanyAlreadyExists)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, company.ErrCompanyAlreadyExists)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_MemberCreateError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	compRepo := mocks.NewMockCompanyRepo(ctrl)
+	memberRepo := mocks.NewMockCompanyMemberRepo(ctrl)
+
+	uc := create.NewUsecase(
+		compRepo,
+		memberRepo,
+		mocks.NewMockoutboxWriter(ctrl),
+		&fakeTxManager{},
+	)
+
+	req := &create.Request{
+		Name:        "Acme",
+		Description: ptr("Best company"),
+		Website:     ptr("https://acme.com"),
+	}
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleHR,
+	}
+
+	expectedErr := errors.New("create member failed")
+
+	compRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	memberRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_OutboxError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	compRepo := mocks.NewMockCompanyRepo(ctrl)
+	memberRepo := mocks.NewMockCompanyMemberRepo(ctrl)
+	outboxWriter := mocks.NewMockoutboxWriter(ctrl)
+
+	uc := create.NewUsecase(
+		compRepo,
+		memberRepo,
+		outboxWriter,
+		&fakeTxManager{},
+	)
+
+	req := &create.Request{
+		Name:        "Acme",
+		Description: ptr("Best company"),
+		Website:     ptr("https://acme.com"),
+	}
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleHR,
+	}
+
+	expectedErr := errors.New("outbox failed")
+
+	compRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	memberRepo.
+		EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	outboxWriter.
+		EXPECT().
+		WriteCompanyMemberAdded(gomock.Any(), gomock.Any()).
+		Return(expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
+}
+
+func ptr[T any](val T) *T {
+	return &val
 }

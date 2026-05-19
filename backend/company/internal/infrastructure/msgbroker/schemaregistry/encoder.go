@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	vacancyPublishedSubject = "vacancy-published-value"
-	vacancyArchivedSubject  = "vacancy-archived-value"
-	vacancyUpdatedSubject   = "vacancy-updated-value"
+	vacancyPublishedSubject         = "vacancy-published-value"
+	vacancyArchivedSubject          = "vacancy-archived-value"
+	vacancyUpdatedSubject           = "vacancy-updated-value"
+	vacancyModerationUpdatedSubject = "vacancy-moderation-updated-value"
 
-	companyUpdatedSubject = "company-updated-value"
-	companyDeletedSubject = "company-deleted-value"
+	companyUpdatedSubject           = "company-updated-value"
+	companyModerationUpdatedSubject = "company-moderation-updated-value"
+	companyDeletedSubject           = "company-deleted-value"
 
 	companyMemberAddedSubject   = "company-member-added-value"
 	companyMemberRemovedSubject = "company-member-removed-value"
@@ -61,6 +63,10 @@ func (en *Encoder) VacancyUpdatedToBytes(ev vacancy.UpdatedEvent) ([]byte, error
 	return en.eventToBytes(ev, vacancyUpdatedSubject)
 }
 
+func (en *Encoder) VacancyModerationUpdatedToBytes(ev vacancy.ModerationUpdatedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, vacancyModerationUpdatedSubject)
+}
+
 func (en *Encoder) CompanyMemberAddedToBytes(ev member.AddedEvent) ([]byte, error) {
 	return en.eventToBytes(ev, companyMemberAddedSubject)
 }
@@ -75,6 +81,10 @@ func (en *Encoder) CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error
 
 func (en *Encoder) CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error) {
 	return en.eventToBytes(ev, companyUpdatedSubject)
+}
+
+func (en *Encoder) CompanyModerationUpdatedToBytes(ev company.ModerationUpdatedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, companyModerationUpdatedSubject)
 }
 
 func (en *Encoder) DLQToBytes(msg dlq.Message) ([]byte, error) {

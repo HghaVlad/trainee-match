@@ -17,15 +17,17 @@ import (
 type EventType string
 
 const (
-	EventTypeVacancyPublished EventType = "VacancyPublished"
-	EventTypeVacancyArchived  EventType = "VacancyArchived"
-	EventTypeVacancyUpdated   EventType = "VacancyUpdated"
+	EventTypeVacancyPublished         EventType = "VacancyPublished"
+	EventTypeVacancyArchived          EventType = "VacancyArchived"
+	EventTypeVacancyUpdated           EventType = "VacancyUpdated"
+	EventTypeVacancyModerationUpdated EventType = "VacancyModerationUpdated"
 
 	EventTypeRecruiterAdded   EventType = "CompanyMemberAdded"
 	EventTypeRecruiterRemoved EventType = "CompanyMemberRemoved"
 
-	EventTypeCompanyDeleted EventType = "CompanyDeleted"
-	EventTypeCompanyUpdated EventType = "CompanyUpdated"
+	EventTypeCompanyModerationUpdated EventType = "CompanyModerationUpdated"
+	EventTypeCompanyDeleted           EventType = "CompanyDeleted"
+	EventTypeCompanyUpdated           EventType = "CompanyUpdated"
 )
 
 const defaultMaxAttempts = 5
@@ -116,6 +118,30 @@ func (w *Writer) WriteVacancyUpdated(ctx context.Context, ev vacancy.UpdatedEven
 	return nil
 }
 
+func (w *Writer) WriteVacancyModerationUpdated(ctx context.Context, ev vacancy.ModerationUpdatedEvent) error {
+	payload, err := w.encoder.VacancyModerationUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy moderation updated outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		ev.VacancyID,
+		payload,
+		key,
+		w.cfg.VacancyTopic,
+		EventTypeVacancyModerationUpdated,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy moderation updated outbox: %w ", err)
+	}
+	return nil
+}
+
 func (w *Writer) WriteCompanyMemberAdded(ctx context.Context, ev member.AddedEvent) error {
 	payload, err := w.encoder.CompanyMemberAddedToBytes(ev)
 	if err != nil {
@@ -185,6 +211,35 @@ func (w *Writer) WriteCompanyUpdated(ctx context.Context, ev company.UpdatedEven
 	if err != nil {
 		return fmt.Errorf("write recruiter added outbox: %w ", err)
 	}
+	return nil
+}
+
+func (w *Writer) WriteCompanyModerationUpdated(
+	ctx context.Context,
+	ev company.ModerationUpdatedEvent,
+) error {
+	payload, err := w.encoder.CompanyModerationUpdatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("encode company moderation updated: %w", err)
+	}
+
+	key := ev.CompanyID[:]
+
+	msg := w.createDefaultMsg(
+		ev.CompanyID,
+		payload,
+		key,
+		w.cfg.CompanyTopic,
+		EventTypeCompanyModerationUpdated,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write company moderation updated outbox: %w", err)
+	}
+
 	return nil
 }
 

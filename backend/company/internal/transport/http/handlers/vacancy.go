@@ -20,6 +20,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
@@ -34,6 +35,7 @@ type VacancyHandler struct {
 	update           *update.Usecase
 	publish          *publish.Usecase
 	archive          *archive.Usecase
+	upMod            *moderationstatus.Usecase
 	del              *remove.Usecase
 }
 
@@ -46,6 +48,7 @@ func NewVacancyHandler(
 	update *update.Usecase,
 	publish *publish.Usecase,
 	archive *archive.Usecase,
+	upMod *moderationstatus.Usecase,
 	del *remove.Usecase,
 ) *VacancyHandler {
 	return &VacancyHandler{
@@ -57,6 +60,7 @@ func NewVacancyHandler(
 		update:           update,
 		publish:          publish,
 		archive:          archive,
+		upMod:            upMod,
 		del:              del,
 	}
 }
@@ -374,6 +378,43 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateModeration godoc
+// @Summary Update vacancy moderation status
+// @Description Updates moderation status of vacancy. Only platform admin can do this
+// @Tags admin-vacancy
+// @Accept json
+// @Produce json
+// @Param id path string true "Vacancy ID"
+// @Param request body dto.VacancyModerationUpdateRequest true "Moderation update request"
+// @Success 204
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /admin/vacancies/{id}/moderation [patch]
+func (h *VacancyHandler) UpdateModeration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	vacancyID := middleware.UUIDFromContext(ctx, "id")
+	dtoReq := middleware.BodyFromContext[dto.VacancyModerationUpdateRequest](ctx)
+
+	req := &moderationstatus.Request{ID: vacancyID, Status: vacancy.ModerationStatus(dtoReq.Status)}
+
+	err := h.upMod.Execute(ctx, req, iden)
+
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update vacancy moderation",
+				"id", vacancyID)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Delete godoc
 // @Summary Delete vacancy
 // @Description Deletes vacancy by id
@@ -429,6 +470,7 @@ func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 		errors.Is(err, vacancy.ErrEmptyCityFilter),
 		errors.Is(err, vacancy.ErrEmptyCompaniesFilter),
 		errors.Is(err, vacancy.ErrInvalidSalaryOrderForUnpaid),
+		errors.Is(err, vacancy.ErrInvalidModerationStatus),
 		errors.Is(err, common.ErrInvalidCursor),
 		errors.Is(err, common.ErrCursorOrderMismatch),
 		errors.Is(err, common.ErrUnsupportedListOrder),
@@ -438,6 +480,7 @@ func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, identity.ErrAdminRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		helpers.RespondError(ctx, w, http.StatusForbidden, err)

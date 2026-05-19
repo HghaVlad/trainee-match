@@ -34,6 +34,8 @@ type Vacancy struct {
 	Status      Status
 	PublishedAt *time.Time
 
+	ModerationStatus ModerationStatus
+
 	CreatedBy uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time

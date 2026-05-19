@@ -39,6 +39,7 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
 		InternshipToOffer: v.InternshipToOffer,
 
 		Status:      string(v.Status),
+		ModStatus:   string(v.ModerationStatus),
 		CreatedBy:   v.CreatedBy,
 		PublishedAt: v.PublishedAt,
 
@@ -160,6 +161,7 @@ func ListVacByCompRespToDto(resp *list_vac_by_comp.Response) *dto.VacancyByCompL
 			SalaryFrom: v.SalaryFrom,
 			SalaryTo:   v.SalaryTo,
 
+			ModStatus: string(v.ModStatus),
 			Status:    string(v.Status),
 			CreatedAt: v.CreatedAt,
 		})
