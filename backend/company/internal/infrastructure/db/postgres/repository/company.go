@@ -23,8 +23,6 @@ type CompanyRepository struct {
 	db *pgxpool.Pool
 }
 
-// TODO: SELECTS should ignore not ok mod status (maybe select and then check for candidates if it is okay and return 404 otherwise)
-
 func NewCompanyRepository(db *pgxpool.Pool) *CompanyRepository {
 	return &CompanyRepository{db: db}
 }
@@ -121,19 +119,24 @@ func (repo *CompanyRepository) ListSummaries(
 	fromClause, filterCondition, args := addFilter(filter, args)
 	orderBy := listCompanySummariesOrderToSQL(order)
 
+	cond := fmt.Sprintf("%s AND %s", cursorCondition, filterCondition)
+
+	if filter.OkModStatus {
+		cond += " AND c.moderation_status = 'ok'"
+	}
+
 	args = append(args, limit)
 
 	const query = `SELECT c.id, c.name, c.open_vacancies_count, c.logo_key, c.created_at
 		FROM %s
-		WHERE %s AND %s
+		WHERE %s
 		ORDER BY %s
 		LIMIT $%d`
 
 	filledQuery := fmt.Sprintf(
 		query,
 		fromClause,
-		filterCondition,
-		cursorCondition,
+		cond,
 		orderBy,
 		len(args),
 	)

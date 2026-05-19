@@ -12,7 +12,7 @@ type Response struct {
 	OpenVacanciesCnt int
 	Description      *string
 	Website          *string
-	LogoURL          *string // TODO: resolve this
+	LogoURL          *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }

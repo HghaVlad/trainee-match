@@ -88,7 +88,7 @@ func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
 }
 
-// GetByMember
+// GetByMember godoc
 // @Summary Get company by member
 // @Description Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member
 // @Tags company
@@ -142,6 +142,7 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit:         limit,
 		Order:         order,
 		EncodedCursor: cursor,
+		Filter:        list.Filter{OkModStatus: true},
 	}
 
 	res, err := h.list.Execute(ctx, req)

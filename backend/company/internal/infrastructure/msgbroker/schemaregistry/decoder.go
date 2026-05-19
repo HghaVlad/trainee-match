@@ -25,8 +25,6 @@ func NewDecoder(registry *LocalRegistry) *Decoder {
 	return &Decoder{registry: registry}
 }
 
-// TODO: maybe as generic in the future
-
 func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*userhr.CreatedEvent, error) {
 	if len(payload) < magicAndFourBytes {
 		return nil, errors.New("missing schema id in avro wire bytes")

@@ -22,6 +22,7 @@ type VacancySummary struct {
 	SalaryTo   *int
 
 	Status    vacancy.Status
+	ModStatus vacancy.ModerationStatus
 	CreatedAt time.Time
 }
 

@@ -26,8 +26,6 @@ type VacancyRepo struct {
 	db *pgxpool.Pool
 }
 
-// TODO: ensure vacancies have mod status ok when selected
-
 func NewVacancyRepo(db *pgxpool.Pool) *VacancyRepo {
 	return &VacancyRepo{db: db}
 }
@@ -44,7 +42,7 @@ func (repo *VacancyRepo) GetByID(
     id, company_id, title, description, work_format, city,
     duration_from_days, duration_to_days, employment_type,
     hours_per_week_from, hours_per_week_to, flexible_schedule, is_paid,
-    salary_from, salary_to, internship_to_offer, status, created_by_user_id,
+    salary_from, salary_to, internship_to_offer, status, moderation_status, created_by_user_id,
     published_at, created_at, updated_at
 	FROM vacancies 
 	WHERE id = $1 AND company_id = $2`
@@ -77,7 +75,7 @@ func (repo *VacancyRepo) GetPublishedByID(ctx context.Context, vacancyID uuid.UU
 	v.internship_to_offer, v.published_at
 	FROM vacancies v
 	JOIN companies c ON c.id = v.company_id
-	WHERE v.id = $1 AND v.status = 'published'`
+	WHERE v.id = $1 AND v.status = 'published' AND v.moderation_status = 'ok'`
 
 	var vac getpublished.Response
 
@@ -241,7 +239,7 @@ func (repo *VacancyRepo) ListPublishedSummaries(
     v.salary_from, v.salary_to, v.published_at
 	FROM vacancies v
 	JOIN companies c ON v.company_id = c.id
-	WHERE v.status = 'published' %s %s
+	WHERE v.status = 'published' AND v.moderation_status = 'ok' %s %s
 	ORDER BY %s
 	LIMIT $%d`
 
@@ -308,7 +306,7 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 	const query = `SELECT
     v.id, v.title, v.work_format,
     v.city, v.employment_type, v.is_paid,
-    v.salary_from, v.salary_to, v.status, v.created_at
+    v.salary_from, v.salary_to, v.status, v.moderation_status, v.created_at
 	FROM vacancies v
 	WHERE 1=1 %s %s %s
 		AND v.company_id = $%d
@@ -331,7 +329,7 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		err := rows.Scan(
 			&vac.ID, &vac.Title, &vac.WorkFormat,
 			&vac.City, &vac.EmploymentType, &vac.IsPaid,
-			&vac.SalaryFrom, &vac.SalaryTo, &vac.Status, &vac.CreatedAt,
+			&vac.SalaryFrom, &vac.SalaryTo, &vac.Status, &vac.ModStatus, &vac.CreatedAt,
 		)
 
 		if err != nil {
@@ -554,7 +552,7 @@ func scanVacancy(row pgx.Row, vac *vacancy.Vacancy) error {
 	return row.Scan(&vac.ID, &vac.CompanyID, &vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
 		&vac.DurationFromDays, &vac.DurationToDays, &vac.EmploymentType,
 		&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
-		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.CreatedBy,
+		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.ModerationStatus, &vac.CreatedBy,
 		&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
 	)
 }

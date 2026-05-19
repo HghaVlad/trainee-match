@@ -190,6 +190,12 @@ definitions:
       isPaid:
         example: true
         type: boolean
+      moderationStatus:
+        enum:
+        - ok
+        - hidden
+        example: ok
+        type: string
       salaryFrom:
         example: 3500
         type: integer
@@ -319,6 +325,12 @@ definitions:
       isPaid:
         example: true
         type: boolean
+      moderationStatus:
+        enum:
+        - ok
+        - hidden
+        example: ok
+        type: string
       publishedAt:
         example: "2026-01-20T10:00:00Z"
         type: string

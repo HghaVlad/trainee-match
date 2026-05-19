@@ -40,7 +40,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				Route("/{id}", func(r chi.Router) {
 					r.Get("/", deps.CompanyHandler.GetByID)
 
-					r.With(deps.AuthMiddleware.FakeHandler, // TODO: change to actual handler
+					r.With(deps.AuthMiddleware.Handler,
 						compmiddleware.LoggingMiddleware).
 						Get("/me", deps.CompanyHandler.GetByMember)
 
@@ -53,14 +53,15 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(deps.AuthMiddleware.FakeHandler, // TODO: change to actual handler
+			r.With(deps.AuthMiddleware.Handler,
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest](),
 				compmiddleware.LoggingMiddleware).
 				Post("/", deps.CompanyHandler.Create)
 
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.CompanyHandler.List)
 
-			r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+			r.With(deps.AuthMiddleware.Handler,
+				compmiddleware.LoggingMiddleware).
 				Get("/me", deps.CompanyHandler.ListMy)
 
 			// /company/{company-id}/members
@@ -89,7 +90,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			// /company/{company-id}/vacancies
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
-				With(deps.AuthMiddleware.FakeHandler). // TODO: change to actual handler
+				With(deps.AuthMiddleware.Handler).
 				Route("/{company-id}/vacancies", func(r chi.Router) {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
@@ -124,7 +125,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		})
 
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second),
-		deps.AuthMiddleware.FakeHandler). // TODO: change to actual handler
+		deps.AuthMiddleware.Handler).
 		Route("/api/v1/admin", func(r chi.Router) {
 			r.With(compmiddleware.UUIDMiddleware("id"),
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyModerationUpdateRequest](),

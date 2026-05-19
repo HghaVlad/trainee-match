@@ -1916,6 +1916,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
+                },
                 "salaryFrom": {
                     "type": "integer",
                     "example": 3500
@@ -2092,6 +2100,14 @@ const docTemplate = `{
                 "isPaid": {
                     "type": "boolean",
                     "example": true
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
                 },
                 "publishedAt": {
                     "type": "string",
