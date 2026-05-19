@@ -15,6 +15,7 @@ type UpdateModerationResult struct {
 	VacancyStatus       vacancy.Status
 }
 
+//go:generate mockgen -source=ports.go -destination=mocks/port_mocks.go -package=mocks
 type vacancyRepo interface {
 	UpdateModerationStatus(
 		ctx context.Context,

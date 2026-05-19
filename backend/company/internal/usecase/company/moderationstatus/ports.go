@@ -9,6 +9,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 )
 
+//go:generate mockgen -source=ports.go -destination=mocks/port_mocks.go -package=mocks
 type companyRepo interface {
 	UpdateModerationStatusAndGetOld(
 		ctx context.Context,

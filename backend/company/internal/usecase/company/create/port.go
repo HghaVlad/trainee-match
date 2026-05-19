@@ -7,6 +7,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 )
 
+//go:generate mockgen -source=port.go -destination=mocks/port_mocks.go -package=mocks
 type CompanyRepo interface {
 	Create(ctx context.Context, company *company.Company) error
 }
