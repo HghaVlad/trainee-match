@@ -6,6 +6,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/encoding"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 // Usecase of vacancy listing, uses cursor pagination.
@@ -81,7 +82,10 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 	return resp, nil
 }
 
-func getNextCursor[CursorT any](vacancies []VacancySummary, limit int) (*CursorT, []VacancySummary) {
+func getNextCursor[CursorT any](
+	vacancies []views.PublishedVacSummary,
+	limit int,
+) (*CursorT, []views.PublishedVacSummary) {
 	if len(vacancies) <= limit {
 		return nil, vacancies
 	}
@@ -114,7 +118,11 @@ func getNextCursor[CursorT any](vacancies []VacancySummary, limit int) (*CursorT
 	return c, vacancies
 }
 
-func buildResponse[CursorT any](vacancies []VacancySummary, nextCursor *CursorT, order Order) (*Response, error) {
+func buildResponse[CursorT any](
+	vacancies []views.PublishedVacSummary,
+	nextCursor *CursorT,
+	order Order,
+) (*Response, error) {
 	nextCursorEncoded, err := encoding.EncodeCursor[CursorT, Order](order, nextCursor)
 	if err != nil {
 		return nil, err

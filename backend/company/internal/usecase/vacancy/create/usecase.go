@@ -6,8 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 // Usecase creates vacancy in draft status
@@ -42,7 +44,7 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 
 	// only member of company can create vacancy
@@ -56,12 +58,17 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 		return nil, err
 	}
 
-	err = u.searchRepo.Index(ctx, *vac, comp.Name)
+	err = u.indexToSearch(ctx, vac, comp)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Response{ID: vac.ID}, nil
+}
+
+func (u *Usecase) indexToSearch(ctx context.Context, vac *vacancy.Vacancy, comp *company.Company) error {
+	searchView := views.SearchViewFromVacancy(*vac, comp.Name)
+	return u.searchRepo.Index(ctx, *searchView)
 }
 
 // user of identity is the creator of the vacancy

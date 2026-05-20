@@ -20,6 +20,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo struct {
@@ -163,6 +164,35 @@ func (repo *VacancyRepo) GetByIDForUpdate(
 	return &vac, nil
 }
 
+func (repo *VacancyRepo) GetSearchView(ctx context.Context, id uuid.UUID) (*views.VacancySearch, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `
+	SELECT v.id, v.company_id, c.name, v.created_by_user_id, v.title, v.description,
+		   v.work_format, v.city, v.duration_from_days, v.duration_to_days, v.employment_type,
+		   v.hours_per_week_from, v.hours_per_week_to, v.flexible_schedule, v.is_paid,
+		   v.salary_from, v.salary_to, v.internship_to_offer, v.status, v.published_at,
+		   v.created_at, v.updated_at, v.moderation_status
+	FROM vacancies v
+	JOIN companies c ON v.company_id = c.id
+	WHERE v.id = $1`
+
+	var vac views.VacancySearch
+
+	row := q.QueryRow(ctx, query, id)
+	err := scanVacancySearchView(row, &vac)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get vac search view: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get vac search view: %w", err)
+	}
+
+	return &vac, nil
+}
+
 func (repo *VacancyRepo) Create(ctx context.Context, vacancy *vacancy.Vacancy) error {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -211,7 +241,7 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 	cursor any,
 	limit int,
 ) (
-	[]list.VacancySummary, error) {
+	[]views.PublishedVacSummary, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	filtersCondition, args := listVacRequirementsToSQL(requirements)
@@ -251,10 +281,10 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		return nil, fmt.Errorf("list published vacancy summaries: %w", err)
 	}
 
-	var vacancies []list.VacancySummary
+	var vacancies []views.PublishedVacSummary
 
 	for rows.Next() {
-		var vac list.VacancySummary
+		var vac views.PublishedVacSummary
 
 		err := rows.Scan(
 			&vac.ID, &vac.CompanyID, &vac.CompanyName, &vac.Title, &vac.WorkFormat,
@@ -554,5 +584,17 @@ func scanVacancy(row pgx.Row, vac *vacancy.Vacancy) error {
 		&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
 		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.ModerationStatus, &vac.CreatedBy,
 		&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
+	)
+}
+
+func scanVacancySearchView(row pgx.Row, vac *views.VacancySearch) error {
+	return row.Scan(
+		&vac.ID, &vac.CompanyID, &vac.CompanyName, &vac.CreatedBy,
+		&vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
+		&vac.DurationFromDays, &vac.DurationToDays,
+		&vac.EmploymentType, &vac.HoursPerWeekFrom, &vac.HoursPerWeekTo,
+		&vac.FlexibleSchedule, &vac.IsPaid, &vac.SalaryFrom, &vac.SalaryTo,
+		&vac.InternshipToOffer, &vac.Status, &vac.PublishedAt, &vac.CreatedAt,
+		&vac.UpdatedAt, &vac.ModerationStatus,
 	)
 }

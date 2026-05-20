@@ -13,6 +13,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo struct {
@@ -23,8 +24,8 @@ func NewVacancyRepo(es *elasticsearch.Client) *VacancyRepo {
 	return &VacancyRepo{es: es}
 }
 
-func (r *VacancyRepo) Index(ctx context.Context, vac vacancy.Vacancy, compName string) error {
-	doc := vacToDoc(vac, compName)
+func (r *VacancyRepo) Index(ctx context.Context, vac views.VacancySearch) error {
+	doc := vacToDoc(vac)
 
 	body, err := json.Marshal(doc)
 	if err != nil {
@@ -60,7 +61,7 @@ func (r *VacancyRepo) ListPublishedSummaries(
 	order list.Order,
 	cursor any,
 	limit int,
-) ([]list.VacancySummary, error) {
+) ([]views.PublishedVacSummary, error) {
 	query, err := vacancyPublicReqToQuery(requirements, order, cursor, limit)
 	if err != nil {
 		return nil, fmt.Errorf("elastic search public vacancy: %w", err)
@@ -95,11 +96,11 @@ func (r *VacancyRepo) ListPublishedSummaries(
 	return sums, nil
 }
 
-func vacToDoc(vac vacancy.Vacancy, compName string) *VacancyDocument {
+func vacToDoc(vac views.VacancySearch) *VacancyDocument {
 	return &VacancyDocument{
 		ID:                vac.ID.String(),
 		CompanyID:         vac.CompanyID.String(),
-		CompanyName:       compName,
+		CompanyName:       vac.CompanyName,
 		Title:             vac.Title,
 		Description:       vac.Description,
 		WorkFormat:        string(vac.WorkFormat),
@@ -129,7 +130,7 @@ type searchResponse struct {
 	} `json:"hits"`
 }
 
-func searchRespToVacSums(res *esapi.Response) ([]list.VacancySummary, error) {
+func searchRespToVacSums(res *esapi.Response) ([]views.PublishedVacSummary, error) {
 	var searchResp searchResponse
 
 	err := json.NewDecoder(res.Body).Decode(&searchResp)
@@ -137,7 +138,7 @@ func searchRespToVacSums(res *esapi.Response) ([]list.VacancySummary, error) {
 		return nil, err
 	}
 
-	vacancies := make([]list.VacancySummary, 0)
+	vacancies := make([]views.PublishedVacSummary, 0)
 
 	for _, hit := range searchResp.Hits.Hits {
 		doc := hit.Source
@@ -159,7 +160,7 @@ func searchRespToVacSums(res *esapi.Response) ([]list.VacancySummary, error) {
 			pub = time.Now()
 		}
 
-		vacancies = append(vacancies, list.VacancySummary{
+		vacancies = append(vacancies, views.PublishedVacSummary{
 			ID:             id,
 			CompanyID:      compID,
 			CompanyName:    doc.CompanyName,

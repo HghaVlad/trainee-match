@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type cacheMock struct {
@@ -39,13 +40,13 @@ func (m *repoMock) ListPublishedSummaries(
 	order list.Order,
 	cursor any,
 	limit int,
-) ([]list.VacancySummary, error) {
+) ([]views.PublishedVacSummary, error) {
 	args := m.Called(ctx, requirements, order, cursor, limit)
 
 	vcs := args.Get(0)
 
 	if vcs != nil {
-		return vcs.([]list.VacancySummary), args.Error(1)
+		return vcs.([]views.PublishedVacSummary), args.Error(1)
 	}
 
 	return nil, args.Error(1)
@@ -62,7 +63,7 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
-		Return(&list.Response{Vacancies: []list.VacancySummary{{}}}).Once()
+		Return(&list.Response{Vacancies: []views.PublishedVacSummary{{}}}).Once()
 
 	uc := list.NewUsecase(repo, cache)
 
@@ -92,9 +93,9 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 		Limit:         10,
 	}
 
-	vcs := make([]list.VacancySummary, req.Limit+1)
+	vcs := make([]views.PublishedVacSummary, req.Limit+1)
 	for i := range vcs {
-		vcs[i] = list.VacancySummary{
+		vcs[i] = views.PublishedVacSummary{
 			ID:          uuid.New(),
 			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
 		}
@@ -129,9 +130,9 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 		Limit:         10,
 	}
 
-	vcs := make([]list.VacancySummary, req.Limit)
+	vcs := make([]views.PublishedVacSummary, req.Limit)
 	for i := range vcs {
-		vcs[i] = list.VacancySummary{
+		vcs[i] = views.PublishedVacSummary{
 			ID:          uuid.New(),
 			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
 		}

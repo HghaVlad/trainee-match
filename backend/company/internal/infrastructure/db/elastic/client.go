@@ -9,7 +9,10 @@ import (
 )
 
 func NewClient(cfg config.ElasticSearch) (*elasticsearch.Client, error) {
-	cl, err := elasticsearch.New(elasticsearch.WithAddresses(cfg.Addrs...))
+	cl, err := elasticsearch.New(
+		elasticsearch.WithAddresses(cfg.Addrs...),
+		elasticsearch.WithBasicAuth(cfg.User, cfg.Password),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("elastic search create client: %v", err)
 	}

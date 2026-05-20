@@ -2,6 +2,8 @@ package list
 
 import (
 	"context"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo interface {
@@ -11,5 +13,5 @@ type VacancyRepo interface {
 		order Order,
 		cursor any,
 		limit int,
-	) ([]VacancySummary, error)
+	) ([]views.PublishedVacSummary, error)
 }

@@ -145,14 +145,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo, compRepo, searchVacRepo)
-	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, outboxWriter, vacCache, txManager)
-	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
+	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
+	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, searchVacRepo, vacCache, compCache)
 	vacArchive := archive.NewUsecase(
 		vacRepo,
 		compRepo,
 		memRepo,
 		outboxWriter,
 		txManager,
+		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -162,6 +163,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compRepo,
 		outboxWriter,
 		txManager,
+		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,

@@ -9,7 +9,9 @@ import (
 )
 
 type ElasticSearch struct {
-	Addrs []string `env:"ELASTIC_NODES" envSeparator:","`
+	Addrs    []string `env:"ELASTIC_NODES" envSeparator:","`
+	User     string   `env:"ELASTIC_USER" validate:"required"`
+	Password string   `env:"ELASTIC_PASS" validate:"required"`
 }
 
 func LoadElasticConfig(validate *validator.Validate) (*ElasticSearch, error) {

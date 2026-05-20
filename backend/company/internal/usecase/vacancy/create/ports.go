@@ -8,6 +8,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo interface {
@@ -23,5 +24,5 @@ type CompanyRepo interface {
 }
 
 type SearchRepo interface {
-	Index(ctx context.Context, vac vacancy.Vacancy, compName string) error
+	Index(ctx context.Context, vac views.VacancySearch) error
 }
