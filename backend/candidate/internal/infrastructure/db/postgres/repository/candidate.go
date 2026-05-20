@@ -22,12 +22,13 @@ func NewCandidateRepo(db *pgxpool.Pool) *CandidateRepo {
 
 func (r *CandidateRepo) Create(ctx context.Context, candidate *domain.Candidate) (uuid.UUID, error) {
 	query := `
-		INSERT INTO candidates (user_id, phone, telegram, city, birthday) 
-		VALUES ($1, $2, $3, $4, $5) 
+		INSERT INTO candidates (id, user_id, phone, telegram, city, birthday) 
+		VALUES ($1, $2, $3, $4, $5, $6) 
 		RETURNING id`
 
 	var id uuid.UUID
 	err := r.db.QueryRow(ctx, query,
+		candidate.ID,
 		candidate.UserId,
 		candidate.Phone,
 		candidate.Telegram,

@@ -8,3 +8,11 @@ type User struct {
 	Username  string
 	Role      string
 }
+
+type UserRole string
+
+const (
+	UserCandidateRole UserRole = "Candidate"
+	UserCompanyRole   UserRole = "Company"
+	UserAdminRole     UserRole = "admin"
+)

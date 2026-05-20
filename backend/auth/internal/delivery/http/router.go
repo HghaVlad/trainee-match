@@ -9,7 +9,8 @@ import (
 )
 
 type RouterDeps struct {
-	AuthHandler *handlers.Auth
+	AuthHandler  *handlers.Auth
+	AdminHandler *handlers.Admin
 }
 
 func NewRouter(deps *RouterDeps) http.Handler {
@@ -20,7 +21,11 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		r.Post("/login", deps.AuthHandler.Login)
 		r.Post("/refresh", deps.AuthHandler.RefreshToken)
 		r.Post("/logout", deps.AuthHandler.Logout)
-		r.Post("/me", deps.AuthHandler.GetMe)
+		r.Get("/me", deps.AuthHandler.GetMe)
+	})
+
+	router.Route("/api/v1/admin", func(r chi.Router) {
+		r.Post("/new", deps.AdminHandler.NewAdmin)
 	})
 
 	return router

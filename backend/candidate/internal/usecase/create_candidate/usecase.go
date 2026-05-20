@@ -43,6 +43,7 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error)
 	}
 
 	candidate := &domain.Candidate{
+		ID:       req.UserID,
 		UserId:   req.UserID,
 		Phone:    req.Phone,
 		Telegram: req.Telegram,

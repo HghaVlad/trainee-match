@@ -8,4 +8,5 @@ type User struct {
 	LastName  string
 	Email     string
 	Username  string
+	Role      string
 }

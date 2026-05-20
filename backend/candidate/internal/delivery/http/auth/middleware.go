@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -110,5 +111,34 @@ func getUserFromToken(token jwt.Token) (User, error) {
 		return User{}, err
 	}
 
+	role, err := getRole(token)
+	if err != nil {
+		return User{}, err
+	}
+	user.Role = role
+
 	return user, nil
+}
+
+func getRole(token jwt.Token) (string, error) {
+	var realmAccess map[string]interface{}
+
+	err := token.Get("realm_access", &realmAccess)
+	if err != nil {
+		return "", err
+	}
+
+	if rolesRaw, ok := realmAccess["roles"]; ok {
+		if rolesList, ok := rolesRaw.([]interface{}); ok {
+			for _, r := range rolesList {
+				if r == "Candidate" {
+					return "Candidate", nil
+				}
+				if r == "admin" {
+					return "admin", nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("role not found")
 }

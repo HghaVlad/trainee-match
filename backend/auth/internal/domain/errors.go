@@ -11,4 +11,5 @@ var (
 	ErrUserNameAlreadyExists = errors.New("username already exists")
 	ErrIncorrectPassword     = errors.New("incorrect password")
 	ErrUnauthorized          = errors.New("unauthorized")
+	ErrForbidden             = errors.New("forbidden")
 )

@@ -92,7 +92,16 @@
       "clientRole" : false,
       "containerId" : "afb50a5f-c5e5-43e3-861d-0dc54c09166c",
       "attributes" : { }
-    } ],
+    },
+      {
+        "id": "78b787b7-ccb1-46bb-ba4c-9eb74ab59ca7",
+        "name": "admin",
+        "description": "",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "afb50a5f-c5e5-43e3-861d-0dc54c09166c",
+        "attributes": {}
+      }],
     "client" : {
       "realm-management" : [ {
         "id" : "40ac3b72-176a-49cb-8c49-5137c3fda65f",
@@ -428,7 +437,7 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-trainee-match" ],
+    "realmRoles" : [ "default-roles-trainee-match", "admin" ],
     "clientRoles" : {
       "realm-management" : [ "realm-admin", "manage-realm" ]
     },
