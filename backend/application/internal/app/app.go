@@ -154,6 +154,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	eventHandler := eventhandler.NewHandler(
 		decoder,
 		cfg.KafkaHandling,
+		logger,
 		dlqSender,
 		resumeUpserted,
 		resumeDeleted,
@@ -167,7 +168,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		vacancyUpdated,
 	)
 
-	consumer := kafka.NewConsumer(eventHandler)
+	consumer := kafka.NewConsumer(eventHandler, logger)
 	kafkaConsumerClient, err := kafka.NewClientForConsumer(cfg.Kafka, consumer)
 	if err != nil {
 		return nil, err
@@ -188,6 +189,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		logger:        logger,
 		pgDB:          pgDB,
 		kafkaConsumer: consumer,
+		kafkaProducer: kafkaProducer,
 	}, nil
 }
 
@@ -208,10 +210,6 @@ func (app *App) Run(ctx context.Context) error {
 		app.logger.Info("finishing the kafka consumer")
 		return nil
 	})
-
-	if err := g.Wait(); err != nil {
-		return err
-	}
 
 	return g.Wait()
 }

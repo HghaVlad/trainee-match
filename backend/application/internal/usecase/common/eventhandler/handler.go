@@ -15,6 +15,7 @@ import (
 type Handler struct {
 	decoder              Decoder
 	cfg                  config.KafkaHandling
+	logger               *slog.Logger
 	dLQSender            DLQSender
 	resumeUpserted       ResumeUpsertedUsecase
 	ResumeDeleted        ResumeDeletedUsecase
@@ -31,6 +32,7 @@ type Handler struct {
 func NewHandler(
 	decoder Decoder,
 	cfg config.KafkaHandling,
+	logger *slog.Logger,
 	sender DLQSender,
 	resumeUpsertedUsecase ResumeUpsertedUsecase,
 	resumeDeletedUsecase ResumeDeletedUsecase,
@@ -46,6 +48,7 @@ func NewHandler(
 	return &Handler{
 		decoder:              decoder,
 		cfg:                  cfg,
+		logger:               logger,
 		dLQSender:            sender,
 		resumeUpserted:       resumeUpsertedUsecase,
 		ResumeDeleted:        resumeDeletedUsecase,
@@ -101,7 +104,7 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 		case "VacancyUpdated":
 			status, err = h.handleVacancyUpdatedEvent(ctx, event.Payload)
 		default:
-			slog.Warn("Unknown event type: %s", eventType)
+			h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
 			return
 		}
 		if status == ResultStatusSuccess {
@@ -111,13 +114,18 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 		}
 	}
 	if err == nil {
-		slog.Warn("Failed to handle event with nil error but non-success status: %s", eventType)
+		h.logger.WarnContext(
+			ctx,
+			"failed to handle event with nil error but non-success status",
+			"eventType",
+			eventType,
+		)
 		return
 	}
 
 	sendingErr := h.sendToDLQ(ctx, event, eventID, string(eventType), err)
 	if sendingErr != nil {
-		slog.Error("Failed to send to DLQ", sendingErr)
+		h.logger.ErrorContext(ctx, "failed to send to DLQ", "err", sendingErr)
 	}
 }
 

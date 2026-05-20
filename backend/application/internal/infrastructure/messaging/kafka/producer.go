@@ -47,7 +47,6 @@ func (pr *Producer) ProduceDLQ(ctx context.Context, message dlq.Message, key, va
 	return nil
 }
 
-func (pr *Producer) Shutdown() error {
+func (pr *Producer) Shutdown() {
 	pr.client.Close()
-	return nil
 }

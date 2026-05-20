@@ -15,10 +15,11 @@ type Consumer struct {
 	consumers map[string]map[int32]*PartitionConsumer
 	Client    *kgo.Client
 	handler   *eventhandler.Handler
+	logger    *slog.Logger
 }
 
-func NewConsumer(handler *eventhandler.Handler) *Consumer {
-	return &Consumer{consumers: make(map[string]map[int32]*PartitionConsumer), handler: handler}
+func NewConsumer(handler *eventhandler.Handler, logger *slog.Logger) *Consumer {
+	return &Consumer{consumers: make(map[string]map[int32]*PartitionConsumer), handler: handler, logger: logger}
 }
 
 func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[string][]int32) {
@@ -33,7 +34,7 @@ func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[strin
 			if _, ok := c.consumers[topic][partition]; ok {
 				continue
 			}
-			pr := NewPartitionConsumer(topic, partition, c.Client, c.handler)
+			pr := NewPartitionConsumer(topic, partition, c.Client, c.handler, c.logger)
 			c.consumers[topic][partition] = pr
 
 			go pr.ConsumePartition(topic, partition)
@@ -85,7 +86,7 @@ func (c *Consumer) Poll(ctx context.Context) {
 		}
 
 		if err := fetches.Err(); err != nil {
-			slog.Warn("kafka consumer has fetches error", "error", err)
+			c.logger.WarnContext(ctx, "kafka consumer has fetches error", "error", err)
 		}
 
 		fetches.EachTopic(func(partitionTopic kgo.FetchTopic) {

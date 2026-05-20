@@ -22,6 +22,7 @@ type PartitionConsumer struct {
 	client    *kgo.Client
 	Handler   *eventhandler.Handler
 	offset    int64
+	logger    *slog.Logger
 }
 
 func NewPartitionConsumer(
@@ -29,6 +30,7 @@ func NewPartitionConsumer(
 	partition int32,
 	client *kgo.Client,
 	handler *eventhandler.Handler,
+	logger *slog.Logger,
 ) *PartitionConsumer {
 	return &PartitionConsumer{
 		topic:     topic,
@@ -39,6 +41,7 @@ func NewPartitionConsumer(
 		client:    client,
 		Handler:   handler,
 		offset:    -1,
+		logger:    logger,
 	}
 }
 
@@ -101,9 +104,9 @@ func (c *PartitionConsumer) Commit() {
 		c.topic: {c.partition: {Offset: c.offset + 1}},
 	}
 	c.client.CommitOffsets(context.Background(), offsets,
-		func(client *kgo.Client, request *kmsg.OffsetCommitRequest, response *kmsg.OffsetCommitResponse, err error) {
+		func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, _ *kmsg.OffsetCommitResponse, err error) {
 			if err != nil {
-				slog.Warn("kafka commit offset failed", "topic", c.topic, "partition", c.partition, "err", err)
+				c.logger.Warn("kafka commit offset failed", "topic", c.topic, "partition", c.partition, "err", err)
 			}
 		})
 }
@@ -116,9 +119,9 @@ func (c *PartitionConsumer) CommitSync() {
 		c.topic: {c.partition: {Offset: c.offset + 1}},
 	}
 	c.client.CommitOffsetsSync(context.Background(), offsets,
-		func(client *kgo.Client, request *kmsg.OffsetCommitRequest, response *kmsg.OffsetCommitResponse, err error) {
+		func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, _ *kmsg.OffsetCommitResponse, err error) {
 			if err != nil {
-				slog.Warn("kafka commit offset sync failed", "topic", c.topic, "partition", c.partition, "err", err)
+				c.logger.Warn("kafka commit offset sync failed", "topic", c.topic, "partition", c.partition, "err", err)
 			}
 		})
 }
