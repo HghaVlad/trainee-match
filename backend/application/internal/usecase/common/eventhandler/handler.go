@@ -18,7 +18,7 @@ type Handler struct {
 	logger               *slog.Logger
 	dLQSender            DLQSender
 	resumeUpserted       ResumeUpsertedUsecase
-	ResumeDeleted        ResumeDeletedUsecase
+	resumeDeleted        ResumeDeletedUsecase
 	candidateUpserted    CandidateUpsertedUsecase
 	companyUpdated       CompanyUpdatedUsecase
 	companyDeleted       CompanyDeletedUsecase
@@ -51,7 +51,7 @@ func NewHandler(
 		logger:               logger,
 		dLQSender:            sender,
 		resumeUpserted:       resumeUpsertedUsecase,
-		ResumeDeleted:        resumeDeletedUsecase,
+		resumeDeleted:        resumeDeletedUsecase,
 		candidateUpserted:    candidateUpsertedUsecase,
 		companyUpdated:       companyUpdatedUsecase,
 		companyDeleted:       companyDeletedUsecase,
@@ -77,7 +77,7 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 		return
 	}
 
-	for i := range h.cfg.RetryCount {
+	for i := range min(h.cfg.RetryCount, 1) { // doing at least once
 		if i > 0 {
 			time.Sleep(h.cfg.RetryDelay * time.Duration(i)) // delay for retrying process
 		}
@@ -148,7 +148,7 @@ func (h *Handler) handleResumeDeletedEvent(ctx context.Context, payload []byte) 
 		return ResultStatusDLQ, err
 	}
 
-	err = h.ResumeDeleted.Execute(ctx, event)
+	err = h.resumeDeleted.Execute(ctx, event)
 	if err != nil {
 		return ResultStatusRetry, err
 	}

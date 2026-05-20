@@ -3,13 +3,13 @@ package config
 import "time"
 
 type Kafka struct {
-	Brokers  []string `mapstructure:"BROKERS"`
-	ClientID string   `mapstructure:"CLIENT_ID"`
+	Brokers  []string `mapstructure:"brokers"`
+	ClientID string   `mapstructure:"client_id"`
 
-	ConsumerGroup  string   `mapstructure:"CONSUMER_GROUP"`
-	ConsumerTopics []string `mapstructure:"CONSUMER_TOPICS"`
+	ConsumerGroup  string   `mapstructure:"consumer_group"`
+	ConsumerTopics []string `mapstructure:"consumer_topics"`
 
-	ProducerAcks   string        `mapstructure:"PRODUCER_ACKS"`
-	ProducerLinger time.Duration `mapstructure:"PRODUCER_LINGER"`
-	DLQTopic       string        `mapstructure:"DLQ_TOPIC"`
+	ProducerAcks   string        `mapstructure:"producer_acks"`
+	ProducerLinger time.Duration `mapstructure:"producer_linger"`
+	DLQTopic       string        `mapstructure:"dlq_topic"`
 }

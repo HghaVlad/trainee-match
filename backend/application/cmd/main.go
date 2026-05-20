@@ -25,7 +25,7 @@ func run() int {
 		logger.Error("error loading config", "error", err)
 		return 1
 	}
-	logger.Info("configuration loaded", "config", cfg)
+	logger.Info("configuration loaded")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 

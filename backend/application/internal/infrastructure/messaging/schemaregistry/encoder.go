@@ -22,10 +22,10 @@ func NewEncoder(registry *LocalRegistry) *Encoder {
 }
 
 func (en *Encoder) DLQToBytes(message dlq.Message) ([]byte, error) {
-	return en.eventToByte(dlqSubject, message)
+	return en.eventToBytes(dlqSubject, message)
 }
 
-func (en *Encoder) eventToByte(subject string, event any) ([]byte, error) {
+func (en *Encoder) eventToBytes(subject string, event any) ([]byte, error) {
 	schemaID, err := en.registry.GetSchemaIDBySubject(subject)
 	if err != nil {
 		return nil, err

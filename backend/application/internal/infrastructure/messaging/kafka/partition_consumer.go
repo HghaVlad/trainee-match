@@ -45,7 +45,7 @@ func NewPartitionConsumer(
 	}
 }
 
-func (c *PartitionConsumer) ConsumePartition(_ string, _ int32) {
+func (c *PartitionConsumer) ConsumePartition(ctx context.Context, _ string, _ int32) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -55,36 +55,36 @@ func (c *PartitionConsumer) ConsumePartition(_ string, _ int32) {
 				select {
 				case records := <-c.records:
 					for _, record := range records {
-						c.handleRecord(record)
+						c.handleRecord(ctx, record)
 						c.offset = record.Offset
 					}
-					c.CommitSync()
+					c.CommitSync(ctx)
 				default:
 					// All records handled returning
-					c.CommitSync()
+					c.CommitSync(ctx)
 					close(c.done)
 					return
 				}
 			}
 		case records := <-c.records:
 			for _, record := range records {
-				c.handleRecord(record)
+				c.handleRecord(ctx, record)
 				c.offset = record.Offset
 			}
 		case <-ticker.C:
-			c.Commit()
+			c.Commit(ctx)
 		}
 	}
 }
 
-func (c *PartitionConsumer) handleRecord(record *kgo.Record) {
+func (c *PartitionConsumer) handleRecord(ctx context.Context, record *kgo.Record) {
 	newEvent := eventhandler.Event{
 		Topic:   record.Topic,
 		Key:     record.Key,
 		Payload: record.Value,
 		Headers: recordHeadersToMapHeaders(record.Headers),
 	}
-	c.Handler.HandleEvent(context.Background(), newEvent)
+	c.Handler.HandleEvent(ctx, newEvent)
 }
 
 // Shutdown with handling all left records
@@ -96,14 +96,14 @@ func (c *PartitionConsumer) Shutdown() {
 	}
 }
 
-func (c *PartitionConsumer) Commit() {
+func (c *PartitionConsumer) Commit(ctx context.Context) {
 	if c.offset == -1 {
 		return
 	}
 	offsets := map[string]map[int32]kgo.EpochOffset{
 		c.topic: {c.partition: {Offset: c.offset + 1}},
 	}
-	c.client.CommitOffsets(context.Background(), offsets,
+	c.client.CommitOffsets(ctx, offsets,
 		func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, _ *kmsg.OffsetCommitResponse, err error) {
 			if err != nil {
 				c.logger.Warn("kafka commit offset failed", "topic", c.topic, "partition", c.partition, "err", err)
@@ -111,14 +111,14 @@ func (c *PartitionConsumer) Commit() {
 		})
 }
 
-func (c *PartitionConsumer) CommitSync() {
+func (c *PartitionConsumer) CommitSync(ctx context.Context) {
 	if c.offset == -1 {
 		return
 	}
 	offsets := map[string]map[int32]kgo.EpochOffset{
 		c.topic: {c.partition: {Offset: c.offset + 1}},
 	}
-	c.client.CommitOffsetsSync(context.Background(), offsets,
+	c.client.CommitOffsetsSync(ctx, offsets,
 		func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, _ *kmsg.OffsetCommitResponse, err error) {
 			if err != nil {
 				c.logger.Warn("kafka commit offset sync failed", "topic", c.topic, "partition", c.partition, "err", err)

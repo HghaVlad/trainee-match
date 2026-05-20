@@ -22,7 +22,7 @@ func NewConsumer(handler *eventhandler.Handler, logger *slog.Logger) *Consumer {
 	return &Consumer{consumers: make(map[string]map[int32]*PartitionConsumer), handler: handler, logger: logger}
 }
 
-func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[string][]int32) {
+func (c *Consumer) Assigned(ctx context.Context, _ *kgo.Client, assigned map[string][]int32) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -37,7 +37,7 @@ func (c *Consumer) Assigned(_ context.Context, _ *kgo.Client, assigned map[strin
 			pr := NewPartitionConsumer(topic, partition, c.Client, c.handler, c.logger)
 			c.consumers[topic][partition] = pr
 
-			go pr.ConsumePartition(topic, partition)
+			go pr.ConsumePartition(ctx, topic, partition)
 		}
 	}
 }
@@ -114,9 +114,6 @@ func (c *Consumer) Shutdown() {
 	c.mu.Lock()
 	toStop := make([]*PartitionConsumer, 0)
 	for topic, partitions := range c.consumers {
-		if _, ok := c.consumers[topic]; !ok {
-			continue
-		}
 		for i, pr := range partitions {
 			delete(c.consumers[topic], i)
 			if len(c.consumers[topic]) == 0 {

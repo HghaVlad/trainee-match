@@ -30,14 +30,14 @@ func (cl *Client) LookUpSchemaID(ctx context.Context, subject string, schema str
 	}
 	url := fmt.Sprintf("%s/subjects/%s/versions", cl.conf.BaseURL, subject)
 
-	httpRequeqst, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
 		return -1, err
 	}
-	httpRequeqst.Header.Set("Content-Type", contentType)
-	httpRequeqst.Header.Set("Accept", contentType)
+	httpRequest.Header.Set("Content-Type", contentType)
+	httpRequest.Header.Set("Accept", contentType)
 
-	resp, err := cl.httpClient.Do(httpRequeqst)
+	resp, err := cl.httpClient.Do(httpRequest)
 	if err != nil {
 		return -1, err
 	}
@@ -52,7 +52,6 @@ func (cl *Client) LookUpSchemaID(ctx context.Context, subject string, schema str
 		return 0, err
 	}
 	return response.ID, nil
-
 }
 
 type schemaRequest struct {
