@@ -9,6 +9,8 @@ import (
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/admin/newadmin"
+
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/config"
 	deliveryhttp "github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http"
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/handlers"
@@ -73,6 +75,8 @@ func Build(conf *config.Config) *App {
 	authRefreshUC := refreshtoken.New(keycloakClient)
 	authGetMeUC := getuser.New(keycloakClient)
 
+	adminNew := newadmin.NewUseCase(keycloakClient)
+
 	deps := deliveryhttp.RouterDeps{
 		AuthHandler: handlers.NewAuthHandler(
 			authRegisterUC,
@@ -82,6 +86,9 @@ func Build(conf *config.Config) *App {
 			authGetMeUC,
 			conf.KeyCloak.AccessTokenExpires,
 			conf.KeyCloak.RefreshTokenExpires,
+		),
+		AdminHandler: handlers.NewAdmin(
+			adminNew,
 		),
 	}
 	handler := deliveryhttp.NewRouter(&deps)

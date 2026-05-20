@@ -83,6 +83,7 @@ func NewAuthHandler(
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/register [post]
 func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var request dto.RegisterUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, fmt.Sprintf("invalid request: %v", err))
@@ -130,6 +131,7 @@ func (h *Auth) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/login [post]
 func (h *Auth) Login(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	decoder := json.NewDecoder(r.Body)
 	var request dto.LoginRequest
 	err := decoder.Decode(&request)

@@ -1,4 +1,9 @@
 definitions:
+  dto.AddAdminRoleRequest:
+    properties:
+      user_id:
+        type: string
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -67,6 +72,39 @@ definitions:
 info:
   contact: {}
 paths:
+  /admin/new:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Make new admin
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddAdminRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Add admin role to new user
+      tags:
+      - admin
   /auth/login:
     post:
       consumes:

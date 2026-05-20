@@ -14,9 +14,6 @@ import (
 
 var ErrInvalidToken = errors.New("invalid access token")
 
-const CandidateRoleName = "Candidate"
-const CompanyRoleName = "Company"
-
 type Client struct {
 	client *gocloak.GoCloak
 	token  *gocloak.JWT
@@ -111,22 +108,62 @@ func (kc *Client) CreateUser(ctx context.Context, user domain.User, password str
 func (kc *Client) addRole(ctx context.Context, userID, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
-	switch roleName {
-	case CandidateRoleName:
+	switch domain.UserRole(roleName) {
+	case domain.UserCandidateRole:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
-			Name: gocloak.StringP(CandidateRoleName),
+			Name: gocloak.StringP(string(domain.UserCandidateRole)),
 		}
-	case CompanyRoleName:
+	case domain.UserCompanyRole:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
-			Name: gocloak.StringP(CompanyRoleName),
+			Name: gocloak.StringP(string(domain.UserCompanyRole)),
 		}
+	case domain.UserAdminRole:
+		return fmt.Errorf("you can not set this role")
 	default:
 		return fmt.Errorf("the roleName is not valid: %s", roleName)
 	}
 
 	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
+}
+
+func (kc *Client) AddAdminRole(ctx context.Context, userID string) error {
+	newRoles := []gocloak.Role{
+		{
+			ID:   gocloak.StringP("78b787b7-ccb1-46bb-ba4c-9eb74ab59ca7"),
+			Name: gocloak.StringP(string(domain.UserAdminRole)),
+		},
+	}
+	err := kc.deleteRoles(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, newRoles)
+}
+
+func (kc *Client) deleteRoles(ctx context.Context, userID string) error {
+	roles := []gocloak.Role{
+		{
+			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
+			Name: gocloak.StringP(string(domain.UserCandidateRole)),
+		},
+		{
+			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
+			Name: gocloak.StringP(string(domain.UserCompanyRole)),
+		},
+		{
+			ID:   gocloak.StringP("78b787b7-ccb1-46bb-ba4c-9eb74ab59ca7"),
+			Name: gocloak.StringP(string(domain.UserAdminRole)),
+		},
+	}
+
+	err := kc.client.DeleteRealmRoleFromUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
+	if err != nil {
+		return fmt.Errorf("deleteRoles failed: %s", err.Error())
+	}
+	return nil
 }
 
 func (kc *Client) Login(ctx context.Context, username, password string) (*gocloak.JWT, error) {
@@ -211,8 +248,8 @@ func (kc *Client) GetUserRole(ctx context.Context, _ string, userID string) (str
 		return "", err
 	}
 	for _, role := range roles {
-		switch *role.Name {
-		case CandidateRoleName, CompanyRoleName:
+		switch domain.UserRole(*role.Name) {
+		case domain.UserCandidateRole, domain.UserCompanyRole, domain.UserAdminRole:
 			return *role.Name, nil
 		}
 	}
