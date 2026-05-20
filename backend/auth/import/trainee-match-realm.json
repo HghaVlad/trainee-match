@@ -437,7 +437,7 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-trainee-match" ],
+    "realmRoles" : [ "default-roles-trainee-match", "admin" ],
     "clientRoles" : {
       "realm-management" : [ "realm-admin", "manage-realm" ]
     },
