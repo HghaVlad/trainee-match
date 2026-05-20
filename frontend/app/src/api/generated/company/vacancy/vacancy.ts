@@ -209,6 +209,69 @@ export const usePostCompaniesCompanyIdVacancies = <TError = DtoErrorResponse,
       return useMutation(getPostCompaniesCompanyIdVacanciesMutationOptions(options), queryClient);
     }
     /**
+ * Deletes vacancy by id
+ * @summary Delete vacancy
+ */
+export const deleteCompaniesCompanyIdVacanciesVacancyId = (
+    companyId: string,
+    vacancyId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<void>(
+      {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext> => {
+
+const mutationKey = ['deleteCompaniesCompanyIdVacanciesVacancyId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, {companyId: string;vacancyId: string}> = (props) => {
+          const {companyId,vacancyId} = props ?? {};
+
+          return  deleteCompaniesCompanyIdVacanciesVacancyId(companyId,vacancyId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>>
+
+    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationError = DtoErrorResponse
+
+    /**
+ * @summary Delete vacancy
+ */
+export const useDeleteCompaniesCompanyIdVacanciesVacancyId = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>,
+        TError,
+        {companyId: string;vacancyId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions(options), queryClient);
+    }
+    /**
  * Returns vacancy by id, company id should be correct, otherwise it's 404
  * @summary Get vacancy by id
  */
@@ -309,69 +372,6 @@ export function useGetCompaniesCompanyIdVacanciesVacancyId<TData = Awaited<Retur
 
 
 /**
- * Deletes vacancy by id
- * @summary Delete vacancy
- */
-export const deleteCompaniesCompanyIdVacanciesVacancyId = (
-    companyId: string,
-    vacancyId: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<void>(
-      {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'DELETE', signal
-    },
-      );
-    }
-
-
-
-export const getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext> => {
-
-const mutationKey = ['deleteCompaniesCompanyIdVacanciesVacancyId'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, {companyId: string;vacancyId: string}> = (props) => {
-          const {companyId,vacancyId} = props ?? {};
-
-          return  deleteCompaniesCompanyIdVacanciesVacancyId(companyId,vacancyId,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>>
-
-    export type DeleteCompaniesCompanyIdVacanciesVacancyIdMutationError = DtoErrorResponse
-
-    /**
- * @summary Delete vacancy
- */
-export const useDeleteCompaniesCompanyIdVacanciesVacancyId = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>, TError,{companyId: string;vacancyId: string}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteCompaniesCompanyIdVacanciesVacancyId>>,
-        TError,
-        {companyId: string;vacancyId: string},
-        TContext
-      > => {
-      return useMutation(getDeleteCompaniesCompanyIdVacanciesVacancyIdMutationOptions(options), queryClient);
-    }
-    /**
  * Partially updates vacancy fields. Nil fields are ignored (not updated).
  * @summary Update vacancy
  */

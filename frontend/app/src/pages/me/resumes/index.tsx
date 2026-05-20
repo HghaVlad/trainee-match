@@ -39,7 +39,7 @@ function isPublishedStatus(status: ResumeStatusValue): boolean {
 
 export default function ResumesPage() {
   const { data, isLoading, error, refetch } = useGetResume()
-  const { data: candidate } = useGetCandidateMe({ query: { retry: false } })
+  const { data: candidate, isLoading: candidateLoading } = useGetCandidateMe({ query: { retry: false } })
   const { user } = useSession()
   const create = usePostResume()
   const navigate = useNavigate()
@@ -55,6 +55,7 @@ export default function ResumesPage() {
   }, [data, defaultResumeId, setDefaultResumeId])
 
   async function onCreate() {
+    if (candidateLoading || !candidate) return
     setErr(null)
     const missing = collectMissing(user, candidate)
     if (missing) {

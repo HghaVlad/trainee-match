@@ -82,19 +82,20 @@ export async function refreshCompanies(options?: RefreshOptions): Promise<void> 
 
   if (options && 'setActiveId' in options) {
     const next = options.setActiveId
-    if (next && merged.some((c) => c.id === next)) {
+    if (next && merged.some((c) => c.id === next && c.name)) {
       setActiveCompany(next)
       writeActiveCompanyId(user.id, next)
+    } else if (!merged.some((c) => c.id === next) && next) {
+      setActiveCompany(undefined)
+      writeActiveCompanyId(user.id, undefined)
     }
-    // Do NOT clear active company when requested id is missing - the optimistic
-    // entry is preserved above and the server will catch up on next refresh.
     return
   }
 
-  // Do not clear active id when server omits it: /companies/me has a 20s
-  // cache that can return stale empty list after POST /companies.
-  void user
-  void activeCompanyId
+  if (activeCompanyId && !merged.some((c) => c.id === activeCompanyId)) {
+    setActiveCompany(undefined)
+    writeActiveCompanyId(user!.id, undefined)
+  }
 }
 
 export function addLocalCompany(membership: CompanyMembership, makeActive: boolean): void {

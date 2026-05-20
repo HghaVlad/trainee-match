@@ -219,3 +219,104 @@ test.describe('candidate flow', () => {
     ).toBeTruthy()
   })
 })
+
+test.describe('candidate: apply vacancy', () => {
+  test('BUG #23: full apply flow — navigate to vacancy → select resume → submit → 200/201', async ({ page }) => {
+    // 1. Company: create company + published vacancy
+    const companyUser = makeUser('Company')
+    await registerAndLogin(page, companyUser)
+    await page.goto('/company/new')
+    await page.getByLabel('Название').fill(`E2E Co ${Date.now()}`)
+    await page.getByRole('button', { name: 'Создать' }).click()
+    await page.waitForURL(/\/company\/[^/]+\/dashboard/, { timeout: 15_000 })
+    const companyId = new URL(page.url()).pathname.match(/\/company\/([^/]+)\/dashboard/)?.[1] ?? ''
+
+    // Create vacancy
+    await page.goto(`/company/${companyId}/vacancies/new`)
+    await page.getByLabel('Название').fill(`E2E Vacancy ${Date.now()}`)
+    await page.getByLabel(/Описание/).first().fill('test vacancy for apply flow')
+    await page.getByLabel('Город').first().fill('Moscow')
+
+    const [, vacancyResp] = await Promise.all([
+      page.waitForURL(/\/company\/[^/]+\/vacancies\/[^/]+$/, { timeout: 15_000 }),
+      page.getByRole('button', { name: /Создать/ }).first().click(),
+    ])
+    const vacancyId = new URL(page.url()).pathname.split('/').pop() ?? ''
+
+    // Publish the vacancy
+    await page.getByRole('button', { name: /^Опубликовать$/ }).first().click()
+    await page.getByRole('dialog').getByRole('button', { name: /^Опубликовать$/ }).click()
+    await expect(page.getByText('Опубликовано').first()).toBeVisible({ timeout: 15_000 })
+
+    await page.context().clearCookies()
+    await page.evaluate(() => localStorage.clear())
+    await page.goto('/login', { waitUntil: 'networkidle' })
+    const candidate = makeUser('Candidate')
+    await registerAndLogin(page, candidate)
+    await page.waitForURL('**/me/profile')
+    const stamp = Date.now().toString().slice(-9)
+    await page.getByLabel('Телефон').fill(`+7${stamp}`)
+    await page.getByLabel('Telegram').fill(`@e2e${stamp}`)
+    await page.getByLabel('Город').fill('Moscow')
+    await page.getByLabel('Дата рождения').fill('2000-01-01')
+
+    await Promise.all([
+      page.waitForResponse(
+        (r) => /\/api\/v1\/candidate/.test(new URL(r.url()).pathname) && ['POST', 'PATCH', 'PUT'].includes(r.request().method()),
+        { timeout: 15_000 },
+      ),
+      page.getByRole('button', { name: /Сохранить/ }).click(),
+    ])
+    await expect(page.getByText('Дата рождения:')).toBeVisible({ timeout: 10_000 })
+
+    await page.goto('/me/resumes')
+    await expect(page.getByRole('heading', { name: 'Мои резюме' })).toBeVisible()
+    await page.getByRole('button', { name: /^Создать$/ }).first().click()
+    await page.waitForURL(/\/me\/resumes\/[0-9a-f-]{36}/, { timeout: 15_000 })
+
+    await page.goto('/me/resumes')
+    const row = page.getByTestId('resume-row').first()
+    await row.getByRole('button', { name: /^Опубликовать$/ }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (r) => /\/resume\/[0-9a-f-]{36}/.test(new URL(r.url()).pathname) && r.request().method() === 'PATCH',
+        { timeout: 15_000 },
+      ),
+      page.getByRole('dialog').getByRole('button', { name: /^Опубликовать$/ }).click(),
+    ])
+    await expect(row.getByText('Опубликовано')).toBeVisible({ timeout: 10_000 })
+
+    await page.goto('/vacancies')
+    await expect(page.getByRole('heading', { name: 'Вакансии', exact: true })).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/Something went wrong/i)).toHaveCount(0)
+
+    const vacancyLink = page.getByRole('link', { name: /E2E Vacancy/ }).first()
+    await vacancyLink.click()
+    await expect(page.getByRole('dialog').or(page.getByRole('navigation', { name: 'breadcrumb' }))).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Откликнуться' }).click()
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByRole('dialog').getByText('Отклик на вакансию')).toBeVisible()
+
+    const selectTrigger = page.getByRole('dialog').getByRole('combobox')
+    await selectTrigger.click()
+    await page.getByRole('option').first().click()
+
+    const [applyResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => /\/api\/v1\/applications$/.test(new URL(r.url()).pathname) && r.request().method() === 'POST',
+        { timeout: 15_000 },
+      ),
+      page.getByRole('dialog').getByRole('button', { name: 'Откликнуться' }).click(),
+    ])
+
+    const status = applyResp.status()
+    expect(
+      status !== 404,
+      `PROXY ROUTING FAILURE: /api/v1/applications returned 404 - not routed to backend. Response: ${await applyResp.text().catch(() => '')}`,
+    ).toBe(true)
+    expect(
+      status === 200 || status === 201 || status === 400,
+      `Expected 200/201/400, got ${status}: ${await applyResp.text().catch(() => '')}`,
+    ).toBe(true)
+  })
+})

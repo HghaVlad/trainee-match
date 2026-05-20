@@ -193,6 +193,67 @@ export const usePostResume = <TError = DtoErrorResponse,
       return useMutation(getPostResumeMutationOptions(options), queryClient);
     }
     /**
+ * @summary Delete a resume
+ */
+export const deleteResumeId = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<string>(
+      {url: `/resume/${id}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteResumeIdMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteResumeId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteResumeId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteResumeId(id,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteResumeIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteResumeId>>>
+
+    export type DeleteResumeIdMutationError = DtoErrorResponse
+
+    /**
+ * @summary Delete a resume
+ */
+export const useDeleteResumeId = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteResumeId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteResumeIdMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get resume by ID
  */
 export const getResumeId = (
@@ -285,67 +346,6 @@ export function useGetResumeId<TData = Awaited<ReturnType<typeof getResumeId>>, 
 
 
 /**
- * @summary Delete a resume
- */
-export const deleteResumeId = (
-    id: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<string>(
-      {url: `/resume/${id}`, method: 'DELETE', signal
-    },
-      );
-    }
-
-
-
-export const getDeleteResumeIdMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext> => {
-
-const mutationKey = ['deleteResumeId'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteResumeId>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
-
-          return  deleteResumeId(id,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteResumeIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteResumeId>>>
-
-    export type DeleteResumeIdMutationError = DtoErrorResponse
-
-    /**
- * @summary Delete a resume
- */
-export const useDeleteResumeId = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteResumeId>>,
-        TError,
-        {id: string},
-        TContext
-      > => {
-      return useMutation(getDeleteResumeIdMutationOptions(options), queryClient);
-    }
-    /**
  * @summary Update a resume
  */
 export const patchResumeId = (

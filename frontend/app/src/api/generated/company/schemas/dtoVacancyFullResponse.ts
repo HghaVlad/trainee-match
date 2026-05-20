@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { DtoVacancyFullResponseEmploymentType } from './dtoVacancyFullResponseEmploymentType';
+import type { DtoVacancyFullResponseModerationStatus } from './dtoVacancyFullResponseModerationStatus';
 import type { DtoVacancyFullResponseStatus } from './dtoVacancyFullResponseStatus';
 import type { DtoVacancyFullResponseWorkFormat } from './dtoVacancyFullResponseWorkFormat';
 
@@ -24,6 +25,7 @@ export interface DtoVacancyFullResponse {
   id?: string;
   internshipToOffer?: boolean;
   isPaid?: boolean;
+  moderationStatus?: DtoVacancyFullResponseModerationStatus;
   publishedAt?: string;
   salaryFrom?: number;
   salaryTo?: number;

@@ -37,6 +37,69 @@ import { mutatorFn } from '../../../../shared/api/http/client';
 
 
 /**
+ * @summary Update candidate profile
+ */
+export const patchCandidate = (
+    dtoCandidateUpdateRequest: DtoCandidateUpdateRequest,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoCandidateResponse>(
+      {url: `/candidate/`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: dtoCandidateUpdateRequest, signal
+    },
+      );
+    }
+
+
+
+export const getPatchCandidateMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext> => {
+
+const mutationKey = ['patchCandidate'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchCandidate>>, {data: DtoCandidateUpdateRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchCandidate(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchCandidateMutationResult = NonNullable<Awaited<ReturnType<typeof patchCandidate>>>
+    export type PatchCandidateMutationBody = DtoCandidateUpdateRequest
+    export type PatchCandidateMutationError = DtoErrorResponse
+
+    /**
+ * @summary Update candidate profile
+ */
+export const usePatchCandidate = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchCandidate>>,
+        TError,
+        {data: DtoCandidateUpdateRequest},
+        TContext
+      > => {
+      return useMutation(getPatchCandidateMutationOptions(options), queryClient);
+    }
+    /**
  * Creates a new candidate profile associated with the authenticated user
  * @summary Create candidate profile
  */
@@ -99,69 +162,6 @@ export const usePostCandidate = <TError = DtoErrorResponse,
         TContext
       > => {
       return useMutation(getPostCandidateMutationOptions(options), queryClient);
-    }
-    /**
- * @summary Update candidate profile
- */
-export const patchCandidate = (
-    dtoCandidateUpdateRequest: DtoCandidateUpdateRequest,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<DtoCandidateResponse>(
-      {url: `/candidate/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: dtoCandidateUpdateRequest, signal
-    },
-      );
-    }
-
-
-
-export const getPatchCandidateMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext> => {
-
-const mutationKey = ['patchCandidate'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchCandidate>>, {data: DtoCandidateUpdateRequest}> = (props) => {
-          const {data} = props ?? {};
-
-          return  patchCandidate(data,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PatchCandidateMutationResult = NonNullable<Awaited<ReturnType<typeof patchCandidate>>>
-    export type PatchCandidateMutationBody = DtoCandidateUpdateRequest
-    export type PatchCandidateMutationError = DtoErrorResponse
-
-    /**
- * @summary Update candidate profile
- */
-export const usePatchCandidate = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCandidate>>, TError,{data: DtoCandidateUpdateRequest}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof patchCandidate>>,
-        TError,
-        {data: DtoCandidateUpdateRequest},
-        TContext
-      > => {
-      return useMutation(getPatchCandidateMutationOptions(options), queryClient);
     }
     /**
  * @summary Get my candidate profile

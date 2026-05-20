@@ -28,6 +28,7 @@ import type {
   DtoCompanyCreateRequest,
   DtoCompanyCreatedResponse,
   DtoCompanyListResponse,
+  DtoCompanyMemResponse,
   DtoCompanyResponse,
   DtoCompanyUpdateRequest,
   DtoErrorResponse,
@@ -199,100 +200,68 @@ export const usePostCompanies = <TError = DtoErrorResponse,
       return useMutation(getPostCompaniesMutationOptions(options), queryClient);
     }
     /**
- * Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc
- * @summary Lists hr's company summaries
+ * Deletes company by id
+ * @summary Delete company
  */
-export const getCompaniesMe = (
-    params?: GetCompaniesMeParams,
+export const deleteCompaniesId = (
+    id: string,
  signal?: AbortSignal
 ) => {
 
 
-      return mutatorFn<DtoCompanyListResponse>(
-      {url: `/companies/me`, method: 'GET',
-        params, signal
+      return mutatorFn<void>(
+      {url: `/companies/${id}`, method: 'DELETE', signal
     },
       );
     }
 
 
 
+export const getDeleteCompaniesIdMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext> => {
 
-export const getGetCompaniesMeQueryKey = (params?: GetCompaniesMeParams,) => {
-    return [
-    `/companies/me`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getGetCompaniesMeQueryOptions = <TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetCompaniesMeQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompaniesMe>>> = ({ signal }) => getCompaniesMe(params, signal);
+const mutationKey = ['deleteCompaniesId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
 
 
 
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type GetCompaniesMeQueryResult = NonNullable<Awaited<ReturnType<typeof getCompaniesMe>>>
-export type GetCompaniesMeQueryError = DtoErrorResponse
+          return  deleteCompaniesId(id,)
+        }
 
 
-export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
- params: undefined |  GetCompaniesMeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCompaniesMe>>,
-          TError,
-          Awaited<ReturnType<typeof getCompaniesMe>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
- params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCompaniesMe>>,
-          TError,
-          Awaited<ReturnType<typeof getCompaniesMe>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
- params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary Lists hr's company summaries
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCompaniesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesId>>>
+
+    export type DeleteCompaniesIdMutationError = DtoErrorResponse
+
+    /**
+ * @summary Delete company
  */
-
-export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
- params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetCompaniesMeQueryOptions(params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
-/**
+export const useDeleteCompaniesId = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCompaniesId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCompaniesIdMutationOptions(options), queryClient);
+    }
+    /**
  * Returns company profile by UUID
  * @summary Get profile by id
  */
@@ -386,68 +355,6 @@ export function useGetCompaniesId<TData = Awaited<ReturnType<typeof getCompanies
 
 
 /**
- * Deletes company by id
- * @summary Delete company
- */
-export const deleteCompaniesId = (
-    id: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<void>(
-      {url: `/companies/${id}`, method: 'DELETE', signal
-    },
-      );
-    }
-
-
-
-export const getDeleteCompaniesIdMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext> => {
-
-const mutationKey = ['deleteCompaniesId'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCompaniesId>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
-
-          return  deleteCompaniesId(id,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteCompaniesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCompaniesId>>>
-
-    export type DeleteCompaniesIdMutationError = DtoErrorResponse
-
-    /**
- * @summary Delete company
- */
-export const useDeleteCompaniesId = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCompaniesId>>, TError,{id: string}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteCompaniesId>>,
-        TError,
-        {id: string},
-        TContext
-      > => {
-      return useMutation(getDeleteCompaniesIdMutationOptions(options), queryClient);
-    }
-    /**
  * Partially updates company fields, if field not provided or null - it won't be changed
  * @summary Update company
  */
@@ -512,3 +419,190 @@ export const usePatchCompaniesId = <TError = DtoErrorResponse,
       > => {
       return useMutation(getPatchCompaniesIdMutationOptions(options), queryClient);
     }
+    /**
+ * Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member
+ * @summary Get company by member
+ */
+export const getCompaniesIdMe = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoCompanyMemResponse>(
+      {url: `/companies/${id}/me`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getGetCompaniesIdMeQueryKey = (id: string,) => {
+    return [
+    `/companies/${id}/me`
+    ] as const;
+    }
+
+
+export const getGetCompaniesIdMeQueryOptions = <TData = Awaited<ReturnType<typeof getCompaniesIdMe>>, TError = DtoErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompaniesIdMeQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompaniesIdMe>>> = ({ signal }) => getCompaniesIdMe(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCompaniesIdMeQueryResult = NonNullable<Awaited<ReturnType<typeof getCompaniesIdMe>>>
+export type GetCompaniesIdMeQueryError = DtoErrorResponse
+
+
+export function useGetCompaniesIdMe<TData = Awaited<ReturnType<typeof getCompaniesIdMe>>, TError = DtoErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesIdMe>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesIdMe>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesIdMe<TData = Awaited<ReturnType<typeof getCompaniesIdMe>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesIdMe>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesIdMe>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesIdMe<TData = Awaited<ReturnType<typeof getCompaniesIdMe>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get company by member
+ */
+
+export function useGetCompaniesIdMe<TData = Awaited<ReturnType<typeof getCompaniesIdMe>>, TError = DtoErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesIdMe>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCompaniesIdMeQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc
+ * @summary Lists hr's company summaries
+ */
+export const getCompaniesMe = (
+    params?: GetCompaniesMeParams,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoCompanyListResponse>(
+      {url: `/companies/me`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getGetCompaniesMeQueryKey = (params?: GetCompaniesMeParams,) => {
+    return [
+    `/companies/me`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCompaniesMeQueryOptions = <TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompaniesMeQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompaniesMe>>> = ({ signal }) => getCompaniesMe(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCompaniesMeQueryResult = NonNullable<Awaited<ReturnType<typeof getCompaniesMe>>>
+export type GetCompaniesMeQueryError = DtoErrorResponse
+
+
+export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
+ params: undefined |  GetCompaniesMeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesMe>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesMe>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
+ params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesMe>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesMe>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
+ params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Lists hr's company summaries
+ */
+
+export function useGetCompaniesMe<TData = Awaited<ReturnType<typeof getCompaniesMe>>, TError = DtoErrorResponse>(
+ params?: GetCompaniesMeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesMe>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCompaniesMeQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+

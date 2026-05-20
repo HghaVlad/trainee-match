@@ -31,7 +31,9 @@ interface ResumeView {
   skills: string[]
 }
 
-function readResume(data: { [k: string]: unknown }): ResumeView {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readResume(data: any): ResumeView {
+  if (!data) return { title: undefined, content: undefined, skills: [] }
   const title = typeof data.title === 'string' ? data.title : undefined
   const content =
     typeof data.content === 'string'
@@ -39,7 +41,7 @@ function readResume(data: { [k: string]: unknown }): ResumeView {
       : typeof data.description === 'string'
         ? data.description
         : undefined
-  const rawSkills = data.skills
+  const rawSkills = data.skills ?? data.skillsList
   const skills: string[] = Array.isArray(rawSkills)
     ? rawSkills.filter((s): s is string => typeof s === 'string')
     : []
