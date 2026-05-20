@@ -10,6 +10,25 @@ import (
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/dlq"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companydeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberadded"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberremoved"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companyupdated"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyarchived"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancypublished"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyupdated"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
+
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/kafka"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
@@ -32,9 +51,11 @@ import (
 )
 
 type App struct {
-	httpServer *http.Server
-	pgDB       *pgxpool.Pool
-	logger     *slog.Logger
+	httpServer    *http.Server
+	pgDB          *pgxpool.Pool
+	logger        *slog.Logger
+	kafkaConsumer *kafka.Consumer
+	kafkaProducer *kafka.Producer
 }
 
 func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
@@ -55,6 +76,14 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	compMemProjRepo := repository.NewCompanyMemberProjection(pgDB, txGetter)
 
 	appSnapHasher := hash.NewAppSnapshotHasher()
+
+	schemaRegistryClient := schemaregistry.NewClient(cfg.SchemaRegistry)
+	localRegistry, err := schemaregistry.NewLocalRegistry(ctx, schemaRegistryClient)
+	if err != nil {
+		return nil, err
+	}
+	decoder := schemaregistry.NewDecoder(localRegistry)
+	encoder := schemaregistry.NewEncoder(localRegistry)
 
 	applyUC := apply.NewUsecase(
 		appRepo,
@@ -101,6 +130,51 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	hand := handlers.NewHandler(deps)
 
+	//Event usecases
+	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
+	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
+	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
+	companyUpdated := companyupdated.NewUsecase(vacProjRepo)
+	companyDeleted := companydeleted.NewUsecase(compMemProjRepo, vacProjRepo)
+	companyMemberAdded := companymemberadded.NewUsecase(compMemProjRepo)
+	companyMemberRemoved := companymemberremoved.NewUsecase(compMemProjRepo)
+	vacancyPublished := vacancypublished.NewUsecase(vacProjRepo)
+	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo)
+	vacancyUpdated := vacancyupdated.NewUsecase(vacProjRepo)
+
+	// Kafka Producer
+	kafkaProducerClient, err := kafka.NewClientForProducer(cfg.Kafka)
+	if err != nil {
+		return nil, err
+	}
+	kafkaProducer := kafka.NewProducer(kafkaProducerClient, cfg.Kafka)
+	dlqSender := dlq.NewSender(kafkaProducer, encoder)
+
+	// Kafka Consumer
+	eventHandler := eventhandler.NewHandler(
+		decoder,
+		cfg.KafkaHandling,
+		logger,
+		dlqSender,
+		resumeUpserted,
+		resumeDeleted,
+		candidateUpserted,
+		companyUpdated,
+		companyDeleted,
+		companyMemberAdded,
+		companyMemberRemoved,
+		vacancyPublished,
+		vacancyArchived,
+		vacancyUpdated,
+	)
+
+	consumer := kafka.NewConsumer(eventHandler, logger)
+	kafkaConsumerClient, err := kafka.NewClientForConsumer(cfg.Kafka, consumer)
+	if err != nil {
+		return nil, err
+	}
+	consumer.Client = kafkaConsumerClient
+
 	router := apphttp.NewRouter(hand, authMiddleware, logger)
 
 	httpServer := &http.Server{
@@ -111,21 +185,33 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	}
 
 	return &App{
-		httpServer: httpServer,
-		logger:     logger,
-		pgDB:       pgDB,
+		httpServer:    httpServer,
+		logger:        logger,
+		pgDB:          pgDB,
+		kafkaConsumer: consumer,
+		kafkaProducer: kafkaProducer,
 	}, nil
 }
 
 func (app *App) Run(ctx context.Context) error {
-	app.logger.InfoContext(ctx, "starting http server", "addr", app.httpServer.Addr)
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		app.logger.InfoContext(ctx, "starting http server", "addr", app.httpServer.Addr)
 
-	if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+		if err := app.httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
 
-	app.logger.InfoContext(ctx, "http server stopped")
-	return nil
+	g.Go(func() error {
+		app.logger.Info("starting the kafka consumer")
+		app.kafkaConsumer.Poll(ctx)
+		app.logger.Info("finishing the kafka consumer")
+		return nil
+	})
+
+	return g.Wait()
 }
 
 func (app *App) Shutdown(ctx context.Context) {
@@ -138,6 +224,9 @@ func (app *App) Shutdown(ctx context.Context) {
 	}
 
 	app.pgDB.Close()
+
+	app.kafkaProducer.Shutdown()
+	app.kafkaConsumer.Shutdown()
 
 	app.logger.InfoContext(ctx, "app gracefully stopped")
 }

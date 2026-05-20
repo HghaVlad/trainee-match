@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "DLQ",
+  "namespace": "traineematch",
+  "fields": [
+    { "name": "event_id", "type": {"type": "string", "logicalType": "uuid" }},
+    { "name": "payload", "type": "bytes" },
+    { "name": "original_topic", "type": "string" },
+    { "name": "original_event_type", "type": "string" },
+    { "name": "last_error", "type": "string" },
+    { "name": "failed_at", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}

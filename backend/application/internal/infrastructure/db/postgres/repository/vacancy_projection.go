@@ -78,3 +78,94 @@ func (p *VacancyProjection) CheckHrAccess(
 
 	return companyID, nil
 }
+
+func (p *VacancyProjection) Save(ctx context.Context, vacancy *projection.Vacancy) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		INSERT INTO vacancy_projection
+			(id, company_id, company_name, title, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			company_id = EXCLUDED.company_id,
+			company_name = EXCLUDED.company_name,
+			title = EXCLUDED.title,
+			status = EXCLUDED.status,
+			created_at = EXCLUDED.created_at,
+			updated_at = EXCLUDED.updated_at
+	`
+
+	_, err := q.Exec(ctx, query,
+		vacancy.ID,
+		vacancy.CompanyID,
+		vacancy.CompanyName,
+		vacancy.Title,
+		vacancy.Status,
+		vacancy.CreatedAt,
+		vacancy.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("save vacancy projection: %w", err)
+	}
+	return nil
+}
+
+func (p *VacancyProjection) UpdateTitle(ctx context.Context, vacancyID uuid.UUID, title string) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET title = $2
+		WHERE id = $1
+	`
+
+	_, err := q.Exec(ctx, query, vacancyID, title)
+	if err != nil {
+		return fmt.Errorf("update vacancy projection title: %w", err)
+	}
+	return nil
+}
+
+func (p *VacancyProjection) Archive(ctx context.Context, vacancyID uuid.UUID) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET status = $2
+		WHERE id = $1
+	`
+
+	_, err := q.Exec(ctx, query, vacancyID, projection.VacancyStatusArchived)
+	if err != nil {
+		return fmt.Errorf("archive vacancy projection: %w", err)
+	}
+	return nil
+}
+
+func (p *VacancyProjection) UpdateCompanyName(ctx context.Context, companyID uuid.UUID, companyName string) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET company_name = $2
+		WHERE company_id = $1
+	`
+
+	_, err := q.Exec(ctx, query, companyID, companyName)
+	if err != nil {
+		return fmt.Errorf("update vacancy projection company name: %w", err)
+	}
+	return nil
+}
+
+func (p *VacancyProjection) DeleteByCompanyID(ctx context.Context, companyID uuid.UUID) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `DELETE FROM vacancy_projection WHERE company_id = $1`
+
+	_, err := q.Exec(ctx, query, companyID)
+	if err != nil {
+		return fmt.Errorf("delete vacancy projection by company: %w", err)
+	}
+	return nil
+}

@@ -56,3 +56,52 @@ func (r *ResumeProjection) GetByID(ctx context.Context, id uuid.UUID) (*projecti
 
 	return &resume, nil
 }
+
+func (r *ResumeProjection) Save(ctx context.Context, resume *projection.Resume) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `
+		INSERT INTO resume_projection
+			(id, candidate_id, name, data, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			candidate_id = EXCLUDED.candidate_id,
+			name = EXCLUDED.name,
+			data = EXCLUDED.data,
+			status = EXCLUDED.status,
+			created_at = EXCLUDED.created_at,
+			updated_at = EXCLUDED.updated_at
+	`
+
+	dataRaw, err := json.Marshal(resume.Data)
+	if err != nil {
+		return fmt.Errorf("save resume projection: marshal data: %w", err)
+	}
+
+	_, err = q.Exec(ctx, query,
+		resume.ID,
+		resume.CandidateID,
+		resume.Name,
+		dataRaw,
+		resume.Status,
+		resume.CreatedAt,
+		resume.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("save resume projection: %w", err)
+	}
+
+	return nil
+}
+
+func (r *ResumeProjection) Delete(ctx context.Context, resumeID uuid.UUID) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `DELETE FROM resume_projection WHERE id = $1`
+
+	_, err := q.Exec(ctx, query, resumeID)
+	if err != nil {
+		return fmt.Errorf("delete resume projection: %w", err)
+	}
+	return nil
+}
