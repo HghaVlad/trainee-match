@@ -5,11 +5,14 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
+	"github.com/caarlos0/env/v11"
 )
 
 func main() {
-	cfg := config.ElasticSearch{
-		Addrs: []string{"http://localhost:9200"},
+	var cfg config.ElasticSearch
+
+	if err := env.Parse(&cfg); err != nil {
+		panic(err)
 	}
 
 	cl, err := elastic.NewClient(cfg)

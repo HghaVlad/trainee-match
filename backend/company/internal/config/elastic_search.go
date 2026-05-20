@@ -22,6 +22,10 @@ func LoadElasticConfig(validate *validator.Validate) (*ElasticSearch, error) {
 	if len(cfg.Addrs) == 0 {
 		return nil, errors.New("ELASTIC_NODES must not be empty")
 	}
-	
+
+	if err := validate.Struct(cfg); err != nil {
+		return nil, fmt.Errorf("validate elastic config: %w", err)
+	}
+
 	return &cfg, nil
 }

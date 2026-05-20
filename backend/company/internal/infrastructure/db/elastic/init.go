@@ -13,6 +13,8 @@ const vacancyIndex = "vacancies"
 
 const vacancyIndexMapping = `{
   "mappings": {
+    "dynamic": "strict",
+
     "properties": {
       "id": {
         "type": "keyword"
@@ -20,6 +22,10 @@ const vacancyIndexMapping = `{
 
       "company_id": {
         "type": "keyword"
+      },
+
+      "company_name": {
+        "type": "text"
       },
 
       "title": {
@@ -43,6 +49,10 @@ const vacancyIndexMapping = `{
       },
 
       "status": {
+        "type": "keyword"
+      },
+
+      "moderation_status": {
         "type": "keyword"
       },
 

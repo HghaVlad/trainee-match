@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -94,12 +95,23 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	}
 	kProducer := kafka.NewProducer(cfg.Kafka, kprClient, lgr)
 
+	elasticCl, err := elastic.NewClient(cfg.Elastic)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := elastic.Init(ctx, elasticCl); err != nil {
+		return nil, err
+	}
+
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
 	hrProjRepo := repository.NewHrProjectionRepo(pgDB)
 	outboxRepo := repository.NewOutboxRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
+
+	searchVacRepo := elastic.NewVacancyRepo(elasticCl)
 
 	compCache := appredis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
 	vacCache := appredis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy", lgr)
@@ -130,7 +142,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
-	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
+	vacCreate := createvac.NewUsecase(vacRepo, memRepo, compRepo, searchVacRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, outboxWriter, vacCache, txManager)
 	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
 	vacArchive := archive.NewUsecase(
@@ -241,12 +253,12 @@ func (app *App) Run(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
-		app.outboxRelay.Run(ctx)
+		// app.outboxRelay.Run(ctx) // TODO: enable
 		return nil
 	})
 
 	g.Go(func() error {
-		app.kConsumer.Poll(ctx)
+		// app.kConsumer.Poll(ctx) // TODO: enable
 		return nil
 	})
 
