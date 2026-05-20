@@ -120,6 +120,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		Route("/api/v1/vacancies", func(r chi.Router) {
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.List)
 
+			r.With(compmiddleware.LoggingMiddleware).Get("/search", deps.VacancyHandler.ListSearch)
+
 			r.With(compmiddleware.UUIDMiddleware("id"), compmiddleware.LoggingMiddleware).
 				Get("/{id}", deps.VacancyHandler.GetPublishedByID)
 		})

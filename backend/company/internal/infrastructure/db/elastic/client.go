@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v9"
-	
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 )
 

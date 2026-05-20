@@ -35,6 +35,11 @@ func ListVacRequestFromQuery(r *http.Request) (*list.Request, error) {
 	applyCompanies(q, req)
 	applyCity(q, req)
 
+	query := q.Get("query")
+	if query != "" {
+		req.Requirements.Query = &query
+	}
+
 	return req, nil
 }
 

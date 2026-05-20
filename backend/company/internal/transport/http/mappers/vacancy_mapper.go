@@ -112,8 +112,7 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 	return req
 }
 
-func VacancyListRespToDto(
-	resp *list_vacancy.Response,
+func VacancyListRespToDto(resp *list_vacancy.Response,
 ) *dto.VacancyListResponse {
 	items := make([]dto.VacancyListItemResponse, 0, len(resp.Vacancies))
 

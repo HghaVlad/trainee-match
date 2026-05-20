@@ -1645,6 +1645,106 @@ paths:
       summary: Get published vacancy by id
       tags:
       - vacancy
+  /vacancies/search:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        query, filters, orders.
+      parameters:
+      - default: published_at_desc
+        description: Order attribute, supports published_at_desc, salary_desc, salary_asc
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Query
+        in: query
+        name: query
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      - collectionFormat: multi
+        description: Company filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: company_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Serch vacancy summaries
+      tags:
+      - vacancy
 schemes:
 - http
 - https

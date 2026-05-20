@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 
+	"github.com/caarlos0/env/v11"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
-	"github.com/caarlos0/env/v11"
 )
 
 func main() {

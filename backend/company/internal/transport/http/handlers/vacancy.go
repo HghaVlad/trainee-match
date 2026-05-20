@@ -30,6 +30,7 @@ type VacancyHandler struct {
 	getByID          *get.Usecase
 	getPublishedByID *getpublished.Usecase
 	list             *list.Usecase
+	vacSearchList    *list.Usecase
 	listByComp       *listbycomp.Usecase
 	create           *create.Usecase
 	update           *update.Usecase
@@ -43,6 +44,7 @@ func NewVacancyHandler(
 	getByID *get.Usecase,
 	getPublishedByID *getpublished.Usecase,
 	list *list.Usecase,
+	vacSearchList *list.Usecase,
 	listByComp *listbycomp.Usecase,
 	create *create.Usecase,
 	update *update.Usecase,
@@ -55,6 +57,7 @@ func NewVacancyHandler(
 		getByID:          getByID,
 		getPublishedByID: getPublishedByID,
 		list:             list,
+		vacSearchList:    vacSearchList,
 		listByComp:       listByComp,
 		create:           create,
 		update:           update,
@@ -206,6 +209,60 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.list.Execute(ctx, req)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy")
+		}
+		return
+	}
+
+	resp := mappers.VacancyListRespToDto(res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
+}
+
+// ListSearch godoc
+// @Summary Serch vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders.
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param order query string false "Order attribute, supports published_at_desc, salary_desc, salary_asc" default(published_at_desc)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// Filters:
+// @Param query query string false "Query"
+// Salary range
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// Hours per week range
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// Duration range (months)
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
+// Boolean filters
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// Slice filters (multiple values allowed)
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
+// @Param company_id query []string false "Company filter (repeat param)" collectionFormat(multi)
+// @Success 200 {object} dto.VacancyListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /vacancies/search [get]
+func (h *VacancyHandler) ListSearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req, err := helpers.ListVacRequestFromQuery(r)
+	if err != nil {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := h.vacSearchList.Execute(ctx, req)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {

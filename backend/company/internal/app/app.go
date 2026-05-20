@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -17,6 +16,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	appredis "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
@@ -131,6 +131,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
 	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+
 	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
 	compListMemUc := listmember.NewUsecase(memRepo)
@@ -141,6 +142,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
+	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo, compRepo, searchVacRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, outboxWriter, vacCache, txManager)
@@ -195,6 +197,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		vacGetByIDUc,
 		vacGetPublishedByIDUc,
 		vacList,
+		searchVac,
 		vacListByComp,
 		vacCreate,
 		vacUpdate,
