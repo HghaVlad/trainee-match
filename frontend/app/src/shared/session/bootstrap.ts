@@ -1,14 +1,15 @@
+import { redirect } from 'react-router'
 import { useSessionStore } from './sessionStore'
 import type { SessionUser } from './sessionStore'
 import { AppError } from '@/shared/api/http/client'
 import { readActiveCompanyId, writeActiveCompanyId } from './types'
 import { refreshCompanies } from './refreshCompanies'
-import { postAuthMe } from '@/api/generated/auth/auth/auth'
+import { getAuthMe } from '@/api/generated/auth/auth/auth'
 import type { DtoUserResponse } from '@/api/generated/auth/schemas'
 
 function toSessionUser(data: DtoUserResponse): SessionUser | null {
   if (!data.id || !data.username || !data.role) return null
-  if (data.role !== 'Candidate' && data.role !== 'Company') return null
+  if (data.role !== 'Candidate' && data.role !== 'Company' && data.role !== 'PlatformAdmin') return null
   return {
     id: data.id,
     role: data.role,
@@ -21,7 +22,7 @@ function toSessionUser(data: DtoUserResponse): SessionUser | null {
 
 async function fetchCurrentUser(): Promise<SessionUser | null> {
   try {
-    const data = await postAuthMe()
+    const data = await getAuthMe()
     return toSessionUser(data)
   } catch (e) {
     if (e instanceof AppError && e.status === 401) return null
@@ -67,6 +68,12 @@ export async function bootstrap(): Promise<void> {
   if (user.role === 'Company') {
     await loadCompaniesForUser(user)
   }
+}
+
+export function sessionRedirect(request: Request): Response | null {
+  const url = new URL(request.url)
+  const next = encodeURIComponent(url.pathname + url.search)
+  return redirect(`/login?next=${next}`)
 }
 
 if (typeof window !== 'undefined') {

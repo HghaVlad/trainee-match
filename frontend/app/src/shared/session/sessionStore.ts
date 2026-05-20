@@ -3,7 +3,7 @@ import type { CompanyMembership } from './types'
 
 export interface SessionUser {
   id: number | string
-  role: 'Candidate' | 'Company'
+  role: 'Candidate' | 'Company' | 'PlatformAdmin'
   username: string
   email?: string
   firstName?: string

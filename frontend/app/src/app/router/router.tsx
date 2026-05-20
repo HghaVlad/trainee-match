@@ -5,6 +5,7 @@ import {
   requireCompanyAdmin,
   requireCompanyMember,
   requireRole,
+  requirePlatformAdmin,
   resolveActiveCompany,
 } from './guards'
 import { RootLayout } from '@/widgets/RootLayout'
@@ -51,6 +52,13 @@ const CompanyVacancyApplicationsPage = lazy(
   () => import('@/pages/company/vacancies/applications'),
 )
 const HomePage = lazy(() => import('@/pages/home'))
+const AdminSkillsPage = lazy(() => import('@/pages/admin/skills'))
+const AdminSkillNewPage = lazy(() => import('@/pages/admin/skills/new'))
+const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
+const CandidatesPage = lazy(() => import('@/pages/candidates'))
+const CandidateDetailPage = lazy(() => import('@/pages/candidate/$id'))
+const CandidateResumesPage = lazy(() => import('@/pages/candidate/$id/resumes'))
+const CandidateResumeDetailPage = lazy(() => import('@/pages/candidate/$id/resumes/$resumeId'))
 
 function lazyEl(El: React.LazyExoticComponent<() => React.JSX.Element>) {
   return (
@@ -166,6 +174,40 @@ const router = createBrowserRouter([
       {
         path: '/403',
         element: lazyEl(ForbiddenPage),
+      },
+      {
+        path: '/admin',
+        loader: requirePlatformAdmin,
+        children: [
+          { path: 'skills', element: lazyEl(AdminSkillsPage) },
+          { path: 'skills/new', element: lazyEl(AdminSkillNewPage) },
+          { path: 'users', element: lazyEl(AdminUsersPage) },
+        ],
+      },
+      {
+        path: '/candidates',
+        loader: requirePlatformAdmin,
+        children: [
+          { index: true, element: lazyEl(CandidatesPage) },
+          {
+            path: ':id',
+            children: [
+              { index: true, element: lazyEl(CandidateDetailPage) },
+              {
+                path: 'resumes',
+                children: [
+                  { index: true, element: lazyEl(CandidateResumesPage) },
+                  {
+                    path: ':resumeId',
+                    children: [
+                      { index: true, element: lazyEl(CandidateResumeDetailPage) },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       },
       {
         path: '*',

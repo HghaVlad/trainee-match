@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useGetVacancies } from '@/api/generated/company/vacancy/vacancy'
+import { usePatchAdminVacanciesIdModeration } from '@/api/generated/company/admin-vacancy/admin-vacancy'
 import type { GetVacanciesParams } from '@/api/generated/company/schemas'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -17,6 +19,9 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { useSession } from '@/shared/session/useSession'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -150,6 +155,22 @@ export default function VacanciesPage() {
     cities: searchParams.getAll('city'),
   }))
   const [cursor, setCursor] = useState<string | undefined>(undefined)
+  const { user } = useSession()
+  const { toast } = useToast()
+  const qc = useQueryClient()
+  const archive = usePatchAdminVacanciesIdModeration()
+  const isPlatformAdmin = user?.role === 'PlatformAdmin'
+
+  async function onArchive(vacancyId: string) {
+    try {
+      await archive.mutateAsync({ id: vacancyId, data: { status: 'hidden' } })
+      await qc.invalidateQueries({ queryKey: ['useGetVacancies'] })
+      toast({ title: 'Вакансия скрыта' })
+    } catch (e) {
+      const msg = e instanceof AppError ? e.message : 'Не удалось скрыть вакансию'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    }
+  }
 
   function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     setCursor(undefined)
@@ -454,19 +475,33 @@ export default function VacanciesPage() {
               className="rounded-lg border bg-card p-4 space-y-2"
             >
               <div className="flex items-start justify-between gap-4">
-                {target ? (
-                  <Link
-                    to={target}
-                    className="text-lg font-medium text-primary underline"
-                  >
-                    {v.title ?? '—'}
-                  </Link>
-                ) : (
-                  <span className="text-lg font-medium">{v.title ?? '—'}</span>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {salaryRange(v.salaryFrom, v.salaryTo)}
-                </span>
+                <div className="flex-1">
+                  {target ? (
+                    <Link
+                      to={target}
+                      className="text-lg font-medium text-primary underline"
+                    >
+                      {v.title ?? '—'}
+                    </Link>
+                  ) : (
+                    <span className="text-lg font-medium">{v.title ?? '—'}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {salaryRange(v.salaryFrom, v.salaryTo)}
+                  </span>
+                  {isPlatformAdmin && v.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onArchive(v.id as string)}
+                      disabled={archive.isPending}
+                    >
+                      {archive.isPending ? '...' : 'Скрыть'}
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-muted-foreground">
                 {dash(v.companyName)} • {dash(v.city)}
