@@ -97,13 +97,13 @@ func (d *Decoder) DecodeVacancyUpdatedEvent(
 }
 
 func (d *Decoder) decodeEvent(data []byte, event any) error {
+	if len(data) < 5 {
+		return fmt.Errorf("data is too short data: %v", data)
+	}
 	schemaID := getSchemaID(data)
 	schema, err := d.registry.GetSchemaByID(schemaID)
 	if err != nil {
 		return err
-	}
-	if len(data) < 5 {
-		return fmt.Errorf("data is too short data: %v", data)
 	}
 	err = avro.Unmarshal(schema, data[5:], event)
 	if err != nil {

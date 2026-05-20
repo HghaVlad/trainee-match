@@ -129,4 +129,5 @@ func (c *Consumer) Shutdown() {
 		wg.Go(pr.Shutdown)
 	}
 	wg.Wait()
+	c.Client.Close()
 }
