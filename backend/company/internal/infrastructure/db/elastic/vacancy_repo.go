@@ -15,6 +15,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
@@ -94,6 +95,48 @@ func (r *VacancyRepo) ListPublishedSummaries(
 	result, err := searchRespToVacSums(res, order, limit)
 	if err != nil {
 		return nil, fmt.Errorf("elastic search public vacancy: decode resp: %w", err)
+	}
+
+	return result, nil
+}
+
+func (r *VacancyRepo) ListByCompanySummaries(
+	ctx context.Context,
+	requirements *listsearch.Requirements,
+	status *vacancy.Status,
+	order listcompsearch.Order,
+	cursor any,
+	limit int,
+) (*listcompsearch.SearchResult, error) {
+	query, err := vacancyListCompToQuery(requirements, status, order, cursor, limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("elastic search company vacancy: %w", err)
+	}
+
+	var buf bytes.Buffer
+
+	err = json.NewEncoder(&buf).Encode(query)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := r.es.Search(
+		r.es.Search.WithContext(ctx),
+		r.es.Search.WithIndex(vacancyIndex),
+		r.es.Search.WithBody(&buf),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("elastic search comp vacancy: %w", err)
+	}
+
+	defer func() {
+		_ = res.Body.Close()
+	}()
+
+	result, err := searchRespToVacCompSums(res, order, limit)
+	if err != nil {
+		return nil, fmt.Errorf("elastic search comp vacancy: decode resp: %w", err)
 	}
 
 	return result, nil
@@ -291,6 +334,81 @@ func searchRespToVacSums(res *esapi.Response, order listsearch.Order, limit int)
 	return result, nil
 }
 
+func searchRespToVacCompSums(
+	res *esapi.Response,
+	order listcompsearch.Order,
+	limit int,
+) (*listcompsearch.SearchResult, error) {
+	var searchResp searchResponse
+	err := json.NewDecoder(res.Body).Decode(&searchResp)
+	if err != nil {
+		return nil, err
+	}
+
+	hits := searchResp.Hits.Hits
+
+	result := &listcompsearch.SearchResult{
+		Vacancies: make([]views.MemberVacSummary, 0, limit+1),
+	}
+
+	if len(hits) == 0 {
+		return result, nil
+	}
+
+	result.HasNext = len(hits) > limit
+
+	for _, hit := range hits {
+		doc := hit.Source
+
+		id, err := uuid.Parse(doc.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		result.Vacancies = append(result.Vacancies, views.MemberVacSummary{
+			ID:             id,
+			Status:         vacancy.Status(doc.Status),
+			Title:          doc.Title,
+			WorkFormat:     vacancy.WorkFormat(doc.WorkFormat),
+			City:           doc.City,
+			EmploymentType: vacancy.EmploymentType(doc.EmploymentType),
+			IsPaid:         doc.IsPaid,
+			SalaryFrom:     doc.SalaryFrom,
+			SalaryTo:       doc.SalaryTo,
+			ModStatus:      vacancy.ModerationStatus(doc.ModerationStatus),
+			CreatedAt:      doc.CreatedAt,
+		})
+	}
+
+	if !result.HasNext {
+		return result, nil
+	}
+
+	result.Vacancies = result.Vacancies[:limit]
+	lastVac := result.Vacancies[len(result.Vacancies)-1]
+	lastHit := hits[limit-1]
+
+	switch order {
+	case listcompsearch.OrderRelevance:
+		result.NextCursor, err = buildVacCompRelevanceCursor(lastHit.Sort)
+
+	case listcompsearch.OrderCreatedAtDesc:
+		result.NextCursor = &listsearch.PublishedAtCursor{
+			PublishedAt: lastVac.CreatedAt,
+			ID:          lastVac.ID,
+		}
+
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func buildRelevanceCursor(sort []any) (*listsearch.RelevanceCursor, error) {
 	if len(sort) != 3 {
 		return nil, errors.New("invalid sort length")
@@ -301,15 +419,12 @@ func buildRelevanceCursor(sort []any) (*listsearch.RelevanceCursor, error) {
 		return nil, errors.New("invalid score")
 	}
 
-	pubStr, ok := sort[1].(string)
+	pubMs, ok := sort[1].(float64)
 	if !ok {
 		return nil, errors.New("invalid published_at")
 	}
 
-	pub, err := time.Parse(time.RFC3339, pubStr)
-	if err != nil {
-		return nil, err
-	}
+	pub := time.UnixMilli(int64(pubMs))
 
 	idStr, ok := sort[2].(string)
 	if !ok {
@@ -325,6 +440,40 @@ func buildRelevanceCursor(sort []any) (*listsearch.RelevanceCursor, error) {
 		Relevance:   score,
 		PublishedAt: pub,
 		ID:          id,
+	}, nil
+}
+
+func buildVacCompRelevanceCursor(sort []any) (*listcompsearch.RelevanceCursor, error) {
+	if len(sort) != 3 {
+		return nil, errors.New("invalid sort length")
+	}
+
+	score, ok := sort[0].(float64)
+	if !ok {
+		return nil, errors.New("invalid score")
+	}
+
+	crMs, ok := sort[1].(float64)
+	if !ok {
+		return nil, errors.New("invalid published_at")
+	}
+
+	created := time.UnixMilli(int64(crMs))
+
+	idStr, ok := sort[2].(string)
+	if !ok {
+		return nil, errors.New("invalid id")
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &listcompsearch.RelevanceCursor{
+		Relevance: score,
+		CreatedAt: created,
+		ID:        id,
 	}, nil
 }
 

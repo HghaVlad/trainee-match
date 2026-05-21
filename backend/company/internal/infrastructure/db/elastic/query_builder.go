@@ -7,6 +7,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
@@ -34,21 +35,36 @@ func vacancyPublicReqToQuery(
 		filter = getPubVacFilter(*requirements)
 	}
 
-	query := map[string]any{
-		"size": limit,
-		"query": map[string]any{
-			"bool": map[string]any{
-				"must":   must,
-				"filter": filter,
-			},
-		},
-		"sort": sort,
+	query := getFilterSortQuery(must, filter, sort, searchAfter, limit)
+	return query, nil
+}
+
+func vacancyListCompToQuery(
+	requirements *listsearch.Requirements,
+	status *vacancy.Status,
+	order listcompsearch.Order,
+	cursor any,
+	limit int,
+) (map[string]any, error) {
+	sort, err := getCompVacSort(order)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(searchAfter) > 0 {
-		query["search_after"] = searchAfter
+	searchAfter, err := getCompVacSearchAfter(order, cursor)
+	if err != nil {
+		return nil, err
 	}
 
+	var must []any
+	var filter []any
+
+	if requirements != nil {
+		must = getCompVacMust(*requirements)
+		filter = getCompVacFilter(*requirements, status)
+	}
+
+	query := getFilterSortQuery(must, filter, sort, searchAfter, limit)
 	return query, nil
 }
 
@@ -74,13 +90,31 @@ func getPubVacMust(req listsearch.Requirements) []any {
 
 func getPubVacFilter(req listsearch.Requirements) []any {
 	var filter []any
+	filter = addVacStatus(filter, vacancy.StatusPublished)
+	filter = addVacPubRequirements(filter, req)
+	return filter
+}
 
-	filter = append(filter, map[string]any{
-		"term": map[string]any{
-			"status": "published",
+func getFilterSortQuery(must, filter, sort, searchAfter []any, limit int) map[string]any {
+	query := map[string]any{
+		"size": limit,
+		"query": map[string]any{
+			"bool": map[string]any{
+				"must":   must,
+				"filter": filter,
+			},
 		},
-	})
+		"sort": sort,
+	}
 
+	if len(searchAfter) > 0 {
+		query["search_after"] = searchAfter
+	}
+
+	return query
+}
+
+func addVacPubRequirements(filter []any, req listsearch.Requirements) []any {
 	filter = addWorkFormats(filter, req.WorkFormat)
 	filter = addCompanies(filter, req.Companies)
 	filter = addCities(filter, req.City)
@@ -92,6 +126,16 @@ func getPubVacFilter(req listsearch.Requirements) []any {
 	filter = addSalaryIntersection(filter, req.Salary)
 	filter = addHoursIntersection(filter, req.HoursPerWeek)
 	filter = addDurationIntersection(filter, req.Duration)
+
+	return filter
+}
+
+func addVacStatus(filter []any, status vacancy.Status) []any {
+	filter = append(filter, map[string]any{
+		"term": map[string]any{
+			"status": string(status),
+		},
+	})
 
 	return filter
 }
@@ -337,6 +381,97 @@ func getPubVacSearchAfter(order listsearch.Order, cursor any) ([]any, error) {
 			curs.ID.String(),
 		}
 
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	return searchAfter, nil
+}
+
+// TODO: check pagination with relevance
+
+func getCompVacMust(req listsearch.Requirements) []any {
+	var must []any
+
+	if req.Query != nil {
+		must = append(must, map[string]any{
+			"multi_match": map[string]any{
+				"query": *req.Query,
+				"fields": []string{
+					"title^2",
+					"description",
+				},
+				"fuzziness": "AUTO",
+			},
+		})
+	}
+
+	return must
+}
+
+func getCompVacFilter(req listsearch.Requirements, status *vacancy.Status) []any {
+	var filter []any
+
+	if status != nil {
+		filter = addVacStatus(filter, *status)
+	}
+
+	filter = addVacPubRequirements(filter, req)
+	return filter
+}
+
+func getCompVacSort(order listcompsearch.Order) ([]any, error) {
+	var sort []any
+
+	switch order {
+	case listcompsearch.OrderRelevance:
+		sort = []any{
+			map[string]any{"_score": map[string]any{"order": "desc"}},
+			map[string]any{"created_at": map[string]any{"order": "desc"}},
+			map[string]any{"id": map[string]any{"order": "desc"}},
+		}
+
+	case listcompsearch.OrderCreatedAtDesc:
+		sort = []any{
+			map[string]any{"created_at": map[string]any{"order": "desc"}},
+			map[string]any{"id": map[string]any{"order": "desc"}},
+		}
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	return sort, nil
+}
+
+func getCompVacSearchAfter(order listcompsearch.Order, cursor any) ([]any, error) {
+	var searchAfter []any
+
+	if cursor == nil || reflect.ValueOf(cursor).IsNil() {
+		return searchAfter, nil
+	}
+
+	switch order {
+	case listcompsearch.OrderCreatedAtDesc:
+		curs, ok := cursor.(*listcompsearch.CreatedAtCursor)
+		if !ok {
+			return nil, common.ErrCursorOrderMismatch
+		}
+		searchAfter = []any{
+			curs.CreatedAt,
+			curs.ID.String(),
+		}
+
+	case listcompsearch.OrderRelevance:
+		curs, ok := cursor.(*listcompsearch.RelevanceCursor)
+		if !ok {
+			return nil, common.ErrCursorOrderMismatch
+		}
+
+		searchAfter = []any{
+			curs.Relevance,
+			curs.CreatedAt,
+			curs.ID.String(),
+		}
 	default:
 		return nil, common.ErrUnsupportedListOrder
 	}

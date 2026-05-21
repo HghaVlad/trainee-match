@@ -18,7 +18,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
@@ -31,7 +31,8 @@ type VacancyHandler struct {
 	getPublishedByID *getpublished.Usecase
 	list             *listsearch.Usecase
 	vacSearchList    *listsearch.Usecase
-	listByComp       *listbycomp.Usecase
+	listByComp       *listcompsearch.Usecase
+	vacCompSearch    *listcompsearch.Usecase
 	create           *create.Usecase
 	update           *update.Usecase
 	publish          *publish.Usecase
@@ -45,7 +46,8 @@ func NewVacancyHandler(
 	getPublishedByID *getpublished.Usecase,
 	list *listsearch.Usecase,
 	vacSearchList *listsearch.Usecase,
-	listByComp *listbycomp.Usecase,
+	listByComp *listcompsearch.Usecase,
+	vacCompSearch *listcompsearch.Usecase,
 	create *create.Usecase,
 	update *update.Usecase,
 	publish *publish.Usecase,
@@ -59,6 +61,7 @@ func NewVacancyHandler(
 		list:             list,
 		vacSearchList:    vacSearchList,
 		listByComp:       listByComp,
+		vacCompSearch:    vacCompSearch,
 		create:           create,
 		update:           update,
 		publish:          publish,
@@ -231,7 +234,7 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Tags vacancy
 // @Accept json
 // @Produce json
-// @Param order query string false "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc" default(relevance)
+// @Param order query string false "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc, default relevance" default(relevance)
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
 // Filters:
@@ -319,7 +322,65 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Order == listcompsearch.OrderRelevance {
+		req.Order = listcompsearch.OrderCreatedAtDesc
+	}
+
 	res, err := h.listByComp.Execute(ctx, req, iden)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy by company")
+		}
+		return
+	}
+
+	resp := mappers.ListVacByCompRespToDto(res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
+}
+
+// ListByCompanySearch godoc
+// @Summary List search company's vacancy summaries
+// @Description Same as list vacancies/search but with extra info for company members. Search includes title and description
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID (UUID)"
+// @Param query query string false "Query"
+// @Param order query string false "Supports relevance, created_at_desc, default relevance" default(relevance)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// @Param status query string false "Vacancy status filter"
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
+// @Success 200 {object} dto.VacancyByCompListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{company-id}/vacancies/search [get]
+func (h *VacancyHandler) ListByCompanySearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	compID := middleware.UUIDFromContext(ctx, "company-id")
+
+	req, err := helpers.ListVacByCompRequestFromQuery(r, compID)
+	if err != nil {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := h.vacCompSearch.Execute(ctx, req, iden)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {

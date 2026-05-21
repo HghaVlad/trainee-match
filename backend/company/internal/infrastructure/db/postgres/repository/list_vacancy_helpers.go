@@ -8,7 +8,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
@@ -171,7 +171,7 @@ func listByCompStatusToSQL(status *vacancy.Status, args []any) (string, []any) {
 	return condition, args
 }
 
-func listByCompCreatedAtCursorToSQL(cursor listbycomp.CreatedAtCursor, args []any) (string, []any) {
+func listByCompCreatedAtCursorToSQL(cursor listcompsearch.CreatedAtCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
 		"(v.created_at, v.id) < ($%d, $%d)",
 		len(args)+1, len(args)+2)
@@ -241,6 +241,38 @@ func buildVacSearchResult(
 
 	case listsearch.OrderRelevance:
 		return nil, common.ErrUnsupportedListOrder
+
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	return result, nil
+}
+
+func buildCompVacSearchResult(
+	vacancies []views.MemberVacSummary,
+	order listcompsearch.Order,
+	limit int,
+) (*listcompsearch.SearchResult, error) {
+	result := &listcompsearch.SearchResult{
+		Vacancies: vacancies,
+	}
+
+	result.HasNext = len(vacancies) > limit
+
+	if !result.HasNext {
+		return result, nil
+	}
+
+	cursorVac := vacancies[limit]
+	result.Vacancies = result.Vacancies[:limit]
+
+	switch order {
+	case listcompsearch.OrderCreatedAtDesc:
+		result.NextCursor = &listcompsearch.CreatedAtCursor{
+			CreatedAt: cursorVac.CreatedAt,
+			ID:        cursorVac.ID,
+		}
 
 	default:
 		return nil, common.ErrUnsupportedListOrder

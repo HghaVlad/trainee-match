@@ -1,4 +1,4 @@
-package listbycomp
+package listcompsearch
 
 import (
 	"context"

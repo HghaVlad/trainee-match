@@ -1,4 +1,4 @@
-package listbycomp
+package listcompsearch
 
 import (
 	"github.com/google/uuid"

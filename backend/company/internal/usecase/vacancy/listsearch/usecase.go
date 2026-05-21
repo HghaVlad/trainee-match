@@ -29,7 +29,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 		return nil, err
 	}
 
-	if req.Requirements.Query == nil || *req.Requirements.Query == "" &&
+	if (req.Requirements.Query == nil || *req.Requirements.Query == "") &&
 		req.Order == OrderRelevance {
 		req.Order = OrderPublishedAtDesc
 		req.EncodedCursor = ""
@@ -41,7 +41,7 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 		return resp, nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
 
 	var err error
@@ -85,42 +85,6 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 	}
 
 	return buildResponse[CursorT](res.Vacancies, nil, req.Order)
-}
-
-func getNextCursor[CursorT any](
-	vacancies []views.PublishedVacSummary,
-	limit int,
-) (*CursorT, []views.PublishedVacSummary) {
-	if len(vacancies) <= limit {
-		return nil, vacancies
-	}
-
-	vacancies = vacancies[:len(vacancies)-1]
-	last := vacancies[len(vacancies)-1]
-
-	var zero CursorT
-	var cursor any
-
-	switch any(zero).(type) {
-	case PublishedAtCursor:
-		cursor = &PublishedAtCursor{
-			PublishedAt: last.PublishedAt,
-			ID:          last.ID,
-		}
-
-	case SalaryCursor:
-		if last.SalaryFrom == nil || last.SalaryTo == nil {
-			return nil, vacancies
-		}
-		cursor = &SalaryCursor{
-			SalaryFrom: *last.SalaryFrom,
-			SalaryTo:   *last.SalaryTo,
-			ID:         last.ID,
-		}
-	}
-
-	c, _ := cursor.(*CursorT)
-	return c, vacancies
 }
 
 func buildResponse[CursorT any](

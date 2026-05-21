@@ -7,7 +7,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	createvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getpublishedvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	update_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )

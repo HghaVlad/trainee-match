@@ -46,7 +46,7 @@ import (
 	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	vmoderationstatus "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
@@ -118,7 +118,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	publicVacCache := appredis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public", lgr)
 	compListCache := appredis.NewRepo[string, listcomp.Response](rediss, "companies:list", lgr)
 	vacListCache := appredis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
-	vacByCompListCache := appredis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
+	vacByCompListCache := appredis.NewRepo[string, listcompsearch.Response](rediss, "vacancies_by_comp:list", lgr)
 
 	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
 	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, txManager, cfg.Outbox, lgr)
@@ -143,7 +143,8 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
 	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
-	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
+	vacListByComp := listcompsearch.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
+	vacListCompSearch := listcompsearch.NewUsecase(searchVacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo, compRepo, searchVacRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(
@@ -210,6 +211,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		vacList,
 		searchVac,
 		vacListByComp,
+		vacListCompSearch,
 		vacCreate,
 		vacUpdate,
 		vacPublish,

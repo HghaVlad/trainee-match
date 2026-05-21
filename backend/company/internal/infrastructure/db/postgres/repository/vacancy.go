@@ -17,7 +17,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
@@ -313,12 +313,12 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 
 func (repo *VacancyRepo) ListByCompanySummaries(
 	ctx context.Context,
-	compID uuid.UUID,
 	requirements *listsearch.Requirements,
 	status *vacancy.Status,
-	cursor *listbycomp.CreatedAtCursor,
+	order listcompsearch.Order,
+	cursor any,
 	limit int,
-) ([]listbycomp.VacancySummary, error) {
+) (*listcompsearch.SearchResult, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	filtersCondition, args := listVacRequirementsToSQL(requirements)
@@ -333,11 +333,19 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 
 	cursorCondition := ""
 	if cursor != nil {
-		cursorCondition, args = listByCompCreatedAtCursorToSQL(*cursor, args)
+		if order == listcompsearch.OrderRelevance {
+			return nil, common.ErrUnsupportedListOrder
+		}
+
+		curs, ok := cursor.(*listcompsearch.CreatedAtCursor)
+		if !ok {
+			return nil, common.ErrInvalidCursor
+		}
+		cursorCondition, args = listByCompCreatedAtCursorToSQL(*curs, args)
 		cursorCondition = "AND " + cursorCondition
 	}
 
-	args = append(args, compID, limit)
+	args = append(args, (*requirements.Companies)[0], limit)
 
 	const query = `SELECT
     v.id, v.title, v.work_format,
@@ -357,10 +365,10 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		return nil, fmt.Errorf("list vacancy by company: %w", err)
 	}
 
-	var vacancies []listbycomp.VacancySummary
+	var vacancies []views.MemberVacSummary
 
 	for rows.Next() {
-		var vac listbycomp.VacancySummary
+		var vac views.MemberVacSummary
 
 		err := rows.Scan(
 			&vac.ID, &vac.Title, &vac.WorkFormat,
@@ -379,7 +387,7 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		return nil, fmt.Errorf("list vacancy by company rows error: %w", err)
 	}
 
-	return vacancies, nil
+	return buildCompVacSearchResult(vacancies, order, limit)
 }
 
 func (repo *VacancyRepo) Update(ctx context.Context, v *vacancy.Vacancy) error {

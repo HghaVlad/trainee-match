@@ -96,6 +96,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
 
+					r.With(compmiddleware.LoggingMiddleware).
+						Get("/search", deps.VacancyHandler.ListByCompanySearch)
+
 					r.With(compmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Post("/", deps.VacancyHandler.Create)

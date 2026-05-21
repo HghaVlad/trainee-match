@@ -258,6 +258,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_1_data:/var/lib/kafka/data
@@ -281,6 +282,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_2_data:/var/lib/kafka/data
@@ -304,6 +306,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_3_data:/var/lib/kafka/data

@@ -10,7 +10,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
@@ -125,23 +125,23 @@ func parseVacListOrderQuery(r *http.Request) (listsearch.Order, error) {
 	}
 }
 
-func ParseVacByCompListOrderQuery(r *http.Request) listbycomp.Order {
+func ParseVacByCompListOrderQuery(r *http.Request) listcompsearch.Order {
 	str := r.URL.Query().Get("order")
-	ord := listbycomp.Order(strings.Trim(str, " "))
+	ord := listcompsearch.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case listbycomp.OrderCreatedAtDesc:
+	case listcompsearch.OrderCreatedAtDesc, listcompsearch.OrderRelevance:
 		return ord
 	default:
-		return listbycomp.OrderCreatedAtDesc
+		return listcompsearch.OrderRelevance
 	}
 }
 
-func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listbycomp.Request, error) {
+func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listcompsearch.Request, error) {
 	q := r.URL.Query()
 
 	order := ParseVacByCompListOrderQuery(r)
-	req := &listbycomp.Request{
+	req := &listcompsearch.Request{
 		CompID:        compID,
 		Limit:         ParseLimit(r, "limit", 20),
 		Order:         order,
@@ -163,6 +163,11 @@ func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listbyco
 	if statusStr := strings.TrimSpace(q.Get("status")); statusStr != "" {
 		status := vacancy.Status(statusStr)
 		req.Status = &status
+	}
+
+	query := q.Get("query")
+	if query != "" {
+		req.Requirements.Query = &query
 	}
 
 	return req, nil

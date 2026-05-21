@@ -1,4 +1,4 @@
-package listbycomp
+package listcompsearch
 
 import (
 	"context"
@@ -7,18 +7,25 @@ import (
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo interface {
 	ListByCompanySummaries(
 		ctx context.Context,
-		compID uuid.UUID,
-		requirements *vaclist.Requirements,
+		requirements *listsearch.Requirements,
 		status *vacancy.Status,
-		cursor *CreatedAtCursor,
+		order Order,
+		cursor any,
 		limit int,
-	) ([]VacancySummary, error)
+	) (*SearchResult, error)
+}
+
+type SearchResult struct {
+	Vacancies  []views.MemberVacSummary
+	NextCursor any
+	HasNext    bool
 }
 
 type CompanyRepo interface {
