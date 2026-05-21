@@ -367,6 +367,8 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		return nil, fmt.Errorf("list vacancy by company: %w", err)
 	}
 
+	defer rows.Close()
+
 	var vacancies []views.MemberVacSummary
 
 	for rows.Next() {

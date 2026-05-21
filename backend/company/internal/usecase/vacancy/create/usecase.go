@@ -15,20 +15,17 @@ import (
 // Usecase creates vacancy in draft status
 type Usecase struct {
 	vacancyRepo VacancyRepo
-	memberRepo  CompMemberRepo
 	compRepo    CompanyRepo
 	searchRepo  SearchRepo
 }
 
 func NewUsecase(
 	vacancyRepo VacancyRepo,
-	memberRepo CompMemberRepo,
 	compRepo CompanyRepo,
 	searchRepo SearchRepo,
 ) *Usecase {
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
-		memberRepo:  memberRepo,
 		compRepo:    compRepo,
 		searchRepo:  searchRepo,
 	}

@@ -51,7 +51,7 @@ func NewUsecase(
 
 // Execute publishes vacancy, thus makes it available for candidates.
 // Increases company open vacancies count, creates vacancy.PublishedEvent, indexes it into search repo
-// if vacancy wasn't published. Returns vacacny.ErrNotFound if it was.
+// if vacancy wasn't published. Returns vacancy.ErrNotFound if it was.
 // Deletes company and vacancy from cache because of the updates.
 func (u *Usecase) Execute(
 	ctx context.Context,

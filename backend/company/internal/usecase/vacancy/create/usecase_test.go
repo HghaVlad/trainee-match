@@ -38,7 +38,6 @@ func setup(t *testing.T) *testDeps {
 func newUC(deps *testDeps) *create.Usecase {
 	return create.NewUsecase(
 		deps.vacRepo,
-		deps.memberRepo,
 		deps.compRepo,
 		deps.searchRepo,
 	)

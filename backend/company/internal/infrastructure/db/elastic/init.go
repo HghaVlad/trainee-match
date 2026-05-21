@@ -113,6 +113,10 @@ func Init(ctx context.Context, cl *elasticsearch.Client) error {
 		return nil
 	}
 
+	defer func() {
+		_ = exists.Body.Close()
+	}()
+
 	res, err := cl.Indices.Create(
 		vacancyIndex,
 		cl.Indices.Create.WithContext(ctx),

@@ -40,7 +40,6 @@ func (r *VacancyRepo) Index(ctx context.Context, vac views.VacancySearch) error 
 		Index:      vacancyIndex,
 		DocumentID: doc.ID,
 		Body:       bytes.NewReader(body),
-		Refresh:    "true",
 	}
 
 	res, err := req.Do(ctx, r.es)
@@ -393,9 +392,9 @@ func searchRespToVacCompSums(
 		result.NextCursor, err = buildVacCompRelevanceCursor(lastHit.Sort)
 
 	case listcompsearch.OrderCreatedAtDesc:
-		result.NextCursor = &listsearch.PublishedAtCursor{
-			PublishedAt: lastVac.CreatedAt,
-			ID:          lastVac.ID,
+		result.NextCursor = &listcompsearch.CreatedAtCursor{
+			CreatedAt: lastVac.CreatedAt,
+			ID:        lastVac.ID,
 		}
 
 	default:
