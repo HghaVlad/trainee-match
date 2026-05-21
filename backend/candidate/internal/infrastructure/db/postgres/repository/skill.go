@@ -7,6 +7,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -66,4 +67,34 @@ func (r *SkillRepo) AreSkillsExist(ctx context.Context, skillIDs []uuid.UUID) (b
 
 	// If count equals the length of skillIDs, all skills exist
 	return count == len(skillIDs), nil
+}
+
+func (r *SkillRepo) Create(ctx context.Context, skill domain.Skill) (uuid.UUID, error) {
+	query := `INSERT INTO skills (name) VALUES ($1) RETURNING id`
+
+	var id uuid.UUID
+	if err := r.db.QueryRow(ctx, query, skill.Name).Scan(&id); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return uuid.Nil, domain.ErrInvalidSkillName
+		}
+		return uuid.Nil, err
+	}
+
+	return id, nil
+}
+
+func (r *SkillRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM skills WHERE id = $1`
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrSkillNotFound
+	}
+
+	return nil
 }

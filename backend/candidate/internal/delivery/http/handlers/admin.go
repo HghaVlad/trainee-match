@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/addskill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/archiveresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/deleteskill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidateresumes"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidates"
@@ -17,6 +21,8 @@ type Admin struct {
 	getCandidateResumesUC *getcandidateresumes.UseCase
 	getResumeUC           *getresume.UseCase
 	archiveResumeUC       *archiveresume.UseCase
+	addSkillUC            *addskill.UseCase
+	deleteSkillUC         *deleteskill.UseCase
 }
 
 func NewAdmin(
@@ -25,6 +31,8 @@ func NewAdmin(
 	getCandidateResumesUC *getcandidateresumes.UseCase,
 	getResumeUC *getresume.UseCase,
 	archiveResumeUC *archiveresume.UseCase,
+	addSkillUC *addskill.UseCase,
+	deleteSkillUC *deleteskill.UseCase,
 ) *Admin {
 	return &Admin{
 		getCandidatesUC:       getCandidatesUC,
@@ -32,6 +40,8 @@ func NewAdmin(
 		getCandidateResumesUC: getCandidateResumesUC,
 		getResumeUC:           getResumeUC,
 		archiveResumeUC:       archiveResumeUC,
+		addSkillUC:            addSkillUC,
+		deleteSkillUC:         deleteSkillUC,
 	}
 }
 
@@ -174,6 +184,61 @@ func (a *Admin) ArchiveResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = a.archiveResumeUC.Execute(r.Context(), archiveresume.Request{ResumeID: resumeID})
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+
+	helpers.RespondJSON(w, http.StatusNoContent, struct{ Message string }{Message: "ok"})
+}
+
+// AddSkill godoc
+// @Summary Create skill (admin)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param input body addskill.Request true "Skill creation data"
+// @Success 201 {object} dto.SkillResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /admin/skills [post]
+func (a *Admin) AddSkill(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var req addskill.Request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	resp, err := a.addSkillUC.Execute(r.Context(), req)
+	if err != nil {
+		helpers.RespondErrorSmart(w, err)
+		return
+	}
+
+	helpers.RespondJSON(w, http.StatusCreated, dto.SkillResponse{ID: resp.ID, Name: resp.Name})
+}
+
+// DeleteSkill godoc
+// @Summary Delete skill (admin)
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Param id path string true "Skill ID"
+// @Success 204 {string} string "ok"
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /admin/skills/{id} [delete]
+func (a *Admin) DeleteSkill(w http.ResponseWriter, r *http.Request) {
+	skillID, err := helpers.ParseUUIDParam(r, "id")
+	if err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = a.deleteSkillUC.Execute(r.Context(), deleteskill.Request{SkillID: skillID})
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return

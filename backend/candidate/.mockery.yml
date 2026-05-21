@@ -100,3 +100,15 @@ packages:
       filename: "mocks.go"
     interfaces:
       ResumeRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/addskill:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      SkillRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/deleteskill:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      SkillRepo:

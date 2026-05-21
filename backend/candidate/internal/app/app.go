@@ -18,7 +18,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/addskill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/archiveresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/deleteskill"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidateresumes"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidates"
@@ -83,6 +85,9 @@ func Build(conf *config.Config) (*App, error) {
 
 	getSkillUC := get_skill.New(skillRepo)
 
+	addSkillUC := addskill.NewUseCase(skillRepo)
+	deleteSkillUC := deleteskill.NewUseCase(skillRepo)
+
 	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
 	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
@@ -100,6 +105,8 @@ func Build(conf *config.Config) (*App, error) {
 		getCandidateResumesUC,
 		getAdminResumeUC,
 		archiveResumeUC,
+		addSkillUC,
+		deleteSkillUC,
 	)
 
 	router := myhttp.NewRouter(

@@ -1,5 +1,10 @@
 basePath: /api/v1
 definitions:
+  addskill.Request:
+    properties:
+      name:
+        type: string
+    type: object
   dto.CandidateCreateRequest:
     properties:
       birthday:
@@ -512,6 +517,67 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Archive resume (admin)
+      tags:
+      - admin
+  /admin/skills:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Skill creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/addskill.Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SkillResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create skill (admin)
+      tags:
+      - admin
+  /admin/skills/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Skill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete skill (admin)
       tags:
       - admin
   /candidate/:

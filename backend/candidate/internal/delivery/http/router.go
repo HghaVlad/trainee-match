@@ -74,6 +74,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 			r.Get("/candidates/{id}/resumes", deps.adminHandler.GetCandidateResumes)
 			r.Get("/resumes/{id}", deps.adminHandler.GetResume)
 			r.Post("/resumes/{id}/archive", deps.adminHandler.ArchiveResume)
+			r.Post("/skills", deps.adminHandler.AddSkill)
+			r.Delete("/skills/{id}", deps.adminHandler.DeleteSkill)
 		})
 	})
 
