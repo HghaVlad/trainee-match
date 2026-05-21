@@ -689,6 +689,15 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
       produces:
       - application/json
       responses:
@@ -902,6 +911,15 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: size
+        type: integer
       produces:
       - application/json
       responses:
