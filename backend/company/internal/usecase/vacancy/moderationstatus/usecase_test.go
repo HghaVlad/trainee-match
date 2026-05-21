@@ -13,323 +13,288 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus/mocks"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type fakeTxManager struct{}
 
-func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+func (f *fakeTxManager) WithinTx(
+	ctx context.Context,
+	fn func(ctx context.Context) error,
+) error {
 	return fn(ctx)
+}
+
+type testDeps struct {
+	vacRepo   *mocks.MockvacancyRepo
+	compRepo  *mocks.MockcompanyRepo
+	outbox    *mocks.MockoutboxWriter
+	search    *mocks.MocksearchRepo
+	vacCache  *mocks.MockcacheRepo
+	pubCache  *mocks.MockcacheRepo
+	compCache *mocks.MockcacheRepo
+	txManager *fakeTxManager
+}
+
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
+
+	return &testDeps{
+		vacRepo:   mocks.NewMockvacancyRepo(ctrl),
+		compRepo:  mocks.NewMockcompanyRepo(ctrl),
+		outbox:    mocks.NewMockoutboxWriter(ctrl),
+		search:    mocks.NewMocksearchRepo(ctrl),
+		vacCache:  mocks.NewMockcacheRepo(ctrl),
+		pubCache:  mocks.NewMockcacheRepo(ctrl),
+		compCache: mocks.NewMockcacheRepo(ctrl),
+		txManager: new(fakeTxManager),
+	}
+}
+
+func newUC(deps *testDeps) *moderationstatus.Usecase {
+	return moderationstatus.NewUsecase(
+		deps.vacRepo,
+		deps.compRepo,
+		deps.outbox,
+		deps.txManager,
+		deps.search,
+		deps.vacCache,
+		deps.pubCache,
+		deps.compCache,
+	)
+}
+
+func adminIdentity() *identity.Identity {
+	return &identity.Identity{
+		UserID: uuid.New(),
+		Role:   identity.RoleAdmin,
+	}
 }
 
 func TestUsecase_Execute_Success_StatusChanged_Hidden(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-	compRepo := mocks.NewMockcompanyRepo(ctrl)
-	outboxWriter := mocks.NewMockoutboxWriter(ctrl)
-
-	vacCache := mocks.NewMockcacheRepo(ctrl)
-	pubVacCache := mocks.NewMockcacheRepo(ctrl)
-	compCache := mocks.NewMockcacheRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		compRepo,
-		outboxWriter,
-		&fakeTxManager{},
-		vacCache,
-		pubVacCache,
-		compCache,
-	)
+	vacID := uuid.New()
+	compID := uuid.New()
 
 	req := &moderationstatus.Request{
-		ID:     uuid.New(),
+		ID:     vacID,
 		Status: vacancy.ModerationStatusHidden,
 	}
 
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
+	searchView := &views.VacancySearch{
+		ID:               vacID,
+		CompanyID:        compID,
+		ModerationStatus: vacancy.ModerationStatusHidden,
+		Status:           vacancy.StatusPublished,
 	}
 
-	compID := uuid.New()
-
-	vacRepo.
-		EXPECT().
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusHidden,
 			gomock.Any(),
 		).
 		Return(&moderationstatus.UpdateModerationResult{
 			CompanyID:           compID,
-			VacancyStatus:       vacancy.StatusPublished,
 			OldModerationStatus: vacancy.ModerationStatusOK,
+			VacancyStatus:       vacancy.StatusPublished,
 		}, nil)
 
-	compRepo.
-		EXPECT().
+	deps.compRepo.EXPECT().
 		DecrementOpenVacancies(gomock.Any(), compID).
 		Return(nil)
 
-	outboxWriter.
-		EXPECT().
+	deps.outbox.EXPECT().
 		WriteVacancyModerationUpdated(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(_ context.Context, ev vacancy.ModerationUpdatedEvent) error {
-			require.Equal(t, req.ID, ev.VacancyID)
-			require.Equal(t, req.Status, ev.ModerationStatus)
+			require.Equal(t, vacID, ev.VacancyID)
+			require.Equal(t, vacancy.ModerationStatusHidden, ev.ModerationStatus)
 			require.NotEqual(t, uuid.Nil, ev.EventID)
 
 			return nil
 		})
 
-	vacCache.EXPECT().Del(gomock.Any(), req.ID)
+	deps.vacCache.EXPECT().
+		Del(gomock.Any(), vacID)
 
-	pubVacCache.EXPECT().Del(gomock.Any(), req.ID)
+	deps.pubCache.EXPECT().
+		Del(gomock.Any(), vacID)
 
-	compCache.EXPECT().Del(gomock.Any(), compID)
+	deps.vacRepo.EXPECT().
+		GetSearchView(gomock.Any(), vacID).
+		Return(searchView, nil)
 
-	err := uc.Execute(context.Background(), req, ident)
+	deps.search.EXPECT().
+		Index(gomock.Any(), *searchView).
+		Return(nil)
 
+	deps.compCache.EXPECT().
+		Del(gomock.Any(), compID)
+
+	err := uc.Execute(context.Background(), req, adminIdentity())
 	require.NoError(t, err)
 }
 
 func TestUsecase_Execute_Success_StatusChanged_OK(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-	compRepo := mocks.NewMockcompanyRepo(ctrl)
-	outboxWriter := mocks.NewMockoutboxWriter(ctrl)
-
-	vacCache := mocks.NewMockcacheRepo(ctrl)
-	pubVacCache := mocks.NewMockcacheRepo(ctrl)
-	compCache := mocks.NewMockcacheRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		compRepo,
-		outboxWriter,
-		&fakeTxManager{},
-		vacCache,
-		pubVacCache,
-		compCache,
-	)
+	vacID := uuid.New()
+	compID := uuid.New()
 
 	req := &moderationstatus.Request{
-		ID:     uuid.New(),
+		ID:     vacID,
 		Status: vacancy.ModerationStatusOK,
 	}
 
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
+	searchView := &views.VacancySearch{
+		ID:               vacID,
+		CompanyID:        compID,
+		ModerationStatus: vacancy.ModerationStatusOK,
+		Status:           vacancy.StatusPublished,
 	}
 
-	compID := uuid.New()
-
-	vacRepo.
-		EXPECT().
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusOK,
 			gomock.Any(),
 		).
 		Return(&moderationstatus.UpdateModerationResult{
 			CompanyID:           compID,
-			VacancyStatus:       vacancy.StatusPublished,
 			OldModerationStatus: vacancy.ModerationStatusHidden,
+			VacancyStatus:       vacancy.StatusPublished,
 		}, nil)
 
-	compRepo.
-		EXPECT().
+	deps.compRepo.EXPECT().
 		IncrementOpenVacancies(gomock.Any(), compID).
 		Return(nil)
 
-	outboxWriter.
-		EXPECT().
+	deps.outbox.EXPECT().
 		WriteVacancyModerationUpdated(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, ev vacancy.ModerationUpdatedEvent) error {
-			require.Equal(t, req.ID, ev.VacancyID)
-			require.Equal(t, req.Status, ev.ModerationStatus)
-			require.NotEqual(t, uuid.Nil, ev.EventID)
+		Return(nil)
 
-			return nil
-		})
+	deps.vacCache.EXPECT().
+		Del(gomock.Any(), vacID)
 
-	vacCache.EXPECT().Del(gomock.Any(), req.ID)
+	deps.pubCache.EXPECT().
+		Del(gomock.Any(), vacID)
 
-	pubVacCache.EXPECT().Del(gomock.Any(), req.ID)
+	deps.vacRepo.EXPECT().
+		GetSearchView(gomock.Any(), vacID).
+		Return(searchView, nil)
 
-	compCache.EXPECT().Del(gomock.Any(), compID)
+	deps.search.EXPECT().
+		Index(gomock.Any(), *searchView).
+		Return(nil)
 
-	err := uc.Execute(context.Background(), req, ident)
+	deps.compCache.EXPECT().
+		Del(gomock.Any(), compID)
 
+	err := uc.Execute(context.Background(), req, adminIdentity())
 	require.NoError(t, err)
 }
 
-func TestUsecase_Execute_ArchivedVacancy_DoesNotUpdateCompanyCount(t *testing.T) {
+func TestUsecase_Execute_Success_StatusNotChanged(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-	compRepo := mocks.NewMockcompanyRepo(ctrl)
-	outboxWriter := mocks.NewMockoutboxWriter(ctrl)
-
-	vacCache := mocks.NewMockcacheRepo(ctrl)
-	pubVacCache := mocks.NewMockcacheRepo(ctrl)
-	compCache := mocks.NewMockcacheRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		compRepo,
-		outboxWriter,
-		&fakeTxManager{},
-		vacCache,
-		pubVacCache,
-		compCache,
-	)
-
-	req := &moderationstatus.Request{
-		ID:     uuid.New(),
-		Status: vacancy.ModerationStatusHidden,
-	}
-
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
-	}
-
+	vacID := uuid.New()
 	compID := uuid.New()
 
-	vacRepo.
-		EXPECT().
+	req := &moderationstatus.Request{
+		ID:     vacID,
+		Status: vacancy.ModerationStatusOK,
+	}
+
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusOK,
 			gomock.Any(),
 		).
 		Return(&moderationstatus.UpdateModerationResult{
 			CompanyID:           compID,
-			VacancyStatus:       vacancy.StatusArchived,
 			OldModerationStatus: vacancy.ModerationStatusOK,
+			VacancyStatus:       vacancy.StatusPublished,
 		}, nil)
 
-	outboxWriter.
-		EXPECT().
-		WriteVacancyModerationUpdated(gomock.Any(), gomock.Any()).
-		Return(nil)
-
-	vacCache.
-		EXPECT().
-		Del(gomock.Any(), req.ID)
-
-	pubVacCache.
-		EXPECT().
-		Del(gomock.Any(), req.ID)
-
-	err := uc.Execute(context.Background(), req, ident)
-
+	err := uc.Execute(context.Background(), req, adminIdentity())
 	require.NoError(t, err)
 }
 
-func TestUsecase_Execute_StatusNotChanged(t *testing.T) {
+func TestUsecase_Execute_Success_ArchivedVacancy_NoCompanyUpdate(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		mocks.NewMockcompanyRepo(ctrl),
-		mocks.NewMockoutboxWriter(ctrl),
-		&fakeTxManager{},
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-	)
+	vacID := uuid.New()
+	compID := uuid.New()
 
 	req := &moderationstatus.Request{
-		ID:     uuid.New(),
-		Status: vacancy.ModerationStatusOK,
+		ID:     vacID,
+		Status: vacancy.ModerationStatusHidden,
 	}
 
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
+	searchView := &views.VacancySearch{
+		ID:               vacID,
+		CompanyID:        compID,
+		ModerationStatus: vacancy.ModerationStatusHidden,
+		Status:           vacancy.StatusArchived,
 	}
 
-	vacRepo.
-		EXPECT().
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusHidden,
 			gomock.Any(),
 		).
 		Return(&moderationstatus.UpdateModerationResult{
-			CompanyID:           uuid.New(),
-			VacancyStatus:       vacancy.StatusPublished,
+			CompanyID:           compID,
 			OldModerationStatus: vacancy.ModerationStatusOK,
+			VacancyStatus:       vacancy.StatusArchived,
 		}, nil)
 
-	err := uc.Execute(context.Background(), req, ident)
+	deps.outbox.EXPECT().
+		WriteVacancyModerationUpdated(gomock.Any(), gomock.Any()).
+		Return(nil)
 
+	deps.vacCache.EXPECT().
+		Del(gomock.Any(), vacID)
+
+	deps.pubCache.EXPECT().
+		Del(gomock.Any(), vacID)
+
+	deps.vacRepo.EXPECT().
+		GetSearchView(gomock.Any(), vacID).
+		Return(searchView, nil)
+
+	deps.search.EXPECT().
+		Index(gomock.Any(), *searchView).
+		Return(nil)
+
+	err := uc.Execute(context.Background(), req, adminIdentity())
 	require.NoError(t, err)
 }
 
-func TestUsecase_Execute_InvalidStatus(t *testing.T) {
+func TestUsecase_Execute_AuthError(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-
-	uc := moderationstatus.NewUsecase(
-		mocks.NewMockvacancyRepo(ctrl),
-		mocks.NewMockcompanyRepo(ctrl),
-		mocks.NewMockoutboxWriter(ctrl),
-		&fakeTxManager{},
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-	)
-
-	req := &moderationstatus.Request{
-		ID:     uuid.New(),
-		Status: vacancy.ModerationStatus("invalid"),
-	}
-
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
-	}
-
-	err := uc.Execute(context.Background(), req, ident)
-
-	require.ErrorIs(t, err, vacancy.ErrInvalidModerationStatus)
-}
-
-func TestUsecase_Execute_AdminRoleRequired(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-
-	uc := moderationstatus.NewUsecase(
-		mocks.NewMockvacancyRepo(ctrl),
-		mocks.NewMockcompanyRepo(ctrl),
-		mocks.NewMockoutboxWriter(ctrl),
-		&fakeTxManager{},
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-	)
+	deps := setup(t)
+	uc := newUC(deps)
 
 	req := &moderationstatus.Request{
 		ID:     uuid.New(),
@@ -349,99 +314,108 @@ func TestUsecase_Execute_AdminRoleRequired(t *testing.T) {
 func TestUsecase_Execute_UpdateModerationError(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		mocks.NewMockcompanyRepo(ctrl),
-		mocks.NewMockoutboxWriter(ctrl),
-		&fakeTxManager{},
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-	)
+	vacID := uuid.New()
 
 	req := &moderationstatus.Request{
-		ID:     uuid.New(),
-		Status: vacancy.ModerationStatusOK,
+		ID:     vacID,
+		Status: vacancy.ModerationStatusHidden,
 	}
 
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
-	}
+	expectedErr := errors.New("update moderation error")
 
-	expectedErr := errors.New("update failed")
-
-	vacRepo.
-		EXPECT().
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusHidden,
 			gomock.Any(),
 		).
 		Return(nil, expectedErr)
 
-	err := uc.Execute(context.Background(), req, ident)
+	err := uc.Execute(context.Background(), req, adminIdentity())
 
 	require.ErrorIs(t, err, expectedErr)
 }
 
-func TestUsecase_Execute_DecrementOpenVacanciesError(t *testing.T) {
+func TestUsecase_Execute_CompanyUpdateError(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
+	deps := setup(t)
+	uc := newUC(deps)
 
-	vacRepo := mocks.NewMockvacancyRepo(ctrl)
-	compRepo := mocks.NewMockcompanyRepo(ctrl)
-
-	uc := moderationstatus.NewUsecase(
-		vacRepo,
-		compRepo,
-		mocks.NewMockoutboxWriter(ctrl),
-		&fakeTxManager{},
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-		mocks.NewMockcacheRepo(ctrl),
-	)
+	vacID := uuid.New()
+	compID := uuid.New()
 
 	req := &moderationstatus.Request{
-		ID:     uuid.New(),
+		ID:     vacID,
 		Status: vacancy.ModerationStatusHidden,
 	}
 
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
-	}
+	expectedErr := errors.New("company update error")
 
-	compID := uuid.New()
-
-	expectedErr := errors.New("decrement failed")
-
-	vacRepo.
-		EXPECT().
+	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
-			req.ID,
-			req.Status,
+			vacID,
+			vacancy.ModerationStatusHidden,
 			gomock.Any(),
 		).
 		Return(&moderationstatus.UpdateModerationResult{
 			CompanyID:           compID,
-			VacancyStatus:       vacancy.StatusPublished,
 			OldModerationStatus: vacancy.ModerationStatusOK,
+			VacancyStatus:       vacancy.StatusPublished,
 		}, nil)
 
-	compRepo.
-		EXPECT().
+	deps.compRepo.EXPECT().
 		DecrementOpenVacancies(gomock.Any(), compID).
 		Return(expectedErr)
 
-	err := uc.Execute(context.Background(), req, ident)
+	err := uc.Execute(context.Background(), req, adminIdentity())
+
+	require.ErrorIs(t, err, expectedErr)
+}
+
+func TestUsecase_Execute_OutboxError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	vacID := uuid.New()
+	compID := uuid.New()
+
+	req := &moderationstatus.Request{
+		ID:     vacID,
+		Status: vacancy.ModerationStatusHidden,
+	}
+
+	expectedErr := errors.New("outbox error")
+
+	deps.vacRepo.EXPECT().
+		UpdateModerationStatus(
+			gomock.Any(),
+			vacID,
+			vacancy.ModerationStatusHidden,
+			gomock.Any(),
+		).
+		Return(&moderationstatus.UpdateModerationResult{
+			CompanyID:           compID,
+			OldModerationStatus: vacancy.ModerationStatusOK,
+			VacancyStatus:       vacancy.StatusPublished,
+		}, nil)
+
+	deps.compRepo.EXPECT().
+		DecrementOpenVacancies(gomock.Any(), compID).
+		Return(nil)
+
+	deps.outbox.EXPECT().
+		WriteVacancyModerationUpdated(gomock.Any(), gomock.Any()).
+		Return(expectedErr)
+
+	err := uc.Execute(context.Background(), req, adminIdentity())
 
 	require.ErrorIs(t, err, expectedErr)
 }

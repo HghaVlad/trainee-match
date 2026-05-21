@@ -388,8 +388,6 @@ func getPubVacSearchAfter(order listsearch.Order, cursor any) ([]any, error) {
 	return searchAfter, nil
 }
 
-// TODO: check pagination with relevance
-
 func getCompVacMust(req listsearch.Requirements) []any {
 	var must []any
 

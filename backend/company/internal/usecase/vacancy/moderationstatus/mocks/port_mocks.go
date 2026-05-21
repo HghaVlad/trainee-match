@@ -11,6 +11,7 @@ import (
 
 	vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	moderationstatus "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
+	views "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 )
@@ -36,6 +37,21 @@ func NewMockvacancyRepo(ctrl *gomock.Controller) *MockvacancyRepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockvacancyRepo) EXPECT() *MockvacancyRepoMockRecorder {
 	return m.recorder
+}
+
+// GetSearchView mocks base method.
+func (m *MockvacancyRepo) GetSearchView(ctx context.Context, vacID uuid.UUID) (*views.VacancySearch, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSearchView", ctx, vacID)
+	ret0, _ := ret[0].(*views.VacancySearch)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSearchView indicates an expected call of GetSearchView.
+func (mr *MockvacancyRepoMockRecorder) GetSearchView(ctx, vacID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSearchView", reflect.TypeOf((*MockvacancyRepo)(nil).GetSearchView), ctx, vacID)
 }
 
 // UpdateModerationStatus mocks base method.
@@ -174,4 +190,41 @@ func (m *MockcacheRepo) Del(ctx context.Context, id uuid.UUID) {
 func (mr *MockcacheRepoMockRecorder) Del(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockcacheRepo)(nil).Del), ctx, id)
+}
+
+// MocksearchRepo is a mock of searchRepo interface.
+type MocksearchRepo struct {
+	ctrl     *gomock.Controller
+	recorder *MocksearchRepoMockRecorder
+}
+
+// MocksearchRepoMockRecorder is the mock recorder for MocksearchRepo.
+type MocksearchRepoMockRecorder struct {
+	mock *MocksearchRepo
+}
+
+// NewMocksearchRepo creates a new mock instance.
+func NewMocksearchRepo(ctrl *gomock.Controller) *MocksearchRepo {
+	mock := &MocksearchRepo{ctrl: ctrl}
+	mock.recorder = &MocksearchRepoMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MocksearchRepo) EXPECT() *MocksearchRepoMockRecorder {
+	return m.recorder
+}
+
+// Index mocks base method.
+func (m *MocksearchRepo) Index(ctx context.Context, vac views.VacancySearch) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Index", ctx, vac)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Index indicates an expected call of Index.
+func (mr *MocksearchRepoMockRecorder) Index(ctx, vac interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Index", reflect.TypeOf((*MocksearchRepo)(nil).Index), ctx, vac)
 }

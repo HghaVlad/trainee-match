@@ -2,157 +2,366 @@ package listsearch_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	list "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch/mocks"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
-type cacheMock struct {
-	mock.Mock
+type testDeps struct {
+	repo  *mocks.MockVacancyRepo
+	cache *mocks.MockResponseCacheRepo
 }
 
-func (m *cacheMock) Get(ctx context.Context, key string) *listsearch.Response {
-	args := m.Called(ctx, key)
-	if args.Get(0) != nil {
-		return args.Get(0).(*listsearch.Response)
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
+
+	return &testDeps{
+		repo:  mocks.NewMockVacancyRepo(ctrl),
+		cache: mocks.NewMockResponseCacheRepo(ctrl),
 	}
-	return nil
 }
 
-func (m *cacheMock) Put(ctx context.Context, key string, response *listsearch.Response, exp time.Duration) {
-	m.Called(ctx, key, response, exp)
-}
-
-type repoMock struct {
-	mock.Mock
-}
-
-func (m *repoMock) ListPublishedSummaries(
-	ctx context.Context,
-	requirements *listsearch.Requirements,
-	order listsearch.Order,
-	cursor any,
-	limit int,
-) ([]views.PublishedVacSummary, error) {
-	args := m.Called(ctx, requirements, order, cursor, limit)
-
-	vcs := args.Get(0)
-
-	if vcs != nil {
-		return vcs.([]views.PublishedVacSummary), args.Error(1)
-	}
-
-	return nil, args.Error(1)
-}
-
-func TestUsecase_Execute_CacheHit(t *testing.T) {
-	repo := new(repoMock)
-	cache := new(cacheMock)
-
-	req := &listsearch.Request{
-		Order:         listsearch.OrderPublishedAtDesc,
-		EncodedCursor: "",
-		Limit:         10,
-	}
-
-	cache.On("Get", mock.Anything, mock.Anything).
-		Return(&listsearch.Response{Vacancies: []views.PublishedVacSummary{{}}}).Once()
-
-	uc := listsearch.NewUsecase(repo, cache)
-
-	resp, err := uc.Execute(context.Background(), req)
-
-	require.NoError(t, err)
-	assert.Len(t, resp.Vacancies, 1)
-	cache.AssertExpectations(t)
-	repo.AssertNotCalled(
-		t,
-		"ListPublishedSummaries",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
+func newUC(deps *testDeps) *list.Usecase {
+	return list.NewUsecase(
+		deps.repo,
+		deps.cache,
 	)
 }
 
-func TestUsecase_Execute_NextCursor(t *testing.T) {
-	repo := new(repoMock)
-	cache := new(cacheMock)
+func TestUsecase_Execute_Success_PublishedAt(t *testing.T) {
+	t.Parallel()
 
-	req := &listsearch.Request{
-		Order:         listsearch.OrderPublishedAtDesc,
-		EncodedCursor: "",
-		Limit:         10,
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Order:        list.OrderPublishedAtDesc,
+		Limit:        20,
+		Requirements: &list.Requirements{},
 	}
 
-	vcs := make([]views.PublishedVacSummary, req.Limit+1)
-	for i := range vcs {
-		vcs[i] = views.PublishedVacSummary{
-			ID:          uuid.New(),
-			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
-		}
+	vacancies := []views.PublishedVacSummary{
+		{
+			ID:             uuid.New(),
+			CompanyID:      uuid.New(),
+			CompanyName:    "Acme",
+			Title:          "Go Developer",
+			WorkFormat:     vacancy.WorkFormatRemote,
+			EmploymentType: vacancy.EmploymentTypeInternship,
+			IsPaid:         true,
+			PublishedAt:    time.Now(),
+		},
 	}
 
-	cache.On("Get", mock.Anything, mock.Anything).
-		Return(nil).Once()
+	nextCursor := &list.PublishedAtCursor{
+		PublishedAt: time.Now(),
+		ID:          uuid.New(),
+	}
 
-	repo.On("ListPublishedSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
-		Return(vcs, nil).Once()
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
 
-	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			req.Requirements,
+			list.OrderPublishedAtDesc,
+			(*list.PublishedAtCursor)(nil),
+			req.Limit,
+		).
+		Return(&list.SearchResult{
+			Vacancies:  vacancies,
+			NextCursor: nextCursor,
+			HasNext:    true,
+		}, nil)
 
-	uc := listsearch.NewUsecase(repo, cache)
+	deps.cache.EXPECT().
+		Put(
+			gomock.Any(),
+			gomock.Any(),
+			gomock.Any(),
+			time.Second*20,
+		)
 
 	resp, err := uc.Execute(context.Background(), req)
 
 	require.NoError(t, err)
-	assert.Equal(t, len(resp.Vacancies), req.Limit)
-	assert.NotEmpty(t, resp.NextCursor)
-	cache.AssertExpectations(t)
-	repo.AssertExpectations(t)
+	require.NotNil(t, resp)
+
+	require.Len(t, resp.Vacancies, 1)
+	require.NotNil(t, resp.NextCursor)
+	require.NotEmpty(t, *resp.NextCursor)
 }
 
-func TestUsecase_Execute_NoNextCursor(t *testing.T) {
-	repo := new(repoMock)
-	cache := new(cacheMock)
+func TestUsecase_Execute_Success_FromCache(t *testing.T) {
+	t.Parallel()
 
-	req := &listsearch.Request{
-		Order:         listsearch.OrderPublishedAtDesc,
-		EncodedCursor: "",
-		Limit:         10,
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Requirements: &list.Requirements{},
+		Order:        list.OrderPublishedAtDesc,
+		Limit:        20,
 	}
 
-	vcs := make([]views.PublishedVacSummary, req.Limit)
-	for i := range vcs {
-		vcs[i] = views.PublishedVacSummary{
-			ID:          uuid.New(),
-			PublishedAt: time.Now().Add(-time.Duration(i) * time.Minute),
-		}
+	expectedResp := &list.Response{
+		Vacancies: []views.PublishedVacSummary{
+			{
+				ID:          uuid.New(),
+				Title:       "Cached vacancy",
+				PublishedAt: time.Now(),
+			},
+		},
 	}
 
-	cache.On("Get", mock.Anything, mock.Anything).
-		Return(nil).Once()
-
-	repo.On("ListPublishedSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything, req.Limit+1).
-		Return(vcs, nil).Once()
-
-	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
-
-	uc := listsearch.NewUsecase(repo, cache)
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(expectedResp)
 
 	resp, err := uc.Execute(context.Background(), req)
 
 	require.NoError(t, err)
-	assert.Equal(t, len(resp.Vacancies), req.Limit)
-	assert.Empty(t, resp.NextCursor)
-	cache.AssertExpectations(t)
-	repo.AssertExpectations(t)
+	require.Equal(t, expectedResp, resp)
+}
+
+func TestUsecase_Execute_RelevanceWithoutQuery_ChangesOrder(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Order:         list.OrderRelevance,
+		EncodedCursor: "cursor",
+		Limit:         20,
+		Requirements:  &list.Requirements{},
+	}
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			req.Requirements,
+			list.OrderPublishedAtDesc,
+			(*list.PublishedAtCursor)(nil),
+			req.Limit,
+		).
+		Return(&list.SearchResult{}, nil)
+
+	deps.cache.EXPECT().
+		Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	require.Equal(t, list.OrderPublishedAtDesc, req.Order)
+	require.Equal(t, "", req.EncodedCursor)
+}
+
+func TestUsecase_Execute_Success_Relevance(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	query := "golang"
+
+	req := &list.Request{
+		Order: list.OrderRelevance,
+		Limit: 20,
+		Requirements: &list.Requirements{
+			Query: &query,
+		},
+	}
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			req.Requirements,
+			list.OrderRelevance,
+			(*list.RelevanceCursor)(nil),
+			req.Limit,
+		).
+		Return(&list.SearchResult{}, nil)
+
+	deps.cache.EXPECT().
+		Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestUsecase_Execute_Success_SalaryOrder(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	isPaid := true
+
+	req := &list.Request{
+		Order: list.OrderSalaryDesc,
+		Limit: 20,
+		Requirements: &list.Requirements{
+			IsPaid: &isPaid,
+		},
+	}
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			req.Requirements,
+			list.OrderSalaryDesc,
+			(*list.SalaryCursor)(nil),
+			req.Limit,
+		).
+		Return(&list.SearchResult{}, nil)
+
+	deps.cache.EXPECT().
+		Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestUsecase_Execute_InvalidRequest(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Order: "invalid",
+	}
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.ErrorIs(t, err, common.ErrUnsupportedListOrder)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_RepoError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Requirements: &list.Requirements{},
+		Order:        list.OrderPublishedAtDesc,
+		Limit:        20,
+	}
+
+	expectedErr := errors.New("repo error")
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			gomock.Any(),
+			list.OrderPublishedAtDesc,
+			(*list.PublishedAtCursor)(nil),
+			req.Limit,
+		).
+		Return(nil, expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_InvalidCursor(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Requirements:  new(list.Requirements),
+		Order:         list.OrderPublishedAtDesc,
+		Limit:         20,
+		EncodedCursor: "invalid-cursor",
+	}
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.Error(t, err)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_HasNoNext(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &list.Request{
+		Requirements: new(list.Requirements),
+		Order:        list.OrderPublishedAtDesc,
+		Limit:        20,
+	}
+
+	deps.cache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.repo.EXPECT().
+		ListPublishedSummaries(
+			gomock.Any(),
+			gomock.Any(),
+			list.OrderPublishedAtDesc,
+			(*list.PublishedAtCursor)(nil),
+			req.Limit,
+		).
+		Return(&list.SearchResult{
+			Vacancies: []views.PublishedVacSummary{},
+			HasNext:   false,
+		}, nil)
+
+	deps.cache.EXPECT().
+		Put(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+	resp, err := uc.Execute(context.Background(), req)
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+
+	require.Nil(t, resp.NextCursor)
 }

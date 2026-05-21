@@ -69,14 +69,10 @@ func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity *identity.
 	return u.vacSearchRepo.RemoveByCompanyID(ctx, id)
 }
 
-// only admin of company can delete or admin of the platform
+// only admin of company can delete
 func (u *Usecase) authorize(ctx context.Context, id uuid.UUID, ident *identity.Identity) error {
-	if ident.Role == identity.RoleAdmin {
-		return nil
-	}
-
 	if ident.Role != identity.RoleHR {
-		return identity.ErrInsufficientRole
+		return identity.ErrHrRoleRequired
 	}
 
 	memb, err := u.memberRepo.Get(ctx, ident.UserID, id)

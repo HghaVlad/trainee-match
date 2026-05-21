@@ -10,8 +10,8 @@ import (
 )
 
 // Usecase of vacancy listing, uses cursor pagination.
-// Supports order by published_at, salary.
-// Supports filters in Requirements.
+// Supports order by relevance, published_at, salary.
+// Supports query, filters in Requirements.
 type Usecase struct {
 	repo      VacancyRepo
 	respCache ResponseCacheRepo
@@ -23,7 +23,7 @@ func NewUsecase(repo VacancyRepo, cache ResponseCacheRepo) *Usecase {
 
 // Execute cursor pagination list vacancy.
 // Supports order by published_at, salary.
-// Supports filters in Requirements.
+// Supports query, filters in Requirements.
 func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err

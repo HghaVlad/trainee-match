@@ -11,6 +11,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
+//go:generate mockgen -source=ports.go -destination=mocks/port_mocks.go -package=mocks
 type VacancyRepo interface {
 	Create(ctx context.Context, vacancy *vacancy.Vacancy) error
 }

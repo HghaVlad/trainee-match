@@ -34,8 +34,6 @@ func NewUsecase(
 	}
 }
 
-// TODO: add everywhere where vacancy is updated and company name is updated
-
 // Execute creates vacancy in draft status
 func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity.Identity) (*Response, error) {
 	vac := vacancyFromReq(request, ident)

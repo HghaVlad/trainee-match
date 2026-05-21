@@ -45,6 +45,10 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
+	}
+
 	if err := req.lightValidate(); err != nil {
 		return err
 	}

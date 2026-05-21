@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=cache.go -destination=mocks/cache_mock.go -package=mocks
 type ResponseCacheRepo interface {
 	Get(ctx context.Context, key string) *Response
 	Put(ctx context.Context, key string, response *Response, exp time.Duration)
