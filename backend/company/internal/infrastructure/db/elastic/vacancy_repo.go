@@ -144,6 +144,50 @@ func (r *VacancyRepo) UpdateCompanyName(ctx context.Context, compID uuid.UUID, n
 	return nil
 }
 
+func (r *VacancyRepo) RemoveByCompanyID(ctx context.Context, compID uuid.UUID) error {
+	query := map[string]any{
+		"query": map[string]any{
+			"term": map[string]any{
+				"company_id": compID.String(),
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := json.NewEncoder(&buf).Encode(query)
+	if err != nil {
+		return fmt.Errorf("encode elastic delete vacancies by company query: %w", err)
+	}
+
+	res, err := r.es.DeleteByQuery(
+		[]string{vacancyIndex},
+		&buf,
+		r.es.DeleteByQuery.WithContext(ctx),
+		r.es.DeleteByQuery.WithRefresh(true),
+		r.es.DeleteByQuery.WithConflicts("proceed"),
+	)
+	if err != nil {
+		return fmt.Errorf("elastic delete vacancies by company: %w", err)
+	}
+
+	defer func() {
+		_ = res.Body.Close()
+	}()
+
+	if res.IsError() {
+		body, _ := io.ReadAll(res.Body)
+
+		return fmt.Errorf(
+			"elastic delete vacancies by company unexpected status %s: %s",
+			res.Status(),
+			string(body),
+		)
+	}
+
+	return nil
+}
+
 type searchResponse struct {
 	Hits struct {
 		Hits []vacHit `json:"hits"`

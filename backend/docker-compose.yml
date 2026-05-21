@@ -403,8 +403,8 @@ services:
     image: docker.elastic.co/kibana/kibana:9.3.0
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      ELASTICSEARCH_USERNAME: elastic
-      ELASTICSEARCH_PASSWORD: ${ELASTIC_PASS}
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_KIBANA_PASS}
     ports:
       - "5601:5601"
     depends_on:

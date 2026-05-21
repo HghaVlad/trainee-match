@@ -49,11 +49,12 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
 
-					r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+					r.With(deps.AuthMiddleware.FakeHandler, // TODO: enable true one
+						compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(deps.AuthMiddleware.Handler,
+			r.With(deps.AuthMiddleware.FakeHandler, // TODO: enable true one
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest](),
 				compmiddleware.LoggingMiddleware).
 				Post("/", deps.CompanyHandler.Create)

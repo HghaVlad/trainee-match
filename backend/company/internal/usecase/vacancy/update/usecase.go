@@ -76,11 +76,11 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 			return err
 		}
 
+		vacncy = vac
 		if eventShouldBeCreated {
 			return u.createdVacancyUpdatedEvent(ctx, vac)
 		}
 
-		vacncy = vac
 		return nil
 	})
 	if err != nil {

@@ -130,7 +130,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager)
 	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
 
 	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
