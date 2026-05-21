@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v9"
@@ -96,6 +97,51 @@ func (r *VacancyRepo) ListPublishedSummaries(
 	}
 
 	return result, nil
+}
+
+func (r *VacancyRepo) UpdateCompanyName(ctx context.Context, compID uuid.UUID, newName string) error {
+	query := map[string]any{
+		"script": map[string]any{
+			"source": "ctx._source.company_name = params.name",
+			"params": map[string]any{
+				"name": newName,
+			},
+		},
+		"query": map[string]any{
+			"term": map[string]any{
+				"company_id": compID.String(),
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := json.NewEncoder(&buf).Encode(query)
+	if err != nil {
+		return fmt.Errorf("encode elastic update company name query: %w", err)
+	}
+
+	res, err := r.es.UpdateByQuery(
+		[]string{vacancyIndex},
+		r.es.UpdateByQuery.WithContext(ctx),
+		r.es.UpdateByQuery.WithBody(&buf),
+		r.es.UpdateByQuery.WithRefresh(true),
+		r.es.UpdateByQuery.WithConflicts("proceed"),
+	)
+	if err != nil {
+		return fmt.Errorf("elastic update company name: %w", err)
+	}
+
+	defer func() {
+		_ = res.Body.Close()
+	}()
+
+	if res.IsError() {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("elastic update company name unexpected status %s: %s", res.Status(), string(body))
+	}
+
+	return nil
 }
 
 type searchResponse struct {

@@ -209,8 +209,7 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Order == listsearch.OrderRelevance {
-		helpers.RespondError(ctx, w, http.StatusBadRequest, common.ErrUnsupportedListOrder)
-		return
+		req.Order = listsearch.OrderPublishedAtDesc
 	}
 
 	res, err := h.list.Execute(ctx, req)

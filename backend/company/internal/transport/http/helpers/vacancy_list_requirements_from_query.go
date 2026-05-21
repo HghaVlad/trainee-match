@@ -109,7 +109,7 @@ func applyCity(q url.Values, req *listsearch.Request) {
 func parseVacListOrderQuery(r *http.Request) (listsearch.Order, error) {
 	str := r.URL.Query().Get("order")
 	if str == "" {
-		return listsearch.OrderPublishedAtDesc, nil
+		return listsearch.OrderRelevance, nil
 	}
 
 	ord := listsearch.Order(strings.Trim(str, " "))

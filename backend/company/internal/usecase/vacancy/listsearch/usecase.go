@@ -29,6 +29,12 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 		return nil, err
 	}
 
+	if req.Requirements.Query == nil || *req.Requirements.Query == "" &&
+		req.Order == OrderRelevance {
+		req.Order = OrderPublishedAtDesc
+		req.EncodedCursor = ""
+	}
+
 	respCacheKey := requestToCacheKey(req)
 	resp := uc.respCache.Get(ctx, respCacheKey)
 	if resp != nil {
