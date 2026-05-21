@@ -172,7 +172,7 @@ func TestUsecase_Execute_RelevanceWithoutQuery_ChangesOrder(t *testing.T) {
 	require.NotNil(t, resp)
 
 	require.Equal(t, list.OrderPublishedAtDesc, req.Order)
-	require.Equal(t, "", req.EncodedCursor)
+	require.Empty(t, req.EncodedCursor)
 }
 
 func TestUsecase_Execute_Success_Relevance(t *testing.T) {

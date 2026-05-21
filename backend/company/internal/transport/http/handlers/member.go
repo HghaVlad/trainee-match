@@ -168,6 +168,7 @@ func (h *MemberHandler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
+// @Failure 409 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /companies/{id}/members/{user-id} [patch]
 func (h *MemberHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +234,8 @@ func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, er
 		helpers.RespondError(ctx, w, http.StatusNotFound, err)
 		return true
 
-	case errors.Is(err, member.ErrCompanyMemberAlreadyExists):
+	case errors.Is(err, member.ErrCompanyMemberAlreadyExists),
+		errors.Is(err, member.ErrCantUpdateYourself):
 		helpers.RespondError(ctx, w, http.StatusConflict, err)
 		return true
 

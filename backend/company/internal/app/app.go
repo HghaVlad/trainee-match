@@ -269,12 +269,12 @@ func (app *App) Run(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
-		// app.outboxRelay.Run(ctx) // TODO: enable
+		app.outboxRelay.Run(ctx)
 		return nil
 	})
 
 	g.Go(func() error {
-		// app.kConsumer.Poll(ctx) // TODO: enable
+		app.kConsumer.Poll(ctx)
 		return nil
 	})
 

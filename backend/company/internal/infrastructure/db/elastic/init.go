@@ -2,7 +2,7 @@ package elastic
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -115,6 +115,7 @@ func Init(ctx context.Context, cl *elasticsearch.Client) error {
 
 	res, err := cl.Indices.Create(
 		vacancyIndex,
+		cl.Indices.Create.WithContext(ctx),
 		cl.Indices.Create.WithBody(strings.NewReader(vacancyIndexMapping)),
 	)
 	if err != nil {
@@ -126,9 +127,8 @@ func Init(ctx context.Context, cl *elasticsearch.Client) error {
 	}()
 
 	if res.IsError() {
-		return fmt.Errorf("elastic create index error")
+		return errors.New("elastic create index error")
 	}
 
 	return nil
-
 }

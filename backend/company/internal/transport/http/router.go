@@ -44,17 +44,17 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.LoggingMiddleware).
 						Get("/me", deps.CompanyHandler.GetByMember)
 
-					r.With(deps.AuthMiddleware.FakeHandler, // TODO: enable true one
+					r.With(deps.AuthMiddleware.Handler,
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
 
-					r.With(deps.AuthMiddleware.FakeHandler, // TODO: enable true one
+					r.With(deps.AuthMiddleware.Handler,
 						compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
-			r.With(deps.AuthMiddleware.FakeHandler, // TODO: enable true one
+			r.With(deps.AuthMiddleware.Handler,
 				compmiddleware.BindJSONBodyMiddleware[dto.CompanyCreateRequest](),
 				compmiddleware.LoggingMiddleware).
 				Post("/", deps.CompanyHandler.Create)
@@ -91,7 +91,7 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			// /company/{company-id}/vacancies
 			r.With(compmiddleware.UUIDMiddleware("company-id")).
-				With(deps.AuthMiddleware.FakeHandler). // TODO: enable true one
+				With(deps.AuthMiddleware.Handler).
 				Route("/{company-id}/vacancies", func(r chi.Router) {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)

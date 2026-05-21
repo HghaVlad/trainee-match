@@ -341,11 +341,13 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		if !ok {
 			return nil, common.ErrInvalidCursor
 		}
-		cursorCondition, args = listByCompCreatedAtCursorToSQL(*curs, args)
-		cursorCondition = "AND " + cursorCondition
+		if curs != nil {
+			cursorCondition, args = listByCompCreatedAtCursorToSQL(*curs, args)
+			cursorCondition = "AND " + cursorCondition
+		}
 	}
 
-	args = append(args, (*requirements.Companies)[0], limit)
+	args = append(args, (*requirements.Companies)[0], limit+1)
 
 	const query = `SELECT
     v.id, v.title, v.work_format,

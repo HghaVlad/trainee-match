@@ -14,7 +14,7 @@ func NewClient(cfg config.ElasticSearch) (*elasticsearch.Client, error) {
 		elasticsearch.WithBasicAuth(cfg.User, cfg.Password),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("elastic search create client: %v", err)
+		return nil, fmt.Errorf("elastic search create client: %w", err)
 	}
 
 	return cl, nil

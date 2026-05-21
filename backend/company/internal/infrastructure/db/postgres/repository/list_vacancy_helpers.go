@@ -198,6 +198,8 @@ func listVacOrderToSQL(order listsearch.Order) string {
 		return salaryDescOrderBy
 	case listsearch.OrderSalaryAsc:
 		return salaryAscOrderBy
+	case listsearch.OrderRelevance:
+		return ""
 	}
 
 	return ""
@@ -273,6 +275,9 @@ func buildCompVacSearchResult(
 			CreatedAt: cursorVac.CreatedAt,
 			ID:        cursorVac.ID,
 		}
+
+	case listcompsearch.OrderRelevance:
+		return nil, common.ErrUnsupportedListOrder
 
 	default:
 		return nil, common.ErrUnsupportedListOrder
