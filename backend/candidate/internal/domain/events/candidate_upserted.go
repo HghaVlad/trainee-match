@@ -17,11 +17,11 @@ type CandidateUpserted struct {
 	OccurredAt  time.Time `avro:"occurred_at"`
 }
 
-func NewCandidateUpserted(c domain.Candidate, fullName, email string) CandidateUpserted {
+func NewCandidateUpserted(c domain.Candidate, email string) CandidateUpserted {
 	evt := CandidateUpserted{
 		EventID:     uuid.New(),
 		CandidateID: c.ID,
-		FullName:    fullName,
+		FullName:    c.FullName,
 		Email:       email,
 		OccurredAt:  time.Now().UTC(),
 	}

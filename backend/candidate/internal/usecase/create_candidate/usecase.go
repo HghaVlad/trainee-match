@@ -43,6 +43,7 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error)
 	}
 
 	candidate := &domain.Candidate{
+		FullName: req.FullName,
 		ID:       req.UserID,
 		UserId:   req.UserID,
 		Phone:    req.Phone,
@@ -60,7 +61,7 @@ func (uc *UseCase) Execute(ctx context.Context, req *Request) (uuid.UUID, error)
 			return err
 		}
 		candidate.ID = id
-		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(*candidate, req.FullName, req.Email))
+		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(*candidate, req.Email))
 	})
 	if err != nil {
 		return uuid.Nil, err

@@ -62,6 +62,9 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 	if req.Birthday != nil {
 		candidate.Birthday = *req.Birthday
 	}
+	if req.FullName != "" {
+		candidate.FullName = req.FullName
+	}
 
 	if err = candidate.Validate(); err != nil {
 		return nil, err
@@ -72,7 +75,7 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 		if err != nil {
 			return err
 		}
-		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(candidate, req.FullName, req.Email))
+		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(candidate, req.Email))
 	})
 	if err != nil {
 		return nil, err
@@ -81,6 +84,7 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 	resp := CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserId,
+		FullName: candidate.FullName,
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,

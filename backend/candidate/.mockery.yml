@@ -70,3 +70,33 @@ packages:
       CandidateRepo:
       EventWriter:
       TrManager:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/archiveresume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidates:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      CandidateRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidateresumes:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:
+  github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getresume:
+    config:
+      dir: "{{.InterfaceDir}}"
+      filename: "mocks.go"
+    interfaces:
+      ResumeRepo:

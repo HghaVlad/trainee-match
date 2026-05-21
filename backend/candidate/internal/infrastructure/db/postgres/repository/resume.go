@@ -20,10 +20,11 @@ func NewResumeRepo(db *pgxpool.Pool) *ResumeRepo {
 }
 
 func (r *ResumeRepo) Create(ctx context.Context, resume *domain.Resume) (uuid.UUID, error) {
-	query := `INSERT INTO resumes (candidate_id, name, status, data) VALUES ($1, $2, $3, $4) RETURNING id`
+	query := `INSERT INTO resumes (candidate_id, name, status, moderation_status, data) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
 	var id uuid.UUID
-	err := r.db.QueryRow(ctx, query, resume.CandidateId, resume.Name, resume.Status, resume.Data).Scan(&id)
+	err := r.db.QueryRow(ctx, query, resume.CandidateId, resume.Name, resume.Status, resume.ModerationStatus, resume.Data).
+		Scan(&id)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -31,11 +32,11 @@ func (r *ResumeRepo) Create(ctx context.Context, resume *domain.Resume) (uuid.UU
 }
 
 func (r *ResumeRepo) GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error) {
-	query := `SELECT id, candidate_id, name, status, data FROM resumes WHERE id = $1`
+	query := `SELECT id, candidate_id, name, status, moderation_status, data FROM resumes WHERE id = $1`
 
 	var resume domain.Resume
 	err := r.db.QueryRow(ctx, query, id).
-		Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.Data)
+		Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.ModerationStatus, &resume.Data)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Resume{}, domain.ErrResumeNotFound
@@ -45,10 +46,19 @@ func (r *ResumeRepo) GetById(ctx context.Context, id uuid.UUID) (domain.Resume, 
 	return resume, nil
 }
 
-func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID) ([]domain.Resume, error) {
-	query := `SELECT id, candidate_id, name, status FROM resumes WHERE candidate_id = $1`
+func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID, page, size int) ([]domain.Resume, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	offset := (page - 1) * size
 
-	rows, err := r.db.Query(ctx, query, userId)
+	query := `SELECT id, candidate_id, name, status, moderation_status FROM resumes WHERE candidate_id = $1
+				ORDER BY id DESC LIMIT $2 OFFSET $3`
+
+	rows, err := r.db.Query(ctx, query, userId, size, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +66,7 @@ func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID) ([]
 	var resumes = make([]domain.Resume, 0)
 	for rows.Next() {
 		var resume domain.Resume
-		err = rows.Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status)
+		err = rows.Scan(&resume.ID, &resume.CandidateId, &resume.Name, &resume.Status, &resume.ModerationStatus)
 		if err != nil {
 			return nil, err
 		}
@@ -84,6 +94,21 @@ func (r *ResumeRepo) Remove(ctx context.Context, id, candidateId uuid.UUID) erro
 	query := `DELETE FROM resumes WHERE id = $1 AND candidate_id = $2`
 
 	result, err := r.db.Exec(ctx, query, id, candidateId)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrResumeNotFound
+	}
+
+	return nil
+}
+
+func (r *ResumeRepo) SetModerationStatus(ctx context.Context, id uuid.UUID, status domain.ModerationStatus) error {
+	query := `UPDATE resumes SET moderation_status = $1 WHERE id = $2`
+
+	result, err := r.db.Exec(ctx, query, status, id)
 	if err != nil {
 		return err
 	}

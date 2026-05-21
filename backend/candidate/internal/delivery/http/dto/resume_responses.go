@@ -6,11 +6,12 @@ import (
 )
 
 type ResumeResponse struct {
-	ID          uuid.UUID  `json:"id"`
-	CandidateID uuid.UUID  `json:"candidate_id"`
-	Name        string     `json:"name"`
-	Status      string     `json:"status"`
-	Data        ResumeData `json:"data"`
+	ID                uuid.UUID  `json:"id"`
+	CandidateID       uuid.UUID  `json:"candidate_id"`
+	Name              string     `json:"name"`
+	Status            string     `json:"status"`
+	ModerationStatus  string     `json:"moderation_status"`
+	Data              ResumeData `json:"data"`
 }
 
 func UseCaseResponseToDtoResumeResponse(resp get_resume.Response) ResumeResponse {
@@ -57,20 +58,22 @@ func UseCaseResponseToDtoResumeResponse(resp get_resume.Response) ResumeResponse
 	}
 
 	response := ResumeResponse{
-		ID:          resp.ID,
-		CandidateID: resp.CandidateID,
-		Name:        resp.Name,
-		Status:      resp.Status,
-		Data:        dtoData,
+		ID:               resp.ID,
+		CandidateID:      resp.CandidateID,
+		Name:             resp.Name,
+		Status:           resp.Status,
+		ModerationStatus: resp.ModerationStatus,
+		Data:             dtoData,
 	}
 	return response
 }
 
 type ShortResumeResponse struct {
-	ID          uuid.UUID `json:"id"`
-	CandidateId uuid.UUID `json:"candidate_id"`
-	Name        string    `json:"name"`
-	Status      string    `json:"status"`
+	ID               uuid.UUID `json:"id"`
+	CandidateId      uuid.UUID `json:"candidate_id"`
+	Name             string    `json:"name"`
+	Status           string    `json:"status"`
+	ModerationStatus string    `json:"moderation_status"`
 }
 
 type SkillResponse struct {

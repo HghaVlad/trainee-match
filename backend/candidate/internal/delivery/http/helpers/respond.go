@@ -53,7 +53,8 @@ func RespondErrorSmart(w http.ResponseWriter, err error) {
 		errors.Is(err, domain.ErrInvalidEducationEntry),
 		errors.Is(err, domain.ErrInvalidWorkExperienceEntry),
 		errors.Is(err, domain.ErrInvalidPortfolioLink),
-		errors.Is(err, domain.ErrInvalidSkillName):
+		errors.Is(err, domain.ErrInvalidSkillName),
+		errors.Is(err, domain.ErrInvalidModerationStatus):
 		status = http.StatusBadRequest
 	}
 

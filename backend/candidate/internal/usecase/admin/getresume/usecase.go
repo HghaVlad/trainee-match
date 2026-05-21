@@ -1,4 +1,4 @@
-package get_resume
+package getresume
 
 import (
 	"context"
@@ -10,46 +10,29 @@ import (
 
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
-	GetByCandidateId(ctx context.Context, candidateId uuid.UUID, page, size int) ([]domain.Resume, error)
-}
-
-type CandidateRepo interface {
-	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
 type UseCase struct {
-	resumeRepo    ResumeRepo
-	candidateRepo CandidateRepo
+	repo ResumeRepo
 }
 
-func New(resumeRepo ResumeRepo, candidateRepo CandidateRepo) *UseCase {
-	return &UseCase{
-		resumeRepo:    resumeRepo,
-		candidateRepo: candidateRepo,
-	}
+func NewUseCase(repo ResumeRepo) *UseCase {
+	return &UseCase{repo: repo}
 }
 
-func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Response, error) {
-	candidate, err := uc.candidateRepo.GetByUserID(ctx, UserId)
-	if err != nil {
-		return nil, err
-	}
-	resume, err := uc.resumeRepo.GetById(ctx, resumeId)
+func (uc *UseCase) Execute(ctx context.Context, request Request) (Response, error) {
+	resume, err := uc.repo.GetById(ctx, request.ResumeID)
 
 	if err != nil {
-		return nil, err
-	}
-
-	if candidate.ID != resume.CandidateId {
-		return nil, domain.ErrResumeNotFound
+		return Response{}, err
 	}
 
 	status, err := domain.Format(resume.Status)
 	if err != nil {
-		return nil, err
+		return Response{}, err
 	}
 
-	response := &Response{
+	response := Response{
 		ID:               resume.ID,
 		CandidateID:      resume.CandidateId,
 		Name:             resume.Name,
@@ -61,40 +44,8 @@ func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Re
 	return response, nil
 }
 
-func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID, page, size int) ([]*ShortResponse, error) {
-	candidate, err := uc.candidateRepo.GetByUserID(ctx, UserId)
-	if err != nil {
-		return nil, err
-	}
-	resumes, err := uc.resumeRepo.GetByCandidateId(ctx, candidate.ID, page, size)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*ShortResponse
-	for _, resume := range resumes {
-		status, err := domain.Format(resume.Status)
-		if err != nil {
-			return nil, err
-		}
-
-		item := &ShortResponse{
-			ID:               resume.ID,
-			CandidateId:      resume.CandidateId,
-			Name:             resume.Name,
-			Status:           string(status),
-			ModerationStatus: string(resume.ModerationStatus),
-		}
-		result = append(result, item)
-	}
-
-	return result, nil
-}
-
 // Helper function to convert domain data to response data
 func convertDomainDataToResponseData(domainData domain.ResumeData) ResumeData {
-
 	responseData := ResumeData{
 		LastName:        domainData.LastName,
 		FirstName:       domainData.FirstName,

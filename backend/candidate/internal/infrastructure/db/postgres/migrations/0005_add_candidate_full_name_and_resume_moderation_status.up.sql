@@ -1,0 +1,6 @@
+ALTER TABLE candidates
+    ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
+
+ALTER TABLE resumes
+    ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(20) NOT NULL DEFAULT 'ok';
+

@@ -29,6 +29,7 @@ func (uc *UseCase) Execute(ctx context.Context, id uuid.UUID) (*CandidateRespons
 	resp := CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserId,
+		FullName: candidate.FullName,
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,

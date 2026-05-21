@@ -11,18 +11,19 @@ import (
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
-	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/archiveresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidateresumes"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidates"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
@@ -31,6 +32,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
+
+	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 )
 
 type App struct {
@@ -83,7 +88,23 @@ func Build(conf *config.Config) (*App, error) {
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 
-	router := myhttp.NewRouter(myhttp.NewRouterDeps(authMiddleware, candidateHandler, resumeHandler, skillHandler))
+	getCandidatesUC := getcandidates.NewUseCase(candidateRepo)
+	getCandidateUC := getcandidate.NewUseCase(candidateRepo)
+	getCandidateResumesUC := getcandidateresumes.NewUseCase(resumeRepo)
+	getAdminResumeUC := getresume.NewUseCase(resumeRepo)
+	archiveResumeUC := archiveresume.NewUseCase(resumeRepo)
+
+	adminHandler := handlers.NewAdmin(
+		getCandidatesUC,
+		getCandidateUC,
+		getCandidateResumesUC,
+		getAdminResumeUC,
+		archiveResumeUC,
+	)
+
+	router := myhttp.NewRouter(
+		myhttp.NewRouterDeps(authMiddleware, candidateHandler, resumeHandler, skillHandler, adminHandler),
+	)
 
 	httpServer := &http.Server{
 		Addr:         conf.Addr,

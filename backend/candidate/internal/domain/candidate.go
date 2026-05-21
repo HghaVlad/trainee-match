@@ -24,6 +24,7 @@ var (
 
 type Candidate struct {
 	ID       uuid.UUID
+	FullName string
 	UserId   uuid.UUID
 	Phone    string
 	Telegram string
