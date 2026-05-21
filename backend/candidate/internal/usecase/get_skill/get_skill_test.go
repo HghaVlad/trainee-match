@@ -84,14 +84,14 @@ func TestExecuteList(t *testing.T) {
 		{
 			name: "valid list",
 			mockSetup: func(repo *MockSkillRepo) {
-				repo.On("List", ctx).Return(domainSkills, nil).Once()
+				repo.On("List", ctx, 1, 10).Return(domainSkills, nil).Once()
 			},
 			expectedError: nil,
 		},
 		{
 			name: "repo error",
 			mockSetup: func(repo *MockSkillRepo) {
-				repo.On("List", ctx).Return(nil, ErrDb).Once()
+				repo.On("List", ctx, 1, 10).Return(nil, ErrDb).Once()
 			},
 			expectedError: ErrDb,
 		},
@@ -108,7 +108,7 @@ func TestExecuteList(t *testing.T) {
 			resp, err := uc.ExecuteList(ctx, ListRequest{Page: 1, Size: 10})
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, len(domainSkills), len(resp))

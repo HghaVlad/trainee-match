@@ -13,8 +13,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-// TODO: add more tests
-
 var (
 	ErrUpdateDb    = errors.New("update db error")
 	ErrCandidateDb = errors.New("candidate db error")
