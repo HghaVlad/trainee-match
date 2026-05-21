@@ -36,7 +36,6 @@ func NewRelay(
 }
 
 func (r *Relay) Run(ctx context.Context) {
-
 	wg := sync.WaitGroup{}
 	for i := range r.cfg.RelayWorkerCount {
 		wg.Add(1)
@@ -55,7 +54,6 @@ func (r *Relay) Run(ctx context.Context) {
 }
 
 func (r *Relay) runWorker(ctx context.Context, workerNumber int) {
-
 	sleep := r.cfg.RelayMinSleep
 
 	for {
@@ -81,12 +79,10 @@ func (r *Relay) runWorker(ctx context.Context, workerNumber int) {
 		if sleep < r.cfg.RelayMaxSleep {
 			sleep = min(sleep*2, r.cfg.RelayMaxSleep)
 		}
-
 	}
 }
 
 func (r *Relay) process(ctx context.Context, workerNumber int) int {
-
 	var messages []Message
 	var err error
 	err = r.trManager.Do(ctx, func(ctx context.Context) error {
@@ -114,7 +110,6 @@ func (r *Relay) process(ctx context.Context, workerNumber int) int {
 	}
 
 	return len(results)
-
 }
 
 func (r *Relay) updateMessageWithResult(message *Message, result ProduceResult) {
@@ -159,6 +154,5 @@ func (r *Relay) runResetStaleProcessor(ctx context.Context) {
 				)
 			}
 		}
-
 	}
 }

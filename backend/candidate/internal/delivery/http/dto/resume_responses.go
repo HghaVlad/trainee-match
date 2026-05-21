@@ -1,17 +1,18 @@
 package dto
 
 import (
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 )
 
 type ResumeResponse struct {
-	ID                uuid.UUID  `json:"id"`
-	CandidateID       uuid.UUID  `json:"candidate_id"`
-	Name              string     `json:"name"`
-	Status            string     `json:"status"`
-	ModerationStatus  string     `json:"moderation_status"`
-	Data              ResumeData `json:"data"`
+	ID               uuid.UUID  `json:"id"`
+	CandidateID      uuid.UUID  `json:"candidate_id"`
+	Name             string     `json:"name"`
+	Status           string     `json:"status"`
+	ModerationStatus string     `json:"moderation_status"`
+	Data             ResumeData `json:"data"`
 }
 
 func UseCaseResponseToDtoResumeResponse(resp get_resume.Response) ResumeResponse {

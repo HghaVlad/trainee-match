@@ -3,8 +3,9 @@ package get_candidate_by_user_id
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type CandidateRepo interface {

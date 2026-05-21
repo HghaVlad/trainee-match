@@ -120,7 +120,7 @@ func TestGetById(t *testing.T) {
 			resp, err := uc.GetById(ctx, id, tt.reqUserId)
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected error: %v, got: %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, validResp.ID, resp.ID)
@@ -191,7 +191,7 @@ func TestGetByCandidateId(t *testing.T) {
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected error: %v, got: %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, len(domainResumes), len(resp))

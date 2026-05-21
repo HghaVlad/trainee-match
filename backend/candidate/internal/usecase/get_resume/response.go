@@ -7,12 +7,12 @@ import (
 )
 
 type Response struct {
-	ID                uuid.UUID `json:"id"`
-	CandidateID       uuid.UUID `json:"candidate_id"`
-	Name              string    `json:"name"`
-	Status            string    `json:"status"`
-	ModerationStatus  string    `json:"moderation_status"`
-	Data              ResumeData `json:"data"`
+	ID               uuid.UUID  `json:"id"`
+	CandidateID      uuid.UUID  `json:"candidate_id"`
+	Name             string     `json:"name"`
+	Status           string     `json:"status"`
+	ModerationStatus string     `json:"moderation_status"`
+	Data             ResumeData `json:"data"`
 }
 
 type ShortResponse struct {

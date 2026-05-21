@@ -60,7 +60,7 @@ func TestExecute(t *testing.T) {
 			resp, err := uc.Execute(ctx, GetByIdRequest{ID: id})
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, domainSkill.ID, resp.ID)

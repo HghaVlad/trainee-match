@@ -346,7 +346,7 @@ func TestExecute(t *testing.T) {
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 				require.Nil(t, resp)
 			} else {
 				require.NoError(t, err)

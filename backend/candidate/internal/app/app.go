@@ -3,14 +3,12 @@ package app
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 	"net/http"
 	"time"
 
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
@@ -46,9 +44,10 @@ type App struct {
 	Relay         *outbox.Relay
 	relayCancel   context.CancelFunc
 	KafkaProducer *kafka.Producer
+	logger        *slog.Logger
 }
 
-func Build(conf *config.Config) (*App, error) {
+func Build(conf *config.Config, logger *slog.Logger) (*App, error) {
 	pgPool, err := postgres.Connect(context.Background(), &conf.Db)
 	if err != nil {
 		return nil, err
@@ -76,7 +75,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	createCandidateUC := create_candidate.New(candidateRepo, outboxWriter, trManager)
 	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter, trManager)
-	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
+	getCandidateByUserIDUC := get_candidate_by_user_id.New(candidateRepo)
 
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
@@ -88,7 +87,7 @@ func Build(conf *config.Config) (*App, error) {
 	addSkillUC := addskill.NewUseCase(skillRepo)
 	deleteSkillUC := deleteskill.NewUseCase(skillRepo)
 
-	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
+	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIDUC)
 	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
@@ -125,17 +124,16 @@ func Build(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	kafkaLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
-	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, kafkaLogger)
+	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, logger)
 
-	relayLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
-	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
+	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, logger, trManager)
 
 	return &App{
 		server:        httpServer,
 		Db:            pgPool,
 		Relay:         outboxRelay,
 		KafkaProducer: kafkaProducer,
+		logger:        logger,
 	}, nil
 }
 
@@ -144,10 +142,10 @@ func (app *App) Run() error {
 	app.relayCancel = cancel
 	go app.Relay.Run(ctx)
 
-	slog.Info("Server started")
+	app.logger.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("http listening server err", "error", err)
+		app.logger.Error("http listening server err", "error", err)
 	}
 
 	return err
@@ -160,8 +158,8 @@ func (app *App) Shutdown(ctx context.Context) {
 	app.KafkaProducer.Close()
 	err := app.server.Shutdown(ctx)
 	if err != nil {
-		slog.Error("shutdown error", "error", err)
+		app.logger.Error("shutdown error", "error", err)
 	}
-	slog.Info("Server stopped")
+	app.logger.Info("Server stopped")
 	app.Db.Close()
 }
