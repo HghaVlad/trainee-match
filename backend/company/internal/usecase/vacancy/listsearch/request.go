@@ -1,4 +1,4 @@
-package list
+package listsearch
 
 import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 type Request struct {

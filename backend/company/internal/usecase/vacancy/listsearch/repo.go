@@ -1,4 +1,4 @@
-package list
+package listsearch
 
 import (
 	"context"
@@ -13,5 +13,11 @@ type VacancyRepo interface {
 		order Order,
 		cursor any,
 		limit int,
-	) ([]views.PublishedVacSummary, error)
+	) (*SearchResult, error)
+}
+
+type SearchResult struct {
+	Vacancies  []views.PublishedVacSummary
+	NextCursor any
+	HasNext    bool
 }

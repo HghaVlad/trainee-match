@@ -7,12 +7,12 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 func vacancyPublicReqToQuery(
-	requirements *list.Requirements,
-	order list.Order,
+	requirements *listsearch.Requirements,
+	order listsearch.Order,
 	cursor any,
 	limit int,
 ) (map[string]any, error) {
@@ -52,7 +52,7 @@ func vacancyPublicReqToQuery(
 	return query, nil
 }
 
-func getPubVacMust(req list.Requirements) []any {
+func getPubVacMust(req listsearch.Requirements) []any {
 	var must []any
 
 	if req.Query != nil {
@@ -64,6 +64,7 @@ func getPubVacMust(req list.Requirements) []any {
 					"company_name^2",
 					"description",
 				},
+				"fuzziness": "AUTO",
 			},
 		})
 	}
@@ -71,7 +72,7 @@ func getPubVacMust(req list.Requirements) []any {
 	return must
 }
 
-func getPubVacFilter(req list.Requirements) []any {
+func getPubVacFilter(req listsearch.Requirements) []any {
 	var filter []any
 
 	filter = append(filter, map[string]any{
@@ -82,6 +83,7 @@ func getPubVacFilter(req list.Requirements) []any {
 
 	filter = addWorkFormats(filter, req.WorkFormat)
 	filter = addCompanies(filter, req.Companies)
+	filter = addCities(filter, req.City)
 
 	filter = addBoolTerm(filter, "is_paid", req.IsPaid)
 	filter = addBoolTerm(filter, "internship_to_offer", req.InternshipToOffer)
@@ -154,7 +156,7 @@ func addBoolTerm(filter []any, field string, value *bool) []any {
 	return filter
 }
 
-func addSalaryIntersection(filter []any, rng *list.RangeInt) []any {
+func addSalaryIntersection(filter []any, rng *listsearch.RangeInt) []any {
 	if rng == nil {
 		return filter
 	}
@@ -182,7 +184,7 @@ func addSalaryIntersection(filter []any, rng *list.RangeInt) []any {
 	return filter
 }
 
-func addHoursIntersection(filter []any, rng *list.RangeInt) []any {
+func addHoursIntersection(filter []any, rng *listsearch.RangeInt) []any {
 	if rng == nil {
 		return filter
 	}
@@ -210,7 +212,7 @@ func addHoursIntersection(filter []any, rng *list.RangeInt) []any {
 	return filter
 }
 
-func addDurationIntersection(filter []any, rng *list.RangeInt) []any {
+func addDurationIntersection(filter []any, rng *listsearch.RangeInt) []any {
 	if rng == nil {
 		return filter
 	}
@@ -238,16 +240,23 @@ func addDurationIntersection(filter []any, rng *list.RangeInt) []any {
 	return filter
 }
 
-func getPubVacSort(order list.Order) ([]any, error) {
+func getPubVacSort(order listsearch.Order) ([]any, error) {
 	var sort []any
 
 	switch order {
-	case list.OrderPublishedAtDesc:
+	case listsearch.OrderRelevance:
+		sort = []any{
+			map[string]any{"_score": map[string]any{"order": "desc"}},
+			map[string]any{"published_at": map[string]any{"order": "desc"}},
+			map[string]any{"id": map[string]any{"order": "desc"}},
+		}
+
+	case listsearch.OrderPublishedAtDesc:
 		sort = []any{
 			map[string]any{"published_at": map[string]any{"order": "desc"}},
 			map[string]any{"id": map[string]any{"order": "desc"}},
 		}
-	case list.OrderSalaryAsc:
+	case listsearch.OrderSalaryAsc:
 		sort = []any{
 			map[string]any{"salary_from": map[string]any{
 				"order":   "asc",
@@ -262,6 +271,23 @@ func getPubVacSort(order list.Order) ([]any, error) {
 			},
 			map[string]any{"id": map[string]any{"order": "asc"}},
 		}
+
+	case listsearch.OrderSalaryDesc:
+		sort = []any{
+			map[string]any{"salary_from": map[string]any{
+				"order":   "desc",
+				"missing": "_last",
+			},
+			},
+			map[string]any{
+				"salary_to": map[string]any{
+					"order":   "desc",
+					"missing": "_last",
+				},
+			},
+			map[string]any{"id": map[string]any{"order": "desc"}},
+		}
+
 	default:
 		return nil, common.ErrUnsupportedListOrder
 	}
@@ -269,7 +295,7 @@ func getPubVacSort(order list.Order) ([]any, error) {
 	return sort, nil
 }
 
-func getPubVacSearchAfter(order list.Order, cursor any) ([]any, error) {
+func getPubVacSearchAfter(order listsearch.Order, cursor any) ([]any, error) {
 	var searchAfter []any
 
 	if cursor == nil || reflect.ValueOf(cursor).IsNil() {
@@ -277,8 +303,8 @@ func getPubVacSearchAfter(order list.Order, cursor any) ([]any, error) {
 	}
 
 	switch order {
-	case list.OrderPublishedAtDesc:
-		curs, ok := cursor.(*list.PublishedAtCursor)
+	case listsearch.OrderPublishedAtDesc:
+		curs, ok := cursor.(*listsearch.PublishedAtCursor)
 		if !ok {
 			return nil, common.ErrCursorOrderMismatch
 		}
@@ -287,8 +313,8 @@ func getPubVacSearchAfter(order list.Order, cursor any) ([]any, error) {
 			curs.ID.String(),
 		}
 
-	case list.OrderSalaryAsc:
-		curs, ok := cursor.(*list.SalaryCursor)
+	case listsearch.OrderSalaryAsc, listsearch.OrderSalaryDesc:
+		curs, ok := cursor.(*listsearch.SalaryCursor)
 		if !ok {
 			return nil, common.ErrCursorOrderMismatch
 		}
@@ -298,6 +324,19 @@ func getPubVacSearchAfter(order list.Order, cursor any) ([]any, error) {
 			curs.SalaryTo,
 			curs.ID.String(),
 		}
+
+	case listsearch.OrderRelevance:
+		curs, ok := cursor.(*listsearch.RelevanceCursor)
+		if !ok {
+			return nil, common.ErrCursorOrderMismatch
+		}
+
+		searchAfter = []any{
+			curs.Relevance,
+			curs.PublishedAt,
+			curs.ID.String(),
+		}
+
 	default:
 		return nil, common.ErrUnsupportedListOrder
 	}

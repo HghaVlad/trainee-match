@@ -7,7 +7,7 @@ import (
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 type VacancyRepo interface {

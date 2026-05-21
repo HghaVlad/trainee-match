@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,7 +13,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
@@ -57,12 +59,12 @@ func (r *VacancyRepo) Index(ctx context.Context, vac views.VacancySearch) error 
 
 func (r *VacancyRepo) ListPublishedSummaries(
 	ctx context.Context,
-	requirements *list.Requirements,
-	order list.Order,
+	requirements *listsearch.Requirements,
+	order listsearch.Order,
 	cursor any,
 	limit int,
-) ([]views.PublishedVacSummary, error) {
-	query, err := vacancyPublicReqToQuery(requirements, order, cursor, limit)
+) (*listsearch.SearchResult, error) {
+	query, err := vacancyPublicReqToQuery(requirements, order, cursor, limit+1)
 	if err != nil {
 		return nil, fmt.Errorf("elastic search public vacancy: %w", err)
 	}
@@ -88,12 +90,152 @@ func (r *VacancyRepo) ListPublishedSummaries(
 		_ = res.Body.Close()
 	}()
 
-	sums, err := searchRespToVacSums(res)
+	result, err := searchRespToVacSums(res, order, limit)
 	if err != nil {
 		return nil, fmt.Errorf("elastic search public vacancy: decode resp: %w", err)
 	}
 
-	return sums, nil
+	return result, nil
+}
+
+type searchResponse struct {
+	Hits struct {
+		Hits []vacHit `json:"hits"`
+	} `json:"hits"`
+}
+
+type vacHit struct {
+	Source VacancyDocument `json:"_source"`
+	Sort   []any           `json:"sort"`
+}
+
+func searchRespToVacSums(res *esapi.Response, order listsearch.Order, limit int) (*listsearch.SearchResult, error) {
+	var searchResp searchResponse
+	err := json.NewDecoder(res.Body).Decode(&searchResp)
+	if err != nil {
+		return nil, err
+	}
+
+	hits := searchResp.Hits.Hits
+
+	result := &listsearch.SearchResult{
+		Vacancies: make([]views.PublishedVacSummary, 0, limit+1),
+	}
+
+	if len(hits) == 0 {
+		return result, nil
+	}
+
+	result.HasNext = len(hits) > limit
+
+	for _, hit := range hits {
+		doc := hit.Source
+
+		id, err := uuid.Parse(doc.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		compID, err := uuid.Parse(doc.CompanyID)
+		if err != nil {
+			return nil, err
+		}
+
+		var pub time.Time
+		if doc.PublishedAt != nil {
+			pub = *doc.PublishedAt
+		}
+
+		result.Vacancies = append(result.Vacancies, views.PublishedVacSummary{
+			ID:             id,
+			CompanyID:      compID,
+			CompanyName:    doc.CompanyName,
+			Title:          doc.Title,
+			WorkFormat:     vacancy.WorkFormat(doc.WorkFormat),
+			City:           doc.City,
+			EmploymentType: vacancy.EmploymentType(doc.EmploymentType),
+			IsPaid:         doc.IsPaid,
+			SalaryFrom:     doc.SalaryFrom,
+			SalaryTo:       doc.SalaryTo,
+			PublishedAt:    pub,
+		})
+	}
+
+	if !result.HasNext {
+		return result, nil
+	}
+
+	result.Vacancies = result.Vacancies[:limit]
+	lastVac := result.Vacancies[len(result.Vacancies)-1]
+	lastHit := hits[limit-1]
+
+	switch order {
+	case listsearch.OrderRelevance:
+		result.NextCursor, err = buildRelevanceCursor(lastHit.Sort)
+
+	case listsearch.OrderPublishedAtDesc:
+		result.NextCursor = &listsearch.PublishedAtCursor{
+			PublishedAt: lastVac.PublishedAt,
+			ID:          lastVac.ID,
+		}
+
+	case listsearch.OrderSalaryAsc, listsearch.OrderSalaryDesc:
+		if lastVac.SalaryFrom == nil || lastVac.SalaryTo == nil {
+			result.HasNext = false
+		} else {
+			result.NextCursor = &listsearch.SalaryCursor{
+				SalaryFrom: *lastVac.SalaryFrom,
+				SalaryTo:   *lastVac.SalaryTo,
+				ID:         lastVac.ID,
+			}
+		}
+
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func buildRelevanceCursor(sort []any) (*listsearch.RelevanceCursor, error) {
+	if len(sort) != 3 {
+		return nil, errors.New("invalid sort length")
+	}
+
+	score, ok := sort[0].(float64)
+	if !ok {
+		return nil, errors.New("invalid score")
+	}
+
+	pubStr, ok := sort[1].(string)
+	if !ok {
+		return nil, errors.New("invalid published_at")
+	}
+
+	pub, err := time.Parse(time.RFC3339, pubStr)
+	if err != nil {
+		return nil, err
+	}
+
+	idStr, ok := sort[2].(string)
+	if !ok {
+		return nil, errors.New("invalid id")
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &listsearch.RelevanceCursor{
+		Relevance:   score,
+		PublishedAt: pub,
+		ID:          id,
+	}, nil
 }
 
 func vacToDoc(vac views.VacancySearch) *VacancyDocument {
@@ -120,60 +262,4 @@ func vacToDoc(vac views.VacancySearch) *VacancyDocument {
 		PublishedAt:       vac.PublishedAt,
 		CreatedAt:         vac.CreatedAt,
 	}
-}
-
-type searchResponse struct {
-	Hits struct {
-		Hits []struct {
-			Source VacancyDocument `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
-}
-
-func searchRespToVacSums(res *esapi.Response) ([]views.PublishedVacSummary, error) {
-	var searchResp searchResponse
-
-	err := json.NewDecoder(res.Body).Decode(&searchResp)
-	if err != nil {
-		return nil, err
-	}
-
-	vacancies := make([]views.PublishedVacSummary, 0)
-
-	for _, hit := range searchResp.Hits.Hits {
-		doc := hit.Source
-
-		id, err := uuid.Parse(doc.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		compID, err := uuid.Parse(doc.CompanyID)
-		if err != nil {
-			return nil, err
-		}
-
-		var pub time.Time
-		if doc.PublishedAt != nil {
-			pub = *doc.PublishedAt
-		} else {
-			pub = time.Now()
-		}
-
-		vacancies = append(vacancies, views.PublishedVacSummary{
-			ID:             id,
-			CompanyID:      compID,
-			CompanyName:    doc.CompanyName,
-			Title:          doc.Title,
-			WorkFormat:     vacancy.WorkFormat(doc.WorkFormat),
-			City:           doc.City,
-			EmploymentType: vacancy.EmploymentType(doc.EmploymentType),
-			IsPaid:         doc.IsPaid,
-			SalaryFrom:     doc.SalaryFrom,
-			SalaryTo:       doc.SalaryTo,
-			PublishedAt:    pub,
-		})
-	}
-
-	return vacancies, nil
 }

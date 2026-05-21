@@ -18,8 +18,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
@@ -29,8 +29,8 @@ import (
 type VacancyHandler struct {
 	getByID          *get.Usecase
 	getPublishedByID *getpublished.Usecase
-	list             *list.Usecase
-	vacSearchList    *list.Usecase
+	list             *listsearch.Usecase
+	vacSearchList    *listsearch.Usecase
 	listByComp       *listbycomp.Usecase
 	create           *create.Usecase
 	update           *update.Usecase
@@ -43,8 +43,8 @@ type VacancyHandler struct {
 func NewVacancyHandler(
 	getByID *get.Usecase,
 	getPublishedByID *getpublished.Usecase,
-	list *list.Usecase,
-	vacSearchList *list.Usecase,
+	list *listsearch.Usecase,
+	vacSearchList *listsearch.Usecase,
 	listByComp *listbycomp.Usecase,
 	create *create.Usecase,
 	update *update.Usecase,
@@ -208,6 +208,11 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Order == listsearch.OrderRelevance {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, common.ErrUnsupportedListOrder)
+		return
+	}
+
 	res, err := h.list.Execute(ctx, req)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
@@ -222,12 +227,12 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListSearch godoc
-// @Summary Serch vacancy summaries
-// @Description Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders.
+// @Summary Search vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness
 // @Tags vacancy
 // @Accept json
 // @Produce json
-// @Param order query string false "Order attribute, supports published_at_desc, salary_desc, salary_asc" default(published_at_desc)
+// @Param order query string false "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc" default(relevance)
 // @Param cursor query string false "Cursor"
 // @Param limit query int false "Items per page" default(20)
 // Filters:

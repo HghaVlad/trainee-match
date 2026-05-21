@@ -10,11 +10,11 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
-func ListVacRequestFromQuery(r *http.Request) (*list.Request, error) {
+func ListVacRequestFromQuery(r *http.Request) (*listsearch.Request, error) {
 	q := r.URL.Query()
 
 	order, err := parseVacListOrderQuery(r)
@@ -22,11 +22,11 @@ func ListVacRequestFromQuery(r *http.Request) (*list.Request, error) {
 		return nil, err
 	}
 
-	req := &list.Request{
+	req := &listsearch.Request{
 		Limit:         ParseLimit(r, "limit", 20),
 		Order:         order,
 		EncodedCursor: q.Get("cursor"),
-		Requirements:  &list.Requirements{},
+		Requirements:  &listsearch.Requirements{},
 	}
 
 	applyRanges(q, req)
@@ -43,13 +43,13 @@ func ListVacRequestFromQuery(r *http.Request) (*list.Request, error) {
 	return req, nil
 }
 
-func applyRanges(q url.Values, req *list.Request) {
+func applyRanges(q url.Values, req *listsearch.Request) {
 	req.Requirements.Salary = parseRangeInt(q, "salary_min", "salary_max")
 	req.Requirements.HoursPerWeek = parseRangeInt(q, "hours_min", "hours_max")
 	req.Requirements.Duration = parseRangeInt(q, "duration_min", "duration_max")
 }
 
-func applyBoolFilters(q url.Values, req *list.Request) {
+func applyBoolFilters(q url.Values, req *listsearch.Request) {
 	parseBoolToPtr(q, "is_paid", &req.Requirements.IsPaid)
 	parseBoolToPtr(q, "internship_to_offer", &req.Requirements.InternshipToOffer)
 	parseBoolToPtr(q, "flexible_schedule", &req.Requirements.FlexibleSchedule)
@@ -63,7 +63,7 @@ func parseBoolToPtr(q url.Values, key string, target **bool) {
 	}
 }
 
-func applyWorkFormat(q url.Values, req *list.Request) {
+func applyWorkFormat(q url.Values, req *listsearch.Request) {
 	values, ok := q["work_format"]
 	if !ok || len(values) == 0 {
 		return
@@ -82,7 +82,7 @@ func applyWorkFormat(q url.Values, req *list.Request) {
 	}
 }
 
-func applyCompanies(q url.Values, req *list.Request) {
+func applyCompanies(q url.Values, req *listsearch.Request) {
 	values, ok := q["company_id"]
 	if !ok || len(values) == 0 {
 		return
@@ -100,24 +100,25 @@ func applyCompanies(q url.Values, req *list.Request) {
 	}
 }
 
-func applyCity(q url.Values, req *list.Request) {
+func applyCity(q url.Values, req *listsearch.Request) {
 	if cities, ok := q["city"]; ok && len(cities) > 0 {
 		req.Requirements.City = &cities
 	}
 }
 
-func parseVacListOrderQuery(r *http.Request) (list.Order, error) {
+func parseVacListOrderQuery(r *http.Request) (listsearch.Order, error) {
 	str := r.URL.Query().Get("order")
 	if str == "" {
-		return list.OrderPublishedAtDesc, nil
+		return listsearch.OrderPublishedAtDesc, nil
 	}
 
-	ord := list.Order(strings.Trim(str, " "))
+	ord := listsearch.Order(strings.Trim(str, " "))
 
 	switch ord {
-	case list.OrderPublishedAtDesc,
-		list.OrderSalaryDesc,
-		list.OrderSalaryAsc:
+	case listsearch.OrderPublishedAtDesc,
+		listsearch.OrderSalaryDesc,
+		listsearch.OrderSalaryAsc,
+		listsearch.OrderRelevance:
 		return ord, nil
 	default:
 		return "", common.ErrUnsupportedListOrder
@@ -145,7 +146,7 @@ func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listbyco
 		Limit:         ParseLimit(r, "limit", 20),
 		Order:         order,
 		EncodedCursor: q.Get("cursor"),
-		Requirements:  &list.Requirements{},
+		Requirements:  &listsearch.Requirements{},
 	}
 
 	req.Requirements.Salary = parseRangeInt(q, "salary_min", "salary_max")
@@ -167,12 +168,12 @@ func ListVacByCompRequestFromQuery(r *http.Request, compID uuid.UUID) (*listbyco
 	return req, nil
 }
 
-func applyRequirementsWorkFormat(q url.Values, req *list.Requirements) {
-	wrapper := &list.Request{Requirements: req}
+func applyRequirementsWorkFormat(q url.Values, req *listsearch.Requirements) {
+	wrapper := &listsearch.Request{Requirements: req}
 	applyWorkFormat(q, wrapper)
 }
 
-func applyRequirementsCity(q url.Values, req *list.Requirements) {
-	wrapper := &list.Request{Requirements: req}
+func applyRequirementsCity(q url.Values, req *listsearch.Requirements) {
+	wrapper := &listsearch.Request{Requirements: req}
 	applyCity(q, wrapper)
 }

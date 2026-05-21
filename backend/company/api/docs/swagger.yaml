@@ -1650,10 +1650,12 @@ paths:
       consumes:
       - application/json
       description: Uses cursor pagination, returns next cursor if there's more. Supports
-        query, filters, orders.
+        query, filters, orders. The search query refers to vacancy title, company
+        name and description (in this priority). Has auto fuzziness
       parameters:
-      - default: published_at_desc
-        description: Order attribute, supports published_at_desc, salary_desc, salary_asc
+      - default: relevance
+        description: Order attribute, supports relevance, published_at_desc, salary_desc,
+          salary_asc
         in: query
         name: order
         type: string
@@ -1742,7 +1744,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Serch vacancy summaries
+      summary: Search vacancy summaries
       tags:
       - vacancy
 schemes:

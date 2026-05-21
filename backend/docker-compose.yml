@@ -392,7 +392,7 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsSL http://localhost:9200 >/dev/null || exit 1"]
+      test: [ "CMD-SHELL", "curl -u elastic:${ELASTIC_PASS} -fsSL http://localhost:9200 >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10

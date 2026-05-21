@@ -15,9 +15,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
@@ -236,12 +237,15 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *vacancy.Vacancy) e
 // Pass cursor as a pointer
 func (repo *VacancyRepo) ListPublishedSummaries(
 	ctx context.Context,
-	requirements *list.Requirements,
-	order list.Order,
+	requirements *listsearch.Requirements,
+	order listsearch.Order,
 	cursor any,
 	limit int,
-) (
-	[]views.PublishedVacSummary, error) {
+) (*listsearch.SearchResult, error) {
+	if order == listsearch.OrderRelevance {
+		return nil, common.ErrUnsupportedListOrder
+	}
+
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	filtersCondition, args := listVacRequirementsToSQL(requirements)
@@ -255,13 +259,14 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		cursorCondition = "AND " + cursorCondition
 	}
 
-	if order == list.OrderSalaryDesc || order == list.OrderSalaryAsc {
+	if order == listsearch.OrderSalaryDesc || order == listsearch.OrderSalaryAsc {
 		filtersCondition += andSalaryNotNull
 	}
 
 	orderBy := listVacOrderToSQL(order)
 
-	args = append(args, limit)
+	// limit + 1 strat
+	args = append(args, limit+1)
 
 	const query = `SELECT 
     v.id, v.company_id, c.name, v.title, v.work_format,
@@ -281,6 +286,7 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		return nil, fmt.Errorf("list published vacancy summaries: %w", err)
 	}
 
+	defer rows.Close()
 	var vacancies []views.PublishedVacSummary
 
 	for rows.Next() {
@@ -302,13 +308,13 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		return nil, fmt.Errorf("list published vacancy summaries rows error: %w", err)
 	}
 
-	return vacancies, nil
+	return buildVacSearchResult(vacancies, order, limit)
 }
 
 func (repo *VacancyRepo) ListByCompanySummaries(
 	ctx context.Context,
 	compID uuid.UUID,
-	requirements *list.Requirements,
+	requirements *listsearch.Requirements,
 	status *vacancy.Status,
 	cursor *listbycomp.CreatedAtCursor,
 	limit int,

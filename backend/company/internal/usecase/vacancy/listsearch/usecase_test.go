@@ -1,4 +1,4 @@
-package list_test
+package listsearch_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
@@ -18,15 +18,15 @@ type cacheMock struct {
 	mock.Mock
 }
 
-func (m *cacheMock) Get(ctx context.Context, key string) *list.Response {
+func (m *cacheMock) Get(ctx context.Context, key string) *listsearch.Response {
 	args := m.Called(ctx, key)
 	if args.Get(0) != nil {
-		return args.Get(0).(*list.Response)
+		return args.Get(0).(*listsearch.Response)
 	}
 	return nil
 }
 
-func (m *cacheMock) Put(ctx context.Context, key string, response *list.Response, exp time.Duration) {
+func (m *cacheMock) Put(ctx context.Context, key string, response *listsearch.Response, exp time.Duration) {
 	m.Called(ctx, key, response, exp)
 }
 
@@ -36,8 +36,8 @@ type repoMock struct {
 
 func (m *repoMock) ListPublishedSummaries(
 	ctx context.Context,
-	requirements *list.Requirements,
-	order list.Order,
+	requirements *listsearch.Requirements,
+	order listsearch.Order,
 	cursor any,
 	limit int,
 ) ([]views.PublishedVacSummary, error) {
@@ -56,16 +56,16 @@ func TestUsecase_Execute_CacheHit(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list.Request{
-		Order:         list.OrderPublishedAtDesc,
+	req := &listsearch.Request{
+		Order:         listsearch.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
 
 	cache.On("Get", mock.Anything, mock.Anything).
-		Return(&list.Response{Vacancies: []views.PublishedVacSummary{{}}}).Once()
+		Return(&listsearch.Response{Vacancies: []views.PublishedVacSummary{{}}}).Once()
 
-	uc := list.NewUsecase(repo, cache)
+	uc := listsearch.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -87,8 +87,8 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list.Request{
-		Order:         list.OrderPublishedAtDesc,
+	req := &listsearch.Request{
+		Order:         listsearch.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
@@ -109,7 +109,7 @@ func TestUsecase_Execute_NextCursor(t *testing.T) {
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
-	uc := list.NewUsecase(repo, cache)
+	uc := listsearch.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 
@@ -124,8 +124,8 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 	repo := new(repoMock)
 	cache := new(cacheMock)
 
-	req := &list.Request{
-		Order:         list.OrderPublishedAtDesc,
+	req := &listsearch.Request{
+		Order:         listsearch.OrderPublishedAtDesc,
 		EncodedCursor: "",
 		Limit:         10,
 	}
@@ -146,7 +146,7 @@ func TestUsecase_Execute_NoNextCursor(t *testing.T) {
 
 	cache.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Once()
 
-	uc := list.NewUsecase(repo, cache)
+	uc := listsearch.NewUsecase(repo, cache)
 
 	resp, err := uc.Execute(context.Background(), req)
 

@@ -46,8 +46,8 @@ import (
 	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	vmoderationstatus "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	removevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
@@ -146,7 +146,16 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, memRepo, compRepo, searchVacRepo)
 	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
-	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, searchVacRepo, vacCache, compCache)
+	vacPublish := publish.NewUsecase(
+		vacRepo,
+		compRepo,
+		memRepo,
+		outboxWriter,
+		txManager,
+		searchVacRepo,
+		vacCache,
+		compCache,
+	)
 	vacArchive := archive.NewUsecase(
 		vacRepo,
 		compRepo,

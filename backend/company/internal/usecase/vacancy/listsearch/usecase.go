@@ -1,4 +1,4 @@
-package list
+package listsearch
 
 import (
 	"context"
@@ -41,6 +41,8 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request) (*Response, error)
 	var err error
 
 	switch req.Order {
+	case OrderRelevance:
+		resp, err = list[RelevanceCursor](ctx, uc, req)
 	case OrderPublishedAtDesc:
 		resp, err = list[PublishedAtCursor](ctx, uc, req)
 	case OrderSalaryDesc, OrderSalaryAsc:
@@ -66,20 +68,17 @@ func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Respons
 		return nil, curErr
 	}
 
-	// limit + 1 strat
-	vacancies, err := uc.repo.ListPublishedSummaries(ctx, req.Requirements, req.Order, cursor, req.Limit+1)
+	res, err := uc.repo.ListPublishedSummaries(ctx, req.Requirements, req.Order, cursor, req.Limit)
 	if err != nil {
 		return nil, err
 	}
 
-	nextCursor, vacancies := getNextCursor[CursorT](vacancies, req.Limit)
-
-	resp, err := buildResponse[CursorT](vacancies, nextCursor, req.Order)
-	if err != nil {
-		return nil, err
+	if res.HasNext {
+		nextCursor, _ := res.NextCursor.(*CursorT)
+		return buildResponse[CursorT](res.Vacancies, nextCursor, req.Order)
 	}
 
-	return resp, nil
+	return buildResponse[CursorT](res.Vacancies, nil, req.Order)
 }
 
 func getNextCursor[CursorT any](

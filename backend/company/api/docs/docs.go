@@ -1593,7 +1593,7 @@ const docTemplate = `{
         },
         "/vacancies/search": {
             "get": {
-                "description": "Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders.",
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness",
                 "consumes": [
                     "application/json"
                 ],
@@ -1603,12 +1603,12 @@ const docTemplate = `{
                 "tags": [
                     "vacancy"
                 ],
-                "summary": "Serch vacancy summaries",
+                "summary": "Search vacancy summaries",
                 "parameters": [
                     {
                         "type": "string",
-                        "default": "published_at_desc",
-                        "description": "Order attribute, supports published_at_desc, salary_desc, salary_asc",
+                        "default": "relevance",
+                        "description": "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc",
                         "name": "order",
                         "in": "query"
                     },
