@@ -248,6 +248,8 @@ func (res *Resume) DeleteResume(w http.ResponseWriter, r *http.Request) {
 // @Tags resume
 // @Accept json
 // @Produce json
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
 // @Success 200 {object} []dto.ShortResumeResponse
 // @Failure 401 {object} dto.ErrorResponse "unauthorized"
 // @Failure 404 {object} dto.ErrorResponse "candidate not found"

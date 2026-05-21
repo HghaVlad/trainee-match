@@ -106,8 +106,8 @@ func (_c *MockSkillRepo_GetByID_Call) RunAndReturn(run func(ctx context.Context,
 }
 
 // List provides a mock function for the type MockSkillRepo
-func (_mock *MockSkillRepo) List(ctx context.Context) ([]domain.Skill, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockSkillRepo) List(ctx context.Context, page int, size int) ([]domain.Skill, error) {
+	ret := _mock.Called(ctx, page, size)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
@@ -115,18 +115,18 @@ func (_mock *MockSkillRepo) List(ctx context.Context) ([]domain.Skill, error) {
 
 	var r0 []domain.Skill
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]domain.Skill, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) ([]domain.Skill, error)); ok {
+		return returnFunc(ctx, page, size)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []domain.Skill); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) []domain.Skill); ok {
+		r0 = returnFunc(ctx, page, size)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Skill)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+		r1 = returnFunc(ctx, page, size)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -140,18 +140,30 @@ type MockSkillRepo_List_Call struct {
 
 // List is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockSkillRepo_Expecter) List(ctx interface{}) *MockSkillRepo_List_Call {
-	return &MockSkillRepo_List_Call{Call: _e.mock.On("List", ctx)}
+//   - page int
+//   - size int
+func (_e *MockSkillRepo_Expecter) List(ctx interface{}, page interface{}, size interface{}) *MockSkillRepo_List_Call {
+	return &MockSkillRepo_List_Call{Call: _e.mock.On("List", ctx, page, size)}
 }
 
-func (_c *MockSkillRepo_List_Call) Run(run func(ctx context.Context)) *MockSkillRepo_List_Call {
+func (_c *MockSkillRepo_List_Call) Run(run func(ctx context.Context, page int, size int)) *MockSkillRepo_List_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
 		run(
 			arg0,
+			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -162,7 +174,7 @@ func (_c *MockSkillRepo_List_Call) Return(skills []domain.Skill, err error) *Moc
 	return _c
 }
 
-func (_c *MockSkillRepo_List_Call) RunAndReturn(run func(ctx context.Context) ([]domain.Skill, error)) *MockSkillRepo_List_Call {
+func (_c *MockSkillRepo_List_Call) RunAndReturn(run func(ctx context.Context, page int, size int) ([]domain.Skill, error)) *MockSkillRepo_List_Call {
 	_c.Call.Return(run)
 	return _c
 }

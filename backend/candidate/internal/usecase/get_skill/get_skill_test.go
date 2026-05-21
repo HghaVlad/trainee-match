@@ -105,7 +105,7 @@ func TestExecuteList(t *testing.T) {
 			}
 
 			uc := New(repo)
-			resp, err := uc.ExecuteList(ctx, ListRequest{})
+			resp, err := uc.ExecuteList(ctx, ListRequest{Page: 1, Size: 10})
 			if tt.expectedError != nil {
 				require.Error(t, err)
 				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)

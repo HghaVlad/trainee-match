@@ -3,13 +3,14 @@ package get_skill
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type SkillRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (domain.Skill, error)
-	List(ctx context.Context) ([]domain.Skill, error)
+	List(ctx context.Context, page, size int) ([]domain.Skill, error)
 }
 
 type UseCase struct {
@@ -35,9 +36,8 @@ func (uc *UseCase) Execute(ctx context.Context, req GetByIdRequest) (*GetByIdRes
 	return response, nil
 }
 
-// TODO: implement pagination
 func (uc *UseCase) ExecuteList(ctx context.Context, req ListRequest) ([]*ListResponse, error) {
-	skills, err := uc.repo.List(ctx)
+	skills, err := uc.repo.List(ctx, req.Page, req.Size)
 
 	if err != nil {
 		return nil, err
