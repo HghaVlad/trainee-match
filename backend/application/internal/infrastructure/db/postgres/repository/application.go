@@ -256,6 +256,31 @@ func (a *ApplicationRepo) UpdateStatusByVacancy(
 	return nil
 }
 
+func (a *ApplicationRepo) UpdateStatusByCompany(
+	ctx context.Context,
+	compID uuid.UUID,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
+	updAt time.Time,
+) error {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+		UPDATE applications a
+		SET status = $1, updated_at = $2
+		FROM vacancy_projection v
+		WHERE a.vacancy_id = v.id
+		  AND v.company_id = $3 AND a.status = ANY($4)`
+
+	_, err := q.Exec(ctx, query, newStatus, updAt, compID, appStatusesToStrings(statusesToUpdate))
+
+	if err != nil {
+		return fmt.Errorf("update app status by company: %w", err)
+	}
+
+	return nil
+}
+
 func (a *ApplicationRepo) ListCandidateAppSummaries(
 	ctx context.Context,
 	candidateID uuid.UUID,

@@ -36,12 +36,6 @@ func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchived
 
 	comment := "Application rejected because vacancy was archived"
 
-	statusesToUpdate := []application.Status{
-		application.StatusSubmitted,
-		application.StatusSeen,
-		application.StatusInterview,
-	}
-
 	return uc.txManager.Do(ctx, func(ctx context.Context) error {
 		err := uc.repo.Archive(ctx, event.VacancyID)
 		if err != nil {
@@ -52,7 +46,7 @@ func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchived
 			ctx,
 			event.VacancyID,
 			application.StatusRejected,
-			statusesToUpdate,
+			application.ActiveStatuses(),
 			application.ActorSystem,
 			&comment,
 			now,
@@ -65,7 +59,7 @@ func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchived
 			ctx,
 			event.VacancyID,
 			application.StatusRejected,
-			statusesToUpdate,
+			application.ActiveStatuses(),
 			now,
 		)
 	})

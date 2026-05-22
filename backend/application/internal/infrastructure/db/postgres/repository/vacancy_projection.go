@@ -158,6 +158,23 @@ func (p *VacancyProjection) UpdateCompanyName(ctx context.Context, companyID uui
 	return nil
 }
 
+func (p *VacancyProjection) ArchiveByCompany(ctx context.Context, compID uuid.UUID) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET status = $2
+		WHERE company_id = $1`
+
+	_, err := q.Exec(ctx, query, compID, projection.VacancyStatusArchived)
+
+	if err != nil {
+		return fmt.Errorf("archive vacancies by company: %w", err)
+	}
+
+	return nil
+}
+
 func (p *VacancyProjection) DeleteByCompanyID(ctx context.Context, companyID uuid.UUID) error {
 	q := p.getter.DefaultTrOrDB(ctx, p.db)
 
