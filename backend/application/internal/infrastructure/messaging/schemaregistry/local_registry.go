@@ -4,15 +4,20 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/hamba/avro/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 type LocalRegistry struct {
-	realClient  *Client
-	subjects    map[string]int
-	avroSchemas map[int]avro.Schema
+	realRegClient *Client
+	subjects      map[string]int
+	avroSchemas   map[int]avro.Schema
+	mu            sync.RWMutex
+	sf            singleflight.Group
 }
 
 func NewLocalRegistry(ctx context.Context, realClient *Client) (*LocalRegistry, error) {
@@ -22,7 +27,7 @@ func NewLocalRegistry(ctx context.Context, realClient *Client) (*LocalRegistry, 
 	}
 
 	subjects := make(map[string]int)
-	avroSchemas := make(map[int]avro.Schema)
+	avroSchemas := make(map[int]avro.Schema, 100)
 
 	for subject, schema := range schemas {
 		id, err := realClient.LookUpSchemaID(ctx, subject, schema)
@@ -37,10 +42,13 @@ func NewLocalRegistry(ctx context.Context, realClient *Client) (*LocalRegistry, 
 		}
 		avroSchemas[id] = avroSchema
 	}
+
 	return &LocalRegistry{
-		realClient:  realClient,
-		subjects:    subjects,
-		avroSchemas: avroSchemas,
+		realRegClient: realClient,
+		subjects:      subjects,
+		avroSchemas:   avroSchemas,
+		mu:            sync.RWMutex{},
+		sf:            singleflight.Group{},
 	}, nil
 }
 
@@ -58,6 +66,43 @@ func (reg *LocalRegistry) GetSchemaByID(id int) (avro.Schema, error) {
 		return nil, fmt.Errorf("schema with id %d not found in avroSchemas %v", id, reg.avroSchemas)
 	}
 	return schema, nil
+}
+
+// GetRemoteSchemaByID returns parsed schema by schema id from local cache
+// or fetches it via schema registry client and saves it parsed
+func (reg *LocalRegistry) GetRemoteSchemaByID(ctx context.Context, schemaID int) (avro.Schema, error) {
+	reg.mu.RLock()
+	schema, ok := reg.avroSchemas[schemaID]
+	if ok {
+		reg.mu.RUnlock()
+		return schema, nil
+	}
+	reg.mu.RUnlock()
+
+	val, err, _ := reg.sf.Do(strconv.Itoa(schemaID), func() (any, error) {
+		schemaRaw, err := reg.realRegClient.GetSchemaByID(ctx, schemaID)
+		if err != nil {
+			return nil, err
+		}
+
+		avroSchema, err := avro.Parse(schemaRaw)
+		if err != nil {
+			return nil, fmt.Errorf("local reg get schema by id: %w", err)
+		}
+
+		reg.mu.Lock()
+		reg.avroSchemas[schemaID] = avroSchema
+		reg.mu.Unlock()
+
+		return avroSchema, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	c, _ := val.(avro.Schema)
+	return c, nil
 }
 
 func parseSchemasFS() (map[string]string, error) {
