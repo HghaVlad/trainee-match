@@ -27,6 +27,8 @@ type Handler struct {
 	vacancyPublished     VacancyPublishedUsecase
 	vacancyArchived      VacancyArchivedUsecase
 	vacancyUpdated       VacancyUpdatedUsecase
+	vacancyModUpd        VacancyModerationUpdUsecase
+	companyModUpd        CompanyModerationUpdUsecase
 }
 
 func NewHandler(
@@ -44,6 +46,8 @@ func NewHandler(
 	vacancyPublishedUsecase VacancyPublishedUsecase,
 	vacancyArchivedUsecase VacancyArchivedUsecase,
 	vacancyUpdatedUsecase VacancyUpdatedUsecase,
+	vacancyModUpd VacancyModerationUpdUsecase,
+	companyModUpd CompanyModerationUpdUsecase,
 ) *Handler {
 	return &Handler{
 		decoder:              decoder,
@@ -60,6 +64,8 @@ func NewHandler(
 		vacancyPublished:     vacancyPublishedUsecase,
 		vacancyArchived:      vacancyArchivedUsecase,
 		vacancyUpdated:       vacancyUpdatedUsecase,
+		vacancyModUpd:        vacancyModUpd,
+		companyModUpd:        companyModUpd,
 	}
 }
 
@@ -103,6 +109,10 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 			status, err = h.handleVacancyArchivedEvent(ctx, event.Payload)
 		case "VacancyUpdated":
 			status, err = h.handleVacancyUpdatedEvent(ctx, event.Payload)
+		case "VacancyModerationUpdated":
+			status, err = h.handleVacModUpdEvent(ctx, event.Payload)
+		case "CompanyModerationUpdated":
+			status, err = h.handleCompModUpdEvent(ctx, event.Payload)
 		default:
 			h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
 			return
@@ -256,6 +266,34 @@ func (h *Handler) handleVacancyUpdatedEvent(ctx context.Context, payload []byte)
 	if err != nil {
 		return ResultStatusRetry, err
 	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleVacModUpdEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeVacancyModerationUpdEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.vacancyModUpd.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleCompModUpdEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeCompanyModerationUpdEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.companyModUpd.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+
 	return ResultStatusSuccess, nil
 }
 

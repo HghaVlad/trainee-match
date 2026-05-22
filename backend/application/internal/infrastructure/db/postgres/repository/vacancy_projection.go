@@ -25,11 +25,14 @@ func NewVacancyProjection(db *pgxpool.Pool, getter *trmpgx.CtxGetter) *VacancyPr
 	}
 }
 
+// TODO: check in apply uc
+
 func (p *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*projection.Vacancy, error) {
 	q := p.getter.DefaultTrOrDB(ctx, p.db)
 
 	const query = `
-		SELECT id, company_id, company_name, title, status, created_at, updated_at
+		SELECT id, company_id, company_name, title, status, created_at, 
+		       updated_at, moderation_status, company_moderation_status 
 		FROM vacancy_projection
 		WHERE id = $1
 	`
@@ -38,7 +41,8 @@ func (p *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*proj
 
 	err := q.QueryRow(ctx, query, vacID).
 		Scan(&vacancy.ID, &vacancy.CompanyID, &vacancy.CompanyName, &vacancy.Title,
-			&vacancy.Status, &vacancy.CreatedAt, &vacancy.UpdatedAt)
+			&vacancy.Status, &vacancy.CreatedAt, &vacancy.UpdatedAt,
+			&vacancy.ModStatus, &vacancy.CompModStatus)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -170,6 +174,48 @@ func (p *VacancyProjection) ArchiveByCompany(ctx context.Context, compID uuid.UU
 
 	if err != nil {
 		return fmt.Errorf("archive vacancies by company: %w", err)
+	}
+
+	return nil
+}
+
+func (p *VacancyProjection) UpdateModStatus(
+	ctx context.Context,
+	vacID uuid.UUID,
+	status projection.ModerationStatus,
+) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET moderation_status = $2
+		WHERE id = $1`
+
+	_, err := q.Exec(ctx, query, vacID, status)
+
+	if err != nil {
+		return fmt.Errorf("vacancy upd mod status: %w", err)
+	}
+
+	return nil
+}
+
+func (p *VacancyProjection) UpdateCompanyModStatus(
+	ctx context.Context,
+	compID uuid.UUID,
+	status projection.ModerationStatus,
+) error {
+	q := p.getter.DefaultTrOrDB(ctx, p.db)
+
+	const query = `
+		UPDATE vacancy_projection
+		SET company_moderation_status = $2
+		WHERE company_id = $1`
+
+	_, err := q.Exec(ctx, query, compID, status)
+
+	if err != nil {
+		return fmt.Errorf("vacancy upd company mod status: %w", err)
 	}
 
 	return nil

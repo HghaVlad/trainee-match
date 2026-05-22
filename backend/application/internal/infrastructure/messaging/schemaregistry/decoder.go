@@ -96,6 +96,24 @@ func (d *Decoder) DecodeVacancyUpdatedEvent(
 	return event, err
 }
 
+func (d *Decoder) DecodeVacancyModerationUpdEvent(
+	ctx context.Context,
+	data []byte,
+) (projection.VacancyModerationUpdatedEvent, error) {
+	var event projection.VacancyModerationUpdatedEvent
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
+func (d *Decoder) DecodeCompanyModerationUpdEvent(
+	ctx context.Context,
+	data []byte,
+) (projection.CompanyModerationUpdatedEvent, error) {
+	var event projection.CompanyModerationUpdatedEvent
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
 func (d *Decoder) decodeEvent(ctx context.Context, data []byte, event any) error {
 	if len(data) < 5 {
 		return fmt.Errorf("data is too short data: %v", data)

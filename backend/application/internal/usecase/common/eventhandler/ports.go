@@ -18,6 +18,8 @@ type Decoder interface {
 	DecodeVacancyPublishedEvent(ctx context.Context, data []byte) (projection.VacancyPublishedEvent, error)
 	DecodeVacancyArchivedEvent(ctx context.Context, data []byte) (projection.VacancyArchivedEvent, error)
 	DecodeVacancyUpdatedEvent(ctx context.Context, data []byte) (projection.VacancyUpdatedEvent, error)
+	DecodeVacancyModerationUpdEvent(ctx context.Context, data []byte) (projection.VacancyModerationUpdatedEvent, error)
+	DecodeCompanyModerationUpdEvent(ctx context.Context, data []byte) (projection.CompanyModerationUpdatedEvent, error)
 }
 
 type DLQSender interface {
@@ -62,4 +64,12 @@ type VacancyArchivedUsecase interface {
 
 type VacancyUpdatedUsecase interface {
 	Execute(ctx context.Context, event projection.VacancyUpdatedEvent) error
+}
+
+type VacancyModerationUpdUsecase interface {
+	Execute(ctx context.Context, event projection.VacancyModerationUpdatedEvent) error
+}
+
+type CompanyModerationUpdUsecase interface {
+	Execute(ctx context.Context, event projection.CompanyModerationUpdatedEvent) error
 }
