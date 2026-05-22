@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 func ParseLimit(r *http.Request, key string, defaultLimit int) int {
@@ -19,8 +19,8 @@ func ParseLimit(r *http.Request, key string, defaultLimit int) int {
 	return limit
 }
 
-func parseRangeInt(q url.Values, minKey, maxKey string) *list.RangeInt {
-	var r list.RangeInt
+func parseRangeInt(q url.Values, minKey, maxKey string) *listsearch.RangeInt {
+	var r listsearch.RangeInt
 	var hasValue bool
 
 	if minStr := q.Get(minKey); minStr != "" {

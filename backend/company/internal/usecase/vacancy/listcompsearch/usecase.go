@@ -1,4 +1,4 @@
-package listbycomp
+package listcompsearch
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/utils/encoding"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type Usecase struct {
@@ -59,12 +60,22 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Id
 		return nil, company.ErrCompanyNotFound
 	}
 
+	req.Requirements.Companies = &[]uuid.UUID{req.CompID}
+
+	if (req.Requirements.Query == nil || *req.Requirements.Query == "") &&
+		req.Order == OrderRelevance {
+		req.Order = OrderCreatedAtDesc
+		req.EncodedCursor = ""
+	}
+
 	var resp *Response
 	var err error
 
 	switch req.Order {
+	case OrderRelevance:
+		resp, err = list[RelevanceCursor](ctx, uc, req)
 	case OrderCreatedAtDesc:
-		resp, err = listByCreatedAt(ctx, uc, req)
+		resp, err = list[CreatedAtCursor](ctx, uc, req)
 
 	default:
 		return nil, common.ErrUnsupportedListOrder
@@ -78,32 +89,23 @@ func (uc *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Id
 	return resp, nil
 }
 
-func listByCreatedAt(ctx context.Context, uc *Usecase, req *Request) (*Response, error) {
-	cursor, curErr := encoding.DecodeCursor[CreatedAtCursor, Order](req.EncodedCursor, req.Order)
+func list[CursorT any](ctx context.Context, uc *Usecase, req *Request) (*Response, error) {
+	cursor, curErr := encoding.DecodeCursor[CursorT, Order](req.EncodedCursor, req.Order)
 	if curErr != nil {
 		return nil, curErr
 	}
 
-	vacancies, err := uc.vacRepo.ListByCompanySummaries(
-		ctx,
-		req.CompID,
-		req.Requirements,
-		req.Status,
-		cursor,
-		req.Limit+1,
-	)
+	res, err := uc.vacRepo.ListByCompanySummaries(ctx, req.Requirements, req.Status, req.Order, cursor, req.Limit)
 	if err != nil {
 		return nil, err
 	}
 
-	nextCursor, vacancies := getNextCursor(vacancies, req.Limit)
-
-	resp, err := buildResponse(vacancies, nextCursor, req.Order)
-	if err != nil {
-		return nil, err
+	if res.HasNext {
+		nextCursor, _ := res.NextCursor.(*CursorT)
+		return buildResponse[CursorT](res.Vacancies, nextCursor, req.Order)
 	}
 
-	return resp, nil
+	return buildResponse[CursorT](res.Vacancies, nil, req.Order)
 }
 
 // only member of company can view their vacancies in full
@@ -120,22 +122,12 @@ func (uc *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *id
 	return err
 }
 
-func getNextCursor(vacancies []VacancySummary, limit int) (*CreatedAtCursor, []VacancySummary) {
-	if len(vacancies) <= limit {
-		return nil, vacancies
-	}
-
-	vacancies = vacancies[:len(vacancies)-1]
-	last := vacancies[len(vacancies)-1]
-
-	return &CreatedAtCursor{
-		CreatedAt: last.CreatedAt,
-		ID:        last.ID,
-	}, vacancies
-}
-
-func buildResponse(vacancies []VacancySummary, nextCursor *CreatedAtCursor, order Order) (*Response, error) {
-	nextCursorEncoded, err := encoding.EncodeCursor[CreatedAtCursor, Order](order, nextCursor)
+func buildResponse[CursorT any](
+	vacancies []views.MemberVacSummary,
+	nextCursor *CursorT,
+	order Order,
+) (*Response, error) {
+	nextCursorEncoded, err := encoding.EncodeCursor[CursorT, Order](order, nextCursor)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/elastic"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres/repository"
 	appredis "github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/redis"
@@ -45,8 +46,8 @@ import (
 	createvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
+	listvac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	vmoderationstatus "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	removevac "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
@@ -94,6 +95,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	}
 	kProducer := kafka.NewProducer(cfg.Kafka, kprClient, lgr)
 
+	elasticCl, err := elastic.NewClient(cfg.Elastic)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := elastic.Init(ctx, elasticCl); err != nil {
+		return nil, err
+	}
+
 	compRepo := repository.NewCompanyRepository(pgDB)
 	vacRepo := repository.NewVacancyRepo(pgDB)
 	memRepo := repository.NewCompanyMemberRepo(pgDB)
@@ -101,12 +111,14 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	outboxRepo := repository.NewOutboxRepo(pgDB)
 	txManager := postgres.NewTxManager(pgDB)
 
+	searchVacRepo := elastic.NewVacancyRepo(elasticCl)
+
 	compCache := appredis.NewRepo[uuid.UUID, company.Company](rediss, "company", lgr)
 	vacCache := appredis.NewRepo[uuid.UUID, vacancy.Vacancy](rediss, "vacancy", lgr)
 	publicVacCache := appredis.NewRepo[uuid.UUID, getpublished.Response](rediss, "vacancy:public", lgr)
 	compListCache := appredis.NewRepo[string, listcomp.Response](rediss, "companies:list", lgr)
 	vacListCache := appredis.NewRepo[string, listvac.Response](rediss, "vacancies:list", lgr)
-	vacByCompListCache := appredis.NewRepo[string, listbycomp.Response](rediss, "vacancies_by_comp:list", lgr)
+	vacByCompListCache := appredis.NewRepo[string, listcompsearch.Response](rediss, "vacancies_by_comp:list", lgr)
 
 	outboxWriter := outbox.NewWriter(cfg.Outbox, outboxRepo, schemaEncoder)
 	outboxRelay := outbox.NewRelay(kProducer, outboxRepo, txManager, cfg.Outbox, lgr)
@@ -117,8 +129,9 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager)
-	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
+
 	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
 	compListMemUc := listmember.NewUsecase(memRepo)
@@ -129,16 +142,28 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacGetByIDUc := getvac.NewUsecase(vacRepo, vacCache, memRepo)
 	vacGetPublishedByIDUc := getpublished.NewUsecase(vacRepo, publicVacCache)
 	vacList := listvac.NewUsecase(vacRepo, vacListCache)
-	vacListByComp := listbycomp.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
-	vacCreate := createvac.NewUsecase(vacRepo, memRepo)
-	vacUpdate := updatevac.NewUsecase(vacRepo, memRepo, outboxWriter, vacCache, txManager)
-	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
+	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
+	vacListByComp := listcompsearch.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
+	vacListCompSearch := listcompsearch.NewUsecase(searchVacRepo, compRepo, memRepo, vacByCompListCache)
+	vacCreate := createvac.NewUsecase(vacRepo, compRepo, searchVacRepo)
+	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
+	vacPublish := publish.NewUsecase(
+		vacRepo,
+		compRepo,
+		memRepo,
+		outboxWriter,
+		txManager,
+		searchVacRepo,
+		vacCache,
+		compCache,
+	)
 	vacArchive := archive.NewUsecase(
 		vacRepo,
 		compRepo,
 		memRepo,
 		outboxWriter,
 		txManager,
+		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -148,6 +173,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compRepo,
 		outboxWriter,
 		txManager,
+		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -183,7 +209,9 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		vacGetByIDUc,
 		vacGetPublishedByIDUc,
 		vacList,
+		searchVac,
 		vacListByComp,
+		vacListCompSearch,
 		vacCreate,
 		vacUpdate,
 		vacPublish,

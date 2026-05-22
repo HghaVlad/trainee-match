@@ -189,6 +189,8 @@ services:
         condition: service_completed_successfully
       auth-service:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
   application-postgres:
     image: postgres:17
@@ -256,6 +258,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_1_data:/var/lib/kafka/data
@@ -279,6 +282,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_2_data:/var/lib/kafka/data
@@ -302,6 +306,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
 
     volumes:
       - kafka_3_data:/var/lib/kafka/data
@@ -378,6 +383,36 @@ services:
       - company-service
       - application-service
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASS}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.ml.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -u elastic:${ELASTIC_PASS} -fsSL http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.3.0
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_KIBANA_PASS}
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   keycloak-db-data:
@@ -389,3 +424,4 @@ volumes:
   kafka_2_data:
   kafka_3_data:
   auth-pg-data:
+  elasticsearch_data:

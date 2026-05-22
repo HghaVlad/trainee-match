@@ -24,7 +24,11 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	if identity.UserID == req.UserID {
+		return member.ErrCantUpdateYourself
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	if err := u.authorize(ctx, req.CompanyID, identity); err != nil {

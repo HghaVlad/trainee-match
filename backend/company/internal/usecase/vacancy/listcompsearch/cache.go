@@ -1,4 +1,4 @@
-package list
+package listcompsearch
 
 import (
 	"context"
@@ -8,6 +8,9 @@ import (
 	"slices"
 	"sort"
 	"time"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 type ResponseCacheRepo interface {
@@ -16,20 +19,22 @@ type ResponseCacheRepo interface {
 }
 
 type cacheReq struct {
-	Order        Order         `json:"order"`
-	Limit        int           `json:"limit"`
-	Cursor       string        `json:"cursor"`
-	Requirements *Requirements `json:"requirements,omitempty"`
+	CompID       string                `json:"compId"`
+	Order        Order                 `json:"order"`
+	Limit        int                   `json:"limit"`
+	Cursor       string                `json:"cursor"`
+	Requirements *vaclist.Requirements `json:"requirements,omitempty"`
+	Status       *vacancy.Status       `json:"status,omitempty"`
 }
 
 func requestToCacheKey(r *Request) string {
-	normalized := normalizeRequirements(r.Requirements)
-
 	payload := cacheReq{
+		CompID:       r.CompID.String(),
 		Order:        r.Order,
 		Limit:        r.Limit,
 		Cursor:       r.EncodedCursor,
-		Requirements: normalized,
+		Requirements: normalizeRequirements(r.Requirements),
+		Status:       r.Status,
 	}
 
 	//nolint:musttag // marshal to inner cache, unmarshal by the same rules
@@ -40,7 +45,7 @@ func requestToCacheKey(r *Request) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func normalizeRequirements(req *Requirements) *Requirements {
+func normalizeRequirements(req *vaclist.Requirements) *vaclist.Requirements {
 	if req == nil {
 		return nil
 	}

@@ -564,6 +564,174 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{company-id}/vacancies/search": {
+            "get": {
+                "description": "Same as list vacancies/search but with extra info for company members. Search includes title and description",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "List search company's vacancy summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Supports relevance, created_at_desc, default relevance",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy status filter",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in days",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in days",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyByCompListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{company-id}/vacancies/{vacancy-id}": {
             "get": {
                 "description": "Returns vacancy by id, company id should be correct, otherwise it's 404",
@@ -1482,6 +1650,153 @@ const docTemplate = `{
                         "default": 20,
                         "description": "Items per page",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in days",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in days",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Company filter (repeat param)",
+                        "name": "company_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/vacancies/search": {
+            "get": {
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Search vacancy summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc, default relevance",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query",
+                        "name": "query",
                         "in": "query"
                     },
                     {

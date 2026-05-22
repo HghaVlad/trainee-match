@@ -14,5 +14,5 @@ type GlobalRole string
 const (
 	RoleHR        GlobalRole = "Company"
 	RoleCandidate GlobalRole = "Candidate"
-	RoleAdmin     GlobalRole = "Admin"
+	RoleAdmin     GlobalRole = "admin"
 )

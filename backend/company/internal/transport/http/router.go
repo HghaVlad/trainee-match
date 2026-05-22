@@ -49,7 +49,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
 
-					r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+					r.With(deps.AuthMiddleware.Handler,
+						compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
@@ -95,6 +96,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
 
+					r.With(compmiddleware.LoggingMiddleware).
+						Get("/search", deps.VacancyHandler.ListByCompanySearch)
+
 					r.With(compmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Post("/", deps.VacancyHandler.Create)
@@ -119,6 +123,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/vacancies", func(r chi.Router) {
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.List)
+
+			r.With(compmiddleware.LoggingMiddleware).Get("/search", deps.VacancyHandler.ListSearch)
 
 			r.With(compmiddleware.UUIDMiddleware("id"), compmiddleware.LoggingMiddleware).
 				Get("/{id}", deps.VacancyHandler.GetPublishedByID)

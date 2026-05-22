@@ -1,20 +1,15 @@
-package listbycomp
+package listsearch
 
 import (
-	"github.com/google/uuid"
-
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
-	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
 type Request struct {
-	CompID        uuid.UUID
 	Order         Order
 	Limit         int
 	EncodedCursor string
-	Requirements  *vaclist.Requirements
-	Status        *vacancy.Status
+	Requirements  *Requirements
 }
 
 func (r *Request) Validate() error {
@@ -35,8 +30,12 @@ func (r *Request) Validate() error {
 		}
 	}
 
-	if r.Status != nil && !r.Status.IsValid() {
-		return vacancy.ErrInvalidStatus
+	if r.Order == OrderSalaryAsc || r.Order == OrderSalaryDesc {
+		if r.Requirements != nil &&
+			r.Requirements.IsPaid != nil &&
+			!*r.Requirements.IsPaid {
+			return vacancy.ErrInvalidSalaryOrderForUnpaid
+		}
 	}
 
 	return nil

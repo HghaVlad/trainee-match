@@ -1,4 +1,4 @@
-package listbycomp
+package listsearch
 
 import (
 	"context"
@@ -8,33 +8,29 @@ import (
 	"slices"
 	"sort"
 	"time"
-
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	vaclist "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
 )
 
+//go:generate mockgen -source=cache.go -destination=mocks/cache_mock.go -package=mocks
 type ResponseCacheRepo interface {
 	Get(ctx context.Context, key string) *Response
 	Put(ctx context.Context, key string, response *Response, exp time.Duration)
 }
 
 type cacheReq struct {
-	CompID       string                `json:"compId"`
-	Order        Order                 `json:"order"`
-	Limit        int                   `json:"limit"`
-	Cursor       string                `json:"cursor"`
-	Requirements *vaclist.Requirements `json:"requirements,omitempty"`
-	Status       *vacancy.Status       `json:"status,omitempty"`
+	Order        Order         `json:"order"`
+	Limit        int           `json:"limit"`
+	Cursor       string        `json:"cursor"`
+	Requirements *Requirements `json:"requirements,omitempty"`
 }
 
 func requestToCacheKey(r *Request) string {
+	normalized := normalizeRequirements(r.Requirements)
+
 	payload := cacheReq{
-		CompID:       r.CompID.String(),
 		Order:        r.Order,
 		Limit:        r.Limit,
 		Cursor:       r.EncodedCursor,
-		Requirements: normalizeRequirements(r.Requirements),
-		Status:       r.Status,
+		Requirements: normalized,
 	}
 
 	//nolint:musttag // marshal to inner cache, unmarshal by the same rules
@@ -45,7 +41,7 @@ func requestToCacheKey(r *Request) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func normalizeRequirements(req *vaclist.Requirements) *vaclist.Requirements {
+func normalizeRequirements(req *Requirements) *Requirements {
 	if req == nil {
 		return nil
 	}

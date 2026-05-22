@@ -1,4 +1,4 @@
-package list
+package listsearch
 
 import (
 	"errors"
@@ -14,6 +14,7 @@ type RangeInt struct {
 }
 
 type Requirements struct {
+	Query             *string
 	Salary            *RangeInt
 	HoursPerWeek      *RangeInt
 	Duration          *RangeInt

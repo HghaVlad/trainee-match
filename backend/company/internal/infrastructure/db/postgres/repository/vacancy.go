@@ -15,11 +15,13 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/db/postgres"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancyRepo struct {
@@ -163,6 +165,35 @@ func (repo *VacancyRepo) GetByIDForUpdate(
 	return &vac, nil
 }
 
+func (repo *VacancyRepo) GetSearchView(ctx context.Context, id uuid.UUID) (*views.VacancySearch, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `
+	SELECT v.id, v.company_id, c.name, v.created_by_user_id, v.title, v.description,
+		   v.work_format, v.city, v.duration_from_days, v.duration_to_days, v.employment_type,
+		   v.hours_per_week_from, v.hours_per_week_to, v.flexible_schedule, v.is_paid,
+		   v.salary_from, v.salary_to, v.internship_to_offer, v.status, v.published_at,
+		   v.created_at, v.updated_at, v.moderation_status
+	FROM vacancies v
+	JOIN companies c ON v.company_id = c.id
+	WHERE v.id = $1`
+
+	var vac views.VacancySearch
+
+	row := q.QueryRow(ctx, query, id)
+	err := scanVacancySearchView(row, &vac)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("get vac search view: %w", vacancy.ErrVacancyNotFound)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get vac search view: %w", err)
+	}
+
+	return &vac, nil
+}
+
 func (repo *VacancyRepo) Create(ctx context.Context, vacancy *vacancy.Vacancy) error {
 	q := postgres.GetQuerier(ctx, repo.db)
 
@@ -206,12 +237,15 @@ func (repo *VacancyRepo) Create(ctx context.Context, vacancy *vacancy.Vacancy) e
 // Pass cursor as a pointer
 func (repo *VacancyRepo) ListPublishedSummaries(
 	ctx context.Context,
-	requirements *list.Requirements,
-	order list.Order,
+	requirements *listsearch.Requirements,
+	order listsearch.Order,
 	cursor any,
 	limit int,
-) (
-	[]list.VacancySummary, error) {
+) (*listsearch.SearchResult, error) {
+	if order == listsearch.OrderRelevance {
+		return nil, common.ErrUnsupportedListOrder
+	}
+
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	filtersCondition, args := listVacRequirementsToSQL(requirements)
@@ -225,13 +259,14 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		cursorCondition = "AND " + cursorCondition
 	}
 
-	if order == list.OrderSalaryDesc || order == list.OrderSalaryAsc {
+	if order == listsearch.OrderSalaryDesc || order == listsearch.OrderSalaryAsc {
 		filtersCondition += andSalaryNotNull
 	}
 
 	orderBy := listVacOrderToSQL(order)
 
-	args = append(args, limit)
+	// limit + 1 strat
+	args = append(args, limit+1)
 
 	const query = `SELECT 
     v.id, v.company_id, c.name, v.title, v.work_format,
@@ -251,10 +286,11 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		return nil, fmt.Errorf("list published vacancy summaries: %w", err)
 	}
 
-	var vacancies []list.VacancySummary
+	defer rows.Close()
+	var vacancies []views.PublishedVacSummary
 
 	for rows.Next() {
-		var vac list.VacancySummary
+		var vac views.PublishedVacSummary
 
 		err := rows.Scan(
 			&vac.ID, &vac.CompanyID, &vac.CompanyName, &vac.Title, &vac.WorkFormat,
@@ -272,17 +308,17 @@ func (repo *VacancyRepo) ListPublishedSummaries(
 		return nil, fmt.Errorf("list published vacancy summaries rows error: %w", err)
 	}
 
-	return vacancies, nil
+	return buildVacSearchResult(vacancies, order, limit)
 }
 
 func (repo *VacancyRepo) ListByCompanySummaries(
 	ctx context.Context,
-	compID uuid.UUID,
-	requirements *list.Requirements,
+	requirements *listsearch.Requirements,
 	status *vacancy.Status,
-	cursor *listbycomp.CreatedAtCursor,
+	order listcompsearch.Order,
+	cursor any,
 	limit int,
-) ([]listbycomp.VacancySummary, error) {
+) (*listcompsearch.SearchResult, error) {
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	filtersCondition, args := listVacRequirementsToSQL(requirements)
@@ -297,11 +333,21 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 
 	cursorCondition := ""
 	if cursor != nil {
-		cursorCondition, args = listByCompCreatedAtCursorToSQL(*cursor, args)
-		cursorCondition = "AND " + cursorCondition
+		if order == listcompsearch.OrderRelevance {
+			return nil, common.ErrUnsupportedListOrder
+		}
+
+		curs, ok := cursor.(*listcompsearch.CreatedAtCursor)
+		if !ok {
+			return nil, common.ErrInvalidCursor
+		}
+		if curs != nil {
+			cursorCondition, args = listByCompCreatedAtCursorToSQL(*curs, args)
+			cursorCondition = "AND " + cursorCondition
+		}
 	}
 
-	args = append(args, compID, limit)
+	args = append(args, (*requirements.Companies)[0], limit+1)
 
 	const query = `SELECT
     v.id, v.title, v.work_format,
@@ -321,10 +367,12 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		return nil, fmt.Errorf("list vacancy by company: %w", err)
 	}
 
-	var vacancies []listbycomp.VacancySummary
+	defer rows.Close()
+
+	var vacancies []views.MemberVacSummary
 
 	for rows.Next() {
-		var vac listbycomp.VacancySummary
+		var vac views.MemberVacSummary
 
 		err := rows.Scan(
 			&vac.ID, &vac.Title, &vac.WorkFormat,
@@ -343,7 +391,7 @@ func (repo *VacancyRepo) ListByCompanySummaries(
 		return nil, fmt.Errorf("list vacancy by company rows error: %w", err)
 	}
 
-	return vacancies, nil
+	return buildCompVacSearchResult(vacancies, order, limit)
 }
 
 func (repo *VacancyRepo) Update(ctx context.Context, v *vacancy.Vacancy) error {
@@ -554,5 +602,17 @@ func scanVacancy(row pgx.Row, vac *vacancy.Vacancy) error {
 		&vac.HoursPerWeekFrom, &vac.HoursPerWeekTo, &vac.FlexibleSchedule, &vac.IsPaid,
 		&vac.SalaryFrom, &vac.SalaryTo, &vac.InternshipToOffer, &vac.Status, &vac.ModerationStatus, &vac.CreatedBy,
 		&vac.PublishedAt, &vac.CreatedAt, &vac.UpdatedAt,
+	)
+}
+
+func scanVacancySearchView(row pgx.Row, vac *views.VacancySearch) error {
+	return row.Scan(
+		&vac.ID, &vac.CompanyID, &vac.CompanyName, &vac.CreatedBy,
+		&vac.Title, &vac.Description, &vac.WorkFormat, &vac.City,
+		&vac.DurationFromDays, &vac.DurationToDays,
+		&vac.EmploymentType, &vac.HoursPerWeekFrom, &vac.HoursPerWeekTo,
+		&vac.FlexibleSchedule, &vac.IsPaid, &vac.SalaryFrom, &vac.SalaryTo,
+		&vac.InternshipToOffer, &vac.Status, &vac.PublishedAt, &vac.CreatedAt,
+		&vac.UpdatedAt, &vac.ModerationStatus,
 	)
 }

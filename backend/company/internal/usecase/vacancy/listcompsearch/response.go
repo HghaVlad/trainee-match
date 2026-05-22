@@ -1,4 +1,4 @@
-package listbycomp
+package listcompsearch
 
 import (
 	"time"
@@ -6,10 +6,11 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type VacancySummary struct {
-	ID uuid.UUID `db:"id"`
+	ID uuid.UUID
 
 	Title      string
 	WorkFormat vacancy.WorkFormat
@@ -27,6 +28,6 @@ type VacancySummary struct {
 }
 
 type Response struct {
-	Vacancies  []VacancySummary
+	Vacancies  []views.MemberVacSummary
 	NextCursor *string
 }

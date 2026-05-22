@@ -25,27 +25,29 @@ func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 }
 
 type testDeps struct {
-	compRepo  *mocks.MockCompanyRepo
-	memRepo   *mocks.MockCompMemberRepo
-	outbox    *mocks.MockoutboxWriter
-	cache     *mocks.MockCacheRepo
-	txManager *fakeTxManager
+	compRepo      *mocks.MockCompanyRepo
+	memRepo       *mocks.MockCompMemberRepo
+	outbox        *mocks.MockoutboxWriter
+	vacSearchRepo *mocks.MockvacSearchRepo
+	cache         *mocks.MockCacheRepo
+	txManager     *fakeTxManager
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 
 	return &testDeps{
-		compRepo:  mocks.NewMockCompanyRepo(ctrl),
-		memRepo:   mocks.NewMockCompMemberRepo(ctrl),
-		outbox:    mocks.NewMockoutboxWriter(ctrl),
-		cache:     mocks.NewMockCacheRepo(ctrl),
-		txManager: new(fakeTxManager),
+		compRepo:      mocks.NewMockCompanyRepo(ctrl),
+		memRepo:       mocks.NewMockCompMemberRepo(ctrl),
+		outbox:        mocks.NewMockoutboxWriter(ctrl),
+		cache:         mocks.NewMockCacheRepo(ctrl),
+		vacSearchRepo: mocks.NewMockvacSearchRepo(ctrl),
+		txManager:     new(fakeTxManager),
 	}
 }
 
 func NewUC(deps *testDeps) *remove.Usecase {
-	return remove.NewUsecase(deps.compRepo, deps.memRepo, deps.outbox, deps.txManager, deps.cache)
+	return remove.NewUsecase(deps.compRepo, deps.memRepo, deps.outbox, deps.txManager, deps.vacSearchRepo, deps.cache)
 }
 
 type deletedEventMatcher struct {
@@ -84,25 +86,7 @@ func TestUsecase_Execute_Success_HRAdmin(t *testing.T) {
 		expected: company.DeletedEvent{CompanyID: compID},
 	})
 
-	deps.cache.EXPECT().Del(gomock.Any(), compID)
-
-	uc := NewUC(deps)
-
-	err := uc.Execute(context.Background(), compID, ident)
-	require.NoError(t, err)
-}
-
-func TestUsecase_Execute_Success_PlatformAdmin(t *testing.T) {
-	deps := setup(t)
-	compID := uuid.New()
-
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleAdmin}
-
-	deps.compRepo.EXPECT().Delete(gomock.Any(), compID).Return(nil)
-
-	deps.outbox.EXPECT().WriteCompanyDeleted(gomock.Any(), deletedEventMatcher{
-		expected: company.DeletedEvent{CompanyID: compID},
-	})
+	deps.vacSearchRepo.EXPECT().RemoveByCompanyID(gomock.Any(), compID).Return(nil)
 
 	deps.cache.EXPECT().Del(gomock.Any(), compID)
 
@@ -110,26 +94,6 @@ func TestUsecase_Execute_Success_PlatformAdmin(t *testing.T) {
 
 	err := uc.Execute(context.Background(), compID, ident)
 	require.NoError(t, err)
-}
-
-func TestUsecase_Execute_NotFound(t *testing.T) {
-	deps := setup(t)
-	compID := uuid.New()
-
-	ident := &identity.Identity{
-		UserID: uuid.New(),
-		Role:   identity.RoleAdmin,
-	}
-
-	deps.compRepo.EXPECT().
-		Delete(gomock.Any(), compID).
-		Return(company.ErrCompanyNotFound)
-
-	uc := NewUC(deps)
-
-	err := uc.Execute(context.Background(), compID, ident)
-
-	require.ErrorIs(t, err, company.ErrCompanyNotFound)
 }
 
 func TestUsecase_Execute_AuthError_Role(t *testing.T) {
@@ -142,7 +106,7 @@ func TestUsecase_Execute_AuthError_Role(t *testing.T) {
 
 	err := uc.Execute(context.Background(), compID, ident)
 
-	require.ErrorIs(t, err, identity.ErrInsufficientRole)
+	require.ErrorIs(t, err, identity.ErrHrRoleRequired)
 }
 
 func TestUsecase_Execute_AuthError_NotMember(t *testing.T) {

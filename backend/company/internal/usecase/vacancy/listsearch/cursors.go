@@ -1,4 +1,4 @@
-package list
+package listsearch
 
 import (
 	"time"
@@ -9,10 +9,17 @@ import (
 type Order string
 
 const (
+	OrderRelevance       Order = "relevance"
 	OrderPublishedAtDesc Order = "published_at_desc"
 	OrderSalaryDesc      Order = "salary_desc"
 	OrderSalaryAsc       Order = "salary_asc"
 )
+
+type RelevanceCursor struct {
+	Relevance   float64
+	PublishedAt time.Time
+	ID          uuid.UUID
+}
 
 type PublishedAtCursor struct {
 	PublishedAt time.Time
@@ -27,9 +34,8 @@ type SalaryCursor struct {
 
 func (r Order) IsValid() bool {
 	switch r {
-	case OrderPublishedAtDesc,
-		OrderSalaryDesc,
-		OrderSalaryAsc:
+	case OrderRelevance, OrderPublishedAtDesc,
+		OrderSalaryDesc, OrderSalaryAsc:
 		return true
 	}
 

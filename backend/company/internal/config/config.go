@@ -15,6 +15,7 @@ type Config struct {
 	Outbox         Outbox
 	KafkaHandling  KafkaHandling
 	SchemaRegistry SchemaRegistry
+	Elastic        ElasticSearch
 }
 
 func Load() (*Config, error) {
@@ -55,6 +56,11 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	elastic, err := LoadElasticConfig(validate)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		HTTP:           *httpCfg,
 		Postgres:       *postgresCfg,
@@ -63,6 +69,7 @@ func Load() (*Config, error) {
 		Kafka:          *kafkaCfg,
 		KafkaHandling:  *kafkaHandling,
 		Outbox:         *outboxCfg,
+		Elastic:        *elastic,
 	}, nil
 }
 

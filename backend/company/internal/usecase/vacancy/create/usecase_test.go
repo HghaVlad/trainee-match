@@ -5,196 +5,243 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create/mocks"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
-type vacancyRepoMock struct {
-	mock.Mock
+type testDeps struct {
+	vacRepo    *mocks.MockVacancyRepo
+	memberRepo *mocks.MockCompMemberRepo
+	compRepo   *mocks.MockCompanyRepo
+	searchRepo *mocks.MockSearchRepo
 }
 
-func (m *vacancyRepoMock) Create(ctx context.Context, vacancy *vacancy.Vacancy) error {
-	return m.Called(ctx, vacancy).Error(0)
-}
+func setup(t *testing.T) *testDeps {
+	ctrl := gomock.NewController(t)
 
-type memRepoMock struct {
-	mock.Mock
-}
-
-func (m *memRepoMock) Get(ctx context.Context, userID, companyID uuid.UUID) (*member.CompanyMember, error) {
-	res := m.Called(ctx, userID, companyID)
-
-	if c := res.Get(0); c != nil {
-		return c.(*member.CompanyMember), res.Error(1)
+	return &testDeps{
+		vacRepo:    mocks.NewMockVacancyRepo(ctrl),
+		memberRepo: mocks.NewMockCompMemberRepo(ctrl),
+		compRepo:   mocks.NewMockCompanyRepo(ctrl),
+		searchRepo: mocks.NewMockSearchRepo(ctrl),
 	}
-
-	return nil, res.Error(1)
 }
 
-func TestUsecase_Execute_HappyPath(t *testing.T) {
-	vacRepo := new(vacancyRepoMock)
-	memRepo := new(memRepoMock)
+func newUC(deps *testDeps) *create.Usecase {
+	return create.NewUsecase(
+		deps.vacRepo,
+		deps.compRepo,
+		deps.searchRepo,
+	)
+}
+
+func TestUsecase_Execute_Success(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	companyID := uuid.New()
+	userID := uuid.New()
 
 	req := &create.Request{
-		CompanyID:   uuid.New(),
-		Title:       "Go Backend Dev",
-		Description: "Go backend dev pretty much",
-		WorkFormat:  vacancy.WorkFormatHybrid,
+		CompanyID:   companyID,
+		Title:       "Backend Go Developer",
+		Description: "Develop scalable backend services",
+
+		WorkFormat: vacancy.WorkFormatRemote,
+
+		IsPaid: true,
 	}
 
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
+	ident := &identity.Identity{
+		UserID: userID,
+	}
 
-	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
+	comp := &company.Company{
+		ID:   companyID,
+		Name: "Acme",
+	}
 
-	vacRepo.On("Create", mock.Anything, mock.MatchedBy(func(v *vacancy.Vacancy) bool {
-		return v.CompanyID == req.CompanyID &&
-			v.CreatedBy == ident.UserID &&
-			v.Title == req.Title &&
-			v.Description == req.Description &&
-			v.WorkFormat == req.WorkFormat &&
-			v.Status == vacancy.StatusDraft &&
-			v.EmploymentType == vacancy.EmploymentTypeInternship &&
-			v.ID != uuid.Nil
-	})).Return(nil).Once()
+	deps.compRepo.EXPECT().
+		GetByMember(gomock.Any(), companyID, userID).
+		Return(comp, nil)
 
-	uc := create.NewUsecase(vacRepo, memRepo)
+	deps.vacRepo.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, vac *vacancy.Vacancy) error {
+			require.Equal(t, companyID, vac.CompanyID)
+			require.Equal(t, userID, vac.CreatedBy)
+			require.Equal(t, vacancy.StatusDraft, vac.Status)
+			require.Equal(t, vacancy.ModerationStatusOK, vac.ModerationStatus)
+
+			require.Equal(t, req.Title, vac.Title)
+			require.Equal(t, req.Description, vac.Description)
+
+			require.NotEqual(t, uuid.Nil, vac.ID)
+
+			return nil
+		})
+
+	deps.searchRepo.EXPECT().
+		Index(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, search views.VacancySearch) error {
+			require.Equal(t, companyID, search.CompanyID)
+			require.Equal(t, "Acme", search.CompanyName)
+
+			require.Equal(t, req.Title, search.Title)
+			require.Equal(t, req.Description, search.Description)
+
+			require.Equal(t, vacancy.StatusDraft, search.Status)
+
+			return nil
+		})
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+	require.NoError(t, err)
+
+	require.NotNil(t, resp)
+	require.NotEqual(t, uuid.Nil, resp.ID)
+}
+
+func TestUsecase_Execute_ValidateError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	req := &create.Request{}
+
+	ident := &identity.Identity{
+		UserID: uuid.New(),
+	}
 
 	resp, err := uc.Execute(context.Background(), req, ident)
 
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-	assert.NotEqual(t, uuid.Nil, resp.ID)
-	memRepo.AssertExpectations(t)
-	vacRepo.AssertExpectations(t)
-}
-
-func TestUsecase_Execute_UsesProvidedEmploymentType(t *testing.T) {
-	vacRepo := new(vacancyRepoMock)
-	memRepo := new(memRepoMock)
-
-	employmentType := vacancy.EmploymentTypePartTime
-	req := &create.Request{
-		CompanyID:         uuid.New(),
-		Title:             "Go Backend Dev",
-		Description:       "Go backend dev pretty much",
-		WorkFormat:        vacancy.WorkFormatRemote,
-		EmploymentType:    &employmentType,
-		InternshipToOffer: true,
-	}
-
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
-
-	vacRepo.On("Create", mock.Anything, mock.MatchedBy(func(v *vacancy.Vacancy) bool {
-		return v.EmploymentType == vacancy.EmploymentTypePartTime &&
-			v.Status == vacancy.StatusDraft &&
-			v.InternshipToOffer
-	})).Return(nil).Once()
-
-	uc := create.NewUsecase(vacRepo, memRepo)
-
-	_, err := uc.Execute(context.Background(), req, ident)
-
-	require.NoError(t, err)
-	memRepo.AssertExpectations(t)
-	vacRepo.AssertExpectations(t)
-}
-
-func TestUsecase_Execute_AuthErr(t *testing.T) {
-	vacRepo := new(vacancyRepoMock)
-
-	req := &create.Request{
-		CompanyID:   uuid.New(),
-		Title:       "Go Backend Dev",
-		Description: "Go backend dev pretty much",
-		WorkFormat:  vacancy.WorkFormatHybrid,
-	}
-
-	t.Run("global role wrong", func(t *testing.T) {
-		memRepo := new(memRepoMock)
-		uc := create.NewUsecase(vacRepo, memRepo)
-
-		_, err := uc.Execute(
-			context.Background(),
-			req,
-			&identity.Identity{UserID: uuid.New(), Role: identity.RoleCandidate},
-		)
-
-		require.ErrorIs(t, err, identity.ErrHrRoleRequired)
-		memRepo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
-		vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
-	})
-
-	t.Run("hr is not member of company", func(t *testing.T) {
-		memRepo := new(memRepoMock)
-		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-		memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-			Return(nil, member.ErrCompanyMemberNotFound).Once()
-
-		uc := create.NewUsecase(vacRepo, memRepo)
-
-		_, err := uc.Execute(context.Background(), req, ident)
-
-		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
-		memRepo.AssertExpectations(t)
-		vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
-	})
-}
-
-func TestUsecase_Execute_VacCreateFail(t *testing.T) {
-	vacRepo := new(vacancyRepoMock)
-	memRepo := new(memRepoMock)
-
-	req := &create.Request{
-		CompanyID:   uuid.New(),
-		Title:       "Go Backend Dev",
-		Description: "Go backend dev pretty much",
-		WorkFormat:  vacancy.WorkFormatHybrid,
-	}
-
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-	memRepo.On("Get", mock.Anything, ident.UserID, req.CompanyID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil).Once()
-
-	vacRepo.On("Create", mock.Anything, mock.Anything).
-		Return(errors.New("some err")).Once()
-
-	uc := create.NewUsecase(vacRepo, memRepo)
-
-	_, err := uc.Execute(context.Background(), req, ident)
-
-	require.EqualError(t, err, "some err")
-	memRepo.AssertExpectations(t)
-	vacRepo.AssertExpectations(t)
-}
-
-func TestUsecase_Execute_ValidateErr(t *testing.T) {
-	vacRepo := new(vacancyRepoMock)
-	memRepo := new(memRepoMock)
-
-	invalidReq := &create.Request{
-		CompanyID: uuid.New(),
-	}
-
-	uc := create.NewUsecase(vacRepo, memRepo)
-
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-	_, err := uc.Execute(context.Background(), invalidReq, ident)
-
 	require.Error(t, err)
-	memRepo.AssertNotCalled(t, "Get", mock.Anything, mock.Anything, mock.Anything)
-	vacRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_GetCompanyByMemberError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	companyID := uuid.New()
+	userID := uuid.New()
+
+	req := &create.Request{
+		CompanyID:   companyID,
+		Title:       "Backend Developer",
+		Description: "Description",
+		WorkFormat:  vacancy.WorkFormatRemote,
+	}
+
+	ident := &identity.Identity{
+		UserID: userID,
+	}
+
+	deps.compRepo.EXPECT().
+		GetByMember(gomock.Any(), companyID, userID).
+		Return(nil, company.ErrCompanyNotFound)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, company.ErrCompanyNotFound)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_CreateVacancyError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	companyID := uuid.New()
+	userID := uuid.New()
+
+	req := &create.Request{
+		CompanyID:   companyID,
+		Title:       "Backend Developer",
+		Description: "Description",
+		WorkFormat:  vacancy.WorkFormatRemote,
+	}
+
+	ident := &identity.Identity{
+		UserID: userID,
+	}
+
+	comp := &company.Company{
+		ID:   companyID,
+		Name: "Acme",
+	}
+
+	expectedErr := errors.New("create vacancy error")
+
+	deps.compRepo.EXPECT().
+		GetByMember(gomock.Any(), companyID, userID).
+		Return(comp, nil)
+
+	deps.vacRepo.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_IndexSearchError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	companyID := uuid.New()
+	userID := uuid.New()
+
+	req := &create.Request{
+		CompanyID:   companyID,
+		Title:       "Backend Developer",
+		Description: "Description",
+		WorkFormat:  vacancy.WorkFormatRemote,
+	}
+
+	ident := &identity.Identity{
+		UserID: userID,
+	}
+
+	comp := &company.Company{
+		ID:   companyID,
+		Name: "Acme",
+	}
+
+	expectedErr := errors.New("index error")
+
+	deps.compRepo.EXPECT().
+		GetByMember(gomock.Any(), companyID, userID).
+		Return(comp, nil)
+
+	deps.vacRepo.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.searchRepo.EXPECT().
+		Index(gomock.Any(), gomock.Any()).
+		Return(expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
 }
