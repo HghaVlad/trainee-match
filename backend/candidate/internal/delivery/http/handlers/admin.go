@@ -52,7 +52,7 @@ func NewAdmin(
 // @Produce json
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
-// @Success 200 {array} getcandidates.CandidateResponse
+// @Success 200 {array} dto.CandidateResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /admin/candidates [get]
@@ -63,10 +63,23 @@ func (a *Admin) GetCandidates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.getCandidatesUC.Execute(r.Context(), getcandidates.Request{Page: page, Size: size})
+	candidates, err := a.getCandidatesUC.Execute(r.Context(), getcandidates.Request{Page: page, Size: size})
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
+	}
+
+	resp := make([]dto.CandidateResponse, len(candidates))
+	for i, c := range candidates {
+		resp[i] = dto.CandidateResponse{
+			ID:       c.ID,
+			UserID:   c.UserID,
+			FullName: c.FullName,
+			Phone:    c.Phone,
+			Telegram: c.Telegram,
+			City:     c.City,
+			Birthday: dto.TimeToDate(c.Birthday),
+		}
 	}
 
 	helpers.RespondJSON(w, http.StatusOK, resp)
@@ -78,7 +91,7 @@ func (a *Admin) GetCandidates(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Candidate ID"
-// @Success 200 {object} getcandidate.CandidateResponse
+// @Success 200 {object} dto.CandidateResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -90,10 +103,20 @@ func (a *Admin) GetCandidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.getCandidateUC.Execute(r.Context(), getcandidate.Request{CandidateID: candidateID})
+	candidate, err := a.getCandidateUC.Execute(r.Context(), getcandidate.Request{CandidateID: candidateID})
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
+	}
+
+	resp := dto.CandidateResponse{
+		ID:       candidate.ID,
+		UserID:   candidate.UserID,
+		FullName: candidate.FullName,
+		Phone:    candidate.Phone,
+		Telegram: candidate.Telegram,
+		City:     candidate.City,
+		Birthday: dto.TimeToDate(candidate.Birthday),
 	}
 
 	helpers.RespondJSON(w, http.StatusOK, resp)
@@ -107,7 +130,7 @@ func (a *Admin) GetCandidate(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "Candidate ID"
 // @Param page query int false "Page number"
 // @Param size query int false "Page size"
-// @Success 200 {array} getcandidateresumes.ShortResponse
+// @Success 200 {array} dto.ShortResumeResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -125,7 +148,7 @@ func (a *Admin) GetCandidateResumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.getCandidateResumesUC.Execute(r.Context(), getcandidateresumes.Request{
+	resumes, err := a.getCandidateResumesUC.Execute(r.Context(), getcandidateresumes.Request{
 		CandidateID: candidateID,
 		Page:        page,
 		Size:        size,
@@ -133,6 +156,17 @@ func (a *Admin) GetCandidateResumes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
+	}
+
+	resp := make([]dto.ShortResumeResponse, len(resumes))
+	for i, c := range resumes {
+		resp[i] = dto.ShortResumeResponse{
+			ID:               c.ID,
+			CandidateId:      c.CandidateID,
+			Name:             c.Name,
+			Status:           c.Status,
+			ModerationStatus: c.ModerationStatus,
+		}
 	}
 
 	helpers.RespondJSON(w, http.StatusOK, resp)
@@ -144,7 +178,7 @@ func (a *Admin) GetCandidateResumes(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Resume ID"
-// @Success 200 {object} getresume.Response
+// @Success 200 {object} dto.ResumeResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -156,11 +190,12 @@ func (a *Admin) GetResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.getResumeUC.Execute(r.Context(), getresume.Request{ResumeID: resumeID})
+	resume, err := a.getResumeUC.Execute(r.Context(), getresume.Request{ResumeID: resumeID})
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
 	}
+	resp := dto.AdminUseCaseResponseToDtoResumeResponse(resume)
 
 	helpers.RespondJSON(w, http.StatusOK, resp)
 }
@@ -189,7 +224,7 @@ func (a *Admin) ArchiveResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.RespondJSON(w, http.StatusNoContent, struct{ Message string }{Message: "ok"})
+	helpers.RespondJSON(w, http.StatusOK, struct{ Message string }{Message: "ok"})
 }
 
 // AddSkill godoc
@@ -197,7 +232,7 @@ func (a *Admin) ArchiveResume(w http.ResponseWriter, r *http.Request) {
 // @Tags admin
 // @Accept json
 // @Produce json
-// @Param input body addskill.Request true "Skill creation data"
+// @Param input body dto.SkillRequest true "Skill creation data"
 // @Success 201 {object} dto.SkillResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -205,13 +240,13 @@ func (a *Admin) ArchiveResume(w http.ResponseWriter, r *http.Request) {
 func (a *Admin) AddSkill(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var req addskill.Request
+	var req dto.SkillRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		helpers.RespondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	resp, err := a.addSkillUC.Execute(r.Context(), req)
+	resp, err := a.addSkillUC.Execute(r.Context(), addskill.Request{Name: req.Name})
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
@@ -244,5 +279,5 @@ func (a *Admin) DeleteSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	helpers.RespondJSON(w, http.StatusNoContent, struct{ Message string }{Message: "ok"})
+	helpers.RespondJSON(w, http.StatusOK, struct{ Message string }{Message: "ok"})
 }

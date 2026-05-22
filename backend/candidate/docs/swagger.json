@@ -45,7 +45,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getcandidates.CandidateResponse"
+                                "$ref": "#/definitions/dto.CandidateResponse"
                             }
                         }
                     },
@@ -89,7 +89,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getcandidate.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "400": {
@@ -152,7 +152,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getcandidateresumes.ShortResponse"
+                                "$ref": "#/definitions/dto.ShortResumeResponse"
                             }
                         }
                     },
@@ -202,7 +202,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getresume.Response"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
@@ -294,7 +294,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/addskill.Request"
+                            "$ref": "#/definitions/dto.SkillRequest"
                         }
                     }
                 ],
@@ -931,14 +931,6 @@
         }
     },
     "definitions": {
-        "addskill.Request": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "dto.CandidateCreateRequest": {
             "type": "object",
             "properties": {
@@ -1209,6 +1201,14 @@
                 }
             }
         },
+        "dto.SkillRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.SkillResponse": {
             "type": "object",
             "properties": {
@@ -1238,204 +1238,6 @@
             }
         },
         "dto.WorkExperience": {
-            "type": "object",
-            "properties": {
-                "company": {
-                    "type": "string"
-                },
-                "period": {
-                    "type": "string"
-                },
-                "position": {
-                    "type": "string"
-                },
-                "responsibilities": {
-                    "type": "string"
-                }
-            }
-        },
-        "getcandidate.CandidateResponse": {
-            "type": "object",
-            "properties": {
-                "birthday": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "telegram": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "getcandidateresumes.ShortResponse": {
-            "type": "object",
-            "properties": {
-                "candidate_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "moderation_status": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "getcandidates.CandidateResponse": {
-            "type": "object",
-            "properties": {
-                "birthday": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "telegram": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "getresume.Education": {
-            "type": "object",
-            "properties": {
-                "end_year": {
-                    "type": "integer"
-                },
-                "faculty": {
-                    "type": "string"
-                },
-                "format": {
-                    "type": "string"
-                },
-                "level": {
-                    "type": "string"
-                },
-                "specialization": {
-                    "type": "string"
-                },
-                "start_year": {
-                    "type": "integer"
-                },
-                "university": {
-                    "type": "string"
-                }
-            }
-        },
-        "getresume.Response": {
-            "type": "object",
-            "properties": {
-                "candidate_id": {
-                    "type": "string"
-                },
-                "data": {
-                    "$ref": "#/definitions/getresume.ResumeData"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "moderation_status": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "getresume.ResumeData": {
-            "type": "object",
-            "properties": {
-                "additional_info": {
-                    "type": "string"
-                },
-                "citizenship": {
-                    "type": "string"
-                },
-                "city": {
-                    "type": "string"
-                },
-                "date_of_birth": {
-                    "description": "Using string to represent date",
-                    "type": "string"
-                },
-                "desired_format": {
-                    "type": "string"
-                },
-                "education": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/getresume.Education"
-                    }
-                },
-                "email": {
-                    "type": "string"
-                },
-                "english_level": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "middle_name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "portfolio_link": {
-                    "type": "string"
-                },
-                "skills_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "work_experiences": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/getresume.WorkExperience"
-                    }
-                }
-            }
-        },
-        "getresume.WorkExperience": {
             "type": "object",
             "properties": {
                 "company": {

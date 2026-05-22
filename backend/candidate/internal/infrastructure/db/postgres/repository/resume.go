@@ -56,7 +56,7 @@ func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID, pag
 	offset := (page - 1) * size
 
 	query := `SELECT id, candidate_id, name, status, moderation_status FROM resumes WHERE candidate_id = $1
-				ORDER BY id DESC LIMIT $2 OFFSET $3`
+				ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 
 	rows, err := r.db.Query(ctx, query, userId, size, offset)
 	if err != nil {

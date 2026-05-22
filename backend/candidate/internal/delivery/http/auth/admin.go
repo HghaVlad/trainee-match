@@ -1,6 +1,10 @@
 package auth
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
+)
 
 func IsAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -10,7 +14,7 @@ func IsAdmin(next http.Handler) http.Handler {
 			return
 		}
 		if user.Role != "admin" {
-			http.Error(w, "your are not admin", http.StatusForbidden)
+			helpers.RespondError(w, http.StatusForbidden, "you are not an admin")
 			return
 		}
 		next.ServeHTTP(w, r)

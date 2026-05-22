@@ -85,7 +85,7 @@ func (r *SkillRepo) Create(ctx context.Context, skill domain.Skill) (uuid.UUID, 
 	if err := r.db.QueryRow(ctx, query, skill.Name).Scan(&id); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return uuid.Nil, domain.ErrInvalidSkillName
+			return uuid.Nil, domain.ErrSkillAlreadyExists
 		}
 		return uuid.Nil, err
 	}

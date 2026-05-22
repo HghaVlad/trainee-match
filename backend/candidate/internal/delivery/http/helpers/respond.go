@@ -38,7 +38,8 @@ func RespondErrorSmart(w http.ResponseWriter, err error) {
 		status = http.StatusNotFound
 	case errors.Is(err, domain.ErrCandidateAlreadyExists),
 		errors.Is(err, domain.ErrTelegramAlreadyExists),
-		errors.Is(err, domain.ErrPhoneAlreadyExists):
+		errors.Is(err, domain.ErrPhoneAlreadyExists),
+		errors.Is(err, domain.ErrSkillAlreadyExists):
 		status = http.StatusConflict
 	case errors.Is(err, domain.ErrInvalidPhoneFormat),
 		errors.Is(err, domain.ErrInvalidTelegramFormat),

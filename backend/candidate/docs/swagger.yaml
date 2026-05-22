@@ -1,10 +1,5 @@
 basePath: /api/v1
 definitions:
-  addskill.Request:
-    properties:
-      name:
-        type: string
-    type: object
   dto.CandidateCreateRequest:
     properties:
       birthday:
@@ -182,6 +177,11 @@ definitions:
       status:
         type: string
     type: object
+  dto.SkillRequest:
+    properties:
+      name:
+        type: string
+    type: object
   dto.SkillResponse:
     properties:
       id:
@@ -201,136 +201,6 @@ definitions:
         type: string
     type: object
   dto.WorkExperience:
-    properties:
-      company:
-        type: string
-      period:
-        type: string
-      position:
-        type: string
-      responsibilities:
-        type: string
-    type: object
-  getcandidate.CandidateResponse:
-    properties:
-      birthday:
-        type: string
-      city:
-        type: string
-      full_name:
-        type: string
-      id:
-        type: string
-      phone:
-        type: string
-      telegram:
-        type: string
-      user_id:
-        type: string
-    type: object
-  getcandidateresumes.ShortResponse:
-    properties:
-      candidate_id:
-        type: string
-      id:
-        type: string
-      moderation_status:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-    type: object
-  getcandidates.CandidateResponse:
-    properties:
-      birthday:
-        type: string
-      city:
-        type: string
-      full_name:
-        type: string
-      id:
-        type: string
-      phone:
-        type: string
-      telegram:
-        type: string
-      user_id:
-        type: string
-    type: object
-  getresume.Education:
-    properties:
-      end_year:
-        type: integer
-      faculty:
-        type: string
-      format:
-        type: string
-      level:
-        type: string
-      specialization:
-        type: string
-      start_year:
-        type: integer
-      university:
-        type: string
-    type: object
-  getresume.Response:
-    properties:
-      candidate_id:
-        type: string
-      data:
-        $ref: '#/definitions/getresume.ResumeData'
-      id:
-        type: string
-      moderation_status:
-        type: string
-      name:
-        type: string
-      status:
-        type: string
-    type: object
-  getresume.ResumeData:
-    properties:
-      additional_info:
-        type: string
-      citizenship:
-        type: string
-      city:
-        type: string
-      date_of_birth:
-        description: Using string to represent date
-        type: string
-      desired_format:
-        type: string
-      education:
-        items:
-          $ref: '#/definitions/getresume.Education'
-        type: array
-      email:
-        type: string
-      english_level:
-        type: string
-      first_name:
-        type: string
-      last_name:
-        type: string
-      middle_name:
-        type: string
-      phone:
-        type: string
-      portfolio_link:
-        type: string
-      skills_list:
-        items:
-          type: string
-        type: array
-      work_experiences:
-        items:
-          $ref: '#/definitions/getresume.WorkExperience'
-        type: array
-    type: object
-  getresume.WorkExperience:
     properties:
       company:
         type: string
@@ -368,7 +238,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getcandidates.CandidateResponse'
+              $ref: '#/definitions/dto.CandidateResponse'
             type: array
         "400":
           description: Bad Request
@@ -397,7 +267,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/getcandidate.CandidateResponse'
+            $ref: '#/definitions/dto.CandidateResponse'
         "400":
           description: Bad Request
           schema:
@@ -438,7 +308,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getcandidateresumes.ShortResponse'
+              $ref: '#/definitions/dto.ShortResumeResponse'
             type: array
         "400":
           description: Bad Request
@@ -471,7 +341,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/getresume.Response'
+            $ref: '#/definitions/dto.ResumeResponse'
         "400":
           description: Bad Request
           schema:
@@ -529,7 +399,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/addskill.Request'
+          $ref: '#/definitions/dto.SkillRequest'
       produces:
       - application/json
       responses:
