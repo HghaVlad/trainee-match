@@ -321,7 +321,7 @@ func handleApplyErr(err error) (oapi.CreateApplicationResponseObject, error) {
 		}, nil
 
 	case errors.Is(err, projection.ErrVacancyNotPublished),
-		errors.Is(err, projection.ErrVacancyInvalidModStatus),
+		errors.Is(err, projection.ErrVacancyBadModStatus),
 		errors.Is(err, application.ErrResumeNotPublished):
 		return oapi.CreateApplication400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{

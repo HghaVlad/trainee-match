@@ -53,11 +53,11 @@ func NewLocalRegistry(ctx context.Context, realClient *Client) (*LocalRegistry, 
 }
 
 func (reg *LocalRegistry) GetSchemaIDBySubject(subject string) (int, error) {
-	subjectId, ok := reg.subjects[subject]
+	subjectID, ok := reg.subjects[subject]
 	if !ok {
 		return 0, fmt.Errorf("subject %s not found in subjects %v", subject, reg.subjects)
 	}
-	return subjectId, nil
+	return subjectID, nil
 }
 
 func (reg *LocalRegistry) GetSchemaByID(id int) (avro.Schema, error) {

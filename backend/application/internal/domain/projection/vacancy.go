@@ -39,7 +39,7 @@ func (v *Vacancy) IsApplyable() error {
 	}
 
 	if v.ModStatus != ModerationStatusOK || v.CompModStatus != ModerationStatusOK {
-		return ErrVacancyInvalidModStatus
+		return ErrVacancyBadModStatus
 	}
 
 	return nil
@@ -47,8 +47,8 @@ func (v *Vacancy) IsApplyable() error {
 
 var (
 	ErrVacancyNotFound         = errors.New("vacancy not found")
-	ErrVacancyNotPublished     = errors.New("vacancy must be published")
-	ErrVacancyInvalidModStatus = errors.New("vacancy invalid moderation status")
+	ErrVacancyNotPublished = errors.New("vacancy must be published")
+	ErrVacancyBadModStatus = errors.New("vacancy invalid moderation status")
 )
 
 type VacancyPublishedEvent struct {

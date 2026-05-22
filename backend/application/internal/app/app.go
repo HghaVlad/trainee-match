@@ -129,7 +129,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	hand := handlers.NewHandler(deps)
 
-	//Event usecases
+	// Event usecases
 	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
 	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
 	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
