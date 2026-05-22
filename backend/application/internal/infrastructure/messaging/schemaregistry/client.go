@@ -52,6 +52,8 @@ func (cl *Client) LookUpSchemaID(
 		Schema: schema,
 	}
 
+	url := fmt.Sprintf("%s/subjects/%s", cl.conf.BaseURL, subject)
+
 	resp, err := cl.resty.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", contentType).
@@ -59,7 +61,7 @@ func (cl *Client) LookUpSchemaID(
 		SetBody(reqBody).
 		SetResult(&success).
 		SetError(&apiErr).
-		Post(fmt.Sprintf("%s/subjects/%s", cl.conf.BaseURL, subject))
+		Post(url)
 
 	if err != nil {
 		return 0, fmt.Errorf("schema reg client: lookup schema: %w: %w", ErrSchemaRegistryUnavailable, err)

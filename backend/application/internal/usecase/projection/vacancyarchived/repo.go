@@ -14,14 +14,21 @@ type VacancyRepo interface {
 }
 
 type ApplicationRepo interface {
-	UpdateStatusByVacancy(ctx context.Context, vacID uuid.UUID, status application.Status, updAt time.Time) error
+	UpdateStatusByVacancy(
+		ctx context.Context,
+		vacID uuid.UUID,
+		newStatus application.Status,
+		statusesToUpdate []application.Status,
+		updAt time.Time,
+	) error
 }
 
 type AppStatusHistoryRepo interface {
 	AddChangesByVacancy(
 		ctx context.Context,
 		vacID uuid.UUID,
-		status application.Status,
+		newStatus application.Status,
+		statusesToUpdate []application.Status,
 		role application.Actor,
 		comment *string,
 		when time.Time,

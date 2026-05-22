@@ -237,16 +237,18 @@ func (a *ApplicationRepo) UpdateStatus(
 func (a *ApplicationRepo) UpdateStatusByVacancy(
 	ctx context.Context,
 	vacID uuid.UUID,
-	status application.Status,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
 	updAt time.Time,
 ) error {
 	q := a.getter.DefaultTrOrDB(ctx, a.db)
 
-	const query = `UPDATE applications
-		SET status = $1, updated_at = $2
-		WHERE vacancy_id = $3 AND status != $1`
+	const query = `
+	UPDATE applications
+	SET status = $1, updated_at = $2
+	WHERE vacancy_id = $3 AND status = ANY($4)`
 
-	_, err := q.Exec(ctx, query, status, updAt, vacID)
+	_, err := q.Exec(ctx, query, newStatus, updAt, vacID, appStatusesToStrings(statusesToUpdate))
 	if err != nil {
 		return fmt.Errorf("update app status by vacancy: %w", err)
 	}

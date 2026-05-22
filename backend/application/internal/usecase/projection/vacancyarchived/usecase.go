@@ -30,9 +30,17 @@ func NewUsecase(
 	}
 }
 
-// Execute archives vacancy, all applications to this vacancy become rejected
+// Execute archives vacancy, all active applications to this vacancy become rejected
 func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchivedEvent) error {
 	now := time.Now().UTC()
+
+	comment := "Application rejected because vacancy was archived"
+
+	statusesToUpdate := []application.Status{
+		application.StatusSubmitted,
+		application.StatusSeen,
+		application.StatusInterview,
+	}
 
 	return uc.txManager.Do(ctx, func(ctx context.Context) error {
 		err := uc.repo.Archive(ctx, event.VacancyID)
@@ -40,12 +48,11 @@ func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchived
 			return err
 		}
 
-		comment := "Application rejected because vacancy was archived"
-
 		err = uc.appStatusRepo.AddChangesByVacancy(
 			ctx,
 			event.VacancyID,
 			application.StatusRejected,
+			statusesToUpdate,
 			application.ActorSystem,
 			&comment,
 			now,
@@ -54,6 +61,12 @@ func (uc *Usecase) Execute(ctx context.Context, event projection.VacancyArchived
 			return err
 		}
 
-		return uc.appRepo.UpdateStatusByVacancy(ctx, event.VacancyID, application.StatusRejected, now)
+		return uc.appRepo.UpdateStatusByVacancy(
+			ctx,
+			event.VacancyID,
+			application.StatusRejected,
+			statusesToUpdate,
+			now,
+		)
 	})
 }

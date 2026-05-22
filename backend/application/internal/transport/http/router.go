@@ -23,7 +23,7 @@ func NewRouter(
 		middleware.RequestID,
 		middleware.RealIP,
 		appmiddleware.LoggerMiddleware(logger),
-		authMiddleware.Handler,
+		authMiddleware.FakeHandler, // TODO: enable real one
 	)
 
 	oapi.HandlerFromMux(

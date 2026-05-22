@@ -131,7 +131,8 @@ func (r *AppStatusHistoryRepo) GetHistoryHrView(
 func (r *AppStatusHistoryRepo) AddChangesByVacancy(
 	ctx context.Context,
 	vacID uuid.UUID,
-	status application.Status,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
 	role application.Actor,
 	comment *string,
 	when time.Time,
@@ -144,9 +145,9 @@ func (r *AppStatusHistoryRepo) AddChangesByVacancy(
 	)
 	SELECT id, $2, $3, $4, $5
 	FROM applications
-	WHERE vacancy_id = $1 AND status != $2`
+	WHERE vacancy_id = $1 AND status = ANY($6)`
 
-	_, err := q.Exec(ctx, query, vacID, status, role, comment, when)
+	_, err := q.Exec(ctx, query, vacID, newStatus, role, comment, when, appStatusesToStrings(statusesToUpdate))
 
 	if err != nil {
 		return fmt.Errorf("add app changes be vacancy: %w", err)
@@ -263,4 +264,12 @@ func scanBuckets(rows pgx.Rows) ([]dynamics.Bucket, error) {
 	}
 
 	return buckets, nil
+}
+
+func appStatusesToStrings(status []application.Status) []string {
+	strs := make([]string, len(status))
+	for i, s := range status {
+		strs[i] = string(s)
+	}
+	return strs
 }

@@ -135,7 +135,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	companyMemberAdded := companymemberadded.NewUsecase(compMemProjRepo)
 	companyMemberRemoved := companymemberremoved.NewUsecase(compMemProjRepo)
 	vacancyPublished := vacancypublished.NewUsecase(vacProjRepo)
-	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo)
+	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo, appRepo, appStatusHistoryRepo, txManager)
 	vacancyUpdated := vacancyupdated.NewUsecase(vacProjRepo)
 
 	// Kafka Producer
