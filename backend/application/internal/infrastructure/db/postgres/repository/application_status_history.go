@@ -128,6 +128,33 @@ func (r *AppStatusHistoryRepo) GetHistoryHrView(
 	return history, nil
 }
 
+func (r *AppStatusHistoryRepo) AddChangesByVacancy(
+	ctx context.Context,
+	vacID uuid.UUID,
+	status application.Status,
+	role application.Actor,
+	comment *string,
+	when time.Time,
+) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `
+	INSERT INTO application_status_history (
+		application_id, status, changed_by_role, comment, created_at
+	)
+	SELECT id, $2, $3, $4, $5
+	FROM applications
+	WHERE vacancy_id = $1 AND status != $2`
+
+	_, err := q.Exec(ctx, query, vacID, status, role, comment, when)
+
+	if err != nil {
+		return fmt.Errorf("add app changes be vacancy: %w", err)
+	}
+
+	return nil
+}
+
 func (r *AppStatusHistoryRepo) GetDynamicsBucketsByCompany(
 	ctx context.Context,
 	compID uuid.UUID,

@@ -220,7 +220,7 @@ func (a *ApplicationRepo) UpdateStatus(
 
 	const query = `UPDATE applications
 		SET status = $1, updated_at = $2
-		WHERE id = $3`
+		WHERE id = $3 AND status != $1`
 
 	cmdTag, err := q.Exec(ctx, query, status, updAt, appID)
 	if err != nil {
@@ -229,6 +229,26 @@ func (a *ApplicationRepo) UpdateStatus(
 
 	if cmdTag.RowsAffected() == 0 {
 		return application.ErrNotFound
+	}
+
+	return nil
+}
+
+func (a *ApplicationRepo) UpdateStatusByVacancy(
+	ctx context.Context,
+	vacID uuid.UUID,
+	status application.Status,
+	updAt time.Time,
+) error {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `UPDATE applications
+		SET status = $1, updated_at = $2
+		WHERE vacancy_id = $3 AND status != $1`
+
+	_, err := q.Exec(ctx, query, status, updAt, vacID)
+	if err != nil {
+		return fmt.Errorf("update app status by vacancy: %w", err)
 	}
 
 	return nil
