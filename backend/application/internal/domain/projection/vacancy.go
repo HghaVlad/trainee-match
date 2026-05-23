@@ -46,7 +46,7 @@ func (v *Vacancy) IsApplyable() error {
 }
 
 var (
-	ErrVacancyNotFound         = errors.New("vacancy not found")
+	ErrVacancyNotFound     = errors.New("vacancy not found")
 	ErrVacancyNotPublished = errors.New("vacancy must be published")
 	ErrVacancyBadModStatus = errors.New("vacancy invalid moderation status")
 )

@@ -25,8 +25,6 @@ func NewVacancyProjection(db *pgxpool.Pool, getter *trmpgx.CtxGetter) *VacancyPr
 	}
 }
 
-// TODO: check in apply uc
-
 func (p *VacancyProjection) GetByID(ctx context.Context, vacID uuid.UUID) (*projection.Vacancy, error) {
 	q := p.getter.DefaultTrOrDB(ctx, p.db)
 

@@ -296,7 +296,7 @@ func TestUsecase_Execute_VacancyNotApplyable(t *testing.T) {
 	}
 
 	tts := []struct {
-		vac *projection.Vacancy
+		vac         *projection.Vacancy
 		expectedErr error
 	}{
 		{
