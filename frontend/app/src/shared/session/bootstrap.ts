@@ -9,7 +9,7 @@ import type { DtoUserResponse } from '@/api/generated/auth/schemas'
 
 function toSessionUser(data: DtoUserResponse): SessionUser | null {
   if (!data.id || !data.username || !data.role) return null
-  if (data.role !== 'Candidate' && data.role !== 'Company' && data.role !== 'PlatformAdmin') return null
+  if (data.role !== 'Candidate' && data.role !== 'Company' && data.role !== 'admin') return null
   return {
     id: data.id,
     role: data.role,

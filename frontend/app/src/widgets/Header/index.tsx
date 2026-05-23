@@ -46,7 +46,7 @@ export function Header() {
         {isAuthed && role === 'Company' && !activeCompanyId && (
           <Link to="/company/new">Создать компанию</Link>
         )}
-        {isAuthed && role === 'PlatformAdmin' && (
+        {isAuthed && role === 'admin' && (
           <>
             <Link to="/admin/skills">Навыки</Link>
             <Link to="/admin/users">Пользователи</Link>

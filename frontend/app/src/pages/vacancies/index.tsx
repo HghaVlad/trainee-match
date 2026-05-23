@@ -159,7 +159,7 @@ export default function VacanciesPage() {
   const { toast } = useToast()
   const qc = useQueryClient()
   const archive = usePatchAdminVacanciesIdModeration()
-  const isPlatformAdmin = user?.role === 'PlatformAdmin'
+  const isPlatformAdmin = user?.role === 'admin'
 
   async function onArchive(vacancyId: string) {
     try {

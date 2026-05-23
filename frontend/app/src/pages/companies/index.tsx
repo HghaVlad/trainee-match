@@ -66,7 +66,7 @@ export default function CompaniesPage() {
     return <EmptyState title="Компании не найдены" />
   }
 
-  const isPlatformAdmin = user?.role === 'PlatformAdmin'
+  const isPlatformAdmin = user?.role === 'admin'
 
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-4">
