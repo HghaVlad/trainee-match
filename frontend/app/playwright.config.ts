@@ -24,7 +24,6 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       VITE_USE_MSW: 'false',
-      VITE_API_URL: '',
     },
   },
 })

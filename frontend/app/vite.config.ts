@@ -12,10 +12,34 @@ export default defineConfig({
     proxy: useMsw
       ? {}
       : {
-          '/api/v1/admin': {
+          '/api/v1/admin/companies': {
             target: backendTarget,
             changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api\/v1\/admin/, '/api/candidate/admin'),
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/companies/, '/api/company/admin/companies'),
+            secure: true,
+          },
+          '/api/v1/admin/vacancies': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/vacancies/, '/api/company/admin/vacancies'),
+            secure: true,
+          },
+          '/api/v1/admin/candidates': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/candidates/, '/api/candidate/admin/candidates'),
+            secure: true,
+          },
+          '/api/v1/admin/skills': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/skills/, '/api/candidate/admin/skills'),
+            secure: true,
+          },
+          '/api/v1/admin/resumes': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/resumes/, '/api/candidate/admin/resumes'),
             secure: true,
           },
           '/api/v1/auth': {
@@ -58,6 +82,12 @@ export default defineConfig({
             target: backendTarget,
             changeOrigin: true,
             rewrite: (path) => path.replace('/api/v1/applications', '/api/application/applications'),
+            secure: true,
+          },
+          '/api/v1/hr': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace('/api/v1/hr', '/api/application/hr'),
             secure: true,
           },
         },

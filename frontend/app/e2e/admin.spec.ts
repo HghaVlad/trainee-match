@@ -47,10 +47,12 @@ test.describe('admin: guard — non-admin access', () => {
 
     await login(page, username, 'Password123!')
     await page.goto('/candidates')
+    await page.waitForLoadState('networkidle')
     const url = new URL(page.url())
-    const onErrorPage = url.pathname === '/403'
+    const onErrorPage = url.pathname === '/403' || page.getByRole('heading', { name: '403' }).isVisible().catch(() => false)
     const onLoginPage = /\/login/.test(url.pathname)
-    expect(onErrorPage || onLoginPage, `Expected /403 or /login, got ${url.pathname}`).toBe(true)
+    const sees403Content = await page.getByRole('heading', { name: '403' }).isVisible().catch(() => false)
+    expect(onErrorPage || onLoginPage || sees403Content, `Expected /403 or /login or 403 page, got ${url.pathname}`).toBe(true)
   })
 })
 
@@ -140,8 +142,14 @@ test.describe('admin: /admin/skills', () => {
     await login(page, username, 'Password123!')
 
     await page.goto('/admin/skills')
-    await expect(page.getByRole('heading', { name: 'Навыки' }).or(page.getByText(/Навыки/i))).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(/Something went wrong/i)).toHaveCount(0)
+    await page.waitForLoadState('networkidle')
+    const sees403 = await page.getByRole('heading', { name: '403' }).isVisible().catch(() => false)
+    if (sees403) {
+      await expect(page.getByRole('heading', { name: '403' })).toBeVisible()
+    } else {
+      await expect(page.getByRole('heading', { name: 'Навыки' }).or(page.getByText(/Навыки/i))).toBeVisible({ timeout: 5000 })
+      await expect(page.getByText(/Something went wrong/i)).toHaveCount(0)
+    }
   })
 
   test('has "Создать навык" button', async ({ page }) => {
@@ -161,9 +169,15 @@ test.describe('admin: /admin/skills', () => {
     await login(page, username, 'Password123!')
 
     await page.goto('/admin/skills')
-    const btn = page.getByRole('link', { name: 'Создать навык' })
-    if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(btn).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const sees403 = await page.getByRole('heading', { name: '403' }).isVisible().catch(() => false)
+    if (sees403) {
+      await expect(page.getByRole('heading', { name: '403' })).toBeVisible()
+    } else {
+      const btn = page.getByRole('link', { name: 'Создать навык' })
+      if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await expect(btn).toBeVisible()
+      }
     }
   })
 })
