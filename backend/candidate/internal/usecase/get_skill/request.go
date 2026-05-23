@@ -9,5 +9,6 @@ type GetByIdRequest struct {
 }
 
 type ListRequest struct {
-	// Empty struct for now, can be expanded with filters/pagination if needed
+	Page int
+	Size int
 }

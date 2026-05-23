@@ -2,8 +2,9 @@ package outbox
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Producer interface {

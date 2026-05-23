@@ -3,8 +3,9 @@ package get_candidate_by_user_id
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type CandidateRepo interface {
@@ -29,6 +30,7 @@ func (uc *UseCase) Execute(ctx context.Context, id uuid.UUID) (*CandidateRespons
 	resp := CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserId,
+		FullName: candidate.FullName,
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,

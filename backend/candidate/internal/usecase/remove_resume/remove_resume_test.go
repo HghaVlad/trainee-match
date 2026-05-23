@@ -115,7 +115,7 @@ func TestExecute(t *testing.T) {
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			}
 
 			candidateRepo.AssertExpectations(t)

@@ -3,26 +3,27 @@ package app
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 	"net/http"
 	"time"
 
 	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
-	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/schemaregistry"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/addskill"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/archiveresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/deleteskill"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidateresumes"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidates"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getresume"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
@@ -31,6 +32,10 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
+
+	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 )
 
 type App struct {
@@ -39,9 +44,10 @@ type App struct {
 	Relay         *outbox.Relay
 	relayCancel   context.CancelFunc
 	KafkaProducer *kafka.Producer
+	logger        *slog.Logger
 }
 
-func Build(conf *config.Config) (*App, error) {
+func Build(conf *config.Config, logger *slog.Logger) (*App, error) {
 	pgPool, err := postgres.Connect(context.Background(), &conf.Db)
 	if err != nil {
 		return nil, err
@@ -52,7 +58,7 @@ func Build(conf *config.Config) (*App, error) {
 	}
 
 	candidateRepo := repository.NewCandidateRepo(pgPool)
-	resumeRepo := repository.NewResumeRepo(pgPool)
+	resumeRepo := repository.NewResumeRepo(pgPool, trmpgx.DefaultCtxGetter)
 	skillRepo := repository.NewSkillRepo(pgPool)
 	outboxRepository := repository.NewOutbox(pgPool, trmpgx.DefaultCtxGetter)
 
@@ -69,7 +75,7 @@ func Build(conf *config.Config) (*App, error) {
 
 	createCandidateUC := create_candidate.New(candidateRepo, outboxWriter, trManager)
 	updateCandidateUC := update_candidate.New(candidateRepo, outboxWriter, trManager)
-	getCandidateByUserIdUC := get_candidate_by_user_id.New(candidateRepo)
+	getCandidateByUserIDUC := get_candidate_by_user_id.New(candidateRepo)
 
 	getResumeUC := get_resume.New(resumeRepo, candidateRepo)
 	createResumeUC := create_resume.New(resumeRepo, skillRepo, candidateRepo, outboxWriter, trManager)
@@ -78,12 +84,33 @@ func Build(conf *config.Config) (*App, error) {
 
 	getSkillUC := get_skill.New(skillRepo)
 
-	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIdUC)
+	addSkillUC := addskill.NewUseCase(skillRepo)
+	deleteSkillUC := deleteskill.NewUseCase(skillRepo)
+
+	candidateHandler := handlers.NewCandidate(createCandidateUC, updateCandidateUC, getCandidateByUserIDUC)
 	resumeHandler := handlers.NewResume(createResumeUC, getResumeUC, updateResumeUC, removeResumeUC)
 	skillHandler := handlers.NewSkill(getSkillUC)
 	authMiddleware := auth.NewMiddleware(conf.JWKUrl)
 
-	router := myhttp.NewRouter(myhttp.NewRouterDeps(authMiddleware, candidateHandler, resumeHandler, skillHandler))
+	getCandidatesUC := getcandidates.NewUseCase(candidateRepo)
+	getCandidateUC := getcandidate.NewUseCase(candidateRepo)
+	getCandidateResumesUC := getcandidateresumes.NewUseCase(resumeRepo)
+	getAdminResumeUC := getresume.NewUseCase(resumeRepo)
+	archiveResumeUC := archiveresume.NewUseCase(resumeRepo, outboxWriter, trManager)
+
+	adminHandler := handlers.NewAdmin(
+		getCandidatesUC,
+		getCandidateUC,
+		getCandidateResumesUC,
+		getAdminResumeUC,
+		archiveResumeUC,
+		addSkillUC,
+		deleteSkillUC,
+	)
+
+	router := myhttp.NewRouter(
+		myhttp.NewRouterDeps(authMiddleware, candidateHandler, resumeHandler, skillHandler, adminHandler),
+	)
 
 	httpServer := &http.Server{
 		Addr:         conf.Addr,
@@ -97,17 +124,16 @@ func Build(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	kafkaLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
-	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, kafkaLogger)
+	kafkaProducer := kafka.NewProducer(kafkaClient, conf.Kafka, logger)
 
-	relayLogger := slog.New(slog.NewTextHandler(log.Writer(), nil))
-	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, relayLogger, trManager)
+	outboxRelay := outbox.NewRelay(outboxRepository, kafkaProducer, conf.Outbox, logger, trManager)
 
 	return &App{
 		server:        httpServer,
 		Db:            pgPool,
 		Relay:         outboxRelay,
 		KafkaProducer: kafkaProducer,
+		logger:        logger,
 	}, nil
 }
 
@@ -116,10 +142,10 @@ func (app *App) Run() error {
 	app.relayCancel = cancel
 	go app.Relay.Run(ctx)
 
-	slog.Info("Server started")
+	app.logger.Info("Server started")
 	err := app.server.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		slog.Error("http listening server err", "error", err)
+		app.logger.Error("http listening server err", "error", err)
 	}
 
 	return err
@@ -132,8 +158,8 @@ func (app *App) Shutdown(ctx context.Context) {
 	app.KafkaProducer.Close()
 	err := app.server.Shutdown(ctx)
 	if err != nil {
-		slog.Error("shutdown error", "error", err)
+		app.logger.Error("shutdown error", "error", err)
 	}
-	slog.Info("Server stopped")
+	app.logger.Info("Server stopped")
 	app.Db.Close()
 }

@@ -20,14 +20,16 @@ var (
 	ErrInvalidEducationEntry      = errors.New("invalid education entry")
 	ErrInvalidWorkExperienceEntry = errors.New("invalid work experience entry")
 	ErrInvalidPortfolioLink       = errors.New("invalid portfolio link")
+	ErrInvalidModerationStatus    = errors.New("invalid moderation status")
 )
 
 type Resume struct {
-	ID          uuid.UUID
-	CandidateId uuid.UUID
-	Name        string
-	Status      int
-	Data        ResumeData
+	ID               uuid.UUID
+	CandidateId      uuid.UUID
+	Name             string
+	Status           int
+	ModerationStatus ModerationStatus
+	Data             ResumeData
 }
 
 type Education struct {
@@ -92,6 +94,10 @@ func (r Resume) Validate() error {
 
 	if err := r.Data.Validate(); err != nil {
 		return err
+	}
+
+	if r.ModerationStatus != "" && !r.ModerationStatus.IsValid() {
+		return ErrInvalidModerationStatus
 	}
 
 	for _, id := range r.Data.SkillsList {

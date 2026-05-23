@@ -10,7 +10,7 @@ import (
 
 type ResumeRepo interface {
 	GetById(ctx context.Context, id uuid.UUID) (domain.Resume, error)
-	GetByCandidateId(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error)
+	GetByCandidateId(ctx context.Context, candidateId uuid.UUID, page, size int) ([]domain.Resume, error)
 }
 
 type CandidateRepo interface {
@@ -50,22 +50,23 @@ func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Re
 	}
 
 	response := &Response{
-		ID:          resume.ID,
-		CandidateID: resume.CandidateId,
-		Name:        resume.Name,
-		Status:      string(status),
-		Data:        convertDomainDataToResponseData(resume.Data),
+		ID:               resume.ID,
+		CandidateID:      resume.CandidateId,
+		Name:             resume.Name,
+		Status:           string(status),
+		ModerationStatus: string(resume.ModerationStatus),
+		Data:             convertDomainDataToResponseData(resume.Data),
 	}
 
 	return response, nil
 }
 
-func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID) ([]*ShortResponse, error) {
+func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID, page, size int) ([]*ShortResponse, error) {
 	candidate, err := uc.candidateRepo.GetByUserID(ctx, UserId)
 	if err != nil {
 		return nil, err
 	}
-	resumes, err := uc.resumeRepo.GetByCandidateId(ctx, candidate.ID)
+	resumes, err := uc.resumeRepo.GetByCandidateId(ctx, candidate.ID, page, size)
 
 	if err != nil {
 		return nil, err
@@ -79,10 +80,11 @@ func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID) ([]*S
 		}
 
 		item := &ShortResponse{
-			ID:          resume.ID,
-			CandidateId: resume.CandidateId,
-			Name:        resume.Name,
-			Status:      string(status),
+			ID:               resume.ID,
+			CandidateId:      resume.CandidateId,
+			Name:             resume.Name,
+			Status:           string(status),
+			ModerationStatus: string(resume.ModerationStatus),
 		}
 		result = append(result, item)
 	}

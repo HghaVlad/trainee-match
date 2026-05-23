@@ -9,4 +9,5 @@ type Encoder interface {
 	CandidateUpsertedToBytes(ev events.CandidateUpserted) ([]byte, int, error)
 	ResumeDeletedToBytes(ev events.ResumeDeleted) ([]byte, int, error)
 	CandidateDeletedToBytes(ev events.CandidateDeleted) ([]byte, int, error)
+	ResumeArchivedToBytes(ev events.ResumeArchived) ([]byte, int, error)
 }

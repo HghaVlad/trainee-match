@@ -12,10 +12,10 @@ type ResumeDeleted struct {
 	OccurredAt time.Time `avro:"occurred_at"`
 }
 
-func NewResumeDeleted(resumeId uuid.UUID) ResumeDeleted {
+func NewResumeDeleted(resumeID uuid.UUID) ResumeDeleted {
 	return ResumeDeleted{
 		EventID:    uuid.New(),
-		ResumeID:   resumeId,
+		ResumeID:   resumeID,
 		OccurredAt: time.Now().UTC(),
 	}
 }

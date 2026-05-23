@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -71,10 +70,7 @@ func readConfigFile(v *viper.Viper) {
 	v.SetConfigName(".env")
 	v.SetConfigType("env")
 	v.AddConfigPath(".")
-
-	if err := v.ReadInConfig(); err == nil {
-		fmt.Printf("Found file %s. Using config from file\n", v.ConfigFileUsed())
-	}
+	v.ReadInConfig()
 }
 
 // unmarshalConfig unmarshals viper settings into Config with decode hooks

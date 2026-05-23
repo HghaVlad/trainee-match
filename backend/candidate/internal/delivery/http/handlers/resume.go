@@ -11,6 +11,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/dto"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/helpers"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
@@ -75,11 +76,12 @@ func (res *Resume) CreateResume(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := dto.ResumeResponse{
-		ID:          resp.ID,
-		CandidateID: resp.CandidateID,
-		Name:        req.Name,
-		Status:      req.Status,
-		Data:        req.Data,
+		ID:               resp.ID,
+		CandidateID:      resp.CandidateID,
+		Name:             req.Name,
+		Status:           req.Status,
+		ModerationStatus: string(domain.ModerationStatusOK),
+		Data:             req.Data,
 	}
 
 	helpers.RespondJSON(w, http.StatusCreated, response)
@@ -246,19 +248,27 @@ func (res *Resume) DeleteResume(w http.ResponseWriter, r *http.Request) {
 // @Tags resume
 // @Accept json
 // @Produce json
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
 // @Success 200 {object} []dto.ShortResumeResponse
 // @Failure 401 {object} dto.ErrorResponse "unauthorized"
 // @Failure 404 {object} dto.ErrorResponse "candidate not found"
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /resume [get]
 func (res *Resume) ListResumes(w http.ResponseWriter, r *http.Request) {
+	page, size, err := helpers.ParsePageSize(r)
+	if err != nil {
+		helpers.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	user, ok := auth.FromContext(r.Context())
 	if !ok {
 		helpers.RespondError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	useCaseResp, err := res.getResumeUC.GetByCandidateId(r.Context(), user.Id)
+	useCaseResp, err := res.getResumeUC.GetByCandidateId(r.Context(), user.Id, page, size)
 	if err != nil {
 		helpers.RespondErrorSmart(w, err)
 		return
@@ -267,10 +277,11 @@ func (res *Resume) ListResumes(w http.ResponseWriter, r *http.Request) {
 	responses := make([]dto.ShortResumeResponse, len(useCaseResp))
 	for i, resume := range useCaseResp {
 		responses[i] = dto.ShortResumeResponse{
-			ID:          resume.ID,
-			CandidateId: resume.CandidateId,
-			Name:        resume.Name,
-			Status:      resume.Status,
+			ID:               resume.ID,
+			CandidateId:      resume.CandidateId,
+			Name:             resume.Name,
+			Status:           resume.Status,
+			ModerationStatus: resume.ModerationStatus,
 		}
 	}
 

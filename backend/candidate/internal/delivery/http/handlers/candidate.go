@@ -58,6 +58,7 @@ func (c *Candidate) GetMe(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserID,
+		FullName: candidate.FullName,
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,
@@ -114,6 +115,7 @@ func (c *Candidate) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 	response := dto.CandidateResponse{
 		ID:       candidateID,
 		UserID:   user.Id,
+		FullName: fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 		Phone:    req.Phone,
 		Telegram: req.Telegram,
 		City:     req.City,
@@ -177,6 +179,7 @@ func (c *Candidate) UpdateCandidate(w http.ResponseWriter, r *http.Request) {
 	helpers.RespondJSON(w, http.StatusOK, dto.CandidateResponse{
 		ID:       updatedCandidate.ID,
 		UserID:   updatedCandidate.UserID,
+		FullName: updatedCandidate.FullName,
 		Phone:    updatedCandidate.Phone,
 		Telegram: updatedCandidate.Telegram,
 		City:     updatedCandidate.City,

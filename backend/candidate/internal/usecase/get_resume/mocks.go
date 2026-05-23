@@ -40,8 +40,8 @@ func (_m *MockResumeRepo) EXPECT() *MockResumeRepo_Expecter {
 }
 
 // GetByCandidateId provides a mock function for the type MockResumeRepo
-func (_mock *MockResumeRepo) GetByCandidateId(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error) {
-	ret := _mock.Called(ctx, candidateId)
+func (_mock *MockResumeRepo) GetByCandidateId(ctx context.Context, candidateId uuid.UUID, page int, size int) ([]domain.Resume, error) {
+	ret := _mock.Called(ctx, candidateId, page, size)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetByCandidateId")
@@ -49,18 +49,18 @@ func (_mock *MockResumeRepo) GetByCandidateId(ctx context.Context, candidateId u
 
 	var r0 []domain.Resume
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]domain.Resume, error)); ok {
-		return returnFunc(ctx, candidateId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) ([]domain.Resume, error)); ok {
+		return returnFunc(ctx, candidateId, page, size)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []domain.Resume); ok {
-		r0 = returnFunc(ctx, candidateId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, int, int) []domain.Resume); ok {
+		r0 = returnFunc(ctx, candidateId, page, size)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Resume)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, candidateId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, int, int) error); ok {
+		r1 = returnFunc(ctx, candidateId, page, size)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -75,11 +75,13 @@ type MockResumeRepo_GetByCandidateId_Call struct {
 // GetByCandidateId is a helper method to define mock.On call
 //   - ctx context.Context
 //   - candidateId uuid.UUID
-func (_e *MockResumeRepo_Expecter) GetByCandidateId(ctx interface{}, candidateId interface{}) *MockResumeRepo_GetByCandidateId_Call {
-	return &MockResumeRepo_GetByCandidateId_Call{Call: _e.mock.On("GetByCandidateId", ctx, candidateId)}
+//   - page int
+//   - size int
+func (_e *MockResumeRepo_Expecter) GetByCandidateId(ctx interface{}, candidateId interface{}, page interface{}, size interface{}) *MockResumeRepo_GetByCandidateId_Call {
+	return &MockResumeRepo_GetByCandidateId_Call{Call: _e.mock.On("GetByCandidateId", ctx, candidateId, page, size)}
 }
 
-func (_c *MockResumeRepo_GetByCandidateId_Call) Run(run func(ctx context.Context, candidateId uuid.UUID)) *MockResumeRepo_GetByCandidateId_Call {
+func (_c *MockResumeRepo_GetByCandidateId_Call) Run(run func(ctx context.Context, candidateId uuid.UUID, page int, size int)) *MockResumeRepo_GetByCandidateId_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -89,9 +91,19 @@ func (_c *MockResumeRepo_GetByCandidateId_Call) Run(run func(ctx context.Context
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -102,7 +114,7 @@ func (_c *MockResumeRepo_GetByCandidateId_Call) Return(resumes []domain.Resume, 
 	return _c
 }
 
-func (_c *MockResumeRepo_GetByCandidateId_Call) RunAndReturn(run func(ctx context.Context, candidateId uuid.UUID) ([]domain.Resume, error)) *MockResumeRepo_GetByCandidateId_Call {
+func (_c *MockResumeRepo_GetByCandidateId_Call) RunAndReturn(run func(ctx context.Context, candidateId uuid.UUID, page int, size int) ([]domain.Resume, error)) *MockResumeRepo_GetByCandidateId_Call {
 	_c.Call.Return(run)
 	return _c
 }

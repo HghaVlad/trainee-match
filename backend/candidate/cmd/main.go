@@ -18,39 +18,39 @@ import (
 // @BasePath /api/v1
 // @schemes http https
 func main() {
-	slog.Info("Service is starting")
-	slog.SetLogLoggerLevel(-100)
+	logger := slog.Default()
+	logger.Info("Service is starting")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	conf, err := config.Load()
 	if err != nil {
-		slog.Error("Error loading config", "error", err)
+		logger.Error("Error loading config", "error", err)
 	}
-	slog.Debug("Config loaded", "config", conf)
+	logger.Debug("Config loaded", "config", conf)
 
-	myApp, err := app.Build(conf)
+	myApp, err := app.Build(conf, logger)
 	if err != nil {
-		slog.Error("Error building app", "error", err)
+		logger.Error("Error building app", "error", err)
 		return
 	}
-	slog.Info("App built")
+	logger.Info("App built")
 
 	errChan := make(chan error)
 	go func() {
 		errChan <- myApp.Run()
 	}()
-	slog.Info("App is run")
+	logger.Info("App is run")
 
 	select {
 	case <-ctx.Done():
 	case <-errChan:
 	}
-	slog.Info("Shutting down")
+	logger.Info("Shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	myApp.Shutdown(shutdownCtx)
-	slog.Info("Service stopped")
+	logger.Info("Service stopped")
 }

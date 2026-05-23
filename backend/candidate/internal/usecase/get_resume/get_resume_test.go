@@ -120,7 +120,7 @@ func TestGetById(t *testing.T) {
 			resp, err := uc.GetById(ctx, id, tt.reqUserId)
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected error: %v, got: %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, validResp.ID, resp.ID)
@@ -153,7 +153,7 @@ func TestGetByCandidateId(t *testing.T) {
 				candidateRepo.On("GetByUserID", ctx, userId).
 					Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).
 					Once()
-				resumeRepo.On("GetByCandidateId", ctx, candidateId).Return(domainResumes, nil).Once()
+				resumeRepo.On("GetByCandidateId", ctx, candidateId, 1, 10).Return(domainResumes, nil).Once()
 			},
 			expectedError: nil,
 		},
@@ -172,7 +172,7 @@ func TestGetByCandidateId(t *testing.T) {
 				candidateRepo.On("GetByUserID", ctx, userId).
 					Return(domain.Candidate{ID: candidateId, UserId: userId}, nil).
 					Once()
-				resumeRepo.On("GetByCandidateId", ctx, candidateId).Return(nil, ErrDb).Once()
+				resumeRepo.On("GetByCandidateId", ctx, candidateId, 1, 10).Return(nil, ErrDb).Once()
 			},
 			expectedError: ErrDb,
 		},
@@ -187,11 +187,11 @@ func TestGetByCandidateId(t *testing.T) {
 			}
 
 			uc := New(resumeRepo, candidateRepo)
-			resp, err := uc.GetByCandidateId(ctx, userId)
+			resp, err := uc.GetByCandidateId(ctx, userId, 1, 10)
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected error: %v, got: %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, len(domainResumes), len(resp))

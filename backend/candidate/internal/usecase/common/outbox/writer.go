@@ -15,6 +15,7 @@ const (
 	EventTypeResumeUpserted    EventType = "ResumeUpserted"
 	EventTypeCandidateUpserted EventType = "CandidateUpserted"
 	EventTypeCandidateDeleted  EventType = "CandidateDeleted"
+	EventTypeResumeArchived    EventType = "ResumeArchived"
 )
 
 type WriterRepository interface {
@@ -111,6 +112,34 @@ func (w *Writer) WriteResumeDeleted(ctx context.Context, ev events.ResumeDeleted
 	err = w.repo.Create(ctx, newMessage)
 	if err != nil {
 		return fmt.Errorf("write resume deleted outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteResumeArchived(ctx context.Context, ev events.ResumeArchived) error {
+	payload, schemaID, err := w.encoder.ResumeArchivedToBytes(ev)
+	if err != nil {
+		return err
+	}
+	key := ev.ResumeID[:]
+	newMessage := Message{
+		ID:            ev.EventID,
+		AggregateID:   ev.ResumeID,
+		Topic:         w.cfg.ResumeTopic,
+		EventType:     EventTypeResumeArchived,
+		SchemaID:      schemaID,
+		Headers:       map[string]string{},
+		Key:           key,
+		Payload:       payload,
+		Status:        StatusPending,
+		AttemptCount:  0,
+		CreatedAt:     ev.OccurredAt,
+		NextAttemptAt: ev.OccurredAt,
+	}
+
+	err = w.repo.Create(ctx, newMessage)
+	if err != nil {
+		return fmt.Errorf("write resume archived outbox: %w ", err)
 	}
 	return nil
 }

@@ -13,8 +13,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-// TODO: add more tests
-
 var (
 	ErrUpdateDb    = errors.New("update db error")
 	ErrCandidateDb = errors.New("candidate db error")
@@ -152,7 +150,7 @@ func TestExecute(t *testing.T) {
 			err := uc.Execute(ctx, tt.req)
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 			}

@@ -69,10 +69,11 @@ func (uc *UseCase) Execute(ctx context.Context, req Request) (Response, error) {
 	domainData := convertRequestDataToDomainData(req.Data)
 
 	resume := &domain.Resume{
-		CandidateId: candidate.ID,
-		Name:        req.Name,
-		Status:      status,
-		Data:        domainData,
+		CandidateId:      candidate.ID,
+		Name:             req.Name,
+		Status:           status,
+		ModerationStatus: domain.ModerationStatusOK,
+		Data:             domainData,
 	}
 
 	if err := resume.Validate(); err != nil {
