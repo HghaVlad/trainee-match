@@ -76,6 +76,8 @@ packages:
       filename: "mocks.go"
     interfaces:
       ResumeRepo:
+      EventWriter:
+      TrManager:
   github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/admin/getcandidate:
     config:
       dir: "{{.InterfaceDir}}"

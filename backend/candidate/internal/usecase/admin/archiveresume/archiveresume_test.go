@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
@@ -67,7 +68,17 @@ func TestExecute(t *testing.T) {
 				tt.mockSetup(repo)
 			}
 
-			uc := NewUseCase(repo)
+			writer := &MockEventWriter{}
+			writer.On("WriteResumeArchived", context.Background(), mock.AnythingOfType("events.ResumeArchived")).
+				Return(nil)
+
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := NewUseCase(repo, writer, trManager)
 			err := uc.Execute(ctx, Request{ResumeID: resumeID})
 			if tt.expectedError != nil {
 				require.Error(t, err)
