@@ -138,7 +138,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	companyMemberAdded := companymemberadded.NewUsecase(compMemProjRepo)
 	companyMemberRemoved := companymemberremoved.NewUsecase(compMemProjRepo)
 	vacancyPublished := vacancypublished.NewUsecase(vacProjRepo)
-	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo, appRepo, appStatusHistoryRepo, txManager)
+	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo)
 	vacancyUpdated := vacancyupdated.NewUsecase(vacProjRepo)
 	vacancyModUpd := vacancymodupd.NewUsecase(vacProjRepo)
 	companyModUpd := companymodupd.NewUsecase(vacProjRepo)
