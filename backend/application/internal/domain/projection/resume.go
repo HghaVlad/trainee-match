@@ -8,17 +8,19 @@ import (
 )
 
 type Resume struct {
-	ID          uuid.UUID
-	CandidateID uuid.UUID
-	Name        string
-	Data        ResumeData
-	Status      ResumeStatus
-	CreatedAt   *time.Time
-	UpdatedAt   *time.Time
+	ID               uuid.UUID
+	CandidateID      uuid.UUID
+	Name             string
+	Data             ResumeData
+	Status           ResumeStatus
+	ModerationStatus ModerationStatus
+	CreatedAt        *time.Time
+	UpdatedAt        *time.Time
 }
 
 var (
-	ErrResumeNotFound = errors.New("resume projection not found")
+	ErrResumeNotFound     = errors.New("resume projection not found")
+	ErrResumeBadModStatus = errors.New("resume invalid moderation status")
 )
 
 type ResumeUpsertedEvent struct {
@@ -46,6 +48,12 @@ func (ev ResumeUpsertedEvent) ToResume() Resume {
 }
 
 type ResumeDeletedEvent struct {
+	EventID    uuid.UUID `avro:"event_id"`
+	ResumeID   uuid.UUID `avro:"resume_id"`
+	OccurredAt time.Time `avro:"occurred_at"`
+}
+
+type ResumeArchivedEvent struct {
 	EventID    uuid.UUID `avro:"event_id"`
 	ResumeID   uuid.UUID `avro:"resume_id"`
 	OccurredAt time.Time `avro:"occurred_at"`

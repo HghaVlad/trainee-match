@@ -13,6 +13,14 @@ const (
 	StatusWithdrawn Status = "withdrawn"
 )
 
+func ActiveStatuses() []Status {
+	return []Status{
+		StatusSubmitted,
+		StatusSeen,
+		StatusInterview,
+	}
+}
+
 type Transition struct {
 	To     Status
 	Actors []Actor

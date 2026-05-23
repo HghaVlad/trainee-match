@@ -38,36 +38,8 @@ services:
   auth-service:
     build:
       context: auth
-    environment:
-      KC_URL: http://keycloak:8080
-      KC_REALM: trainee-match
-      KC_CLIENT_ID: auth_backend
-      KC_CLIENT_SECRET: UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8
-      KC_ADMIN_USERNAME: admin
-      KC_ADMIN_PASSWORD: admin
-
-      KAFKA_BROKERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
-      KAFKA_CLIENT_ID: auth
-      KAFKA_PRODUCER_ACKS: all
-      KAFKA_PRODUCER_LINGER: 10ms
-      KAFKA_USER_TOPIC: user.events
-
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-
-      OUTBOX_USER_TOPIC: user.events
-      OUTBOX_BASE_RETRY_DELAY: 5s
-      OUTBOX_MAX_RETRIES: 5
-      OUTBOX_BATCH_SIZE: 100
-      OUTBOX_RELAY_MIN_SLEEP: 50ms
-      OUTBOX_RELAY_MAX_SLEEP: 5s
-      OUTBOX_RELAY_WORKER_COUNT: 2
-
-      POSTGRES_HOST: auth-postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB_NAME: auth_db
-      POSTGRES_SSL_MODE: disable
+    env_file:
+      - auth/.env
     ports:
       - "8000:8000"
     depends_on:
@@ -84,14 +56,12 @@ services:
     image: postgres:17
     ports:
       - "5435:5432"
-    environment:
-      POSTGRES_DB: auth_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - auth/.env
     volumes:
       - auth-pg-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d auth_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${AUTH_PGS_USER} -d ${AUTH_PGS_NAME}" ]
       interval: 20s
       timeout: 5s
       retries: 15
@@ -250,7 +220,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://localhost:19092  # questionable localhost
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19092  # questionable localhost
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -258,7 +228,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_1_data:/var/lib/kafka/data
@@ -274,7 +246,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://localhost:19093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -282,7 +254,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_2_data:/var/lib/kafka/data
@@ -298,7 +272,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,EXTERNAL://localhost:19094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19094
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -306,7 +280,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_3_data:/var/lib/kafka/data

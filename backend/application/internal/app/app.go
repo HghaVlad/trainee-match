@@ -12,27 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/dlq"
-
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companydeleted"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberadded"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberremoved"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companyupdated"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyarchived"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancypublished"
-	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyupdated"
-
-	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
-
-	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/kafka"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumearchived"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/kafka"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/messaging/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/utils/hash"
 	apphttp "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
@@ -48,6 +34,20 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listcandidatesummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/listhrsummary"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/application/withdraw"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/dlq"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/common/eventhandler"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/candidateupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companydeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberadded"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymemberremoved"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companymodupd"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/companyupdated"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumedeleted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumeupserted"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyarchived"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancymodupd"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancypublished"
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/vacancyupdated"
 )
 
 type App struct {
@@ -58,6 +58,7 @@ type App struct {
 	kafkaProducer *kafka.Producer
 }
 
+//nolint:funlen // app wiring
 func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
 	pgDB, err := postgres.ConnectPgxPoolWithLogger(ctx, cfg.DB, logger)
 	if err != nil {
@@ -130,17 +131,20 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 
 	hand := handlers.NewHandler(deps)
 
-	//Event usecases
+	// Event usecases
 	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
 	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
+	resumeArchived := resumearchived.NewUsecase(resumeProjRepo)
 	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
 	companyUpdated := companyupdated.NewUsecase(vacProjRepo)
-	companyDeleted := companydeleted.NewUsecase(compMemProjRepo, vacProjRepo)
+	companyDeleted := companydeleted.NewUsecase(compMemProjRepo, vacProjRepo, appRepo, appStatusHistoryRepo, txManager)
 	companyMemberAdded := companymemberadded.NewUsecase(compMemProjRepo)
 	companyMemberRemoved := companymemberremoved.NewUsecase(compMemProjRepo)
 	vacancyPublished := vacancypublished.NewUsecase(vacProjRepo)
 	vacancyArchived := vacancyarchived.NewUsecase(vacProjRepo)
 	vacancyUpdated := vacancyupdated.NewUsecase(vacProjRepo)
+	vacancyModUpd := vacancymodupd.NewUsecase(vacProjRepo)
+	companyModUpd := companymodupd.NewUsecase(vacProjRepo)
 
 	// Kafka Producer
 	kafkaProducerClient, err := kafka.NewClientForProducer(cfg.Kafka)
@@ -158,6 +162,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		dlqSender,
 		resumeUpserted,
 		resumeDeleted,
+		resumeArchived,
 		candidateUpserted,
 		companyUpdated,
 		companyDeleted,
@@ -166,6 +171,8 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		vacancyPublished,
 		vacancyArchived,
 		vacancyUpdated,
+		vacancyModUpd,
+		companyModUpd,
 	)
 
 	consumer := kafka.NewConsumer(eventHandler, logger)

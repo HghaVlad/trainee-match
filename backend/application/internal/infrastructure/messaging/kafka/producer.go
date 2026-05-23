@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -22,7 +23,7 @@ func NewProducer(client *kgo.Client, cfg config.Kafka) *Producer {
 func (pr *Producer) ProduceMessages(ctx context.Context, message []byte) error {
 	_ = ctx
 	_ = message
-	return fmt.Errorf("ProduceMessages is not implemented")
+	return errors.New("ProduceMessages is not implemented")
 }
 
 func (pr *Producer) ProduceDLQ(ctx context.Context, message dlq.Message, key, value []byte) error {

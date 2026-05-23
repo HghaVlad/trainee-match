@@ -18,97 +18,124 @@ func NewDecoder(registry *LocalRegistry) *Decoder {
 	return &Decoder{registry: registry}
 }
 
-func (d *Decoder) DecodeResumeUpsertedEvent(_ context.Context, data []byte) (projection.ResumeUpsertedEvent, error) {
+func (d *Decoder) DecodeResumeUpsertedEvent(ctx context.Context, data []byte) (projection.ResumeUpsertedEvent, error) {
 	var event projection.ResumeUpsertedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
-func (d *Decoder) DecodeResumeDeletedEvent(_ context.Context, data []byte) (projection.ResumeDeletedEvent, error) {
+func (d *Decoder) DecodeResumeDeletedEvent(ctx context.Context, data []byte) (projection.ResumeDeletedEvent, error) {
 	var event projection.ResumeDeletedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
+func (d *Decoder) DecodeResumeArchivedEvent(ctx context.Context, data []byte) (projection.ResumeArchivedEvent, error) {
+	var event projection.ResumeArchivedEvent
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeCandidateUpsertedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.CandidateUpsertedEvent, error) {
 	var event projection.CandidateUpsertedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
-func (d *Decoder) DecodeCompanyUpdatedEvent(_ context.Context, data []byte) (projection.CompanyUpdatedEvent, error) {
+func (d *Decoder) DecodeCompanyUpdatedEvent(ctx context.Context, data []byte) (projection.CompanyUpdatedEvent, error) {
 	var event projection.CompanyUpdatedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
-func (d *Decoder) DecodeCompanyDeletedEvent(_ context.Context, data []byte) (projection.CompanyDeletedEvent, error) {
+func (d *Decoder) DecodeCompanyDeletedEvent(ctx context.Context, data []byte) (projection.CompanyDeletedEvent, error) {
 	var event projection.CompanyDeletedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeCompanyMemberAddedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.CompanyMemberAddedEvent, error) {
 	var event projection.CompanyMemberAddedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeCompanyMemberRemovedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.CompanyMemberRemovedEvent, error) {
 	var event projection.CompanyMemberRemovedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeVacancyPublishedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.VacancyPublishedEvent, error) {
 	var event projection.VacancyPublishedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeVacancyArchivedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.VacancyArchivedEvent, error) {
 	var event projection.VacancyArchivedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
 func (d *Decoder) DecodeVacancyUpdatedEvent(
-	_ context.Context,
+	ctx context.Context,
 	data []byte,
 ) (projection.VacancyUpdatedEvent, error) {
 	var event projection.VacancyUpdatedEvent
-	err := d.decodeEvent(data, &event)
+	err := d.decodeEvent(ctx, data, &event)
 	return event, err
 }
 
-func (d *Decoder) decodeEvent(data []byte, event any) error {
+func (d *Decoder) DecodeVacancyModerationUpdEvent(
+	ctx context.Context,
+	data []byte,
+) (projection.VacancyModerationUpdatedEvent, error) {
+	var event projection.VacancyModerationUpdatedEvent
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
+func (d *Decoder) DecodeCompanyModerationUpdEvent(
+	ctx context.Context,
+	data []byte,
+) (projection.CompanyModerationUpdatedEvent, error) {
+	var event projection.CompanyModerationUpdatedEvent
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
+func (d *Decoder) decodeEvent(ctx context.Context, data []byte, event any) error {
 	if len(data) < 5 {
 		return fmt.Errorf("data is too short data: %v", data)
 	}
+
 	schemaID := getSchemaID(data)
-	schema, err := d.registry.GetSchemaByID(schemaID)
+	schema, err := d.registry.GetRemoteSchemaByID(ctx, schemaID)
 	if err != nil {
 		return err
 	}
+
 	err = avro.Unmarshal(schema, data[5:], event)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal avro event: %w", err)
 	}
+
 	return nil
 }
 

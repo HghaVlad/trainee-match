@@ -220,7 +220,7 @@ func (a *ApplicationRepo) UpdateStatus(
 
 	const query = `UPDATE applications
 		SET status = $1, updated_at = $2
-		WHERE id = $3`
+		WHERE id = $3 AND status != $1`
 
 	cmdTag, err := q.Exec(ctx, query, status, updAt, appID)
 	if err != nil {
@@ -229,6 +229,53 @@ func (a *ApplicationRepo) UpdateStatus(
 
 	if cmdTag.RowsAffected() == 0 {
 		return application.ErrNotFound
+	}
+
+	return nil
+}
+
+func (a *ApplicationRepo) UpdateStatusByVacancy(
+	ctx context.Context,
+	vacID uuid.UUID,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
+	updAt time.Time,
+) error {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+	UPDATE applications
+	SET status = $1, updated_at = $2
+	WHERE vacancy_id = $3 AND status = ANY($4)`
+
+	_, err := q.Exec(ctx, query, newStatus, updAt, vacID, appStatusesToStrings(statusesToUpdate))
+	if err != nil {
+		return fmt.Errorf("update app status by vacancy: %w", err)
+	}
+
+	return nil
+}
+
+func (a *ApplicationRepo) UpdateStatusByCompany(
+	ctx context.Context,
+	compID uuid.UUID,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
+	updAt time.Time,
+) error {
+	q := a.getter.DefaultTrOrDB(ctx, a.db)
+
+	const query = `
+		UPDATE applications a
+		SET status = $1, updated_at = $2
+		FROM vacancy_projection v
+		WHERE a.vacancy_id = v.id
+		  AND v.company_id = $3 AND a.status = ANY($4)`
+
+	_, err := q.Exec(ctx, query, newStatus, updAt, compID, appStatusesToStrings(statusesToUpdate))
+
+	if err != nil {
+		return fmt.Errorf("update app status by company: %w", err)
 	}
 
 	return nil
