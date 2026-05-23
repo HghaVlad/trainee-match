@@ -5,7 +5,7 @@ WORKDIR /src
 COPY candidate/go.mod /src/candidate/go.mod
 COPY candidate/go.sum /src/candidate/go.sum
 
-COPY api/contracts /src/contracts
+COPY api/contracts /src/api/contracts
 
 WORKDIR /src/candidate
 

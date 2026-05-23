@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
-
 	candidatepb "github.com/HghaVlad/trainee-match/backend/api/contracts/go/candidate/v1"
+	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type CandidateService struct {

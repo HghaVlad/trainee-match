@@ -8,12 +8,10 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kerr"
-
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
-
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/common/outbox"
 )
 
 type Producer struct {

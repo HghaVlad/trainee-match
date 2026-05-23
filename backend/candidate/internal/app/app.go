@@ -12,6 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/config"
+	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/db/postgres/repository"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/infrastructure/messagebroker/kafka"
@@ -32,10 +35,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/remove_resume"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume"
-
-	myhttp "github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
 )
 
 type App struct {
