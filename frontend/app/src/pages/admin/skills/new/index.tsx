@@ -3,30 +3,30 @@ import { useNavigate } from 'react-router'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { useToast } from '@/shared/hooks/use-toast'
+import { usePostAdminSkills } from '@/api/generated/candidate/admin/admin'
+import { useQueryClient } from '@tanstack/react-query'
+import { AppError } from '@/shared/api/http/client'
 
 export default function AdminSkillNewPage() {
   const [skillName, setSkillName] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const qc = useQueryClient()
+  const createSkill = usePostAdminSkills()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!skillName.trim()) return
 
-    setIsLoading(true)
-    setError(null)
-    setSuccess(false)
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setSuccess(true)
-      setSkillName('')
-    } catch {
-      setError('Не удалось создать навык')
-    } finally {
-      setIsLoading(false)
+      await createSkill.mutateAsync({ data: { name: skillName } })
+      await qc.invalidateQueries({ queryKey: ['useGetSkillList'] })
+      toast({ title: 'Навык создан' })
+      navigate('/admin/skills')
+    } catch (err) {
+      const msg = err instanceof AppError ? err.message : 'Не удалось создать навык'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
     }
   }
 
@@ -49,18 +49,13 @@ export default function AdminSkillNewPage() {
                 placeholder="Название навыка"
                 value={skillName}
                 onChange={(e) => setSkillName(e.target.value)}
-                disabled={isLoading}
+                disabled={createSkill.isPending}
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {success && (
-              <p className="text-sm text-green-600">Навык успешно создан!</p>
-            )}
-
             <div className="flex gap-2">
-              <Button type="submit" disabled={isLoading || !skillName.trim()}>
-                {isLoading ? 'Создание...' : 'Создать'}
+              <Button type="submit" disabled={createSkill.isPending || !skillName.trim()}>
+                {createSkill.isPending ? 'Создание...' : 'Создать'}
               </Button>
             </div>
           </form>

@@ -33,7 +33,7 @@ export function makeUser(role: Role): TestUser {
 
 export async function registerViaApi(user: TestUser, api?: APIRequestContext): Promise<void> {
   const ctx = api ?? (await request.newContext())
-  const res = await ctx.post(`${BACKEND_URL}/api/auth/register`, {
+  const res = await ctx.post(`${BACKEND_URL}/api/auth/auth/register`, {
     data: {
       username: user.username,
       password: user.password,

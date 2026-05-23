@@ -12,10 +12,16 @@ export default defineConfig({
     proxy: useMsw
       ? {}
       : {
+          '/api/v1/admin': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin/, '/api/candidate/admin'),
+            secure: true,
+          },
           '/api/v1/auth': {
             target: backendTarget,
             changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api\/v1\/auth/, '/api/auth'),
+            rewrite: (path) => path.replace(/^\/api\/v1\/auth/, '/api/auth/auth'),
             secure: true,
           },
           '/api/v1/candidate': {

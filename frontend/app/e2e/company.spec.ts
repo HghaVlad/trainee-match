@@ -29,7 +29,7 @@ test.describe('company flow', () => {
     await page.evaluate(() => localStorage.clear())
 
     const { request: req } = page.context()
-    await req.post(`${BACKEND_URL}/api/auth/register`, {
+    await req.post(`${BACKEND_URL}/api/auth/auth/register`, {
       data: {
         username: u.username,
         password: u.password,
@@ -151,7 +151,7 @@ test.describe('company switcher', () => {
 
       if (new URL(page.url()).pathname.includes('/login')) {
         const { request: req } = page.context()
-        await req.post(`${BACKEND_URL}/api/auth/register`, {
+    await req.post(`${BACKEND_URL}/api/auth/auth/register`, {
           data: {
             username: u.username,
             password: u.password,

@@ -6,10 +6,13 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface DtoShortResumeResponse {
-  candidate_id?: string;
-  id?: string;
-  moderation_status?: string;
-  name?: string;
-  status?: string;
-}
+export type GetSkillListParams = {
+/**
+ * Page number
+ */
+page?: number;
+/**
+ * Page size
+ */
+size?: number;
+};

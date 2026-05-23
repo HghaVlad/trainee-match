@@ -59,7 +59,7 @@ export function ApplyVacancyModal({
 }: Props) {
   const qc = useQueryClient()
   const { toast } = useToast()
-  const resumes = useGetResume({ query: { enabled: open } })
+  const resumes = useGetResume(undefined, { query: { enabled: open } })
   const create = useCreateApplication()
   const { defaultResumeId } = useDefaultResumeId()
   const [serverError, setServerError] = useState<string | null>(null)

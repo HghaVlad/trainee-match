@@ -6,10 +6,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface DtoShortResumeResponse {
-  candidate_id?: string;
-  id?: string;
-  moderation_status?: string;
+export interface DtoSkillRequest {
   name?: string;
-  status?: string;
 }

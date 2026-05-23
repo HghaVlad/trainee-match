@@ -46,6 +46,13 @@ export function Header() {
         {isAuthed && role === 'Company' && !activeCompanyId && (
           <Link to="/company/new">Создать компанию</Link>
         )}
+        {isAuthed && role === 'PlatformAdmin' && (
+          <>
+            <Link to="/admin/skills">Навыки</Link>
+            <Link to="/admin/users">Пользователи</Link>
+            <Link to="/candidates">Кандидаты</Link>
+          </>
+        )}
       </nav>
       <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
         {isAuthed && role === 'Company' && <CompanySwitcher />}
