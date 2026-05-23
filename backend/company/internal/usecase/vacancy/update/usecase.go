@@ -2,36 +2,38 @@ package update
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type Usecase struct {
 	repo       VacancyRepo
-	memberRepo CompMemberRepo
+	compRepo   compRepo
 	outbox     outboxWriter
+	searchRepo searchRepo
 	cache      CacheRepo
 	txManager  common.TxManager
 }
 
 func NewUsecase(
 	repo VacancyRepo,
-	memberRepo CompMemberRepo,
+	compRepo compRepo,
 	outbox outboxWriter,
+	searchRepo searchRepo,
 	cacheRepo CacheRepo,
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
 		repo:       repo,
-		memberRepo: memberRepo,
+		compRepo:   compRepo,
 		outbox:     outbox,
+		searchRepo: searchRepo,
 		cache:      cacheRepo,
 		txManager:  txManager,
 	}
@@ -39,19 +41,27 @@ func NewUsecase(
 
 // Execute updates vacancy. All nil fields of vacancy in request won't be applied.
 // Deletes vacancy from cache.
-func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.Identity) error {
+func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Identity) error {
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
+
+	if ident.Role != identity.RoleHR {
+		return identity.ErrHrRoleRequired
+	}
 
 	if err := req.lightValidate(); err != nil {
 		return err
 	}
 
-	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, req.CompanyID, identity); err != nil {
-			return err
-		}
+	// only member of company can update vacancy
+	comp, err := u.compRepo.GetByMember(ctx, req.CompanyID, ident.UserID)
+	if err != nil {
+		return err
+	}
 
+	var vacncy *vacancy.Vacancy
+
+	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, req.CompanyID)
 		if err != nil {
 			return err
@@ -70,6 +80,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 			return err
 		}
 
+		vacncy = vac
 		if eventShouldBeCreated {
 			return u.createdVacancyUpdatedEvent(ctx, vac)
 		}
@@ -80,22 +91,13 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 		return err
 	}
 
+	searchView := views.SearchViewFromVacancy(*vacncy, comp.Name)
+	if err := u.searchRepo.Index(ctx, *searchView); err != nil {
+		return err
+	}
+
 	u.cache.Del(ctx, req.VacancyID)
 	return nil
-}
-
-// only member of company can update vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
-	if ident.Role != identity.RoleHR {
-		return identity.ErrHrRoleRequired
-	}
-
-	_, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
-	if errors.Is(err, member.ErrCompanyMemberNotFound) {
-		return member.ErrCompanyMemberRequired
-	}
-
-	return err
 }
 
 func (u *Usecase) createdVacancyUpdatedEvent(ctx context.Context, vac *vacancy.Vacancy) error {

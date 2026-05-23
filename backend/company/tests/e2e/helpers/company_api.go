@@ -15,7 +15,7 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 )
 
 type CompanyAPI struct {
@@ -94,7 +94,7 @@ type RangeIntFilter struct {
 }
 
 type ListVacanciesParams struct {
-	Order  list.Order
+	Order  listsearch.Order
 	Cursor *string
 	Limit  *int
 

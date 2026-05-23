@@ -71,13 +71,9 @@ func (u *Usecase) Execute(
 		return nil, err
 	}
 
-	vacProj, err := u.vacProjRepo.GetByID(ctx, req.VacancyID)
+	vacProj, err := u.getApplyableVacancy(ctx, req.VacancyID)
 	if err != nil {
 		return nil, err
-	}
-
-	if vacProj.Status != projection.VacancyStatusPublished {
-		return nil, application.ErrVacancyNotPublished
 	}
 
 	// for deduplication of snapshots
@@ -139,12 +135,28 @@ func (u *Usecase) getResumeProjAndCheck(ctx context.Context, resID, candID uuid.
 	if resumeProj.Status != projection.ResumeStatusPublished {
 		return nil, application.ErrResumeNotPublished
 	}
+	if resumeProj.ModerationStatus != projection.ModerationStatusOK {
+		return nil, projection.ErrResumeBadModStatus
+	}
 
 	if resumeProj.CandidateID != candID {
 		return nil, application.ErrResumeAccessDenied
 	}
 
 	return resumeProj, nil
+}
+
+func (u *Usecase) getApplyableVacancy(ctx context.Context, vacID uuid.UUID) (*projection.Vacancy, error) {
+	vacProj, err := u.vacProjRepo.GetByID(ctx, vacID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := vacProj.IsApplyable(); err != nil {
+		return nil, err
+	}
+
+	return vacProj, nil
 }
 
 func buildFullCandidateView(

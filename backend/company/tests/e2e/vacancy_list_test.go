@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	"github.com/HghaVlad/trainee-match/backend/company/tests/e2e/helpers"
 )
 
@@ -261,7 +261,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("lists only published vacancies", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list.OrderPublishedAtDesc,
+			Order: listsearch.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(20),
 		})
 
@@ -281,7 +281,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by company work format and paid flag", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:      list.OrderPublishedAtDesc,
+			Order:      listsearch.OrderPublishedAtDesc,
 			CompanyIDs: []uuid.UUID{compA},
 			WorkFormat: []vacancy.WorkFormat{vacancy.WorkFormatRemote},
 			IsPaid:     helpers.Ptr(true),
@@ -296,7 +296,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by city internship offer and flexible schedule", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:             list.OrderPublishedAtDesc,
+			Order:             listsearch.OrderPublishedAtDesc,
 			City:              []string{"Moscow"},
 			InternshipToOffer: helpers.Ptr(true),
 			FlexibleSchedule:  helpers.Ptr(true),
@@ -310,7 +310,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("filters by intersecting hours and duration ranges", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list.OrderSalaryDesc,
+			Order: listsearch.OrderSalaryDesc,
 			HoursPerWeek: &helpers.RangeIntFilter{
 				Min: helpers.Ptr(24),
 				Max: helpers.Ptr(36),
@@ -334,7 +334,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("orders by published at desc", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list.OrderPublishedAtDesc,
+			Order: listsearch.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(4),
 		})
 
@@ -348,7 +348,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("orders by salary desc", func(t *testing.T) {
 		resp := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:  list.OrderSalaryDesc,
+			Order:  listsearch.OrderSalaryDesc,
 			IsPaid: helpers.Ptr(true),
 			Limit:  helpers.Ptr(5),
 		})
@@ -364,7 +364,7 @@ func Test_Vacancy_List(t *testing.T) {
 
 	t.Run("paginates published at desc without overlap", func(t *testing.T) {
 		firstPage := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order: list.OrderPublishedAtDesc,
+			Order: listsearch.OrderPublishedAtDesc,
 			Limit: helpers.Ptr(3),
 		})
 
@@ -375,7 +375,7 @@ func Test_Vacancy_List(t *testing.T) {
 		assert.Equal(t, "Support Hybrid Unpaid", firstPage.Vacancies[2].Title)
 
 		secondPage := api.ListVacancies(t, helpers.ListVacanciesParams{
-			Order:  list.OrderPublishedAtDesc,
+			Order:  listsearch.OrderPublishedAtDesc,
 			Limit:  helpers.Ptr(3),
 			Cursor: firstPage.NextCursor,
 		})

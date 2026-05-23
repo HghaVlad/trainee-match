@@ -15,6 +15,142 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/companies/{id}/moderation": {
+            "patch": {
+                "description": "Updates moderation status of company. Only platform admin can do this",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-company"
+                ],
+                "summary": "Update company moderation status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Moderation update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyModerationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/vacancies/{id}/moderation": {
+            "patch": {
+                "description": "Updates moderation status of vacancy. Only platform admin can do this",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin-vacancy"
+                ],
+                "summary": "Update vacancy moderation status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vacancy ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Moderation update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyModerationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies": {
             "get": {
                 "description": "Uses cursor pagination, returns next cursor if there's more. Supports order by vacancies_desc, created_at_desc, name_asc",
@@ -393,6 +529,174 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/dto.VacancyCreatedResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/companies/{company-id}/vacancies/search": {
+            "get": {
+                "description": "Same as list vacancies/search but with extra info for company members. Search includes title and description",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "List search company's vacancy summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "company-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Supports relevance, created_at_desc, default relevance",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vacancy status filter",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in days",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in days",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyByCompListResponse"
                         }
                     },
                     "400": {
@@ -933,6 +1237,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/companies/{id}/me": {
+            "get": {
+                "description": "Returns company by id with moderation status, only for members, even if it's hidden. Returns 404 if user is not member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "company"
+                ],
+                "summary": "Get company by member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Company ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CompanyMemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/companies/{id}/members": {
             "get": {
                 "description": "List members of company with usernames, emails, sorted by username; requires being a member of the company. Standard limit / offset pagination, with hasMore.",
@@ -1405,6 +1759,153 @@ const docTemplate = `{
                 }
             }
         },
+        "/vacancies/search": {
+            "get": {
+                "description": "Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vacancy"
+                ],
+                "summary": "Search vacancy summaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "relevance",
+                        "description": "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc, default relevance",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum salary",
+                        "name": "salary_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum salary",
+                        "name": "salary_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum hours per week",
+                        "name": "hours_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum hours per week",
+                        "name": "hours_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum duration in days",
+                        "name": "duration_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum duration in days",
+                        "name": "duration_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Paid vacancy filter",
+                        "name": "is_paid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Internship with possible job offer",
+                        "name": "internship_to_offer",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Flexible schedule filter",
+                        "name": "flexible_schedule",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Work format filter (repeat param)",
+                        "name": "work_format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "City filter (repeat param)",
+                        "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Company filter (repeat param)",
+                        "name": "company_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VacancyListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/vacancies/{vacancy-id}": {
             "get": {
                 "description": "Returns public vacancy view for candidates. Only published vacancies are visible.",
@@ -1531,6 +2032,47 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CompanyMemResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "We make the world a better place"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "logoURL": {
+                    "type": "string",
+                    "example": "http://domain/minio/6icinimmck...mksk"
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "example": "hidden"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Google Inc."
+                },
+                "openVacanciesCount": {
+                    "type": "integer",
+                    "example": 13
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-04-08T21:00:00Z"
+                },
+                "website": {
+                    "type": "string",
+                    "example": "https://www.google.com"
+                }
+            }
+        },
         "dto.CompanyMemberFullView": {
             "type": "object",
             "properties": {
@@ -1575,6 +2117,19 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.CompanyMemberFullView"
                     }
+                }
+            }
+        },
+        "dto.CompanyModerationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "hidden"
                 }
             }
         },
@@ -1675,6 +2230,14 @@ const docTemplate = `{
                 "isPaid": {
                     "type": "boolean",
                     "example": true
+                },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
                 },
                 "salaryFrom": {
                     "type": "integer",
@@ -1853,6 +2416,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "moderationStatus": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "ok"
+                },
                 "publishedAt": {
                     "type": "string",
                     "example": "2026-01-20T10:00:00Z"
@@ -1953,6 +2524,19 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.VacancyListItemResponse"
                     }
+                }
+            }
+        },
+        "dto.VacancyModerationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "hidden"
+                    ],
+                    "example": "hidden"
                 }
             }
         },

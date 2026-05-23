@@ -38,17 +38,34 @@ services:
   auth-service:
     build:
       context: auth
-    environment:
-      KC_URL: http://keycloak:8080
-      KC_REALM: trainee-match
-      KC_CLIENT_ID: auth_backend
-      KC_CLIENT_SECRET: UAaVKlGqGXZs2LXZPiV3uFYCblmrEhJ8
-      KC_ADMIN_USERNAME: admin
-      KC_ADMIN_PASSWORD: admin
+    env_file:
+      - auth/.env
     ports:
       - "8000:8000"
     depends_on:
-        - keycloak
+      keycloak:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      schema-registry:
+        condition: service_healthy
+      auth-postgres:
+        condition: service_healthy
+
+  auth-postgres:
+    image: postgres:17
+    ports:
+      - "5435:5432"
+    env_file:
+      - auth/.env
+    volumes:
+      - auth-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${AUTH_PGS_USER} -d ${AUTH_PGS_NAME}" ]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   candidate-db:
     image: postgres:17
@@ -56,12 +73,10 @@ services:
       - "5432:5432"
     volumes:
       - candidate-db-data:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: candidate_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - ./candidate/.env
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d candidate_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${CANDIDATE_PGS_USER} -d ${CANDIDATE_PGS_NAME}" ]
       interval: 20s
       timeout: 5s
       retries: 15
@@ -71,17 +86,11 @@ services:
     build:
       context: .
       dockerfile: candidate/Dockerfile
-    environment:
-      DB_HOST: candidate-db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: candidate_db
-      ADDR: 0.0.0.0:8081
-      JWKURL: http://keycloak:8080/realms/trainee-match/protocol/openid-connect/certs
-
+    env_file:
+      - ./candidate/.env
     ports:
       - "8081:8081"
+      - "8085:8085"
     depends_on:
       candidate-db:
         condition: service_healthy
@@ -150,6 +159,8 @@ services:
         condition: service_completed_successfully
       auth-service:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
   application-postgres:
     image: postgres:17
@@ -209,7 +220,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://localhost:19092  # questionable localhost
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19092  # questionable localhost
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -217,6 +228,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_1_data:/var/lib/kafka/data
@@ -233,7 +247,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://localhost:19093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -241,6 +255,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_2_data:/var/lib/kafka/data
@@ -257,7 +274,7 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
 
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:19092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,EXTERNAL://localhost:19094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,EXTERNAL://${KAFKA_EXTERNAL_LISTENERS}:19094
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -265,6 +282,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
 
     volumes:
       - kafka_3_data:/var/lib/kafka/data
@@ -327,6 +347,51 @@ services:
       schema-registry:
         condition: service_healthy
 
+  nginx-api-gw:
+    build: ./api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro # enable for https if u are on the machine
+    depends_on:
+      - auth-service
+      - candidate-service
+      - company-service
+      - application-service
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASS}
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.ml.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -u elastic:${ELASTIC_PASS} -fsSL http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.3.0
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ${ELASTIC_KIBANA_PASS}
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
 volumes:
   keycloak-db-data:
@@ -337,3 +402,5 @@ volumes:
   kafka_1_data:
   kafka_2_data:
   kafka_3_data:
+  auth-pg-data:
+  elasticsearch_data:

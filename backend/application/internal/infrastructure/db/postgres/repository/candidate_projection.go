@@ -51,3 +51,28 @@ func (c *CandidateProjection) GetByUserID(
 
 	return &candProj, nil
 }
+
+func (c *CandidateProjection) Save(ctx context.Context, candidate *projection.Candidate) error {
+	q := c.getter.DefaultTrOrDB(ctx, c.db)
+
+	const query = `
+		INSERT INTO candidate_projection
+			(id, full_name, email, telegram)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (id) DO UPDATE SET
+			full_name = EXCLUDED.full_name,
+			email = EXCLUDED.email,
+			telegram = EXCLUDED.telegram
+	`
+
+	_, err := q.Exec(ctx, query,
+		candidate.ID,
+		candidate.FullName,
+		candidate.Email,
+		candidate.Telegram,
+	)
+	if err != nil {
+		return fmt.Errorf("save candidate projection: %w", err)
+	}
+	return nil
+}

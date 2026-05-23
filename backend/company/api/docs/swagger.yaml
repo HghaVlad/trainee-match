@@ -50,6 +50,36 @@ definitions:
       nextCursor:
         type: string
     type: object
+  dto.CompanyMemResponse:
+    properties:
+      createdAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      description:
+        example: We make the world a better place
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      logoURL:
+        example: http://domain/minio/6icinimmck...mksk
+        type: string
+      moderationStatus:
+        example: hidden
+        type: string
+      name:
+        example: Google Inc.
+        type: string
+      openVacanciesCount:
+        example: 13
+        type: integer
+      updatedAt:
+        example: "2020-04-08T21:00:00Z"
+        type: string
+      website:
+        example: https://www.google.com
+        type: string
+    type: object
   dto.CompanyMemberFullView:
     properties:
       companyId:
@@ -80,6 +110,15 @@ definitions:
         items:
           $ref: '#/definitions/dto.CompanyMemberFullView'
         type: array
+    type: object
+  dto.CompanyModerationUpdateRequest:
+    properties:
+      status:
+        enum:
+        - ok
+        - hidden
+        example: hidden
+        type: string
     type: object
   dto.CompanyResponse:
     properties:
@@ -151,6 +190,12 @@ definitions:
       isPaid:
         example: true
         type: boolean
+      moderationStatus:
+        enum:
+        - ok
+        - hidden
+        example: ok
+        type: string
       salaryFrom:
         example: 3500
         type: integer
@@ -280,6 +325,12 @@ definitions:
       isPaid:
         example: true
         type: boolean
+      moderationStatus:
+        enum:
+        - ok
+        - hidden
+        example: ok
+        type: string
       publishedAt:
         example: "2026-01-20T10:00:00Z"
         type: string
@@ -354,6 +405,15 @@ definitions:
         items:
           $ref: '#/definitions/dto.VacancyListItemResponse'
         type: array
+    type: object
+  dto.VacancyModerationUpdateRequest:
+    properties:
+      status:
+        enum:
+        - ok
+        - hidden
+        example: hidden
+        type: string
     type: object
   dto.VacancyPublicResponse:
     properties:
@@ -487,6 +547,98 @@ info:
   title: 'Trainee Match: Company Service API'
   version: "1.0"
 paths:
+  /admin/companies/{id}/moderation:
+    patch:
+      consumes:
+      - application/json
+      description: Updates moderation status of company. Only platform admin can do
+        this
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderation update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CompanyModerationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update company moderation status
+      tags:
+      - admin-company
+  /admin/vacancies/{id}/moderation:
+    patch:
+      consumes:
+      - application/json
+      description: Updates moderation status of vacancy. Only platform admin can do
+        this
+      parameters:
+      - description: Vacancy ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Moderation update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VacancyModerationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update vacancy moderation status
+      tags:
+      - admin-vacancy
   /companies:
     get:
       consumes:
@@ -944,6 +1096,120 @@ paths:
       summary: Publish vacancy
       tags:
       - vacancy
+  /companies/{company-id}/vacancies/search:
+    get:
+      consumes:
+      - application/json
+      description: Same as list vacancies/search but with extra info for company members.
+        Search includes title and description
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Query
+        in: query
+        name: query
+        type: string
+      - default: relevance
+        description: Supports relevance, created_at_desc, default relevance
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Vacancy status filter
+        in: query
+        name: status
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyByCompListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List search company's vacancy summaries
+      tags:
+      - vacancy
   /companies/{id}:
     delete:
       description: Deletes company by id
@@ -1060,6 +1326,40 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Update company
+      tags:
+      - company
+  /companies/{id}/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns company by id with moderation status, only for members,
+        even if it's hidden. Returns 404 if user is not member
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CompanyMemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get company by member
       tags:
       - company
   /companies/{id}/members:
@@ -1457,6 +1757,108 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Get published vacancy by id
+      tags:
+      - vacancy
+  /vacancies/search:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        query, filters, orders. The search query refers to vacancy title, company
+        name and description (in this priority). Has auto fuzziness
+      parameters:
+      - default: relevance
+        description: Order attribute, supports relevance, published_at_desc, salary_desc,
+          salary_asc, default relevance
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Query
+        in: query
+        name: query
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      - collectionFormat: multi
+        description: Company filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: company_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Search vacancy summaries
       tags:
       - vacancy
 schemes:

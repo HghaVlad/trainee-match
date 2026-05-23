@@ -13,6 +13,7 @@ type Company struct {
 	Description      *string
 	Website          *string
 	LogoKey          *string
+	ModerationStatus ModerationStatus
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -32,4 +33,21 @@ func (c *Company) Validate() error {
 	}
 
 	return nil
+}
+
+type ModerationStatus string
+
+const (
+	ModerationStatusOK     ModerationStatus = "ok"
+	ModerationStatusHidden ModerationStatus = "hidden"
+)
+
+func (ms ModerationStatus) IsValid() bool {
+	switch ms {
+	case ModerationStatusOK,
+		ModerationStatusHidden:
+		return true
+	}
+
+	return false
 }

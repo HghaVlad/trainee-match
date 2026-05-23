@@ -15,6 +15,7 @@ type Request struct {
 
 type Filter struct {
 	CompanyMemberID *uuid.UUID
+	OkModStatus     bool
 }
 
 func (r *Request) Validate() error {

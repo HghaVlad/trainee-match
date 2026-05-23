@@ -10,10 +10,12 @@ type Encoder interface {
 	VacancyPublishedToBytes(ev vacancy.PublishedEvent) ([]byte, error)
 	VacancyArchivedToBytes(ev vacancy.ArchivedEvent) ([]byte, error)
 	VacancyUpdatedToBytes(ev vacancy.UpdatedEvent) ([]byte, error)
+	VacancyModerationUpdatedToBytes(ev vacancy.ModerationUpdatedEvent) ([]byte, error)
 
 	CompanyMemberAddedToBytes(ev member.AddedEvent) ([]byte, error)
 	CompanyMemberRemovedToBytes(ev member.RemovedEvent) ([]byte, error)
 
-	CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error)
 	CompanyUpdatedToBytes(ev company.UpdatedEvent) ([]byte, error)
+	CompanyModerationUpdatedToBytes(ev company.ModerationUpdatedEvent) ([]byte, error)
+	CompanyDeletedToBytes(ev company.DeletedEvent) ([]byte, error)
 }

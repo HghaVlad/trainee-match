@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/Nerzal/gocloak/v13"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/domain"
 )
 
-var ErrorInvalidToken = errors.New("invalid access token")
+var ErrInvalidToken = errors.New("invalid access token")
 
 type Client struct {
 	client *gocloak.GoCloak
@@ -24,8 +25,8 @@ type Client struct {
 	adminPass    string
 }
 
-func NewClient(clientUrl, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
-	client := gocloak.NewClient(clientUrl)
+func NewClient(clientURL, realm, clientID, clientSecret, adminUser, adminPass string) *Client {
+	client := gocloak.NewClient(clientURL)
 	keycloakClient := &Client{
 		client:       client,
 		realm:        realm,
@@ -49,25 +50,24 @@ func (kc *Client) loginAdmin(ctx context.Context) error {
 	}
 	kc.token = newToken
 	return nil
-
 }
 
 func (kc *Client) ensureAdminTokenValid(ctx context.Context) error {
 	if kc.token == nil {
 		if err := kc.loginAdmin(ctx); err != nil {
-			return err
+			return errors.New("keycloak loginAdmin failed")
 		}
 	}
 	istResult, err := kc.client.RetrospectToken(ctx, kc.token.AccessToken, kc.clientID, kc.clientSecret, kc.realm)
 	if err != nil {
 		if err = kc.loginAdmin(ctx); err != nil {
-			return err
+			return errors.New("keycloak loginAdmin failed")
 		}
 	}
 
 	if !*istResult.Active {
 		if err = kc.loginAdmin(ctx); err != nil {
-			return err
+			return errors.New("keycloak loginAdmin failed")
 		}
 	}
 
@@ -87,43 +87,83 @@ func (kc *Client) CreateUser(ctx context.Context, user domain.User, password str
 		Enabled:   gocloak.BoolP(true),
 	}
 
-	userId, err := kc.client.CreateUser(ctx, kc.token.AccessToken, kc.realm, newUser)
+	userID, err := kc.client.CreateUser(ctx, kc.token.AccessToken, kc.realm, newUser)
 	if err != nil {
-		return "", err
+		return "", parseError(err)
 	}
 
-	if err = kc.client.SetPassword(ctx, kc.token.AccessToken, userId, kc.realm, password, false); err != nil {
-		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userId)
-		return "", err
+	if err = kc.client.SetPassword(ctx, kc.token.AccessToken, userID, kc.realm, password, false); err != nil {
+		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userID)
+		return "", parseError(err)
 	}
 
-	if err = kc.addRole(ctx, userId, user.Role); err != nil {
-		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userId)
-		return "", err
+	if err = kc.addRole(ctx, userID, user.Role); err != nil {
+		_ = kc.client.DeleteUser(ctx, kc.token.AccessToken, kc.realm, userID)
+		return "", parseError(err)
 	}
 
-	return userId, err
+	return userID, nil
 }
 
-func (kc *Client) addRole(ctx context.Context, userId, roleName string) error {
+func (kc *Client) addRole(ctx context.Context, userID, roleName string) error {
 	roles := make([]gocloak.Role, 1)
 
-	if roleName == "Candidate" {
+	switch domain.UserRole(roleName) {
+	case domain.UserCandidateRole:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
-			Name: gocloak.StringP("Candidate"),
+			Name: gocloak.StringP(string(domain.UserCandidateRole)),
 		}
-	} else if roleName == "Company" {
+	case domain.UserCompanyRole:
 		roles[0] = gocloak.Role{
 			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
-			Name: gocloak.StringP("Company"),
+			Name: gocloak.StringP(string(domain.UserCompanyRole)),
 		}
-	} else {
+	case domain.UserAdminRole:
+		return fmt.Errorf("you can not set this role")
+	default:
 		return fmt.Errorf("the roleName is not valid: %s", roleName)
 	}
 
-	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userId, roles)
+	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
+}
 
+func (kc *Client) AddAdminRole(ctx context.Context, userID string) error {
+	newRoles := []gocloak.Role{
+		{
+			ID:   gocloak.StringP("78b787b7-ccb1-46bb-ba4c-9eb74ab59ca7"),
+			Name: gocloak.StringP(string(domain.UserAdminRole)),
+		},
+	}
+	err := kc.deleteRoles(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	return kc.client.AddRealmRoleToUser(ctx, kc.token.AccessToken, kc.realm, userID, newRoles)
+}
+
+func (kc *Client) deleteRoles(ctx context.Context, userID string) error {
+	roles := []gocloak.Role{
+		{
+			ID:   gocloak.StringP("15bd1c8f-1feb-4870-9f46-a847f0742be9"),
+			Name: gocloak.StringP(string(domain.UserCandidateRole)),
+		},
+		{
+			ID:   gocloak.StringP("2e90e50e-8db4-4881-8185-05a40220f759"),
+			Name: gocloak.StringP(string(domain.UserCompanyRole)),
+		},
+		{
+			ID:   gocloak.StringP("78b787b7-ccb1-46bb-ba4c-9eb74ab59ca7"),
+			Name: gocloak.StringP(string(domain.UserAdminRole)),
+		},
+	}
+
+	err := kc.client.DeleteRealmRoleFromUser(ctx, kc.token.AccessToken, kc.realm, userID, roles)
+	if err != nil {
+		return fmt.Errorf("deleteRoles failed: %s", err.Error())
+	}
+	return nil
 }
 
 func (kc *Client) Login(ctx context.Context, username, password string) (*gocloak.JWT, error) {
@@ -133,7 +173,7 @@ func (kc *Client) Login(ctx context.Context, username, password string) (*gocloa
 
 	token, err := kc.client.Login(ctx, kc.clientID, kc.clientSecret, kc.realm, username, password)
 
-	return token, err
+	return token, parseError(err)
 }
 
 func (kc *Client) Logout(ctx context.Context, token string) error {
@@ -142,7 +182,7 @@ func (kc *Client) Logout(ctx context.Context, token string) error {
 	}
 
 	err := kc.client.Logout(ctx, kc.clientID, kc.clientSecret, kc.realm, token)
-	return err
+	return parseError(err)
 }
 
 func (kc *Client) RefreshToken(ctx context.Context, refreshToken string) (*gocloak.JWT, error) {
@@ -155,7 +195,7 @@ func (kc *Client) RefreshToken(ctx context.Context, refreshToken string) (*goclo
 	}
 
 	token, err := kc.client.RefreshToken(ctx, refreshToken, kc.clientID, kc.clientSecret, kc.realm)
-	return token, err
+	return token, parseError(err)
 }
 
 func (kc *Client) validateToken(ctx context.Context, token string) error {
@@ -165,10 +205,10 @@ func (kc *Client) validateToken(ctx context.Context, token string) error {
 
 	istResult, err := kc.client.RetrospectToken(ctx, token, kc.clientID, kc.clientSecret, kc.realm)
 	if err != nil {
-		return ErrorInvalidToken
+		return ErrInvalidToken
 	}
 	if !(*istResult.Active) {
-		return ErrorInvalidToken
+		return ErrInvalidToken
 	}
 
 	return nil
@@ -179,18 +219,18 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 		return nil, err
 	}
 
-	user_info, err := kc.client.GetUserInfo(ctx, token, kc.realm)
+	userInfo, err := kc.client.GetUserInfo(ctx, token, kc.realm)
 	if err != nil {
-		return nil, err
+		return nil, parseError(err)
 	}
 
-	user, err := kc.client.GetUserByID(ctx, kc.token.AccessToken, kc.realm, *user_info.Sub)
+	user, err := kc.client.GetUserByID(ctx, kc.token.AccessToken, kc.realm, *userInfo.Sub)
 	if err != nil {
-		return nil, err
+		return nil, parseError(err)
 	}
 
 	return &domain.User{
-		Id:        *user_info.Sub,
+		ID:        *userInfo.Sub,
 		FirstName: *user.FirstName,
 		LastName:  *user.LastName,
 		Email:     *user.Email,
@@ -198,22 +238,39 @@ func (kc *Client) GetUserInfo(ctx context.Context, token string) (*domain.User, 
 	}, nil
 }
 
-func (kc *Client) GetUserRole(ctx context.Context, token string, userId string) (string, error) {
+func (kc *Client) GetUserRole(ctx context.Context, _ string, userID string) (string, error) {
 	if err := kc.ensureAdminTokenValid(ctx); err != nil {
 		return "", err
 	}
 
-	roles, err := kc.client.GetCompositeRealmRolesByUserID(ctx, kc.token.AccessToken, kc.realm, userId)
+	roles, err := kc.client.GetCompositeRealmRolesByUserID(ctx, kc.token.AccessToken, kc.realm, userID)
 	if err != nil {
 		return "", err
 	}
 	for _, role := range roles {
-		if *role.Name == "Candidate" {
-			return "Candidate", nil
-		} else if *role.Name == "Company" {
-			return "Company", nil
+		switch domain.UserRole(*role.Name) {
+		case domain.UserCandidateRole, domain.UserCompanyRole, domain.UserAdminRole:
+			return *role.Name, nil
 		}
 	}
 
-	return "", fmt.Errorf("user role not found")
+	return "", domain.ErrInvalidRole
+}
+
+func parseError(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case strings.Contains(err.Error(), "User exists with same email"):
+		return domain.ErrEmailAlreadyExists
+	case strings.Contains(err.Error(), "User exists with same username"):
+		return domain.ErrUserNameAlreadyExists
+	case strings.Contains(err.Error(), "Invalid user credentials"):
+		return domain.ErrIncorrectPassword
+	case strings.Contains(err.Error(), "401 Unauthorized"):
+		return domain.ErrUnauthorized
+	default:
+		return err
+	}
 }

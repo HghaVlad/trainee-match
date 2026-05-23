@@ -128,6 +128,63 @@ func (r *AppStatusHistoryRepo) GetHistoryHrView(
 	return history, nil
 }
 
+func (r *AppStatusHistoryRepo) AddChangesByVacancy(
+	ctx context.Context,
+	vacID uuid.UUID,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
+	role application.Actor,
+	comment *string,
+	when time.Time,
+) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `
+	INSERT INTO application_status_history (
+		application_id, status, changed_by_role, comment, created_at
+	)
+	SELECT id, $2, $3, $4, $5
+	FROM applications
+	WHERE vacancy_id = $1 AND status = ANY($6)`
+
+	_, err := q.Exec(ctx, query, vacID, newStatus, role, comment, when, appStatusesToStrings(statusesToUpdate))
+
+	if err != nil {
+		return fmt.Errorf("add app changes by vacancy: %w", err)
+	}
+
+	return nil
+}
+
+func (r *AppStatusHistoryRepo) AddChangesByCompany(
+	ctx context.Context,
+	compID uuid.UUID,
+	newStatus application.Status,
+	statusesToUpdate []application.Status,
+	role application.Actor,
+	comment *string,
+	when time.Time,
+) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `
+	INSERT INTO application_status_history (
+		application_id, status, changed_by_role, comment, created_at
+	)
+	SELECT a.id, $2, $3, $4, $5
+	FROM applications a
+	JOIN vacancy_projection v ON a.vacancy_id = v.id	
+	WHERE v.company_id = $1 AND a.status = ANY($6)`
+
+	_, err := q.Exec(ctx, query, compID, newStatus, role, comment, when, appStatusesToStrings(statusesToUpdate))
+
+	if err != nil {
+		return fmt.Errorf("add app changes by company: %w", err)
+	}
+
+	return nil
+}
+
 func (r *AppStatusHistoryRepo) GetDynamicsBucketsByCompany(
 	ctx context.Context,
 	compID uuid.UUID,
@@ -236,4 +293,12 @@ func scanBuckets(rows pgx.Rows) ([]dynamics.Bucket, error) {
 	}
 
 	return buckets, nil
+}
+
+func appStatusesToStrings(status []application.Status) []string {
+	strs := make([]string, len(status))
+	for i, s := range status {
+		strs[i] = string(s)
+	}
+	return strs
 }

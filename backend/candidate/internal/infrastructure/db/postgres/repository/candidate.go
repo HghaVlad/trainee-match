@@ -22,13 +22,15 @@ func NewCandidateRepo(db *pgxpool.Pool) *CandidateRepo {
 
 func (r *CandidateRepo) Create(ctx context.Context, candidate *domain.Candidate) (uuid.UUID, error) {
 	query := `
-		INSERT INTO candidates (user_id, phone, telegram, city, birthday) 
-		VALUES ($1, $2, $3, $4, $5) 
+		INSERT INTO candidates (id, user_id, full_name, phone, telegram, city, birthday) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) 
 		RETURNING id`
 
 	var id uuid.UUID
 	err := r.db.QueryRow(ctx, query,
+		candidate.ID,
 		candidate.UserId,
+		candidate.FullName,
 		candidate.Phone,
 		candidate.Telegram,
 		candidate.City,
@@ -55,7 +57,7 @@ func (r *CandidateRepo) Create(ctx context.Context, candidate *domain.Candidate)
 
 func (r *CandidateRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error) {
 	query := `
-		SELECT id, user_id, phone, telegram, city, birthday 
+		SELECT id, user_id, full_name, phone, telegram, city, birthday 
 		FROM candidates 
 		WHERE id = $1`
 
@@ -63,6 +65,7 @@ func (r *CandidateRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Candi
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&candidate.ID,
 		&candidate.UserId,
+		&candidate.FullName,
 		&candidate.Phone,
 		&candidate.Telegram,
 		&candidate.City,
@@ -81,7 +84,7 @@ func (r *CandidateRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Candi
 
 func (r *CandidateRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (domain.Candidate, error) {
 	query := `
-		SELECT id, user_id, phone, telegram, city, birthday 
+		SELECT id, user_id, full_name, phone, telegram, city, birthday 
 		FROM candidates 
 		WHERE user_id = $1`
 
@@ -89,6 +92,7 @@ func (r *CandidateRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (doma
 	err := r.db.QueryRow(ctx, query, userID).Scan(
 		&candidate.ID,
 		&candidate.UserId,
+		&candidate.FullName,
 		&candidate.Phone,
 		&candidate.Telegram,
 		&candidate.City,
@@ -107,7 +111,7 @@ func (r *CandidateRepo) GetByUserID(ctx context.Context, userID uuid.UUID) (doma
 
 func (r *CandidateRepo) GetByTelegram(ctx context.Context, telegram string) (domain.Candidate, error) {
 	query := `
-		SELECT id, user_id, phone, telegram, city, birthday 
+		SELECT id, user_id, full_name, phone, telegram, city, birthday 
 		FROM candidates 
 		WHERE telegram = $1`
 
@@ -115,6 +119,7 @@ func (r *CandidateRepo) GetByTelegram(ctx context.Context, telegram string) (dom
 	err := r.db.QueryRow(ctx, query, telegram).Scan(
 		&candidate.ID,
 		&candidate.UserId,
+		&candidate.FullName,
 		&candidate.Phone,
 		&candidate.Telegram,
 		&candidate.City,
@@ -133,7 +138,7 @@ func (r *CandidateRepo) GetByTelegram(ctx context.Context, telegram string) (dom
 
 func (r *CandidateRepo) GetByPhone(ctx context.Context, phone string) (domain.Candidate, error) {
 	query := `
-		SELECT id, user_id, phone, telegram, city, birthday 
+		SELECT id, user_id, full_name, phone, telegram, city, birthday 
 		FROM candidates 
 		WHERE phone = $1`
 
@@ -141,6 +146,7 @@ func (r *CandidateRepo) GetByPhone(ctx context.Context, phone string) (domain.Ca
 	err := r.db.QueryRow(ctx, query, phone).Scan(
 		&candidate.ID,
 		&candidate.UserId,
+		&candidate.FullName,
 		&candidate.Phone,
 		&candidate.Telegram,
 		&candidate.City,
@@ -160,12 +166,13 @@ func (r *CandidateRepo) GetByPhone(ctx context.Context, phone string) (domain.Ca
 func (r *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error) {
 	query := `
 		UPDATE candidates 
-		SET phone = $1, telegram = $2, city = $3, birthday = $4 
-		WHERE id = $5 
-		RETURNING id, user_id, phone, telegram, city, birthday`
+		SET full_name = $1, phone = $2, telegram = $3, city = $4, birthday = $5 
+		WHERE id = $6 
+		RETURNING id, user_id, full_name, phone, telegram, city, birthday`
 
 	var updatedCandidate domain.Candidate
 	err := r.db.QueryRow(ctx, query,
+		candidate.FullName,
 		candidate.Phone,
 		candidate.Telegram,
 		candidate.City,
@@ -174,6 +181,7 @@ func (r *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) 
 	).Scan(
 		&updatedCandidate.ID,
 		&updatedCandidate.UserId,
+		&updatedCandidate.FullName,
 		&updatedCandidate.Phone,
 		&updatedCandidate.Telegram,
 		&updatedCandidate.City,
@@ -199,4 +207,45 @@ func (r *CandidateRepo) Update(ctx context.Context, candidate domain.Candidate) 
 	}
 
 	return updatedCandidate, nil
+}
+
+func (r *CandidateRepo) GetCandidates(ctx context.Context, page int, size int) ([]domain.Candidate, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+
+	offset := (page - 1) * size
+	query := `
+		SELECT id, user_id, full_name, phone, telegram, city, birthday
+		FROM candidates
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2`
+
+	rows, err := r.db.Query(ctx, query, size, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	candidates := make([]domain.Candidate, 0)
+	for rows.Next() {
+		var candidate domain.Candidate
+		if err := rows.Scan(
+			&candidate.ID,
+			&candidate.UserId,
+			&candidate.FullName,
+			&candidate.Phone,
+			&candidate.Telegram,
+			&candidate.City,
+			&candidate.Birthday,
+		); err != nil {
+			return nil, err
+		}
+		candidates = append(candidates, candidate)
+	}
+
+	return candidates, nil
 }

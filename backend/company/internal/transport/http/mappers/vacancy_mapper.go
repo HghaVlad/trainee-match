@@ -7,8 +7,8 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/transport/http/dto"
 	createvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	getpublishedvacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	list_vac_by_comp "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
+	list_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
 	update_vacancy "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 )
 
@@ -39,6 +39,7 @@ func VacancyToDtoResponse(v *domain.Vacancy) *dto.VacancyFullResponse {
 		InternshipToOffer: v.InternshipToOffer,
 
 		Status:      string(v.Status),
+		ModStatus:   string(v.ModerationStatus),
 		CreatedBy:   v.CreatedBy,
 		PublishedAt: v.PublishedAt,
 
@@ -111,8 +112,7 @@ func VacancyCreateReqToUC(dtoReq *dto.VacancyCreateRequest, companyID uuid.UUID)
 	return req
 }
 
-func VacancyListRespToDto(
-	resp *list_vacancy.Response,
+func VacancyListRespToDto(resp *list_vacancy.Response,
 ) *dto.VacancyListResponse {
 	items := make([]dto.VacancyListItemResponse, 0, len(resp.Vacancies))
 
@@ -160,6 +160,7 @@ func ListVacByCompRespToDto(resp *list_vac_by_comp.Response) *dto.VacancyByCompL
 			SalaryFrom: v.SalaryFrom,
 			SalaryTo:   v.SalaryTo,
 
+			ModStatus: string(v.ModStatus),
 			Status:    string(v.Status),
 			CreatedAt: v.CreatedAt,
 		})

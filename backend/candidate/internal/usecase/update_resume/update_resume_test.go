@@ -11,10 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_resume/mocks"
 )
-
-// TODO: add more tests
 
 var (
 	ErrUpdateDb    = errors.New("update db error")
@@ -47,13 +44,13 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           Request
-		mockSetup     func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo)
+		mockSetup     func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid update",
 			req:  Request{ID: resumeID, UserId: userId, Name: stringPtr("New Name")},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
 
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
@@ -64,7 +61,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "not found",
 			req:  Request{ID: uuid.New(), UserId: userId},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
 
 				repo.On("GetById", ctx, mock.Anything).Return(domain.Resume{}, domain.ErrResumeNotFound).Once()
@@ -74,7 +71,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "forbidden",
 			req:  Request{ID: resumeID, UserId: userId},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				otherCandidate := domain.Candidate{ID: userId, UserId: uuid.New()}
 				candidateRepo.On("GetByUserID", ctx, userId).Return(otherCandidate, nil).Once()
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
@@ -83,7 +80,7 @@ func TestExecute(t *testing.T) {
 		},
 		{name: "candidate not found",
 			req: Request{ID: resumeID, UserId: userId},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).
 					Return(domain.Candidate{}, domain.ErrCandidateNotFound).
 					Once()
@@ -93,7 +90,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "skills not exist",
 			req:  Request{ID: resumeID, UserId: userId, Data: &ResumeData{SkillsList: &[]uuid.UUID{uuid.New()}}},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
 
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
@@ -104,7 +101,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "validation fail after update",
 			req:  Request{ID: resumeID, UserId: userId, Data: &ResumeData{Phone: stringPtr("bad phone")}},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
 
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
@@ -114,7 +111,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "repo update error",
 			req:  Request{ID: resumeID, UserId: userId, Name: stringPtr("New")},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(candidate, nil).Once()
 
 				repo.On("GetById", ctx, resumeID).Return(existing, nil).Once()
@@ -124,7 +121,7 @@ func TestExecute(t *testing.T) {
 		},
 		{name: "candidate repo error",
 			req: Request{ID: resumeID, UserId: userId},
-			mockSetup: func(repo *mocks.ResumeRepo, candidateRepo *mocks.CandidateRepo, skillRepo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockResumeRepo, candidateRepo *MockCandidateRepo, skillRepo *MockSkillRepo) {
 				candidateRepo.On("GetByUserID", ctx, userId).Return(domain.Candidate{}, ErrCandidateDb).Once()
 			},
 			expectedError: ErrCandidateDb,
@@ -132,18 +129,28 @@ func TestExecute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.ResumeRepo{}
-			skillRepo := &mocks.SkillRepo{}
-			candidateRepo := &mocks.CandidateRepo{}
+			repo := &MockResumeRepo{}
+			skillRepo := &MockSkillRepo{}
+			candidateRepo := &MockCandidateRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo, candidateRepo, skillRepo)
 			}
 
-			uc := New(repo, skillRepo, candidateRepo)
+			writer := &MockEventWriter{}
+			writer.On("WriteResumeUpserted", context.Background(), mock.AnythingOfType("events.ResumeUpserted")).
+				Return(nil)
+
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := New(repo, skillRepo, candidateRepo, writer, trManager)
 			err := uc.Execute(ctx, tt.req)
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 			}

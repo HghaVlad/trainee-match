@@ -7,6 +7,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/list"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/memget"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/company/update"
 )
 
@@ -18,6 +19,20 @@ func GetCompRespToDto(company *get.Response) *dto.CompanyResponse {
 		Description:      company.Description,
 		Website:          company.Website,
 		LogoURL:          company.LogoURL,
+		CreatedAt:        company.CreatedAt,
+		UpdatedAt:        company.UpdatedAt,
+	}
+}
+
+func GetCompanyMemToDto(company *memget.Response) *dto.CompanyMemResponse {
+	return &dto.CompanyMemResponse{
+		ID:               company.ID,
+		Name:             company.Name,
+		OpenVacanciesCnt: company.OpenVacanciesCnt,
+		Description:      company.Description,
+		Website:          company.Website,
+		LogoURL:          company.LogoURL,
+		ModerationStatus: string(company.ModStatus),
 		CreatedAt:        company.CreatedAt,
 		UpdatedAt:        company.UpdatedAt,
 	}

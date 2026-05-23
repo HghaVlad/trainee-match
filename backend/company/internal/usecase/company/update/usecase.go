@@ -14,11 +14,12 @@ import (
 )
 
 type Usecase struct {
-	compRepo     CompanyRepo
-	memberRepo   CompMemberRepo
-	outboxWriter outboxWriter
-	txManager    common.TxManager
-	cache        CacheRepo
+	compRepo      CompanyRepo
+	memberRepo    CompMemberRepo
+	outboxWriter  outboxWriter
+	txManager     common.TxManager
+	vacSearchRepo vacSearchRepo
+	cache         CacheRepo
 }
 
 func NewUsecase(
@@ -26,14 +27,16 @@ func NewUsecase(
 	memberRepo CompMemberRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
+	vacSearchRepo vacSearchRepo,
 	cache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		compRepo:     repo,
-		memberRepo:   memberRepo,
-		cache:        cache,
-		outboxWriter: outboxWriter,
-		txManager:    txManager,
+		compRepo:      repo,
+		memberRepo:    memberRepo,
+		cache:         cache,
+		outboxWriter:  outboxWriter,
+		txManager:     txManager,
+		vacSearchRepo: vacSearchRepo,
 	}
 }
 
@@ -45,12 +48,13 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		err := u.authorize(ctx, req.ID, identity)
-		if err != nil {
-			return err
-		}
+	if err := u.authorize(ctx, req.ID, identity); err != nil {
+		return err
+	}
 
+	nameUpd := false
+
+	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		oldName, err := u.compRepo.UpdateAndGetOldName(ctx, req)
 		if err != nil {
 			return err
@@ -61,11 +65,24 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 			if err != nil {
 				return err
 			}
+			nameUpd = true
 		}
 
 		u.cache.Del(ctx, req.ID)
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if nameUpd {
+		err = u.vacSearchRepo.UpdateCompanyName(ctx, req.ID, *req.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // only admin of company can update

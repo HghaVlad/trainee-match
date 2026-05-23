@@ -14,6 +14,7 @@ type RouterDeps struct {
 	candidateHandler *handlers.Candidate
 	resumeHandler    *handlers.Resume
 	skillHandler     *handlers.Skill
+	adminHandler     *handlers.Admin
 }
 
 func NewRouterDeps(
@@ -21,12 +22,14 @@ func NewRouterDeps(
 	candidateHandler *handlers.Candidate,
 	resumeHandler *handlers.Resume,
 	skillHandler *handlers.Skill,
+	adminHandler *handlers.Admin,
 ) *RouterDeps {
 	return &RouterDeps{
 		authMiddleware:   authMiddleware,
 		candidateHandler: candidateHandler,
 		resumeHandler:    resumeHandler,
 		skillHandler:     skillHandler,
+		adminHandler:     adminHandler,
 	}
 }
 
@@ -59,6 +62,21 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		r.Get("/{id}", deps.skillHandler.GetSkill)
 		r.Get("/list", deps.skillHandler.ListSkills)
 		// Note: Create skill functionality has been removed as per requirements
+	})
+
+	// Admin routes
+	router.Route("/api/v1/admin", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(deps.authMiddleware.Handler)
+			r.Use(auth.IsAdmin)
+			r.Get("/candidates", deps.adminHandler.GetCandidates)
+			r.Get("/candidates/{id}", deps.adminHandler.GetCandidate)
+			r.Get("/candidates/{id}/resumes", deps.adminHandler.GetCandidateResumes)
+			r.Get("/resumes/{id}", deps.adminHandler.GetResume)
+			r.Post("/resumes/{id}/archive", deps.adminHandler.ArchiveResume)
+			r.Post("/skills", deps.adminHandler.AddSkill)
+			r.Delete("/skills/{id}", deps.adminHandler.DeleteSkill)
+		})
 	})
 
 	router.Get("/swagger/*", handlers.SwaggerHandler)

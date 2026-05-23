@@ -9,10 +9,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/create_resume/mocks"
-
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 func TestExecute(t *testing.T) {
@@ -46,14 +45,14 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		req           *Request
-		mockSetup     func(*mocks.ResumeRepo, *mocks.CandidateRepo, *mocks.SkillRepo)
+		mockSetup     func(*MockResumeRepo, *MockCandidateRepo, *MockSkillRepo)
 		expectedID    uuid.UUID
 		expectedError error
 	}{
 		{
 			name: "valid request",
 			req:  validReq,
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 				s.On("AreSkillsExist", ctx, mock.Anything).Return(true, nil).Once()
 				r.On("Create", ctx, mock.AnythingOfType("*domain.Resume")).Return(validId, nil).Once()
@@ -64,7 +63,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "missing email",
 			req:  func() *Request { r := *validReq; r.Data.Email = ""; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -73,7 +72,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "missing phone",
 			req:  func() *Request { r := *validReq; r.Data.Phone = ""; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -82,7 +81,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "missing city",
 			req:  func() *Request { r := *validReq; r.Data.City = ""; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -91,7 +90,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "missing citizenship",
 			req:  func() *Request { r := *validReq; r.Data.Citizenship = ""; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -100,7 +99,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "empty education",
 			req:  func() *Request { r := *validReq; r.Data.Education = nil; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 				r.On("Create", ctx, mock.AnythingOfType("*domain.Resume")).Return(validId, nil).Once()
 			},
@@ -110,7 +109,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "empty work experiences",
 			req:  func() *Request { r := *validReq; r.Data.WorkExperiences = nil; r.Data.SkillsList = nil; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 				r.On("Create", ctx, mock.AnythingOfType("*domain.Resume")).Return(validId, nil).Once()
 			},
@@ -120,7 +119,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "skills repo error",
 			req:  func() *Request { r := *validReq; r.Data.SkillsList = []uuid.UUID{uuid.New()}; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 				s.On("AreSkillsExist", ctx, mock.Anything).Return(false, errSkillDB).Once()
 			},
@@ -130,7 +129,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "skills not exist",
 			req:  func() *Request { r := *validReq; r.Data.SkillsList = []uuid.UUID{uuid.New()}; return &r }(),
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 
 				s.On("AreSkillsExist", ctx, mock.Anything).Return(false, nil).Once()
@@ -141,7 +140,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "repo create error",
 			req:  validReq,
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(candidate, nil).Once()
 				s.On("AreSkillsExist", ctx, mock.Anything).Return(true, nil).Once()
 				r.On("Create", ctx, mock.AnythingOfType("*domain.Resume")).Return(uuid.Nil, errCreateDB).Once()
@@ -152,7 +151,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "candidate not found",
 			req:  validReq,
-			mockSetup: func(r *mocks.ResumeRepo, c *mocks.CandidateRepo, s *mocks.SkillRepo) {
+			mockSetup: func(r *MockResumeRepo, c *MockCandidateRepo, s *MockSkillRepo) {
 				c.On("GetByUserID", ctx, userID).Return(domain.Candidate{}, domain.ErrCandidateNotFound).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -162,19 +161,28 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.ResumeRepo{}
-			skillRepo := &mocks.SkillRepo{}
-			candidateRepo := &mocks.CandidateRepo{}
+			repo := &MockResumeRepo{}
+			skillRepo := &MockSkillRepo{}
+			candidateRepo := &MockCandidateRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo, candidateRepo, skillRepo)
 			}
+			writer := &MockEventWriter{}
+			writer.On("WriteResumeUpserted", context.Background(), mock.AnythingOfType("events.ResumeUpserted")).
+				Return(nil)
 
-			uc := New(repo, skillRepo, candidateRepo)
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := New(repo, skillRepo, candidateRepo, writer, trManager)
 			res, err := uc.Execute(ctx, *tt.req)
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 				require.Equal(t, uuid.Nil, res.ID)
 			} else {
 				require.NoError(t, err)

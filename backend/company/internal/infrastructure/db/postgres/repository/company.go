@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -30,13 +31,43 @@ func (repo *CompanyRepository) GetByID(ctx context.Context, id uuid.UUID) (*comp
 	q := postgres.GetQuerier(ctx, repo.db)
 
 	const query = `SELECT id, name, description, website,
-    	logo_key, open_vacancies_count, created_at, updated_at
-		FROM companies WHERE id = $1`
+    	logo_key, open_vacancies_count, moderation_status, created_at, updated_at
+		FROM companies WHERE id = $1 AND moderation_status = 'ok'`
 
 	var comp company.Company
 	err := q.QueryRow(ctx, query, id).
 		Scan(&comp.ID, &comp.Name, &comp.Description,
-			&comp.Website, &comp.LogoKey, &comp.OpenVacanciesCnt,
+			&comp.Website, &comp.LogoKey, &comp.OpenVacanciesCnt, &comp.ModerationStatus,
+			&comp.CreatedAt, &comp.UpdatedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("%w: id=%s", company.ErrCompanyNotFound, id)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("get company: %w", err)
+	}
+
+	return &comp, nil
+}
+
+func (repo *CompanyRepository) GetByMember(
+	ctx context.Context,
+	id uuid.UUID,
+	userID uuid.UUID,
+) (*company.Company, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `SELECT id, name, description, website,
+    	logo_key, open_vacancies_count, moderation_status, created_at, updated_at
+		FROM companies
+		JOIN company_members cm ON cm.company_id = id
+		WHERE id = $1 AND cm.user_id = $2`
+
+	var comp company.Company
+	err := q.QueryRow(ctx, query, id, userID).
+		Scan(&comp.ID, &comp.Name, &comp.Description,
+			&comp.Website, &comp.LogoKey, &comp.OpenVacanciesCnt, &comp.ModerationStatus,
 			&comp.CreatedAt, &comp.UpdatedAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -88,19 +119,24 @@ func (repo *CompanyRepository) ListSummaries(
 	fromClause, filterCondition, args := addFilter(filter, args)
 	orderBy := listCompanySummariesOrderToSQL(order)
 
+	cond := fmt.Sprintf("%s AND %s", cursorCondition, filterCondition)
+
+	if filter.OkModStatus {
+		cond += " AND c.moderation_status = 'ok'"
+	}
+
 	args = append(args, limit)
 
 	const query = `SELECT c.id, c.name, c.open_vacancies_count, c.logo_key, c.created_at
 		FROM %s
-		WHERE %s AND %s
+		WHERE %s
 		ORDER BY %s
 		LIMIT $%d`
 
 	filledQuery := fmt.Sprintf(
 		query,
 		fromClause,
-		filterCondition,
-		cursorCondition,
+		cond,
 		orderBy,
 		len(args),
 	)
@@ -258,6 +294,44 @@ func (repo *CompanyRepository) DecrementOpenVacancies(ctx context.Context, id uu
 	}
 
 	return nil
+}
+
+func (repo *CompanyRepository) UpdateModerationStatusAndGetOld(
+	ctx context.Context,
+	companyID uuid.UUID,
+	status company.ModerationStatus,
+	when time.Time,
+) (company.ModerationStatus, error) {
+	q := postgres.GetQuerier(ctx, repo.db)
+
+	const query = `
+		WITH old AS (
+			SELECT moderation_status
+			FROM companies
+			WHERE id = $1
+		)
+		UPDATE companies
+		SET moderation_status = $2, updated_at = $3
+		FROM old
+		WHERE id = $1
+		RETURNING old.moderation_status`
+
+	var oldStatus company.ModerationStatus
+
+	err := q.QueryRow(ctx, query, companyID, status, when).Scan(&oldStatus)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", company.ErrCompanyNotFound
+		}
+
+		return "", fmt.Errorf(
+			"update company moderation status: %w",
+			err,
+		)
+	}
+
+	return oldStatus, nil
 }
 
 func (repo *CompanyRepository) Delete(ctx context.Context, id uuid.UUID) error {

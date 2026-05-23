@@ -2,29 +2,32 @@ package create
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 // Usecase creates vacancy in draft status
 type Usecase struct {
 	vacancyRepo VacancyRepo
-	memberRepo  CompMemberRepo
+	compRepo    CompanyRepo
+	searchRepo  SearchRepo
 }
 
 func NewUsecase(
 	vacancyRepo VacancyRepo,
-	memberRepo CompMemberRepo,
+	compRepo CompanyRepo,
+	searchRepo SearchRepo,
 ) *Usecase {
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
-		memberRepo:  memberRepo,
+		compRepo:    compRepo,
+		searchRepo:  searchRepo,
 	}
 }
 
@@ -36,14 +39,21 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 
-	if err := u.authorize(ctx, request.CompanyID, ident); err != nil {
+	// only member of company can create vacancy
+	comp, err := u.compRepo.GetByMember(ctx, request.CompanyID, ident.UserID)
+	if err != nil {
 		return nil, err
 	}
 
-	err := u.vacancyRepo.Create(ctx, vac)
+	err = u.vacancyRepo.Create(ctx, vac)
+	if err != nil {
+		return nil, err
+	}
+
+	err = u.indexToSearch(ctx, vac, comp)
 	if err != nil {
 		return nil, err
 	}
@@ -51,18 +61,9 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 	return &Response{ID: vac.ID}, nil
 }
 
-// only member of company can create vacancy
-func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *identity.Identity) error {
-	if ident.Role != identity.RoleHR {
-		return identity.ErrHrRoleRequired
-	}
-
-	_, err := u.memberRepo.Get(ctx, ident.UserID, companyID)
-	if errors.Is(err, member.ErrCompanyMemberNotFound) {
-		return member.ErrCompanyMemberRequired
-	}
-
-	return err
+func (u *Usecase) indexToSearch(ctx context.Context, vac *vacancy.Vacancy, comp *company.Company) error {
+	searchView := views.SearchViewFromVacancy(*vac, comp.Name)
+	return u.searchRepo.Index(ctx, *searchView)
 }
 
 // user of identity is the creator of the vacancy
@@ -93,6 +94,9 @@ func vacancyFromReq(request *Request, ident *identity.Identity) *vacancy.Vacancy
 		SalaryTo:   request.SalaryTo,
 
 		InternshipToOffer: request.InternshipToOffer,
+
+		ModerationStatus: vacancy.ModerationStatusOK,
+		CreatedAt:        time.Now().UTC(),
 	}
 
 	if request.EmploymentType != nil {

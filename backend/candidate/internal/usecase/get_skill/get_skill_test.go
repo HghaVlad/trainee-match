@@ -7,10 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_skill/mocks"
-
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 var (
@@ -24,26 +23,26 @@ func TestExecute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockSetup     func(repo *mocks.SkillRepo)
+		mockSetup     func(repo *MockSkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid get",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domainSkill, nil).Once()
 			},
 			expectedError: nil,
 		},
 		{
 			name: "not found",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domain.Skill{}, domain.ErrSkillNotFound).Once()
 			},
 			expectedError: domain.ErrSkillNotFound,
 		},
 		{
 			name: "repo error",
-			mockSetup: func(repo *mocks.SkillRepo) {
+			mockSetup: func(repo *MockSkillRepo) {
 				repo.On("GetByID", ctx, id).Return(domain.Skill{}, ErrDb).Once()
 			},
 			expectedError: ErrDb,
@@ -52,7 +51,7 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.SkillRepo{}
+			repo := &MockSkillRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo)
 			}
@@ -61,7 +60,7 @@ func TestExecute(t *testing.T) {
 			resp, err := uc.Execute(ctx, GetByIdRequest{ID: id})
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, domainSkill.ID, resp.ID)
@@ -79,20 +78,20 @@ func TestExecuteList(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		mockSetup     func(repo *mocks.SkillRepo)
+		mockSetup     func(repo *MockSkillRepo)
 		expectedError error
 	}{
 		{
 			name: "valid list",
-			mockSetup: func(repo *mocks.SkillRepo) {
-				repo.On("List", ctx).Return(domainSkills, nil).Once()
+			mockSetup: func(repo *MockSkillRepo) {
+				repo.On("List", ctx, 1, 10).Return(domainSkills, nil).Once()
 			},
 			expectedError: nil,
 		},
 		{
 			name: "repo error",
-			mockSetup: func(repo *mocks.SkillRepo) {
-				repo.On("List", ctx).Return(nil, ErrDb).Once()
+			mockSetup: func(repo *MockSkillRepo) {
+				repo.On("List", ctx, 1, 10).Return(nil, ErrDb).Once()
 			},
 			expectedError: ErrDb,
 		},
@@ -100,16 +99,16 @@ func TestExecuteList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.SkillRepo{}
+			repo := &MockSkillRepo{}
 			if tt.mockSetup != nil {
 				tt.mockSetup(repo)
 			}
 
 			uc := New(repo)
-			resp, err := uc.ExecuteList(ctx, ListRequest{})
+			resp, err := uc.ExecuteList(ctx, ListRequest{Page: 1, Size: 10})
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, len(domainSkills), len(resp))

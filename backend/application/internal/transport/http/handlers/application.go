@@ -320,8 +320,10 @@ func handleApplyErr(err error) (oapi.CreateApplicationResponseObject, error) {
 			Message: err.Error(),
 		}, nil
 
-	case errors.Is(err, application.ErrVacancyNotPublished),
-		errors.Is(err, application.ErrResumeNotPublished):
+	case errors.Is(err, projection.ErrVacancyNotPublished),
+		errors.Is(err, projection.ErrVacancyBadModStatus),
+		errors.Is(err, application.ErrResumeNotPublished),
+		errors.Is(err, projection.ErrResumeBadModStatus):
 		return oapi.CreateApplication400JSONResponse{
 			BadRequestJSONResponse: oapi.BadRequestJSONResponse{
 				Error:   "bad_request",

@@ -7,15 +7,17 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 const (
 	andSalaryNotNull string = " AND v.salary_from IS NOT NULL AND v.salary_to IS NOT NULL"
 )
 
-func listVacRequirementsToSQL(requirements *list.Requirements) (string, []any) {
+func listVacRequirementsToSQL(requirements *listsearch.Requirements) (string, []any) {
 	if requirements == nil {
 		return "", nil
 	}
@@ -38,7 +40,7 @@ func listVacRequirementsToSQL(requirements *list.Requirements) (string, []any) {
 	return strings.Join(conditions, " AND "), args
 }
 
-func applySalary(r *list.Requirements, conds *[]string, args *[]any) {
+func applySalary(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.Salary == nil {
 		return
 	}
@@ -52,7 +54,7 @@ func applySalary(r *list.Requirements, conds *[]string, args *[]any) {
 	}
 }
 
-func applyHours(r *list.Requirements, conds *[]string, args *[]any) {
+func applyHours(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.HoursPerWeek == nil {
 		return
 	}
@@ -66,7 +68,7 @@ func applyHours(r *list.Requirements, conds *[]string, args *[]any) {
 	}
 }
 
-func applyDuration(r *list.Requirements, conds *[]string, args *[]any) {
+func applyDuration(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.Duration == nil {
 		return
 	}
@@ -80,25 +82,25 @@ func applyDuration(r *list.Requirements, conds *[]string, args *[]any) {
 	}
 }
 
-func applyWorkFormat(r *list.Requirements, conds *[]string, args *[]any) {
+func applyWorkFormat(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.WorkFormat != nil && len(*r.WorkFormat) > 0 {
 		addCondition(conds, args, "v.work_format = ANY($%d)", pq.Array(*r.WorkFormat))
 	}
 }
 
-func applyCompanies(r *list.Requirements, conds *[]string, args *[]any) {
+func applyCompanies(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.Companies != nil && len(*r.Companies) > 0 {
 		addCondition(conds, args, "v.company_id = ANY($%d)", pq.Array(*r.Companies))
 	}
 }
 
-func applyCity(r *list.Requirements, conds *[]string, args *[]any) {
+func applyCity(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.City != nil && len(*r.City) > 0 {
 		addCondition(conds, args, "v.city = ANY($%d)", pq.Array(*r.City))
 	}
 }
 
-func applyFlags(r *list.Requirements, conds *[]string, args *[]any) {
+func applyFlags(r *listsearch.Requirements, conds *[]string, args *[]any) {
 	if r.IsPaid != nil {
 		addCondition(conds, args, "v.is_paid = $%d", *r.IsPaid)
 	}
@@ -122,18 +124,18 @@ func addCondition(conditions *[]string, args *[]any, query string, arg any) {
 //--------------------------
 
 // returns SQL condition, updated slice of args
-func listVacCursorToSQL(order list.Order, cursor any, args []any) (string, []any) {
+func listVacCursorToSQL(order listsearch.Order, cursor any, args []any) (string, []any) {
 	switch c := cursor.(type) {
-	case *list.PublishedAtCursor:
+	case *listsearch.PublishedAtCursor:
 		return publishedAtCursorToSQL(*c, args)
-	case *list.SalaryCursor:
+	case *listsearch.SalaryCursor:
 		return salaryCursorToSQL(order, *c, args)
 	}
 
 	return "", args
 }
 
-func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, []any) {
+func publishedAtCursorToSQL(cursor listsearch.PublishedAtCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
 		"(v.published_at, v.id) < ($%d, $%d)",
 		len(args)+1, len(args)+2)
@@ -142,10 +144,10 @@ func publishedAtCursorToSQL(cursor list.PublishedAtCursor, args []any) (string, 
 	return condition, args
 }
 
-func salaryCursorToSQL(order list.Order, cursor list.SalaryCursor, args []any) (string, []any) {
+func salaryCursorToSQL(order listsearch.Order, cursor listsearch.SalaryCursor, args []any) (string, []any) {
 	var condition string
 
-	if order == list.OrderSalaryDesc {
+	if order == listsearch.OrderSalaryDesc {
 		condition = fmt.Sprintf(
 			"(v.salary_from, v.salary_to, v.id) < ($%d, $%d, $%d)",
 			len(args)+1, len(args)+2, len(args)+3)
@@ -169,7 +171,7 @@ func listByCompStatusToSQL(status *vacancy.Status, args []any) (string, []any) {
 	return condition, args
 }
 
-func listByCompCreatedAtCursorToSQL(cursor listbycomp.CreatedAtCursor, args []any) (string, []any) {
+func listByCompCreatedAtCursorToSQL(cursor listcompsearch.CreatedAtCursor, args []any) (string, []any) {
 	condition := fmt.Sprintf(
 		"(v.created_at, v.id) < ($%d, $%d)",
 		len(args)+1, len(args)+2)
@@ -188,15 +190,98 @@ const (
 	salaryAscOrderBy       string = "v.salary_from ASC, v.salary_to ASC NULLS LAST, v.id ASC"
 )
 
-func listVacOrderToSQL(order list.Order) string {
+func listVacOrderToSQL(order listsearch.Order) string {
 	switch order {
-	case list.OrderPublishedAtDesc:
+	case listsearch.OrderPublishedAtDesc:
 		return publishedAtDescOrderBy
-	case list.OrderSalaryDesc:
+	case listsearch.OrderSalaryDesc:
 		return salaryDescOrderBy
-	case list.OrderSalaryAsc:
+	case listsearch.OrderSalaryAsc:
 		return salaryAscOrderBy
+	case listsearch.OrderRelevance:
+		return ""
 	}
 
 	return ""
+}
+
+func buildVacSearchResult(
+	vacancies []views.PublishedVacSummary,
+	order listsearch.Order,
+	limit int,
+) (*listsearch.SearchResult, error) {
+	result := &listsearch.SearchResult{
+		Vacancies: vacancies,
+	}
+
+	result.HasNext = len(vacancies) > limit
+
+	if !result.HasNext {
+		return result, nil
+	}
+
+	cursorVac := vacancies[limit]
+	result.Vacancies = result.Vacancies[:limit]
+
+	switch order {
+	case listsearch.OrderPublishedAtDesc:
+		result.NextCursor = &listsearch.PublishedAtCursor{
+			PublishedAt: cursorVac.PublishedAt,
+			ID:          cursorVac.ID,
+		}
+
+	case listsearch.OrderSalaryAsc, listsearch.OrderSalaryDesc:
+		if cursorVac.SalaryFrom == nil || cursorVac.SalaryTo == nil {
+			result.HasNext = false
+		} else {
+			result.NextCursor = &listsearch.SalaryCursor{
+				SalaryFrom: *cursorVac.SalaryFrom,
+				SalaryTo:   *cursorVac.SalaryTo,
+				ID:         cursorVac.ID,
+			}
+		}
+
+	case listsearch.OrderRelevance:
+		return nil, common.ErrUnsupportedListOrder
+
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	return result, nil
+}
+
+func buildCompVacSearchResult(
+	vacancies []views.MemberVacSummary,
+	order listcompsearch.Order,
+	limit int,
+) (*listcompsearch.SearchResult, error) {
+	result := &listcompsearch.SearchResult{
+		Vacancies: vacancies,
+	}
+
+	result.HasNext = len(vacancies) > limit
+
+	if !result.HasNext {
+		return result, nil
+	}
+
+	cursorVac := vacancies[limit]
+	result.Vacancies = result.Vacancies[:limit]
+
+	switch order {
+	case listcompsearch.OrderCreatedAtDesc:
+		result.NextCursor = &listcompsearch.CreatedAtCursor{
+			CreatedAt: cursorVac.CreatedAt,
+			ID:        cursorVac.ID,
+		}
+
+	case listcompsearch.OrderRelevance:
+		return nil, common.ErrUnsupportedListOrder
+
+	default:
+		return nil, common.ErrUnsupportedListOrder
+	}
+
+	return result, nil
 }

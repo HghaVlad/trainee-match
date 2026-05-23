@@ -3,11 +3,11 @@ package get_candidate
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }

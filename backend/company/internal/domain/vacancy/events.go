@@ -15,6 +15,13 @@ type PublishedEvent struct {
 	OccurredAt  time.Time `avro:"occurred_at"`
 }
 
+type ModerationUpdatedEvent struct {
+	EventID          uuid.UUID        `avro:"event_id"`
+	VacancyID        uuid.UUID        `avro:"vacancy_id"`
+	ModerationStatus ModerationStatus `avro:"moderation_status"`
+	OccurredAt       time.Time        `avro:"occurred_at"`
+}
+
 type UpdatedEvent struct {
 	EventID    uuid.UUID `avro:"event_id"`
 	VacancyID  uuid.UUID `avro:"vacancy_id"`

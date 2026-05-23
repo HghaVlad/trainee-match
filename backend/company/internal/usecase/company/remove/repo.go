@@ -20,3 +20,7 @@ type CompMemberRepo interface {
 type CacheRepo interface {
 	Del(ctx context.Context, id uuid.UUID)
 }
+
+type vacSearchRepo interface {
+	RemoveByCompanyID(ctx context.Context, compID uuid.UUID) error
+}

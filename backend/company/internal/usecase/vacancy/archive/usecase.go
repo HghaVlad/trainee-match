@@ -22,6 +22,7 @@ type Usecase struct {
 	compRepo     CompanyRepo
 	outboxWriter outboxWriter
 	txManager    common.TxManager
+	searchRepo   SearchRepo
 	vacCache     CacheRepo
 	pubVacCache  CacheRepo
 	compCache    CacheRepo
@@ -33,6 +34,7 @@ func NewUsecase(
 	memberRepo CompMemberRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
+	searchRepo SearchRepo,
 	vacCache CacheRepo,
 	pubVacCache CacheRepo,
 	compCache CacheRepo,
@@ -43,6 +45,7 @@ func NewUsecase(
 		compRepo:     compRepo,
 		outboxWriter: outboxWriter,
 		txManager:    txManager,
+		searchRepo:   searchRepo,
 		vacCache:     vacCache,
 		pubVacCache:  pubVacCache,
 		compCache:    compCache,
@@ -61,11 +64,14 @@ func (u *Usecase) Execute(
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
-	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, compID, identity); err != nil {
-			return err
-		}
+	if err := u.authorize(ctx, compID, identity); err != nil {
+		return err
+	}
 
+	updated := false
+	compUpd := false
+
+	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		oldStatus, err := u.vacRepo.ArchiveAndGetOldStatus(ctx, vacID, compID)
 		if err != nil {
 			return err
@@ -86,13 +92,35 @@ func (u *Usecase) Execute(
 				return err
 			}
 
-			u.compCache.Del(ctx, compID)
+			compUpd = true
 		}
 
-		u.vacCache.Del(ctx, vacID)
-		u.pubVacCache.Del(ctx, vacID)
+		updated = true
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if updated {
+		u.vacCache.Del(ctx, vacID)
+		u.pubVacCache.Del(ctx, vacID)
+
+		searchView, err := u.vacRepo.GetSearchView(ctx, vacID)
+		if err != nil {
+			return err
+		}
+
+		if err := u.searchRepo.Index(ctx, *searchView); err != nil {
+			return err
+		}
+	}
+
+	if compUpd {
+		u.compCache.Del(ctx, compID)
+	}
+
+	return nil
 }
 
 // only member of company can archive vacancy

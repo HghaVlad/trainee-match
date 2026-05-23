@@ -3,22 +3,34 @@ package update_candidate
 import (
 	"context"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
-//go:generate mockery --name=CandidateRepo --output=mocks --outpkg=mocks
 type CandidateRepo interface {
 	Update(ctx context.Context, candidate domain.Candidate) (domain.Candidate, error)
 	GetByUserID(ctx context.Context, id uuid.UUID) (domain.Candidate, error)
 }
 
-type UseCase struct {
-	repo CandidateRepo
+type EventWriter interface {
+	WriteCandidateUpserted(ctx context.Context, ev events.CandidateUpserted) error
 }
 
-func New(repo CandidateRepo) *UseCase {
-	return &UseCase{repo: repo}
+type TrManager interface {
+	Do(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
+type UseCase struct {
+	repo      CandidateRepo
+	writer    EventWriter
+	trManager TrManager
+}
+
+func New(repo CandidateRepo, writer EventWriter, trManager TrManager) *UseCase {
+	return &UseCase{repo: repo, writer: writer, trManager: trManager}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) (*CandidateResponse, error) {
@@ -50,12 +62,21 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 	if req.Birthday != nil {
 		candidate.Birthday = *req.Birthday
 	}
+	if req.FullName != "" {
+		candidate.FullName = req.FullName
+	}
 
 	if err = candidate.Validate(); err != nil {
 		return nil, err
 	}
 
-	candidate, err = uc.repo.Update(ctx, candidate)
+	err = uc.trManager.Do(ctx, func(ctx context.Context) error {
+		candidate, err = uc.repo.Update(ctx, candidate)
+		if err != nil {
+			return err
+		}
+		return uc.writer.WriteCandidateUpserted(ctx, events.NewCandidateUpserted(candidate, req.Email))
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +84,7 @@ func (uc *UseCase) Execute(ctx context.Context, userID uuid.UUID, req *Request) 
 	resp := CandidateResponse{
 		ID:       candidate.ID,
 		UserID:   candidate.UserId,
+		FullName: candidate.FullName,
 		Phone:    candidate.Phone,
 		Telegram: candidate.Telegram,
 		City:     candidate.City,

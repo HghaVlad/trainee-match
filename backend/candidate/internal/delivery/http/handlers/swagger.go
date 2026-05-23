@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/docs"
 )
 
 // SwaggerHandler

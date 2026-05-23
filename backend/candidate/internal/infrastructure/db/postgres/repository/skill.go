@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 type SkillRepo struct {
@@ -32,9 +34,17 @@ func (r *SkillRepo) GetByID(ctx context.Context, id uuid.UUID) (domain.Skill, er
 	return skill, err
 }
 
-func (r *SkillRepo) List(ctx context.Context) ([]domain.Skill, error) {
-	query := `SELECT id, name FROM skills ORDER BY name`
-	rows, err := r.db.Query(ctx, query)
+func (r *SkillRepo) List(ctx context.Context, page, size int) ([]domain.Skill, error) {
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
+	offset := (page - 1) * size
+
+	query := `SELECT id, name FROM skills ORDER BY name LIMIT $1 OFFSET $2`
+	rows, err := r.db.Query(ctx, query, size, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -66,4 +76,34 @@ func (r *SkillRepo) AreSkillsExist(ctx context.Context, skillIDs []uuid.UUID) (b
 
 	// If count equals the length of skillIDs, all skills exist
 	return count == len(skillIDs), nil
+}
+
+func (r *SkillRepo) Create(ctx context.Context, skill domain.Skill) (uuid.UUID, error) {
+	query := `INSERT INTO skills (name) VALUES ($1) RETURNING id`
+
+	var id uuid.UUID
+	if err := r.db.QueryRow(ctx, query, skill.Name).Scan(&id); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return uuid.Nil, domain.ErrSkillAlreadyExists
+		}
+		return uuid.Nil, err
+	}
+
+	return id, nil
+}
+
+func (r *SkillRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM skills WHERE id = $1`
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrSkillNotFound
+	}
+
+	return nil
 }

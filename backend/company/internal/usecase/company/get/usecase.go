@@ -22,7 +22,6 @@ func NewGetByIDUsecase(repo CompanyRepo, cache CacheRepo) *Usecase {
 }
 
 func (u *Usecase) Execute(ctx context.Context, id uuid.UUID) (*Response, error) {
-	// TODO: think about retrieving logo from minio (via presigned or nah)
 	company := u.cache.Get(ctx, id)
 
 	if company != nil {

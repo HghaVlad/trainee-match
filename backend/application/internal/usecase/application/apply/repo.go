@@ -9,6 +9,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/application/internal/domain/projection"
 )
 
+//go:generate go run go.uber.org/mock/mockgen -source=repo.go -destination=mocks/port_mocks.go -package=mocks
 type candidateProjRepo interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*projection.Candidate, error)
 }

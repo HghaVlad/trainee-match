@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrSkillNotFound    = errors.New("skill not found")
-	ErrInvalidSkillName = errors.New("invalid skill name")
+	ErrSkillNotFound      = errors.New("skill not found")
+	ErrInvalidSkillName   = errors.New("invalid skill name")
+	ErrSkillAlreadyExists = errors.New("skill already exists")
 )
 
 type Skill struct {

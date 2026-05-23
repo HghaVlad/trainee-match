@@ -18,8 +18,9 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/get"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/getpublished"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/list"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listbycomp"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listcompsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/listsearch"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/remove"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
@@ -28,35 +29,44 @@ import (
 type VacancyHandler struct {
 	getByID          *get.Usecase
 	getPublishedByID *getpublished.Usecase
-	list             *list.Usecase
-	listByComp       *listbycomp.Usecase
+	list             *listsearch.Usecase
+	vacSearchList    *listsearch.Usecase
+	listByComp       *listcompsearch.Usecase
+	vacCompSearch    *listcompsearch.Usecase
 	create           *create.Usecase
 	update           *update.Usecase
 	publish          *publish.Usecase
 	archive          *archive.Usecase
+	upMod            *moderationstatus.Usecase
 	del              *remove.Usecase
 }
 
 func NewVacancyHandler(
 	getByID *get.Usecase,
 	getPublishedByID *getpublished.Usecase,
-	list *list.Usecase,
-	listByComp *listbycomp.Usecase,
+	list *listsearch.Usecase,
+	vacSearchList *listsearch.Usecase,
+	listByComp *listcompsearch.Usecase,
+	vacCompSearch *listcompsearch.Usecase,
 	create *create.Usecase,
 	update *update.Usecase,
 	publish *publish.Usecase,
 	archive *archive.Usecase,
+	upMod *moderationstatus.Usecase,
 	del *remove.Usecase,
 ) *VacancyHandler {
 	return &VacancyHandler{
 		getByID:          getByID,
 		getPublishedByID: getPublishedByID,
 		list:             list,
+		vacSearchList:    vacSearchList,
 		listByComp:       listByComp,
+		vacCompSearch:    vacCompSearch,
 		create:           create,
 		update:           update,
 		publish:          publish,
 		archive:          archive,
+		upMod:            upMod,
 		del:              del,
 	}
 }
@@ -201,7 +211,65 @@ func (h *VacancyHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Order == listsearch.OrderRelevance {
+		req.Order = listsearch.OrderPublishedAtDesc
+	}
+
 	res, err := h.list.Execute(ctx, req)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy")
+		}
+		return
+	}
+
+	resp := mappers.VacancyListRespToDto(res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
+}
+
+// ListSearch godoc
+// @Summary Search vacancy summaries
+// @Description Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param order query string false "Order attribute, supports relevance, published_at_desc, salary_desc, salary_asc, default relevance" default(relevance)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// Filters:
+// @Param query query string false "Query"
+// Salary range
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// Hours per week range
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// Duration range (months)
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
+// Boolean filters
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// Slice filters (multiple values allowed)
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
+// @Param company_id query []string false "Company filter (repeat param)" collectionFormat(multi)
+// @Success 200 {object} dto.VacancyListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /vacancies/search [get]
+func (h *VacancyHandler) ListSearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	req, err := helpers.ListVacRequestFromQuery(r)
+	if err != nil {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := h.vacSearchList.Execute(ctx, req)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {
@@ -254,7 +322,65 @@ func (h *VacancyHandler) ListByCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Order == listcompsearch.OrderRelevance {
+		req.Order = listcompsearch.OrderCreatedAtDesc
+	}
+
 	res, err := h.listByComp.Execute(ctx, req, iden)
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to list vacancy by company")
+		}
+		return
+	}
+
+	resp := mappers.ListVacByCompRespToDto(res)
+	helpers.RespondJSON(ctx, w, http.StatusOK, resp)
+}
+
+// ListByCompanySearch godoc
+// @Summary List search company's vacancy summaries
+// @Description Same as list vacancies/search but with extra info for company members. Search includes title and description
+// @Tags vacancy
+// @Accept json
+// @Produce json
+// @Param company-id path string true "Company ID (UUID)"
+// @Param query query string false "Query"
+// @Param order query string false "Supports relevance, created_at_desc, default relevance" default(relevance)
+// @Param cursor query string false "Cursor"
+// @Param limit query int false "Items per page" default(20)
+// @Param status query string false "Vacancy status filter"
+// @Param salary_min query int false "Minimum salary"
+// @Param salary_max query int false "Maximum salary"
+// @Param hours_min query int false "Minimum hours per week"
+// @Param hours_max query int false "Maximum hours per week"
+// @Param duration_min query int false "Minimum duration in days"
+// @Param duration_max query int false "Maximum duration in days"
+// @Param is_paid query bool false "Paid vacancy filter"
+// @Param internship_to_offer query bool false "Internship with possible job offer"
+// @Param flexible_schedule query bool false "Flexible schedule filter"
+// @Param work_format query []string false "Work format filter (repeat param)" collectionFormat(multi)
+// @Param city query []string false "City filter (repeat param)" collectionFormat(multi)
+// @Success 200 {object} dto.VacancyByCompListResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /companies/{company-id}/vacancies/search [get]
+func (h *VacancyHandler) ListByCompanySearch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	compID := middleware.UUIDFromContext(ctx, "company-id")
+
+	req, err := helpers.ListVacByCompRequestFromQuery(r, compID)
+	if err != nil {
+		helpers.RespondError(ctx, w, http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := h.vacCompSearch.Execute(ctx, req, iden)
 	if err != nil {
 		expected := h.handleErr(ctx, w, err)
 		if !expected {
@@ -374,6 +500,43 @@ func (h *VacancyHandler) Archive(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateModeration godoc
+// @Summary Update vacancy moderation status
+// @Description Updates moderation status of vacancy. Only platform admin can do this
+// @Tags admin-vacancy
+// @Accept json
+// @Produce json
+// @Param id path string true "Vacancy ID"
+// @Param request body dto.VacancyModerationUpdateRequest true "Moderation update request"
+// @Success 204
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /admin/vacancies/{id}/moderation [patch]
+func (h *VacancyHandler) UpdateModeration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	iden := middleware.IdentityFromContext(ctx)
+	vacancyID := middleware.UUIDFromContext(ctx, "id")
+	dtoReq := middleware.BodyFromContext[dto.VacancyModerationUpdateRequest](ctx)
+
+	req := &moderationstatus.Request{ID: vacancyID, Status: vacancy.ModerationStatus(dtoReq.Status)}
+
+	err := h.upMod.Execute(ctx, req, iden)
+
+	if err != nil {
+		expected := h.handleErr(ctx, w, err)
+		if !expected {
+			handleUnexpectedErr(ctx, w, err, "failed to update vacancy moderation",
+				"id", vacancyID)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Delete godoc
 // @Summary Delete vacancy
 // @Description Deletes vacancy by id
@@ -429,6 +592,7 @@ func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 		errors.Is(err, vacancy.ErrEmptyCityFilter),
 		errors.Is(err, vacancy.ErrEmptyCompaniesFilter),
 		errors.Is(err, vacancy.ErrInvalidSalaryOrderForUnpaid),
+		errors.Is(err, vacancy.ErrInvalidModerationStatus),
 		errors.Is(err, common.ErrInvalidCursor),
 		errors.Is(err, common.ErrCursorOrderMismatch),
 		errors.Is(err, common.ErrUnsupportedListOrder),
@@ -438,6 +602,7 @@ func (h *VacancyHandler) handleErr(ctx context.Context, w http.ResponseWriter, e
 
 	case errors.Is(err, identity.ErrInsufficientRole),
 		errors.Is(err, identity.ErrHrRoleRequired),
+		errors.Is(err, identity.ErrAdminRoleRequired),
 		errors.Is(err, member.ErrCompanyMemberRequired),
 		errors.Is(err, member.ErrInsufficientRoleInCompany):
 		helpers.RespondError(ctx, w, http.StatusForbidden, err)

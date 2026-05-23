@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25.1-alpine AS builder
 
 WORKDIR /app
 
@@ -12,9 +12,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o auth-service ./cmd/main.go
 
 FROM alpine:3.23
 
-WORKDIR /root/
+WORKDIR /src
 
 COPY --from=builder /app/auth-service .
+COPY --from=builder /app/internal/infra/db/postgres/migrations /src/internal/infra/db/postgres/migrations
 
 EXPOSE 8000
 

@@ -1,0 +1,81 @@
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+
+      "company_id": {
+        "type": "keyword"
+      },
+
+      "title": {
+        "type": "text"
+      },
+
+      "description": {
+        "type": "text"
+      },
+
+      "work_format": {
+        "type": "keyword"
+      },
+
+      "city": {
+        "type": "keyword"
+      },
+
+      "employment_type": {
+        "type": "keyword"
+      },
+
+      "status": {
+        "type": "keyword"
+      },
+
+      "flexible_schedule": {
+        "type": "boolean"
+      },
+
+      "is_paid": {
+        "type": "boolean"
+      },
+
+      "internship_to_offer": {
+        "type": "boolean"
+      },
+
+      "salary_from": {
+        "type": "integer"
+      },
+
+      "salary_to": {
+        "type": "integer"
+      },
+
+      "hours_per_week_from": {
+        "type": "integer"
+      },
+
+      "hours_per_week_to": {
+        "type": "integer"
+      },
+
+      "duration_from_days": {
+        "type": "integer"
+      },
+
+      "duration_to_days": {
+        "type": "integer"
+      },
+
+      "published_at": {
+        "type": "date"
+      },
+
+      "created_at": {
+        "type": "date"
+      }
+    }
+  }
+}

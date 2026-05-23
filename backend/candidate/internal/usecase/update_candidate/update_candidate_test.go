@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/update_candidate/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 )
 
 func stringPtr(s string) *string     { return &s }
@@ -37,17 +37,31 @@ func TestExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		request       *Request
-		mockSetup     func(repo *mocks.CandidateRepo)
+		mockSetup     func(repo *MockCandidateRepo)
 		expectedID    uuid.UUID
 		expectedError error
 	}{
 		{
 			name:    "valid request",
 			request: validRequest,
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
-				updated := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1234567890", Telegram: "@valid_user", City: "Valid City", Birthday: birthday}
+				updated := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1234567890",
+					Telegram: "@valid_user",
+					City:     "Valid City",
+					Birthday: birthday,
+				}
 				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(updated, nil).Once()
 			},
 			expectedID:    candidateID,
@@ -61,8 +75,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -76,8 +97,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -91,10 +119,12 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				existing := domain.Candidate{ID: candidateID, UserId: userID}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
-				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(domain.Candidate{}, domain.ErrPhoneAlreadyExists).Once()
+				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
+					Return(domain.Candidate{}, domain.ErrPhoneAlreadyExists).
+					Once()
 			},
 			expectedID:    uuid.Nil,
 			expectedError: domain.ErrPhoneAlreadyExists,
@@ -102,10 +132,24 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "phone is same as existing",
 			request: &Request{Phone: stringPtr("+1111111111")},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@user",
+					City:     "City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
-				updated := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+				updated := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@user",
+					City:     "City",
+					Birthday: birthday,
+				}
 				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(updated, nil).Once()
 			},
 			expectedID:    candidateID,
@@ -119,8 +163,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -134,8 +185,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -149,10 +207,12 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				existing := domain.Candidate{ID: candidateID, UserId: userID}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
-				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(domain.Candidate{}, domain.ErrTelegramAlreadyExists).Once()
+				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).
+					Return(domain.Candidate{}, domain.ErrTelegramAlreadyExists).
+					Once()
 			},
 			expectedID:    uuid.Nil,
 			expectedError: domain.ErrTelegramAlreadyExists,
@@ -160,8 +220,15 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "telegram is same as existing",
 			request: &Request{Telegram: stringPtr("@user")},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@user",
+					City:     "City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 				repo.On("Update", ctx, mock.AnythingOfType("domain.Candidate")).Return(existing, nil).Once()
 			},
@@ -176,8 +243,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr(""),
 				Birthday: timePtr(birthday),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -191,8 +265,15 @@ func TestExecute(t *testing.T) {
 				City:     stringPtr("Valid City"),
 				Birthday: timePtr(time.Now().Add(24 * time.Hour)),
 			},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@old", City: "Old City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@old",
+					City:     "Old City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -201,7 +282,7 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "GetByUserID returns repo error",
 			request: validRequest,
-			mockSetup: func(repo *mocks.CandidateRepo) {
+			mockSetup: func(repo *MockCandidateRepo) {
 				repo.On("GetByUserID", ctx, userID).Return(domain.Candidate{}, errGetByUserID).Once()
 			},
 			expectedID:    uuid.Nil,
@@ -210,8 +291,15 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "Update returns repo error",
 			request: &Request{Phone: stringPtr("+5555555555")},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@user",
+					City:     "City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 				repo.On("Update", ctx, mock.Anything).Return(domain.Candidate{}, errUpdate).Once()
 			},
@@ -221,8 +309,15 @@ func TestExecute(t *testing.T) {
 		{
 			name:    "no fields",
 			request: &Request{},
-			mockSetup: func(repo *mocks.CandidateRepo) {
-				existing := domain.Candidate{ID: candidateID, UserId: userID, Phone: "+1111111111", Telegram: "@user", City: "City", Birthday: birthday}
+			mockSetup: func(repo *MockCandidateRepo) {
+				existing := domain.Candidate{
+					ID:       candidateID,
+					UserId:   userID,
+					Phone:    "+1111111111",
+					Telegram: "@user",
+					City:     "City",
+					Birthday: birthday,
+				}
 				repo.On("GetByUserID", ctx, userID).Return(existing, nil).Once()
 				repo.On("Update", ctx, mock.Anything).Return(existing, nil).Once()
 			},
@@ -233,15 +328,25 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo := &mocks.CandidateRepo{}
+			repo := &MockCandidateRepo{}
 			tt.mockSetup(repo)
 
-			uc := New(repo)
+			writer := &MockEventWriter{}
+			writer.On("WriteCandidateUpserted", context.Background(), mock.AnythingOfType("events.CandidateUpserted")).
+				Return(nil)
+
+			trManager := &MockTrManager{}
+			trManager.On("Do", mock.Anything, mock.Anything).
+				Return(func(ctx context.Context, fn func(ctx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			uc := New(repo, writer, trManager)
 			resp, err := uc.Execute(ctx, userID, tt.request)
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				require.True(t, errors.Is(err, tt.expectedError), "expected %v got %v", tt.expectedError, err)
+				require.ErrorIs(t, err, tt.expectedError)
 				require.Nil(t, resp)
 			} else {
 				require.NoError(t, err)

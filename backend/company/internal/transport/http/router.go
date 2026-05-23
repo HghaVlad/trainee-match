@@ -23,6 +23,7 @@ type RouterDeps struct {
 	Logger         *slog.Logger
 }
 
+//nolint:funlen // global routing func
 func NewRouter(deps *RouterDeps) http.Handler {
 	router := chi.NewRouter()
 
@@ -40,11 +41,16 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					r.Get("/", deps.CompanyHandler.GetByID)
 
 					r.With(deps.AuthMiddleware.Handler,
+						compmiddleware.LoggingMiddleware).
+						Get("/me", deps.CompanyHandler.GetByMember)
+
+					r.With(deps.AuthMiddleware.Handler,
 						compmiddleware.BindJSONBodyMiddleware[dto.CompanyUpdateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Patch("/", deps.CompanyHandler.Update)
 
-					r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+					r.With(deps.AuthMiddleware.Handler,
+						compmiddleware.LoggingMiddleware).
 						Delete("/", deps.CompanyHandler.Delete)
 				})
 
@@ -55,7 +61,8 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.CompanyHandler.List)
 
-			r.With(deps.AuthMiddleware.Handler, compmiddleware.LoggingMiddleware).
+			r.With(deps.AuthMiddleware.Handler,
+				compmiddleware.LoggingMiddleware).
 				Get("/me", deps.CompanyHandler.ListMy)
 
 			// /company/{company-id}/members
@@ -89,6 +96,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 					r.With(compmiddleware.LoggingMiddleware).
 						Get("/", deps.VacancyHandler.ListByCompany)
 
+					r.With(compmiddleware.LoggingMiddleware).
+						Get("/search", deps.VacancyHandler.ListByCompanySearch)
+
 					r.With(compmiddleware.BindJSONBodyMiddleware[dto.VacancyCreateRequest](),
 						compmiddleware.LoggingMiddleware).
 						Post("/", deps.VacancyHandler.Create)
@@ -114,8 +124,24 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		Route("/api/v1/vacancies", func(r chi.Router) {
 			r.With(compmiddleware.LoggingMiddleware).Get("/", deps.VacancyHandler.List)
 
+			r.With(compmiddleware.LoggingMiddleware).Get("/search", deps.VacancyHandler.ListSearch)
+
 			r.With(compmiddleware.UUIDMiddleware("id"), compmiddleware.LoggingMiddleware).
 				Get("/{id}", deps.VacancyHandler.GetPublishedByID)
+		})
+
+	router.With(compmiddleware.TimeoutMiddleware(10*time.Second),
+		deps.AuthMiddleware.Handler).
+		Route("/api/v1/admin", func(r chi.Router) {
+			r.With(compmiddleware.UUIDMiddleware("id"),
+				compmiddleware.BindJSONBodyMiddleware[dto.CompanyModerationUpdateRequest](),
+				compmiddleware.LoggingMiddleware).
+				Patch("/companies/{id}/moderation", deps.CompanyHandler.UpdateModeration)
+
+			r.With(compmiddleware.UUIDMiddleware("id"),
+				compmiddleware.BindJSONBodyMiddleware[dto.VacancyModerationUpdateRequest](),
+				compmiddleware.LoggingMiddleware).
+				Patch("/vacancies/{id}/moderation", deps.VacancyHandler.UpdateModeration)
 		})
 
 	addHello(router)

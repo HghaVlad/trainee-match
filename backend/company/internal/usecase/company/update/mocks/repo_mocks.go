@@ -124,3 +124,40 @@ func (mr *MockCacheRepoMockRecorder) Del(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Del", reflect.TypeOf((*MockCacheRepo)(nil).Del), ctx, id)
 }
+
+// MockvacSearchRepo is a mock of vacSearchRepo interface.
+type MockvacSearchRepo struct {
+	ctrl     *gomock.Controller
+	recorder *MockvacSearchRepoMockRecorder
+}
+
+// MockvacSearchRepoMockRecorder is the mock recorder for MockvacSearchRepo.
+type MockvacSearchRepoMockRecorder struct {
+	mock *MockvacSearchRepo
+}
+
+// NewMockvacSearchRepo creates a new mock instance.
+func NewMockvacSearchRepo(ctrl *gomock.Controller) *MockvacSearchRepo {
+	mock := &MockvacSearchRepo{ctrl: ctrl}
+	mock.recorder = &MockvacSearchRepoMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockvacSearchRepo) EXPECT() *MockvacSearchRepoMockRecorder {
+	return m.recorder
+}
+
+// UpdateCompanyName mocks base method.
+func (m *MockvacSearchRepo) UpdateCompanyName(ctx context.Context, compID uuid.UUID, newName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCompanyName", ctx, compID, newName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateCompanyName indicates an expected call of UpdateCompanyName.
+func (mr *MockvacSearchRepoMockRecorder) UpdateCompanyName(ctx, compID, newName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCompanyName", reflect.TypeOf((*MockvacSearchRepo)(nil).UpdateCompanyName), ctx, compID, newName)
+}

@@ -15,6 +15,362 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/candidates": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List candidates (admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.CandidateResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/candidates/{id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get candidate by ID (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CandidateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/candidates/{id}/resumes": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List resumes for candidate (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ShortResumeResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/resumes/{id}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get resume by ID (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resume ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResumeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/resumes/{id}/archive": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Archive resume (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resume ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/skills": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create skill (admin)",
+                "parameters": [
+                    {
+                        "description": "Skill creation data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SkillRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SkillResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/skills/{id}": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete skill (admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Skill ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/candidate/": {
             "post": {
                 "description": "Creates a new candidate profile associated with the authenticated user",
@@ -35,7 +391,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest"
+                            "$ref": "#/definitions/dto.CandidateCreateRequest"
                         }
                     }
                 ],
@@ -43,31 +399,31 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "400": {
                         "description": "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -90,7 +446,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest"
+                            "$ref": "#/definitions/dto.CandidateUpdateRequest"
                         }
                     }
                 ],
@@ -98,31 +454,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "400": {
                         "description": "invalid request body, phone is required, telegram is required, city is required, invalid phone number format, invalid telegram username, invalid city format, birthday cannot be in the future",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -144,25 +500,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse"
+                            "$ref": "#/definitions/dto.CandidateResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -180,32 +536,46 @@ const docTemplate = `{
                     "resume"
                 ],
                 "summary": "List all resumes for the authenticated candidate",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ShortResumeResponse"
+                                "$ref": "#/definitions/dto.ShortResumeResponse"
                             }
                         }
                     },
                     "401": {
                         "description": "unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "candidate not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -230,7 +600,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest"
+                            "$ref": "#/definitions/dto.CreateResumeRequest"
                         }
                     }
                 ],
@@ -238,25 +608,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -287,31 +657,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -346,31 +716,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -400,7 +770,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest"
+                            "$ref": "#/definitions/dto.UpdateResumeRequest"
                         }
                     }
                 ],
@@ -408,37 +778,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse"
+                            "$ref": "#/definitions/dto.ResumeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -456,20 +826,34 @@ const docTemplate = `{
                     "skill"
                 ],
                 "summary": "List all skills",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse"
+                                "$ref": "#/definitions/dto.SkillResponse"
                             }
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -500,25 +884,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse"
+                            "$ref": "#/definitions/dto.SkillResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -549,7 +933,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateCreateRequest": {
+        "dto.CandidateCreateRequest": {
             "type": "object",
             "properties": {
                 "birthday": {
@@ -566,13 +950,16 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateResponse": {
+        "dto.CandidateResponse": {
             "type": "object",
             "properties": {
                 "birthday": {
                     "type": "string"
                 },
                 "city": {
+                    "type": "string"
+                },
+                "full_name": {
                     "type": "string"
                 },
                 "id": {
@@ -589,7 +976,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CandidateUpdateRequest": {
+        "dto.CandidateUpdateRequest": {
             "type": "object",
             "properties": {
                 "birthday": {
@@ -606,11 +993,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.CreateResumeRequest": {
+        "dto.CreateResumeRequest": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData"
+                    "$ref": "#/definitions/dto.ResumeData"
                 },
                 "name": {
                     "type": "string"
@@ -620,7 +1007,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education": {
+        "dto.Education": {
             "type": "object",
             "properties": {
                 "end_year": {
@@ -646,7 +1033,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ErrorResponse": {
+        "dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -654,7 +1041,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.PatchResumeData": {
+        "dto.PatchResumeData": {
             "type": "object",
             "properties": {
                 "additional_info": {
@@ -675,7 +1062,7 @@ const docTemplate = `{
                 "education": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education"
+                        "$ref": "#/definitions/dto.Education"
                     }
                 },
                 "email": {
@@ -708,12 +1095,12 @@ const docTemplate = `{
                 "work_experiences": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience"
+                        "$ref": "#/definitions/dto.WorkExperience"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData": {
+        "dto.ResumeData": {
             "type": "object",
             "properties": {
                 "additional_info": {
@@ -734,7 +1121,7 @@ const docTemplate = `{
                 "education": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.Education"
+                        "$ref": "#/definitions/dto.Education"
                     }
                 },
                 "email": {
@@ -768,21 +1155,24 @@ const docTemplate = `{
                 "work_experiences": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience"
+                        "$ref": "#/definitions/dto.WorkExperience"
                     }
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeResponse": {
+        "dto.ResumeResponse": {
             "type": "object",
             "properties": {
                 "candidate_id": {
                     "type": "string"
                 },
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ResumeData"
+                    "$ref": "#/definitions/dto.ResumeData"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "moderation_status": {
                     "type": "string"
                 },
                 "name": {
@@ -793,7 +1183,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.ShortResumeResponse": {
+        "dto.ShortResumeResponse": {
             "type": "object",
             "properties": {
                 "candidate_id": {
@@ -802,6 +1192,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "moderation_status": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -810,7 +1203,15 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.SkillResponse": {
+        "dto.SkillRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SkillResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -821,11 +1222,11 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.UpdateResumeRequest": {
+        "dto.UpdateResumeRequest": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.PatchResumeData"
+                    "$ref": "#/definitions/dto.PatchResumeData"
                 },
                 "id": {
                     "type": "string"
@@ -838,7 +1239,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_HghaVlad_trainee-match_backend_candidate_internal_delivery_http_dto.WorkExperience": {
+        "dto.WorkExperience": {
             "type": "object",
             "properties": {
                 "company": {

@@ -1,0 +1,39 @@
+template: testify
+packages:
+  github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/register:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mocks.go"
+      pkgname: "mocks"
+    interfaces:
+      AuthRepo:
+      OutboxWriter:
+  github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/login:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mocks.go"
+      pkgname: "mocks"
+    interfaces:
+      AuthRepo:
+  github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/logout:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mocks.go"
+      pkgname: "mocks"
+    interfaces:
+      AuthRepo:
+  github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/refresh_token:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mocks.go"
+      pkgname: "mocks"
+    interfaces:
+      AuthRepo:
+  github.com/HghaVlad/trainee-match/backend/auth/internal/usecase/get_user_me:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "mocks.go"
+      pkgname: "mocks"
+    interfaces:
+      AuthRepo:
+

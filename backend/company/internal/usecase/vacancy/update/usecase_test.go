@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/update/mocks"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type FakeTxManager struct {
@@ -26,27 +27,29 @@ func (m *FakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 }
 
 type testDeps struct {
-	memRepo   *mocks.MockCompMemberRepo
-	vacRepo   *mocks.MockVacancyRepo
-	outbox    *mocks.MockoutboxWriter
-	vacCache  *mocks.MockCacheRepo
-	txManager *FakeTxManager
+	vacRepo    *mocks.MockVacancyRepo
+	compRepo   *mocks.MockcompRepo
+	outbox     *mocks.MockoutboxWriter
+	vacCache   *mocks.MockCacheRepo
+	searchRepo *mocks.MocksearchRepo
+	txManager  *FakeTxManager
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 
 	return &testDeps{
-		memRepo:   mocks.NewMockCompMemberRepo(ctrl),
-		vacRepo:   mocks.NewMockVacancyRepo(ctrl),
-		outbox:    mocks.NewMockoutboxWriter(ctrl),
-		vacCache:  mocks.NewMockCacheRepo(ctrl),
-		txManager: new(FakeTxManager),
+		compRepo:   mocks.NewMockcompRepo(ctrl),
+		vacRepo:    mocks.NewMockVacancyRepo(ctrl),
+		outbox:     mocks.NewMockoutboxWriter(ctrl),
+		vacCache:   mocks.NewMockCacheRepo(ctrl),
+		searchRepo: mocks.NewMocksearchRepo(ctrl),
+		txManager:  new(FakeTxManager),
 	}
 }
 
 func NewUC(deps *testDeps) *update.Usecase {
-	return update.NewUsecase(deps.vacRepo, deps.memRepo, deps.outbox, deps.vacCache, deps.txManager)
+	return update.NewUsecase(deps.vacRepo, deps.compRepo, deps.outbox, deps.searchRepo, deps.vacCache, deps.txManager)
 }
 
 type vacMatcher struct {
@@ -92,6 +95,7 @@ func TestUsecase_Execute_OK_CreatesUpdatedEvent(t *testing.T) {
 	newTitle := "New Go dev"
 	newDesc := "New Desc"
 	sameSalary := 10000
+	cName := "company"
 
 	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
@@ -133,8 +137,8 @@ func TestUsecase_Execute_OK_CreatesUpdatedEvent(t *testing.T) {
 
 	deps := setup(t)
 
-	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, cID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+	deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
+		Return(&company.Company{ID: cID, Name: cName}, nil)
 
 	deps.vacRepo.EXPECT().GetByIDForUpdate(gomock.Any(), vID, cID).Return(vac, nil)
 
@@ -143,6 +147,16 @@ func TestUsecase_Execute_OK_CreatesUpdatedEvent(t *testing.T) {
 
 	deps.outbox.EXPECT().WriteVacancyUpdated(gomock.Any(), vacUpdatedEvMatcher{expectedEv}).
 		Return(nil)
+
+	deps.searchRepo.EXPECT().Index(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, view views.VacancySearch) error {
+			require.Equal(t, vac.ID, view.ID)
+			require.Equal(t, newTitle, view.Title)
+			require.Equal(t, newDesc, view.Description)
+			require.Equal(t, cID, view.CompanyID)
+			require.Equal(t, cName, view.CompanyName)
+			return nil
+		})
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vID)
 
@@ -194,13 +208,21 @@ func TestUsecase_Execute_OK_NoEvent(t *testing.T) {
 
 	deps := setup(t)
 
-	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, cID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+	deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
+		Return(&company.Company{ID: cID}, nil)
 
 	deps.vacRepo.EXPECT().GetByIDForUpdate(gomock.Any(), vID, cID).Return(vac, nil)
 
 	deps.vacRepo.EXPECT().Update(gomock.Any(), vacMatcher{expectedVac}).
 		Return(nil)
+
+	deps.searchRepo.EXPECT().Index(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, view views.VacancySearch) error {
+			require.Equal(t, vac.ID, view.ID)
+			require.Equal(t, newSalary, *view.SalaryTo)
+			require.Equal(t, cID, view.CompanyID)
+			return nil
+		})
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vID)
 
@@ -242,8 +264,8 @@ func TestUsecase_Execute_ConflictingChangesToExistingState(t *testing.T) {
 
 	deps := setup(t)
 
-	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, cID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+	deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
+		Return(&company.Company{ID: cID}, nil)
 
 	deps.vacRepo.EXPECT().GetByIDForUpdate(gomock.Any(), vID, cID).Return(vac, nil)
 
@@ -268,8 +290,8 @@ func TestUsecase_Execute_VacancyNotFound(t *testing.T) {
 
 	deps := setup(t)
 
-	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, cID).
-		Return(&member.CompanyMember{Role: member.CompanyRoleRecruiter}, nil)
+	deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
+		Return(&company.Company{ID: cID}, nil)
 
 	deps.vacRepo.EXPECT().GetByIDForUpdate(gomock.Any(), vID, cID).
 		Return(nil, vacancy.ErrVacancyNotFound)
@@ -281,7 +303,7 @@ func TestUsecase_Execute_VacancyNotFound(t *testing.T) {
 	require.ErrorIs(t, err, vacancy.ErrVacancyNotFound)
 }
 
-func TestUsecase_Execute_AuthErr(t *testing.T) {
+func TestUsecase_Execute_AuthCompanyErr(t *testing.T) {
 	vID := uuid.New()
 	cID := uuid.New()
 
@@ -306,14 +328,14 @@ func TestUsecase_Execute_AuthErr(t *testing.T) {
 		deps := setup(t)
 		ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
 
-		deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, cID).
-			Return(nil, member.ErrCompanyMemberNotFound)
+		deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
+			Return(nil, company.ErrCompanyNotFound)
 
 		uc := NewUC(deps)
 
 		err := uc.Execute(t.Context(), req, ident)
 
-		require.ErrorIs(t, err, member.ErrCompanyMemberRequired)
+		require.ErrorIs(t, err, company.ErrCompanyNotFound)
 	})
 }
 

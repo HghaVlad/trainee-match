@@ -1,7 +1,6 @@
 package mappers
 
 import (
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -9,6 +8,7 @@ import (
 	addmemb "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/add"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/list"
 	update_member "github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/update"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/member/views"
 )
 
 func CompanyAddHrReqToUC(
