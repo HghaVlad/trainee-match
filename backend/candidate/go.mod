@@ -3,7 +3,7 @@ module github.com/HghaVlad/trainee-match/backend/candidate
 go 1.25.0
 
 require (
-	github.com/HghaVlad/trainee-match/backend/contracts/go v1.0.0
+	github.com/HghaVlad/trainee-match/backend/api/contracts/go v1.0.0
 	github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2 v2.0.2
 	github.com/avito-tech/go-transaction-manager/trm/v2 v2.0.2
 	github.com/go-chi/chi/v5 v5.2.4
@@ -21,7 +21,7 @@ require (
 	google.golang.org/grpc v1.74.2
 )
 
-replace github.com/HghaVlad/trainee-match/backend/contracts/go => ../contracts/go
+replace github.com/HghaVlad/trainee-match/backend/api/contracts/go => ../api/contracts/go
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

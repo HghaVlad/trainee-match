@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package candidate.v1;
 
-option go_package = "github.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1;candidatev1";
+option go_package = "github.com/HghaVlad/trainee-match/backend/api/contracts/go/candidate/v1;candidatev1";
 
 service CandidateService {
   rpc GetCandidate (GetCandidateByUserIdRequest) returns (GetCandidateResponse);

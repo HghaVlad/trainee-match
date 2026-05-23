@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
+	candidatepb "github.com/HghaVlad/trainee-match/backend/api/contracts/go/candidate/v1"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_candidate_by_user_id"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/usecase/get_resume"
-	candidatepb "github.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
