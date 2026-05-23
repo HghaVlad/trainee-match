@@ -293,7 +293,7 @@ const file_candidate_v1_candidate_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\tR\x06status2\xc7\x01\n" +
 	"\x10CandidateService\x12]\n" +
 	"\fGetCandidate\x12).candidate.v1.GetCandidateByUserIdRequest\x1a\".candidate.v1.GetCandidateResponse\x12T\n" +
-	"\rGetResumeById\x12\".candidate.v1.GetResumeByIdRequest\x1a\x1f.candidate.v1.GetResumeResponseBQZOgithub.com/HghaVlad/trainee-match/backend/contracts/go/candidate/v1;candidatev1b\x06proto3"
+	"\rGetResumeById\x12\".candidate.v1.GetResumeByIdRequest\x1a\x1f.candidate.v1.GetResumeResponseBQZOgithub.com/HghaVlad/trainee-match/backend/api/contracts/go/candidate/v1;candidatev1b\x06proto3"
 
 var (
 	file_candidate_v1_candidate_proto_rawDescOnce sync.Once
