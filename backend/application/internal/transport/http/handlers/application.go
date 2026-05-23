@@ -121,8 +121,11 @@ func (h *Handler) WithdrawApplication(
 ) (oapi.WithdrawApplicationResponseObject, error) {
 	ident := middleware.IdentityFromContext(ctx)
 	req := withdraw.Request{
-		AppID:   request.ApplicationId,
-		Comment: request.Body.Comment,
+		AppID: request.ApplicationId,
+	}
+
+	if request.Body != nil {
+		req.Comment = request.Body.Comment
 	}
 
 	view, err := h.withdraw.Execute(ctx, req, *ident)
