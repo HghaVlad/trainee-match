@@ -30,6 +30,12 @@ func (d *Decoder) DecodeResumeDeletedEvent(ctx context.Context, data []byte) (pr
 	return event, err
 }
 
+func (d *Decoder) DecodeResumeArchivedEvent(ctx context.Context, data []byte) (projection.ResumeArchivedEvent, error) {
+	var event projection.ResumeArchivedEvent
+	err := d.decodeEvent(ctx, data, &event)
+	return event, err
+}
+
 func (d *Decoder) DecodeCandidateUpsertedEvent(
 	ctx context.Context,
 	data []byte,

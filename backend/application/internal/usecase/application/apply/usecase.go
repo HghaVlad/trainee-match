@@ -135,6 +135,9 @@ func (u *Usecase) getResumeProjAndCheck(ctx context.Context, resID, candID uuid.
 	if resumeProj.Status != projection.ResumeStatusPublished {
 		return nil, application.ErrResumeNotPublished
 	}
+	if resumeProj.ModerationStatus != projection.ModerationStatusOK {
+		return nil, projection.ErrResumeBadModStatus
+	}
 
 	if resumeProj.CandidateID != candID {
 		return nil, application.ErrResumeAccessDenied

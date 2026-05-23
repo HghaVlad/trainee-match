@@ -19,6 +19,7 @@ type Handler struct {
 	dLQSender            DLQSender
 	resumeUpserted       ResumeUpsertedUsecase
 	resumeDeleted        ResumeDeletedUsecase
+	resumeArchived       ResumeArchivedUsecase
 	candidateUpserted    CandidateUpsertedUsecase
 	companyUpdated       CompanyUpdatedUsecase
 	companyDeleted       CompanyDeletedUsecase
@@ -38,6 +39,7 @@ func NewHandler(
 	sender DLQSender,
 	resumeUpsertedUsecase ResumeUpsertedUsecase,
 	resumeDeletedUsecase ResumeDeletedUsecase,
+	resumeArchivedUsecase ResumeArchivedUsecase,
 	candidateUpsertedUsecase CandidateUpsertedUsecase,
 	companyUpdatedUsecase CompanyUpdatedUsecase,
 	companyDeletedUsecase CompanyDeletedUsecase,
@@ -56,6 +58,7 @@ func NewHandler(
 		dLQSender:            sender,
 		resumeUpserted:       resumeUpsertedUsecase,
 		resumeDeleted:        resumeDeletedUsecase,
+		resumeArchived:       resumeArchivedUsecase,
 		candidateUpserted:    candidateUpsertedUsecase,
 		companyUpdated:       companyUpdatedUsecase,
 		companyDeleted:       companyDeletedUsecase,
@@ -93,6 +96,8 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 			status, err = h.handleResumeUpsertedEvent(ctx, event.Payload)
 		case "ResumeDeleted":
 			status, err = h.handleResumeDeletedEvent(ctx, event.Payload)
+		case "ResumeArchived":
+			status, err = h.handleResumeArchivedEvent(ctx, event.Payload)
 		case "CandidateUpserted":
 			status, err = h.handleCandidateUpsertedEvent(ctx, event.Payload)
 		case "CompanyUpdated":
@@ -159,6 +164,19 @@ func (h *Handler) handleResumeDeletedEvent(ctx context.Context, payload []byte) 
 	}
 
 	err = h.resumeDeleted.Execute(ctx, event)
+	if err != nil {
+		return ResultStatusRetry, err
+	}
+	return ResultStatusSuccess, nil
+}
+
+func (h *Handler) handleResumeArchivedEvent(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.DecodeResumeArchivedEvent(ctx, payload)
+	if err != nil {
+		return ResultStatusDLQ, err
+	}
+
+	err = h.resumeArchived.Execute(ctx, event)
 	if err != nil {
 		return ResultStatusRetry, err
 	}

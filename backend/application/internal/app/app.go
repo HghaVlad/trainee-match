@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/HghaVlad/trainee-match/backend/application/internal/usecase/projection/resumearchived"
+
 	"github.com/HghaVlad/trainee-match/backend/application/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres"
 	"github.com/HghaVlad/trainee-match/backend/application/internal/infrastructure/db/postgres/repository"
@@ -132,6 +134,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 	// Event usecases
 	resumeUpserted := resumeupserted.NewUsecase(resumeProjRepo)
 	resumeDeleted := resumedeleted.NewUsecase(resumeProjRepo)
+	resumeArchived := resumearchived.NewUsecase(resumeProjRepo)
 	candidateUpserted := candidateupserted.NewUsecase(candProjRepo)
 	companyUpdated := companyupdated.NewUsecase(vacProjRepo)
 	companyDeleted := companydeleted.NewUsecase(compMemProjRepo, vacProjRepo, appRepo, appStatusHistoryRepo, txManager)
@@ -159,6 +162,7 @@ func Build(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, e
 		dlqSender,
 		resumeUpserted,
 		resumeDeleted,
+		resumeArchived,
 		candidateUpserted,
 		companyUpdated,
 		companyDeleted,

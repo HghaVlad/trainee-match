@@ -30,7 +30,7 @@ func (r *ResumeProjection) GetByID(ctx context.Context, id uuid.UUID) (*projecti
 	q := r.getter.DefaultTrOrDB(ctx, r.db)
 
 	const query = `
-		SELECT id, candidate_id, name, data, status, created_at, updated_at
+		SELECT id, candidate_id, name, data, status, created_at, updated_at, moderation_status
 		FROM resume_projection
 		WHERE id = $1
 	`
@@ -40,7 +40,7 @@ func (r *ResumeProjection) GetByID(ctx context.Context, id uuid.UUID) (*projecti
 
 	err := q.QueryRow(ctx, query, id).
 		Scan(&resume.ID, &resume.CandidateID, &resume.Name, &dataRaw, &resume.Status,
-			&resume.CreatedAt, &resume.UpdatedAt)
+			&resume.CreatedAt, &resume.UpdatedAt, &resume.ModerationStatus)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -102,6 +102,18 @@ func (r *ResumeProjection) Delete(ctx context.Context, resumeID uuid.UUID) error
 	_, err := q.Exec(ctx, query, resumeID)
 	if err != nil {
 		return fmt.Errorf("delete resume projection: %w", err)
+	}
+	return nil
+}
+
+func (r *ResumeProjection) Archive(ctx context.Context, resumeID uuid.UUID) error {
+	q := r.getter.DefaultTrOrDB(ctx, r.db)
+
+	const query = `UPDATE resume_projection SET moderation_status = 'hidden' WHERE id = $1`
+
+	_, err := q.Exec(ctx, query, resumeID)
+	if err != nil {
+		return fmt.Errorf("archive resume projection: %w", err)
 	}
 	return nil
 }

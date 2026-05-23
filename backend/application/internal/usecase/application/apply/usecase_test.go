@@ -110,6 +110,7 @@ func TestUsecase_Execute_Success(t *testing.T) {
 		Data: projection.ResumeData{
 			Email: "resume@test.com",
 		},
+		ModerationStatus: projection.ModerationStatusOK,
 	}
 
 	vacancy := &projection.Vacancy{
@@ -240,14 +241,51 @@ func TestUsecase_Execute_ResumeNotPublished(t *testing.T) {
 	deps.resumeRepo.EXPECT().
 		GetByID(gomock.Any(), resumeID).
 		Return(&projection.Resume{
-			ID:          resumeID,
-			CandidateID: candID,
-			Status:      projection.ResumeStatusDraft,
+			ID:               resumeID,
+			CandidateID:      candID,
+			Status:           projection.ResumeStatusDraft,
+			ModerationStatus: projection.ModerationStatusHidden,
 		}, nil)
 
 	resp, err := uc.Execute(context.Background(), req, ident)
 
 	require.ErrorIs(t, err, application.ErrResumeNotPublished)
+	require.Nil(t, resp)
+}
+
+func TestUsecase_Execute_ResumeArchived(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUc(deps)
+
+	ident := candidateIdentity()
+
+	candID := uuid.New()
+	resumeID := uuid.New()
+
+	req := apply.Request{
+		ResumeID: resumeID,
+	}
+
+	deps.candRepo.EXPECT().
+		GetByUserID(gomock.Any(), ident.UserID).
+		Return(&projection.Candidate{
+			ID: candID,
+		}, nil)
+
+	deps.resumeRepo.EXPECT().
+		GetByID(gomock.Any(), resumeID).
+		Return(&projection.Resume{
+			ID:               resumeID,
+			CandidateID:      candID,
+			Status:           projection.ResumeStatusPublished,
+			ModerationStatus: projection.ModerationStatusHidden,
+		}, nil)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, projection.ErrResumeBadModStatus)
 	require.Nil(t, resp)
 }
 
@@ -272,9 +310,10 @@ func TestUsecase_Execute_ResumeAccessDenied(t *testing.T) {
 	deps.resumeRepo.EXPECT().
 		GetByID(gomock.Any(), req.ResumeID).
 		Return(&projection.Resume{
-			ID:          req.ResumeID,
-			CandidateID: uuid.New(),
-			Status:      projection.ResumeStatusPublished,
+			ID:               req.ResumeID,
+			CandidateID:      uuid.New(),
+			Status:           projection.ResumeStatusPublished,
+			ModerationStatus: projection.ModerationStatusOK,
 		}, nil)
 
 	resp, err := uc.Execute(context.Background(), req, ident)
@@ -341,9 +380,10 @@ func TestUsecase_Execute_VacancyNotApplyable(t *testing.T) {
 		deps.resumeRepo.EXPECT().
 			GetByID(gomock.Any(), req.ResumeID).
 			Return(&projection.Resume{
-				ID:          req.ResumeID,
-				CandidateID: candID,
-				Status:      projection.ResumeStatusPublished,
+				ID:               req.ResumeID,
+				CandidateID:      candID,
+				Status:           projection.ResumeStatusPublished,
+				ModerationStatus: projection.ModerationStatusOK,
 			}, nil)
 
 		deps.vacRepo.EXPECT().
@@ -385,9 +425,10 @@ func TestUsecase_Execute_CreateApplicationError(t *testing.T) {
 	deps.resumeRepo.EXPECT().
 		GetByID(gomock.Any(), resumeID).
 		Return(&projection.Resume{
-			ID:          resumeID,
-			CandidateID: candID,
-			Status:      projection.ResumeStatusPublished,
+			ID:               resumeID,
+			CandidateID:      candID,
+			Status:           projection.ResumeStatusPublished,
+			ModerationStatus: projection.ModerationStatusOK,
 		}, nil)
 
 	deps.vacRepo.EXPECT().
@@ -444,9 +485,10 @@ func TestUsecase_Execute_AddHistoryError(t *testing.T) {
 	deps.resumeRepo.EXPECT().
 		GetByID(gomock.Any(), resumeID).
 		Return(&projection.Resume{
-			ID:          resumeID,
-			CandidateID: candID,
-			Status:      projection.ResumeStatusPublished,
+			ID:               resumeID,
+			CandidateID:      candID,
+			Status:           projection.ResumeStatusPublished,
+			ModerationStatus: projection.ModerationStatusOK,
 		}, nil)
 
 	deps.vacRepo.EXPECT().

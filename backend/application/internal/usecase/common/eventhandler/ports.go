@@ -10,6 +10,7 @@ import (
 type Decoder interface {
 	DecodeResumeUpsertedEvent(ctx context.Context, data []byte) (projection.ResumeUpsertedEvent, error)
 	DecodeResumeDeletedEvent(ctx context.Context, data []byte) (projection.ResumeDeletedEvent, error)
+	DecodeResumeArchivedEvent(ctx context.Context, data []byte) (projection.ResumeArchivedEvent, error)
 	DecodeCandidateUpsertedEvent(ctx context.Context, data []byte) (projection.CandidateUpsertedEvent, error)
 	DecodeCompanyUpdatedEvent(ctx context.Context, data []byte) (projection.CompanyUpdatedEvent, error)
 	DecodeCompanyDeletedEvent(ctx context.Context, data []byte) (projection.CompanyDeletedEvent, error)
@@ -32,6 +33,10 @@ type ResumeUpsertedUsecase interface {
 
 type ResumeDeletedUsecase interface {
 	Execute(ctx context.Context, event projection.ResumeDeletedEvent) error
+}
+
+type ResumeArchivedUsecase interface {
+	Execute(ctx context.Context, event projection.ResumeArchivedEvent) error
 }
 
 type CandidateUpsertedUsecase interface {
