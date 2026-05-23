@@ -6,14 +6,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type ResumeDeleted struct {
+type ResumeArchived struct {
 	EventID    uuid.UUID `avro:"event_id"`
 	ResumeID   uuid.UUID `avro:"resume_id"`
 	OccurredAt time.Time `avro:"occurred_at"`
 }
 
-func NewResumeDeleted(resumeID uuid.UUID) ResumeDeleted {
-	return ResumeDeleted{
+func NewResumeArchived(resumeID uuid.UUID) ResumeArchived {
+	return ResumeArchived{
 		EventID:    uuid.New(),
 		ResumeID:   resumeID,
 		OccurredAt: time.Now().UTC(),

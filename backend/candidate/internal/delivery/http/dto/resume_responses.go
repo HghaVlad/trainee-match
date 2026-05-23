@@ -40,7 +40,6 @@ func UseCaseResponseToDtoResumeResponse(resp get_resume.Response) ResumeResponse
 		}
 	}
 
-	// Parse date string back to DTO Date type
 	dtoData := ResumeData{
 		LastName:        resp.Data.LastName,
 		FirstName:       resp.Data.FirstName,
@@ -94,7 +93,6 @@ func AdminUseCaseResponseToDtoResumeResponse(resp adminGetResume.Response) Resum
 		}
 	}
 
-	// Parse date string back to DTO Date type
 	dtoData := ResumeData{
 		LastName:        resp.Data.LastName,
 		FirstName:       resp.Data.FirstName,

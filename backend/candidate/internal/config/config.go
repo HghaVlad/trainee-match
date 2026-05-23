@@ -70,7 +70,7 @@ func readConfigFile(v *viper.Viper) {
 	v.SetConfigName(".env")
 	v.SetConfigType("env")
 	v.AddConfigPath(".")
-
+	v.ReadInConfig()
 }
 
 // unmarshalConfig unmarshals viper settings into Config with decode hooks

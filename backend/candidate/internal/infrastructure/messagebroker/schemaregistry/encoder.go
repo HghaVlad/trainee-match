@@ -13,6 +13,7 @@ var (
 	CandidateUpsertedEvent = "candidate-upserted-value"
 	ResumeDeletedEvent     = "resume-deleted-value"
 	CandidateDeletedEvent  = "candidate-deleted-value"
+	ResumeArchivedEvent    = "resume-archived-value"
 )
 
 type Encoder struct {
@@ -37,6 +38,10 @@ func (en *Encoder) ResumeDeletedToBytes(ev events.ResumeDeleted) ([]byte, int, e
 
 func (en *Encoder) CandidateDeletedToBytes(ev events.CandidateDeleted) ([]byte, int, error) {
 	return en.EventToBytes(CandidateDeletedEvent, ev)
+}
+
+func (en *Encoder) ResumeArchivedToBytes(ev events.ResumeArchived) ([]byte, int, error) {
+	return en.EventToBytes(ResumeArchivedEvent, ev)
 }
 
 func (en *Encoder) EventToBytes(subject string, event any) ([]byte, int, error) {

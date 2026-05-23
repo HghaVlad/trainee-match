@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,18 +13,21 @@ import (
 )
 
 type ResumeRepo struct {
-	db *pgxpool.Pool
+	db     *pgxpool.Pool
+	getter *trmpgx.CtxGetter
 }
 
-func NewResumeRepo(db *pgxpool.Pool) *ResumeRepo {
-	return &ResumeRepo{db: db}
+func NewResumeRepo(db *pgxpool.Pool, getter *trmpgx.CtxGetter) *ResumeRepo {
+	return &ResumeRepo{db: db, getter: getter}
 }
 
 func (r *ResumeRepo) Create(ctx context.Context, resume *domain.Resume) (uuid.UUID, error) {
+	conn := r.getter.DefaultTrOrDB(ctx, r.db)
+
 	query := `INSERT INTO resumes (candidate_id, name, status, moderation_status, data) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
 	var id uuid.UUID
-	err := r.db.QueryRow(ctx, query, resume.CandidateId, resume.Name, resume.Status, resume.ModerationStatus, resume.Data).
+	err := conn.QueryRow(ctx, query, resume.CandidateId, resume.Name, resume.Status, resume.ModerationStatus, resume.Data).
 		Scan(&id)
 	if err != nil {
 		return uuid.Nil, err
@@ -77,9 +81,11 @@ func (r *ResumeRepo) GetByCandidateId(ctx context.Context, userId uuid.UUID, pag
 }
 
 func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
+	conn := r.getter.DefaultTrOrDB(ctx, r.db)
+
 	query := `UPDATE resumes SET name = $1, status = $2, data = $3 WHERE id = $4`
 
-	cmdTag, err := r.db.Exec(ctx, query, resume.Name, resume.Status, resume.Data, resume.ID)
+	cmdTag, err := conn.Exec(ctx, query, resume.Name, resume.Status, resume.Data, resume.ID)
 	if err != nil {
 		return err
 	}
@@ -90,10 +96,12 @@ func (r *ResumeRepo) Update(ctx context.Context, resume *domain.Resume) error {
 	return nil
 }
 
-func (r *ResumeRepo) Remove(ctx context.Context, id, candidateId uuid.UUID) error {
+func (r *ResumeRepo) Remove(ctx context.Context, id, candidateID uuid.UUID) error {
+	conn := r.getter.DefaultTrOrDB(ctx, r.db)
+
 	query := `DELETE FROM resumes WHERE id = $1 AND candidate_id = $2`
 
-	result, err := r.db.Exec(ctx, query, id, candidateId)
+	result, err := conn.Exec(ctx, query, id, candidateID)
 	if err != nil {
 		return err
 	}
@@ -106,9 +114,11 @@ func (r *ResumeRepo) Remove(ctx context.Context, id, candidateId uuid.UUID) erro
 }
 
 func (r *ResumeRepo) SetModerationStatus(ctx context.Context, id uuid.UUID, status domain.ModerationStatus) error {
+	conn := r.getter.DefaultTrOrDB(ctx, r.db)
+
 	query := `UPDATE resumes SET moderation_status = $1 WHERE id = $2`
 
-	result, err := r.db.Exec(ctx, query, status, id)
+	result, err := conn.Exec(ctx, query, status, id)
 	if err != nil {
 		return err
 	}

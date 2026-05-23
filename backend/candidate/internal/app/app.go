@@ -58,7 +58,7 @@ func Build(conf *config.Config, logger *slog.Logger) (*App, error) {
 	}
 
 	candidateRepo := repository.NewCandidateRepo(pgPool)
-	resumeRepo := repository.NewResumeRepo(pgPool)
+	resumeRepo := repository.NewResumeRepo(pgPool, trmpgx.DefaultCtxGetter)
 	skillRepo := repository.NewSkillRepo(pgPool)
 	outboxRepository := repository.NewOutbox(pgPool, trmpgx.DefaultCtxGetter)
 
@@ -96,7 +96,7 @@ func Build(conf *config.Config, logger *slog.Logger) (*App, error) {
 	getCandidateUC := getcandidate.NewUseCase(candidateRepo)
 	getCandidateResumesUC := getcandidateresumes.NewUseCase(resumeRepo)
 	getAdminResumeUC := getresume.NewUseCase(resumeRepo)
-	archiveResumeUC := archiveresume.NewUseCase(resumeRepo)
+	archiveResumeUC := archiveresume.NewUseCase(resumeRepo, outboxWriter, trManager)
 
 	adminHandler := handlers.NewAdmin(
 		getCandidatesUC,
