@@ -6,9 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
-
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
+	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain/events"
 )
 
 //go:generate mockery

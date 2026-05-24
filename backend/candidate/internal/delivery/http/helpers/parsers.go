@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/google/uuid"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 func ParseUUIDParam(r *http.Request, param string) (uuid.UUID, error) {

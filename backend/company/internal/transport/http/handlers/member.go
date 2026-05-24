@@ -235,7 +235,8 @@ func (h *MemberHandler) handleErr(ctx context.Context, w http.ResponseWriter, er
 		return true
 
 	case errors.Is(err, member.ErrCompanyMemberAlreadyExists),
-		errors.Is(err, member.ErrCantUpdateYourself):
+		errors.Is(err, member.ErrCantUpdateYourself),
+		errors.Is(err, member.ErrCantAddYourself):
 		helpers.RespondError(ctx, w, http.StatusConflict, err)
 		return true
 

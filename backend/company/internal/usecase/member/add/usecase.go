@@ -50,17 +50,21 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 		return err
 	}
 
+	if hrProj.UserID == ident.UserID {
+		return member.ErrCantAddYourself
+	}
+
+	if err := u.authorize(ctx, req.CompanyID, ident); err != nil {
+		return err
+	}
+
+	memb := &member.CompanyMember{
+		UserID:    hrProj.UserID,
+		CompanyID: req.CompanyID,
+		Role:      req.Role,
+	}
+
 	return u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		if err := u.authorize(ctx, req.CompanyID, ident); err != nil {
-			return err
-		}
-
-		memb := &member.CompanyMember{
-			UserID:    hrProj.UserID,
-			CompanyID: req.CompanyID,
-			Role:      req.Role,
-		}
-
 		if err := u.memberRepo.Create(ctx, memb); err != nil {
 			return err
 		}

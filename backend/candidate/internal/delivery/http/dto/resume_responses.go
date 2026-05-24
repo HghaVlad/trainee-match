@@ -129,4 +129,3 @@ type ShortResumeResponse struct {
 	Status           string    `json:"status"`
 	ModerationStatus string    `json:"moderation_status"`
 }
-

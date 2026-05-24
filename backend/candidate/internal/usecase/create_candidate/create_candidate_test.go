@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/domain"
-
-	"github.com/google/uuid"
 )
 
 func TestExecute(t *testing.T) {

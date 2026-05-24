@@ -10,10 +10,10 @@ type AllowedAction string
 
 const (
 	AllowedActionWithdraw        AllowedAction = "withdraw"
-	AllowedActionMarkSeen        AllowedAction = "mark_seen"
-	AllowedActionInviteInterview AllowedAction = "invite_interview"
+	AllowedActionMarkSeen        AllowedAction = "markSeen"
+	AllowedActionInviteInterview AllowedAction = "moveToInterview"
 	AllowedActionReject          AllowedAction = "reject"
-	AllowedActionMakeOffer       AllowedAction = "make_offer"
+	AllowedActionMakeOffer       AllowedAction = "makeOffer"
 )
 
 func HRAllowedActions(status application.Status) []AllowedAction {
