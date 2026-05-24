@@ -16,7 +16,6 @@ type Usecase struct {
 	compRepo     companyRepo
 	outboxWriter outboxWriter
 	txManager    common.TxManager
-	searchRepo   searchRepo
 	vacCache     cacheRepo
 	pubVacCache  cacheRepo
 	compCache    cacheRepo
@@ -27,7 +26,6 @@ func NewUsecase(
 	compRepo companyRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
-	searchRepo searchRepo,
 	vacCache cacheRepo,
 	pubVacCache cacheRepo,
 	compCache cacheRepo,
@@ -37,7 +35,6 @@ func NewUsecase(
 		compRepo:     compRepo,
 		outboxWriter: outboxWriter,
 		txManager:    txManager,
-		searchRepo:   searchRepo,
 		vacCache:     vacCache,
 		pubVacCache:  pubVacCache,
 		compCache:    compCache,
@@ -56,7 +53,7 @@ func (u *Usecase) Execute(
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := u.authorize(identity); err != nil {
@@ -101,15 +98,6 @@ func (u *Usecase) Execute(
 	if vacUpd {
 		u.vacCache.Del(ctx, req.ID)
 		u.pubVacCache.Del(ctx, req.ID)
-
-		searchView, err := u.vacRepo.GetSearchView(ctx, req.ID)
-		if err != nil {
-			return err
-		}
-
-		if err := u.searchRepo.Index(ctx, *searchView); err != nil {
-			return err
-		}
 	}
 
 	if compUpd {

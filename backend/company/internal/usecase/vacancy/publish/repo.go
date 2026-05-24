@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 
 	domain "github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 //go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
@@ -17,7 +16,6 @@ type VacancyRepo interface {
 	// If vacancy doesn't exist, returns vacancy.ErrVacancyNotFound.
 	// Optimized to do a single round trip to db to be effective and avoid race conditions.
 	PublishIfNotPublished(ctx context.Context, vacID, compID uuid.UUID) (*PublishedEventView, error)
-	GetSearchView(ctx context.Context, vacID uuid.UUID) (*views.VacancySearch, error)
 }
 
 type CompanyRepo interface {
@@ -30,8 +28,4 @@ type CacheRepo interface {
 
 type CompMemberRepo interface {
 	Get(ctx context.Context, userID, companyID uuid.UUID) (*domain.CompanyMember, error)
-}
-
-type SearchRepo interface {
-	Index(ctx context.Context, vac views.VacancySearch) error
 }

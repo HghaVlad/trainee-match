@@ -9,14 +9,12 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type Usecase struct {
 	repo       VacancyRepo
 	compRepo   compRepo
 	outbox     outboxWriter
-	searchRepo searchRepo
 	cache      CacheRepo
 	txManager  common.TxManager
 }
@@ -25,7 +23,6 @@ func NewUsecase(
 	repo VacancyRepo,
 	compRepo compRepo,
 	outbox outboxWriter,
-	searchRepo searchRepo,
 	cacheRepo CacheRepo,
 	txManager common.TxManager,
 ) *Usecase {
@@ -33,7 +30,6 @@ func NewUsecase(
 		repo:       repo,
 		compRepo:   compRepo,
 		outbox:     outbox,
-		searchRepo: searchRepo,
 		cache:      cacheRepo,
 		txManager:  txManager,
 	}
@@ -54,12 +50,10 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 	}
 
 	// only member of company can update vacancy
-	comp, err := u.compRepo.GetByMember(ctx, req.CompanyID, ident.UserID)
+	_, err := u.compRepo.GetByMember(ctx, req.CompanyID, ident.UserID)
 	if err != nil {
 		return err
 	}
-
-	var vacncy *vacancy.Vacancy
 
 	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, req.CompanyID)
@@ -80,7 +74,6 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 			return err
 		}
 
-		vacncy = vac
 		if eventShouldBeCreated {
 			return u.createdVacancyUpdatedEvent(ctx, vac)
 		}
@@ -88,11 +81,6 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 		return nil
 	})
 	if err != nil {
-		return err
-	}
-
-	searchView := views.SearchViewFromVacancy(*vacncy, comp.Name)
-	if err := u.searchRepo.Index(ctx, *searchView); err != nil {
 		return err
 	}
 

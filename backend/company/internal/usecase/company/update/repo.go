@@ -20,7 +20,3 @@ type CompMemberRepo interface {
 type CacheRepo interface {
 	Del(ctx context.Context, id uuid.UUID)
 }
-
-type vacSearchRepo interface {
-	UpdateCompanyName(ctx context.Context, compID uuid.UUID, newName string) error
-}

@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type UpdateModerationResult struct {
@@ -24,7 +23,6 @@ type vacancyRepo interface {
 		status vacancy.ModerationStatus,
 		when time.Time,
 	) (*UpdateModerationResult, error)
-	GetSearchView(ctx context.Context, vacID uuid.UUID) (*views.VacancySearch, error)
 }
 
 type companyRepo interface {
@@ -38,8 +36,4 @@ type outboxWriter interface {
 
 type cacheRepo interface {
 	Del(ctx context.Context, id uuid.UUID)
-}
-
-type searchRepo interface {
-	Index(ctx context.Context, vac views.VacancySearch) error
 }

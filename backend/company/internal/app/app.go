@@ -131,8 +131,8 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager)
-	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
+	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
 
 	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
@@ -148,24 +148,14 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacListByComp := listcompsearch.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacListCompSearch := listcompsearch.NewUsecase(searchVacRepo, compRepo, memRepo, vacByCompListCache)
 	vacCreate := createvac.NewUsecase(vacRepo, compRepo, outboxWriter, txManager)
-	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
-	vacPublish := publish.NewUsecase(
-		vacRepo,
-		compRepo,
-		memRepo,
-		outboxWriter,
-		txManager,
-		searchVacRepo,
-		vacCache,
-		compCache,
-	)
+	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, vacCache, txManager)
+	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
 	vacArchive := archive.NewUsecase(
 		vacRepo,
 		compRepo,
 		memRepo,
 		outboxWriter,
 		txManager,
-		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -175,7 +165,6 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compRepo,
 		outboxWriter,
 		txManager,
-		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,

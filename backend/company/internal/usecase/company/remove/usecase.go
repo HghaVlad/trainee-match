@@ -18,7 +18,6 @@ type Usecase struct {
 	memberRepo    CompMemberRepo
 	outboxWriter  outboxWriter
 	txManager     common.TxManager
-	vacSearchRepo vacSearchRepo
 	cache         CacheRepo
 }
 
@@ -27,7 +26,6 @@ func NewUsecase(
 	memberRepo CompMemberRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
-	vacSearchRepo vacSearchRepo,
 	cache CacheRepo,
 ) *Usecase {
 	return &Usecase{
@@ -35,13 +33,12 @@ func NewUsecase(
 		memberRepo:    memberRepo,
 		outboxWriter:  outboxWriter,
 		txManager:     txManager,
-		vacSearchRepo: vacSearchRepo,
 		cache:         cache,
 	}
 }
 
 func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity *identity.Identity) error {
-	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := u.authorize(ctx, id, identity); err != nil {
@@ -59,14 +56,14 @@ func (u *Usecase) Execute(ctx context.Context, id uuid.UUID, identity *identity.
 			return err
 		}
 
-		u.cache.Del(ctx, id)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	return u.vacSearchRepo.RemoveByCompanyID(ctx, id)
+	u.cache.Del(ctx, id)
+	return nil
 }
 
 // only admin of company can delete
