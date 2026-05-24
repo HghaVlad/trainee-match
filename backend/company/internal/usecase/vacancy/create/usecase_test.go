@@ -202,3 +202,47 @@ func TestUsecase_Execute_CreateVacancyError(t *testing.T) {
 	require.ErrorIs(t, err, expectedErr)
 	require.Nil(t, resp)
 }
+
+func TestUsecase_Execute_CreateEventError(t *testing.T) {
+	t.Parallel()
+
+	deps := setup(t)
+	uc := newUC(deps)
+
+	companyID := uuid.New()
+	userID := uuid.New()
+
+	req := &create.Request{
+		CompanyID:   companyID,
+		Title:       "Backend Developer",
+		Description: "Description",
+		WorkFormat:  vacancy.WorkFormatRemote,
+	}
+
+	ident := &identity.Identity{
+		UserID: userID,
+	}
+
+	comp := &company.Company{
+		ID:   companyID,
+		Name: "Acme",
+	}
+
+	expectedErr := errors.New("create event error")
+
+	deps.compRepo.EXPECT().
+		GetByMember(gomock.Any(), companyID, userID).
+		Return(comp, nil)
+
+	deps.vacRepo.EXPECT().
+		Create(gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	deps.outboxWriter.EXPECT().
+		WriteVacancyDraftCreated(gomock.Any(), gomock.Any()).Return(expectedErr)
+
+	resp, err := uc.Execute(context.Background(), req, ident)
+
+	require.ErrorIs(t, err, expectedErr)
+	require.Nil(t, resp)
+}

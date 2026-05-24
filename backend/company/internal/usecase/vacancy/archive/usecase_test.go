@@ -125,6 +125,9 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
 		Return(vacancy.StatusDraft, nil)
 
+	deps.outboxWriter.EXPECT().
+		WriteVacancyArchived(gomock.Any(), archivedEventMatcher{vacID}).Return(nil)
+
 	deps.vacCache.EXPECT().Del(gomock.Any(), vacID).Return()
 	deps.pubVacCache.EXPECT().Del(gomock.Any(), vacID).Return()
 

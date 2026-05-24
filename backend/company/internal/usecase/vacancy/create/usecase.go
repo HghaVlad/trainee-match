@@ -43,7 +43,7 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	// only member of company can create vacancy
