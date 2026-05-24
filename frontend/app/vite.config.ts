@@ -42,6 +42,12 @@ export default defineConfig({
             rewrite: (path) => path.replace(/^\/api\/v1\/admin\/resumes/, '/api/candidate/admin/resumes'),
             secure: true,
           },
+          '/api/v1/admin/new': {
+            target: backendTarget,
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/v1\/admin\/new/, '/api/auth/admin/new'),
+            secure: true,
+          },
           '/api/v1/auth': {
             target: backendTarget,
             changeOrigin: true,

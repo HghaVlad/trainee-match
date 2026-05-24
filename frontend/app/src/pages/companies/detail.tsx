@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useGetCompaniesId } from '@/api/generated/company/company/company'
 import { useGetVacanciesSearch } from '@/api/generated/company/vacancy/vacancy'
+import { usePatchAdminCompaniesIdModeration } from '@/api/generated/company/admin-company/admin-company'
+import { usePatchAdminVacanciesIdModeration } from '@/api/generated/company/admin-vacancy/admin-vacancy'
 import type { DtoVacancyListItemResponse } from '@/api/generated/company/schemas'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
@@ -13,6 +15,9 @@ import { Label } from '@/shared/ui/label'
 import { Badge } from '@/shared/ui/badge'
 import { SearchIcon, XIcon } from 'lucide-react'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { useSession } from '@/shared/session/useSession'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 
 function dash(value: unknown): string {
   if (value === undefined || value === null || value === '') return '—'
@@ -141,8 +146,14 @@ export default function CompanyDetailPage() {
   const { companyId = '' } = useParams<{ companyId: string }>()
   const id = companyId
   const { data: company, isLoading, error, refetch } = useGetCompaniesId(id, {
-    query: { enabled: Boolean(id) },
+    query: { enabled: Boolean(id), retry: false },
   })
+  const notFound = error instanceof AppError && error.status === 404
+  const { user } = useSession()
+  const { toast } = useToast()
+  const archive = usePatchAdminCompaniesIdModeration()
+  const archiveVacancy = usePatchAdminVacanciesIdModeration()
+  const isPlatformAdmin = user?.role === 'admin'
 
   const [searchQuery, setSearchQuery] = useState('')
   const [cursor, setCursor] = useState<string | undefined>(undefined)
@@ -225,6 +236,22 @@ export default function CompanyDetailPage() {
     )
   }, [allVacancies, filters.employmentType])
 
+  async function onArchiveVacancy(vacancyId: string, vacancyTitle?: string) {
+    const removed = allVacancies.find((v) => v.id === vacancyId)
+    setAllVacancies((prev) => prev.filter((v) => v.id !== vacancyId))
+    try {
+      await archiveVacancy.mutateAsync({ id: vacancyId, data: { status: 'hidden' as const } })
+      toast({
+        title: `Скрыто: ${vacancyTitle ?? vacancyId}`,
+        description: `ID: ${vacancyId}`,
+      })
+    } catch (e) {
+      if (removed) setAllVacancies((prev) => [removed, ...prev])
+      const msg = e instanceof AppError ? e.message : 'Не удалось скрыть вакансию'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    }
+  }
+
   function resetFilters() {
     setFilters(EMPTY_FILTERS)
     setCursor(undefined)
@@ -232,6 +259,7 @@ export default function CompanyDetailPage() {
   }
 
   if (isLoading) return <LoadingState />
+  if (notFound) return <ErrorState title="Компания не найдена" message="Возможно, она была скрыта или удалена." onRetry={() => refetch()} />
   if (error || !company) return <ErrorState onRetry={() => refetch()} />
 
   const openCount = company.openVacanciesCount ?? 0
@@ -244,7 +272,30 @@ export default function CompanyDetailPage() {
       <Link to="/companies" className="text-sm text-muted-foreground underline">
         ← Все компании
       </Link>
-      <h1 className="text-2xl font-bold">{company.name ?? '—'}</h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-2xl font-bold">{company.name ?? '—'}</h1>
+        {isPlatformAdmin && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              try {
+                await archive.mutateAsync({ id, data: { status: 'hidden' as const } })
+                toast({
+                  title: `Скрыто: ${company.name ?? id}`,
+                  description: `ID: ${id}`,
+                })
+              } catch (e) {
+                const msg = e instanceof AppError ? e.message : 'Не удалось скрыть компанию'
+                toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+              }
+            }}
+            disabled={archive.isPending}
+          >
+            {archive.isPending ? '...' : 'Скрыть'}
+          </Button>
+        )}
+      </div>
 
       <dl className="grid grid-cols-1 gap-3 rounded-lg border bg-card p-4 sm:grid-cols-[200px,1fr]">
         <dt className="text-sm font-medium text-muted-foreground">Название</dt>
@@ -553,6 +604,16 @@ export default function CompanyDetailPage() {
                       <span className="text-sm text-muted-foreground">
                         {salaryRange(v.salaryFrom, v.salaryTo)}
                       </span>
+                      {isPlatformAdmin && v.id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onArchiveVacancy(v.id as string, v.title)}
+                          disabled={archiveVacancy.isPending}
+                        >
+                          {archiveVacancy.isPending ? '...' : 'Скрыть'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">

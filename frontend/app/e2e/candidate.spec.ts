@@ -292,7 +292,8 @@ test.describe('candidate: apply vacancy', () => {
 
     const vacancyLink = page.getByRole('link', { name: /E2E Vacancy/ }).first()
     await vacancyLink.click()
-    await expect(page.getByRole('dialog').or(page.getByRole('navigation', { name: 'breadcrumb' }))).toBeVisible({ timeout: 15_000 })
+    await page.waitForURL(/\/vacancies\/[0-9a-f-]{36}/, { timeout: 15_000 })
+    await expect(page.getByRole('navigation', { name: 'breadcrumb' })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Откликнуться' }).click()
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 })
     await expect(page.getByRole('dialog').getByText('Отклик на вакансию')).toBeVisible()

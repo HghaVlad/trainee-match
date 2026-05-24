@@ -182,18 +182,17 @@ export default function VacanciesPage() {
   const archive = usePatchAdminVacanciesIdModeration()
   const isPlatformAdmin = user?.role === 'admin'
 
-  async function onArchive(vacancyId: string) {
+  async function onArchive(vacancyId: string, vacancyTitle?: string) {
+    const removed = allVacancies.find((v) => v.id === vacancyId)
+    setAllVacancies((prev) => prev.filter((v) => v.id !== vacancyId))
     try {
       await archive.mutateAsync({ id: vacancyId, data: { status: 'hidden' } })
-      await qc.invalidateQueries({
-        predicate: (query) => {
-          const first = query.queryKey[0]
-          return typeof first === 'string' && first === '/vacancies/search'
-        },
-        refetchType: 'all',
+      toast({
+        title: `Скрыто: ${vacancyTitle ?? vacancyId}`,
+        description: `ID: ${vacancyId}`,
       })
-      toast({ title: 'Вакансия скрыта' })
     } catch (e) {
+      if (removed) setAllVacancies((prev) => [removed, ...prev])
       const msg = e instanceof AppError ? e.message : 'Не удалось скрыть вакансию'
       toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
     }
@@ -602,7 +601,7 @@ onChange={(e) => update('durationMax', toDigits(e.target.value, DURATION_MAX))}
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onArchive(v.id as string)}
+                      onClick={() => onArchive(v.id as string, v.title)}
                       disabled={archive.isPending}
                     >
                       {archive.isPending ? '...' : 'Скрыть'}

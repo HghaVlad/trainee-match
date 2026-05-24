@@ -26,14 +26,14 @@ export default function CandidateDetailPage() {
         <p><strong>ID:</strong> {data.id}</p>
         <p><strong>Имя:</strong> {data.full_name ?? '—'}</p>
         <p><strong>Город:</strong> {data.city ?? '—'}</p>
-        <p><strong>Telegram:</strong> {data.telegram ? `@${data.telegram}` : '—'}</p>
+        <p><strong>Telegram:</strong> {data.telegram ? `${data.telegram}` : '—'}</p>
         <p><strong>Телефон:</strong> {data.phone ?? '—'}</p>
         <p><strong>День рождения:</strong> {data.birthday ?? '—'}</p>
       </div>
 
       <div className="rounded-lg border bg-card p-4">
         <Link
-          to={`/candidate/${id}/resumes`}
+          to={`/candidates/${id}/resumes`}
           className="text-primary underline"
         >
           Посмотреть резюме →

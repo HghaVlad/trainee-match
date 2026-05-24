@@ -21,7 +21,13 @@ export default function AdminSkillNewPage() {
 
     try {
       await createSkill.mutateAsync({ data: { name: skillName } })
-      await qc.invalidateQueries({ queryKey: ['useGetSkillList'] })
+      await qc.invalidateQueries({
+        predicate: (query) => {
+          const first = query.queryKey[0]
+          return typeof first === 'string' && first === '/skill/list'
+        },
+        refetchType: 'all',
+      })
       toast({ title: 'Навык создан' })
       navigate('/admin/skills')
     } catch (err) {

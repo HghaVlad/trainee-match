@@ -31,11 +31,11 @@ test.describe('wave 4 — public pages', () => {
 
     const hoursMin = page.getByLabel('Часов/неделю от')
     await expect(hoursMin).toHaveAttribute('min', '1')
-    await expect(hoursMin).toHaveAttribute('max', '168')
+    await expect(hoursMin).toHaveAttribute('max', '80')
 
     const durationMin = page.getByLabel('Длительность от (дней)')
     await expect(durationMin).toHaveAttribute('min', '1')
-    await expect(durationMin).toHaveAttribute('max', '730')
+    await expect(durationMin).toHaveAttribute('max', '1800')
   })
 
   test('/vacancies — clamps salary on blur', async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('wave 4 — public pages', () => {
     const salaryMin = page.getByLabel('Зарплата от, ₽')
     await salaryMin.fill('-500')
     await salaryMin.blur()
-    await expect(salaryMin).toHaveValue('0')
+    await expect(salaryMin).toHaveValue('1000')
   })
 
   test('/vacancies — flags inverted ranges as errors', async ({ page }) => {

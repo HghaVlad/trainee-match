@@ -18,6 +18,7 @@ const PAGE_SIZE = 20
 
 export default function CompaniesPage() {
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
   const { user } = useSession()
   const { toast } = useToast()
   const qc = useQueryClient()
@@ -37,22 +38,30 @@ export default function CompaniesPage() {
     const out: Array<{ id?: string; name?: string; openVacanciesCount?: number }> = []
     for (const q of queries) {
       for (const c of q.data?.companies ?? []) {
-        if (!c.id || seen.has(c.id)) continue
+        if (!c.id || seen.has(c.id) || hiddenIds.has(c.id)) continue
         seen.add(c.id)
         out.push(c)
       }
     }
     return out
-  }, [queries])
+  }, [queries, hiddenIds])
   const lastQuery = queries[queries.length - 1]
   const nextCursor = lastQuery?.data?.nextCursor ?? undefined
 
-  async function onArchive(companyId: string) {
+  async function onArchive(companyId: string, companyName?: string) {
+    setHiddenIds((prev) => new Set(prev).add(companyId))
     try {
       await archive.mutateAsync({ id: companyId, data: { status: 'hidden' } })
-      await qc.invalidateQueries({ queryKey: ['getGetCompaniesQueryOptions'] })
-      toast({ title: 'Компания скрыта' })
+      toast({
+        title: `Скрыто: ${companyName ?? companyId}`,
+        description: `ID: ${companyId}`,
+      })
     } catch (e) {
+      setHiddenIds((prev) => {
+        const next = new Set(prev)
+        next.delete(companyId)
+        return next
+      })
       const msg = e instanceof AppError ? e.message : 'Не удалось скрыть компанию'
       toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
     }
@@ -90,7 +99,7 @@ export default function CompaniesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onArchive(c.id as string)}
+                  onClick={() => onArchive(c.id as string, c.name)}
                   disabled={archive.isPending}
                 >
                   {archive.isPending ? '...' : 'Скрыть'}
