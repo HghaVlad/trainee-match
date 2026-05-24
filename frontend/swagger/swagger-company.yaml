@@ -1096,6 +1096,120 @@ paths:
       summary: Publish vacancy
       tags:
       - vacancy
+  /companies/{company-id}/vacancies/search:
+    get:
+      consumes:
+      - application/json
+      description: Same as list vacancies/search but with extra info for company members.
+        Search includes title and description
+      parameters:
+      - description: Company ID (UUID)
+        in: path
+        name: company-id
+        required: true
+        type: string
+      - description: Query
+        in: query
+        name: query
+        type: string
+      - default: relevance
+        description: Supports relevance, created_at_desc, default relevance
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Vacancy status filter
+        in: query
+        name: status
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyByCompListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List search company's vacancy summaries
+      tags:
+      - vacancy
   /companies/{id}:
     delete:
       description: Deletes company by id
@@ -1643,6 +1757,108 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Get published vacancy by id
+      tags:
+      - vacancy
+  /vacancies/search:
+    get:
+      consumes:
+      - application/json
+      description: Uses cursor pagination, returns next cursor if there's more. Supports
+        query, filters, orders. The search query refers to vacancy title, company
+        name and description (in this priority). Has auto fuzziness
+      parameters:
+      - default: relevance
+        description: Order attribute, supports relevance, published_at_desc, salary_desc,
+          salary_asc, default relevance
+        in: query
+        name: order
+        type: string
+      - description: Cursor
+        in: query
+        name: cursor
+        type: string
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Query
+        in: query
+        name: query
+        type: string
+      - description: Minimum salary
+        in: query
+        name: salary_min
+        type: integer
+      - description: Maximum salary
+        in: query
+        name: salary_max
+        type: integer
+      - description: Minimum hours per week
+        in: query
+        name: hours_min
+        type: integer
+      - description: Maximum hours per week
+        in: query
+        name: hours_max
+        type: integer
+      - description: Minimum duration in days
+        in: query
+        name: duration_min
+        type: integer
+      - description: Maximum duration in days
+        in: query
+        name: duration_max
+        type: integer
+      - description: Paid vacancy filter
+        in: query
+        name: is_paid
+        type: boolean
+      - description: Internship with possible job offer
+        in: query
+        name: internship_to_offer
+        type: boolean
+      - description: Flexible schedule filter
+        in: query
+        name: flexible_schedule
+        type: boolean
+      - collectionFormat: multi
+        description: Work format filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: work_format
+        type: array
+      - collectionFormat: multi
+        description: City filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: city
+        type: array
+      - collectionFormat: multi
+        description: Company filter (repeat param)
+        in: query
+        items:
+          type: string
+        name: company_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VacancyListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Search vacancy summaries
       tags:
       - vacancy
 schemes:

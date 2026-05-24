@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { ApplicationDynamicsPoint } from '@/api/generated/application/schemas'
 
 interface Props {
@@ -24,6 +25,14 @@ const SERIES: Array<{
 ]
 
 export function DynamicsChart({ points }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current && points.length > 0) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
+    }
+  }, [points])
+
   if (points.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -47,7 +56,7 @@ export function DynamicsChart({ points }: Props) {
           </div>
         ))}
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" ref={scrollRef}>
         <div
           className="flex items-end gap-2"
           style={{ minHeight: '160px' }}
@@ -65,7 +74,7 @@ export function DynamicsChart({ points }: Props) {
                   return (
                     <div
                       key={s.key}
-                      className="flex w-2 flex-col-reverse"
+                      className="flex h-full w-2 flex-col-reverse"
                       title={`${s.label}: ${v}`}
                     >
                       <div

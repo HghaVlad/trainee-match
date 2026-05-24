@@ -3,13 +3,9 @@ import {
   ChangeApplicationStatusRequestStatus,
 } from '@/api/generated/application/schemas'
 
-export const ACTION_TO_STATUS: Record<
-  HrAllowedAction,
-  ChangeApplicationStatusRequestStatus
-> = {
+export const ACTION_TO_STATUS: Record<HrAllowedAction, ChangeApplicationStatusRequestStatus> = {
   [HrAllowedAction.markSeen]: ChangeApplicationStatusRequestStatus.seen,
-  [HrAllowedAction.moveToInterview]:
-    ChangeApplicationStatusRequestStatus.interview,
+  [HrAllowedAction.moveToInterview]: ChangeApplicationStatusRequestStatus.interview,
   [HrAllowedAction.reject]: ChangeApplicationStatusRequestStatus.rejected,
   [HrAllowedAction.makeOffer]: ChangeApplicationStatusRequestStatus.offer,
 }

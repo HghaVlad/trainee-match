@@ -44,7 +44,11 @@ import { AppError } from '@/shared/api/http/client'
 import { useSession } from '@/shared/session/useSession'
 import { refreshCompanies } from '@/shared/session/refreshCompanies'
 import { useSessionStore } from '@/shared/session/sessionStore'
-import { writeActiveCompanyId } from '@/shared/session/types'
+import {
+  writeActiveCompanyId,
+  readCompanyRoles,
+  saveCompanyRoles,
+} from '@/shared/session/types'
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Введите название').max(200, 'Максимум 200 символов'),
@@ -352,7 +356,14 @@ function CompanyDangerZone({ companyId }: { companyId: string }) {
         store.setActiveCompany(undefined)
         if (store.user) writeActiveCompanyId(store.user.id, undefined)
       }
-      void refreshCompanies().catch(() => undefined)
+      // clear localStorage role for deleted company
+      if (store.user) {
+        const storedRoles = readCompanyRoles(store.user.id)
+        saveCompanyRoles(
+          store.user.id,
+          storedRoles.filter((r) => r.companyId !== companyId),
+        )
+      }
       toast({ title: 'Компания удалена' })
       setOpen(false)
       navigate('/company')

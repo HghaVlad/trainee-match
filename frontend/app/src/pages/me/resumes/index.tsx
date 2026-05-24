@@ -43,6 +43,7 @@ export default function ResumesPage() {
   const { user } = useSession()
   const create = usePostResume()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [err, setErr] = useState<string | null>(null)
   const { defaultResumeId, setDefaultResumeId } = useDefaultResumeId()
 
@@ -80,6 +81,7 @@ export default function ResumesPage() {
           },
         } as unknown as Parameters<typeof create.mutateAsync>[0]['data'],
       })
+      await qc.invalidateQueries({ queryKey: getGetResumeQueryKey() })
       if (r?.id) navigate(`/me/resumes/${r.id}`)
       else await refetch()
     } catch (e) {

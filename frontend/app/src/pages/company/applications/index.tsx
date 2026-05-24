@@ -20,10 +20,12 @@ function buildParams(
   cursor: string | undefined,
 ): ListCompanyApplicationsParams {
   return {
-    statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
+    statuses: filters.statuses.length > 0
+      ? (filters.statuses.join(',') as unknown as ListCompanyApplicationsParams['statuses'])
+      : undefined,
     vacancyId: filters.vacancyId,
-    createdFrom: filters.createdFrom,
-    createdTo: filters.createdTo,
+    createdFrom: filters.createdFrom ? `${filters.createdFrom}T00:00:00Z` : undefined,
+    createdTo: filters.createdTo ? `${filters.createdTo}T23:59:59Z` : undefined,
     cursor,
     limit: PAGE_SIZE,
     sort: filters.sort,

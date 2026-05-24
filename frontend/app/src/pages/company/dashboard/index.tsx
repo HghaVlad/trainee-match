@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui/card'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
+import { EmptyState } from '@/shared/ui/EmptyState'
 import { useToast } from '@/shared/hooks/use-toast'
 import {
   AnalyticsDateRange,
@@ -101,9 +102,10 @@ function Dashboard({ companyId }: { companyId: string }) {
             }}
           />
         ) : summaryNotFound || !summaryQ.data ? (
-          <p className="text-sm text-muted-foreground">
-            Откликов в выбранном периоде нет.
-          </p>
+          <EmptyState
+            title="Нет данных"
+            description="Откликов в выбранном периоде нет."
+          />
         ) : (
           <SummaryCards summary={summaryQ.data.data} />
         )}

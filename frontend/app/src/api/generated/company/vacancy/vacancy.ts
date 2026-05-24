@@ -34,7 +34,9 @@ import type {
   DtoVacancyPublicResponse,
   DtoVacancyUpdateRequest,
   GetCompaniesCompanyIdVacanciesParams,
-  GetVacanciesParams
+  GetCompaniesCompanyIdVacanciesSearchParams,
+  GetVacanciesParams,
+  GetVacanciesSearchParams
 } from '../schemas';
 
 import { mutatorFn } from '../../../../shared/api/http/client';
@@ -564,6 +566,107 @@ export const usePostCompaniesCompanyIdVacanciesVacancyIdPublish = <TError = DtoE
       return useMutation(getPostCompaniesCompanyIdVacanciesVacancyIdPublishMutationOptions(options), queryClient);
     }
     /**
+ * Same as list vacancies/search but with extra info for company members. Search includes title and description
+ * @summary List search company's vacancy summaries
+ */
+export const getCompaniesCompanyIdVacanciesSearch = (
+    companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoVacancyByCompListResponse>(
+      {url: `/companies/${companyId}/vacancies/search`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getGetCompaniesCompanyIdVacanciesSearchQueryKey = (companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams,) => {
+    return [
+    `/companies/${companyId}/vacancies/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCompaniesCompanyIdVacanciesSearchQueryOptions = <TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError = DtoErrorResponse>(companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompaniesCompanyIdVacanciesSearchQueryKey(companyId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>> = ({ signal }) => getCompaniesCompanyIdVacanciesSearch(companyId,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(companyId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCompaniesCompanyIdVacanciesSearchQueryResult = NonNullable<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>>
+export type GetCompaniesCompanyIdVacanciesSearchQueryError = DtoErrorResponse
+
+
+export function useGetCompaniesCompanyIdVacanciesSearch<TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError = DtoErrorResponse>(
+ companyId: string,
+    params: undefined |  GetCompaniesCompanyIdVacanciesSearchParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesCompanyIdVacanciesSearch<TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError = DtoErrorResponse>(
+ companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>,
+          TError,
+          Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompaniesCompanyIdVacanciesSearch<TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError = DtoErrorResponse>(
+ companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List search company's vacancy summaries
+ */
+
+export function useGetCompaniesCompanyIdVacanciesSearch<TData = Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError = DtoErrorResponse>(
+ companyId: string,
+    params?: GetCompaniesCompanyIdVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompaniesCompanyIdVacanciesSearch>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCompaniesCompanyIdVacanciesSearchQueryOptions(companyId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
  * Uses cursor pagination, returns next cursor if there's more. Supports filters, orders.
  * @summary List vacancy summaries
  */
@@ -739,6 +842,100 @@ export function useGetVacanciesVacancyId<TData = Awaited<ReturnType<typeof getVa
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetVacanciesVacancyIdQueryOptions(vacancyId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * Uses cursor pagination, returns next cursor if there's more. Supports query, filters, orders. The search query refers to vacancy title, company name and description (in this priority). Has auto fuzziness
+ * @summary Search vacancy summaries
+ */
+export const getVacanciesSearch = (
+    params?: GetVacanciesSearchParams,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<DtoVacancyListResponse>(
+      {url: `/vacancies/search`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getGetVacanciesSearchQueryKey = (params?: GetVacanciesSearchParams,) => {
+    return [
+    `/vacancies/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetVacanciesSearchQueryOptions = <TData = Awaited<ReturnType<typeof getVacanciesSearch>>, TError = DtoErrorResponse>(params?: GetVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVacanciesSearchQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVacanciesSearch>>> = ({ signal }) => getVacanciesSearch(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetVacanciesSearchQueryResult = NonNullable<Awaited<ReturnType<typeof getVacanciesSearch>>>
+export type GetVacanciesSearchQueryError = DtoErrorResponse
+
+
+export function useGetVacanciesSearch<TData = Awaited<ReturnType<typeof getVacanciesSearch>>, TError = DtoErrorResponse>(
+ params: undefined |  GetVacanciesSearchParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVacanciesSearch>>,
+          TError,
+          Awaited<ReturnType<typeof getVacanciesSearch>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVacanciesSearch<TData = Awaited<ReturnType<typeof getVacanciesSearch>>, TError = DtoErrorResponse>(
+ params?: GetVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVacanciesSearch>>,
+          TError,
+          Awaited<ReturnType<typeof getVacanciesSearch>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVacanciesSearch<TData = Awaited<ReturnType<typeof getVacanciesSearch>>, TError = DtoErrorResponse>(
+ params?: GetVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Search vacancy summaries
+ */
+
+export function useGetVacanciesSearch<TData = Awaited<ReturnType<typeof getVacanciesSearch>>, TError = DtoErrorResponse>(
+ params?: GetVacanciesSearchParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVacanciesSearch>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetVacanciesSearchQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

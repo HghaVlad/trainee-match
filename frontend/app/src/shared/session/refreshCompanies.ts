@@ -4,6 +4,8 @@ import { useSessionStore } from './sessionStore'
 import {
   readActiveCompanyId,
   writeActiveCompanyId,
+  saveCompanyRoles,
+  readCompanyRoles,
   type CompanyMembership,
 } from './types'
 
@@ -22,6 +24,9 @@ interface RefreshOptions {
 export async function refreshCompanies(options?: RefreshOptions): Promise<void> {
   const stateBefore = useSessionStore.getState()
   const { user, setCompanies, setActiveCompany, activeCompanyId } = stateBefore
+
+  const storedRoles = user ? readCompanyRoles(user.id) : []
+
   const { data } = await fetchCompaniesMe({ limit: 100 })
 
   const fromServer: CompanyMembership[] = await Promise.all(
@@ -36,9 +41,12 @@ export async function refreshCompanies(options?: RefreshOptions): Promise<void> 
         const { data: me } = await httpClient.get<MembersMeResponse>(
           `/companies/${srv.id}/members/me`,
         )
-        return { ...srv, role: me.role }
+        const resolvedRole = me.role ?? storedRoles.find((r) => r.companyId === srv.id)?.role
+        return { ...srv, role: resolvedRole }
       } catch {
-        return { ...srv, role: undefined }
+        // fallback to localStorage if API fails (e.g. 404 after session expiry)
+        const storedRole = storedRoles.find((r) => r.companyId === srv.id)?.role
+        return { ...srv, role: storedRole }
       }
     }),
   )
@@ -63,12 +71,13 @@ export async function refreshCompanies(options?: RefreshOptions): Promise<void> 
           ),
         ])
         const p = profileRes.data
+        const resolvedRole = memberRes.data.role ?? storedRoles.find((r) => r.companyId === storedId)?.role
         merged.push({
           id: p.id,
           name: p.name,
           openVacanciesCount: p.openVacanciesCount ?? 0,
           createdAt: p.createdAt ?? new Date(0).toISOString(),
-          role: memberRes.data.role,
+          role: resolvedRole,
         })
       } catch {
         void 0
@@ -77,6 +86,16 @@ export async function refreshCompanies(options?: RefreshOptions): Promise<void> 
   }
 
   setCompanies(merged)
+
+  // persist roles to localStorage so they survive session expiry
+  if (user) {
+    const roles = merged
+      .filter((c): c is CompanyMembership & { role: 'admin' | 'recruiter' } => c.role !== undefined)
+      .map((c) => ({ companyId: c.id, role: c.role }))
+    if (roles.length > 0) {
+      saveCompanyRoles(user.id, roles)
+    }
+  }
 
   if (!user) return
 
