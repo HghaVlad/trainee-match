@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/hamba/avro/v2"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
@@ -26,6 +28,30 @@ func NewDecoder(registry *LocalRegistry) *Decoder {
 }
 
 func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*userhr.CreatedEvent, error) {
+	return decodeEvent[userhr.CreatedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetVacancyPublishedEvent(ctx context.Context, payload []byte) (*vacancy.PublishedEvent, error) {
+	return decodeEvent[vacancy.PublishedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetVacancyUpdatedEvent(ctx context.Context, payload []byte) (*vacancy.UpdatedEvent, error) {
+	return decodeEvent[vacancy.UpdatedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetVacancyArchivedEvent(ctx context.Context, payload []byte) (*vacancy.ArchivedEvent, error) {
+	return decodeEvent[vacancy.ArchivedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetCompanyUpdatedEvent(ctx context.Context, payload []byte) (*company.UpdatedEvent, error) {
+	return decodeEvent[company.UpdatedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetCompanyDeletedEvent(ctx context.Context, payload []byte) (*company.DeletedEvent, error) {
+	return decodeEvent[company.DeletedEvent](ctx, d, payload)
+}
+
+func decodeEvent[T any](ctx context.Context, d *Decoder, payload []byte) (*T, error) {
 	if len(payload) < magicAndFourBytes {
 		return nil, errors.New("missing schema id in avro wire bytes")
 	}
@@ -35,14 +61,14 @@ func (d *Decoder) GetUserCreatedEvent(ctx context.Context, payload []byte) (*use
 
 	schema, err := d.registry.GetSchemaByID(ctx, schemaID)
 	if err != nil {
-		return nil, fmt.Errorf("decode user created: %w", err)
+		return nil, fmt.Errorf("decode event: %w", err)
 	}
 
-	var event userhr.CreatedEvent
+	var event T
 
 	err = avro.Unmarshal(schema, payload, &event)
 	if err != nil {
-		return nil, fmt.Errorf("%w: decode user created: %w", ErrDecodePayload, err)
+		return nil, fmt.Errorf("%w: decode event: %w", ErrDecodePayload, err)
 	}
 
 	return &event, nil

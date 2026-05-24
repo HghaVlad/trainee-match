@@ -43,7 +43,7 @@ func NewClientForConsumer(cfg config.Kafka, consumer *Consumer) (*kgo.Client, er
 		kgo.ClientID(cfg.ClientID),
 
 		kgo.ConsumerGroup(cfg.ConsumerGroup),
-		kgo.ConsumeTopics(cfg.UserTopic),
+		kgo.ConsumeTopics(cfg.UserTopic, cfg.VacancyTopic, cfg.CompanyTopic),
 
 		kgo.OnPartitionsAssigned(func(ctx context.Context, _ *kgo.Client, partitions map[string][]int32) {
 			consumer.onAssigned(ctx, partitions)

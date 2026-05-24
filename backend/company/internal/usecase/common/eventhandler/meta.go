@@ -19,4 +19,6 @@ const (
 
 var ErrUnknownEventType = errors.New("unknown event type")
 
-const UserCreatedEventType = "UserCreated"
+const (
+	UserCreatedEventType = "UserCreated"
+)

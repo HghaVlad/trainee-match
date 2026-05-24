@@ -13,6 +13,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/indexsearch"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -181,7 +183,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	userHrCreate := userhr.NewCreatedUsecase(hrProjRepo)
-	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, userHrCreate, lgr)
+	searchIndexer := indexsearch.NewUsecase(vacRepo, searchVacRepo)
+	eventHandler := eventhandler.NewHandler(
+		cfg.KafkaHandling,
+		schemaDecoder,
+		dlqSender,
+		userHrCreate,
+		searchIndexer,
+		lgr,
+	)
 
 	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
 	if err != nil {

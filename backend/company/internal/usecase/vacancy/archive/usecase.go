@@ -106,14 +106,15 @@ func (u *Usecase) Execute(
 		u.vacCache.Del(ctx, vacID)
 		u.pubVacCache.Del(ctx, vacID)
 
-		searchView, err := u.vacRepo.GetSearchView(ctx, vacID)
-		if err != nil {
-			return err
-		}
-
-		if err := u.searchRepo.Index(ctx, *searchView); err != nil {
-			return err
-		}
+		// TODO: replace everywhere
+		//searchView, err := u.vacRepo.GetSearchView(ctx, vacID)
+		//if err != nil {
+		//	return err
+		//}
+		//
+		//if err := u.searchRepo.Index(ctx, *searchView); err != nil {
+		//	return err
+		//}
 	}
 
 	if compUpd {
