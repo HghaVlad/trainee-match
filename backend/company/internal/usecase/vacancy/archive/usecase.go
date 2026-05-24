@@ -84,12 +84,12 @@ func (u *Usecase) Execute(
 				return err
 			}
 
-			err = u.createArchivedEvent(ctx, vacID)
-			if err != nil {
-				return err
-			}
-
 			compUpd = true
+		}
+
+		err = u.createArchivedEvent(ctx, vacID)
+		if err != nil {
+			return err
 		}
 
 		updated = true
