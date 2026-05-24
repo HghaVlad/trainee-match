@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -152,65 +151,7 @@ func TestUsecase_Execute_OK_CreatesUpdatedEvent(t *testing.T) {
 	err := uc.Execute(t.Context(), req, ident)
 
 	require.NoError(t, err)
-	assert.True(t, deps.txManager.called)
-}
-
-func TestUsecase_Execute_OK_NoEvent(t *testing.T) {
-	vID := uuid.New()
-	cID := uuid.New()
-	oldSalary := 2000
-	newSalary := 10000
-
-	ident := &identity.Identity{UserID: uuid.New(), Role: identity.RoleHR}
-
-	req := &update.Request{
-		VacancyID: vID,
-		CompanyID: cID,
-		SalaryTo:  &newSalary,
-	}
-
-	vac := &vacancy.Vacancy{
-		ID:             vID,
-		CompanyID:      cID,
-		Title:          "Old title",
-		Description:    "Old desc",
-		SalaryTo:       &oldSalary,
-		IsPaid:         true,
-		Status:         vacancy.StatusPublished,
-		WorkFormat:     vacancy.WorkFormatHybrid,
-		EmploymentType: vacancy.EmploymentTypeInternship,
-	}
-
-	expectedVac := &vacancy.Vacancy{
-		ID:             vID,
-		CompanyID:      cID,
-		Title:          "Old title",
-		Description:    "Old desc",
-		SalaryTo:       &newSalary,
-		IsPaid:         true,
-		Status:         vacancy.StatusPublished,
-		WorkFormat:     vacancy.WorkFormatHybrid,
-		EmploymentType: vacancy.EmploymentTypeInternship,
-	}
-
-	deps := setup(t)
-
-	deps.compRepo.EXPECT().GetByMember(gomock.Any(), cID, ident.UserID).
-		Return(&company.Company{ID: cID}, nil)
-
-	deps.vacRepo.EXPECT().GetByIDForUpdate(gomock.Any(), vID, cID).Return(vac, nil)
-
-	deps.vacRepo.EXPECT().Update(gomock.Any(), vacMatcher{expectedVac}).
-		Return(nil)
-
-	deps.vacCache.EXPECT().Del(gomock.Any(), vID)
-
-	uc := NewUC(deps)
-
-	err := uc.Execute(t.Context(), req, ident)
-
-	require.NoError(t, err)
-	assert.True(t, deps.txManager.called)
+	require.True(t, deps.txManager.called)
 }
 
 func TestUsecase_Execute_ConflictingChangesToExistingState(t *testing.T) {

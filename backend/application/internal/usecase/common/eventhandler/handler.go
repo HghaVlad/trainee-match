@@ -146,7 +146,7 @@ func (h *Handler) handleByEventType(ctx context.Context, event Event, eventType 
 	case "CompanyModerationUpdated":
 		return h.handleCompModUpdEvent(ctx, event.Payload)
 	case "VacancyDraftCreated":
-		return ResultStatusSuccess, nil
+		return ResultStatusSuccess, nil // is skipped
 	default:
 		h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
 		return ResultStatusDLQ, ErrUnknownEventType

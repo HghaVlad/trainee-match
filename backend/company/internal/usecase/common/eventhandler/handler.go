@@ -143,8 +143,7 @@ func (h *Handler) handleVacancyPublished(ctx context.Context, payload []byte) (R
 		return classifyErr(err), err
 	}
 
-	// TODO: maybe remove these logs
-	h.logger.InfoContext(ctx, "got user vacancy pub event", "id", event.VacancyID)
+	h.logger.InfoContext(ctx, "got vacancy pub event", "id", event.VacancyID)
 
 	err = h.searchIndexer.Index(ctx, event.VacancyID)
 	if err != nil {

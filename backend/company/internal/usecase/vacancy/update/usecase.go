@@ -50,18 +50,16 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 	}
 
 	// only member of company can update vacancy
-	_, err := u.compRepo.GetByMember(ctx, req.CompanyID, ident.UserID)
+	comp, err := u.compRepo.GetByMember(ctx, req.CompanyID, ident.UserID)
 	if err != nil {
 		return err
 	}
 
 	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, req.CompanyID)
+		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, comp.ID)
 		if err != nil {
 			return err
 		}
-
-		eventShouldBeCreated := checkIfEventShouldBeCreated(vac, req)
 
 		applyPatch(vac, req)
 
@@ -74,11 +72,7 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 			return err
 		}
 
-		if eventShouldBeCreated {
-			return u.createdVacancyUpdatedEvent(ctx, vac)
-		}
-
-		return nil
+		return u.createdVacancyUpdatedEvent(ctx, vac)
 	})
 	if err != nil {
 		return err
@@ -97,10 +91,6 @@ func (u *Usecase) createdVacancyUpdatedEvent(ctx context.Context, vac *vacancy.V
 	}
 
 	return u.outbox.WriteVacancyUpdated(ctx, ev)
-}
-
-func checkIfEventShouldBeCreated(vac *vacancy.Vacancy, req *Request) bool {
-	return vac.Status != vacancy.StatusDraft && req.Title != nil && vac.Title != *req.Title
 }
 
 // Applies not-nil only

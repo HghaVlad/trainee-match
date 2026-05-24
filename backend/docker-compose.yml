@@ -26,7 +26,6 @@ services:
       KC_HTTP_MANAGEMENT_PORT: 9000
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: true
-      KC_HOSTNAME: api.traineematch.space
 
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
