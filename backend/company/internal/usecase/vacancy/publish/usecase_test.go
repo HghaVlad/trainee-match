@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -15,7 +15,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/publish/mocks"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type fakeTxManager struct {
@@ -35,7 +34,6 @@ type testDeps struct {
 	vacCache     *mocks.MockCacheRepo
 	compCache    *mocks.MockCacheRepo
 	txManager    *fakeTxManager
-	searchRepo   *mocks.MockSearchRepo
 }
 
 func setup(t *testing.T) *testDeps {
@@ -49,7 +47,6 @@ func setup(t *testing.T) *testDeps {
 		vacCache:     mocks.NewMockCacheRepo(ctrl),
 		compCache:    mocks.NewMockCacheRepo(ctrl),
 		txManager:    new(fakeTxManager),
-		searchRepo:   mocks.NewMockSearchRepo(ctrl),
 	}
 }
 
@@ -60,7 +57,6 @@ func NewUC(deps *testDeps) *publish.Usecase {
 		deps.memRepo,
 		deps.outboxWriter,
 		deps.txManager,
-		deps.searchRepo,
 		deps.vacCache,
 		deps.compCache,
 	)
@@ -107,14 +103,6 @@ func TestUsecase_Execute_OK_NotPublishedVacancy(t *testing.T) {
 		CompanyName: "name",
 	}
 
-	searchView := views.VacancySearch{
-		ID:          vacID,
-		CompanyID:   compID,
-		CompanyName: "comp",
-		Title:       "Vac",
-		Status:      vacancy.StatusArchived,
-	}
-
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID, CompanyID: compID, Role: member.CompanyRoleRecruiter}, nil)
 
@@ -123,10 +111,6 @@ func TestUsecase_Execute_OK_NotPublishedVacancy(t *testing.T) {
 	deps.compRepo.EXPECT().IncrementOpenVacancies(gomock.Any(), compID).Return(nil)
 
 	deps.outboxWriter.EXPECT().WriteVacancyPublished(gomock.Any(), pubEventMatcher{expectedEv: event}).Return(nil)
-
-	deps.vacRepo.EXPECT().GetSearchView(gomock.Any(), vacID).Return(&searchView, nil)
-
-	deps.searchRepo.EXPECT().Index(gomock.Any(), searchView).Return(nil)
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vacID)
 	deps.compCache.EXPECT().Del(gomock.Any(), compID)

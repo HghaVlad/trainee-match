@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -25,29 +25,27 @@ func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 }
 
 type testDeps struct {
-	compRepo      *mocks.MockCompanyRepo
-	memRepo       *mocks.MockCompMemberRepo
-	outbox        *mocks.MockoutboxWriter
-	vacSearchRepo *mocks.MockvacSearchRepo
-	cache         *mocks.MockCacheRepo
-	txManager     *fakeTxManager
+	compRepo  *mocks.MockCompanyRepo
+	memRepo   *mocks.MockCompMemberRepo
+	outbox    *mocks.MockoutboxWriter
+	cache     *mocks.MockCacheRepo
+	txManager *fakeTxManager
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 
 	return &testDeps{
-		compRepo:      mocks.NewMockCompanyRepo(ctrl),
-		memRepo:       mocks.NewMockCompMemberRepo(ctrl),
-		outbox:        mocks.NewMockoutboxWriter(ctrl),
-		cache:         mocks.NewMockCacheRepo(ctrl),
-		vacSearchRepo: mocks.NewMockvacSearchRepo(ctrl),
-		txManager:     new(fakeTxManager),
+		compRepo:  mocks.NewMockCompanyRepo(ctrl),
+		memRepo:   mocks.NewMockCompMemberRepo(ctrl),
+		outbox:    mocks.NewMockoutboxWriter(ctrl),
+		cache:     mocks.NewMockCacheRepo(ctrl),
+		txManager: new(fakeTxManager),
 	}
 }
 
 func NewUC(deps *testDeps) *remove.Usecase {
-	return remove.NewUsecase(deps.compRepo, deps.memRepo, deps.outbox, deps.txManager, deps.vacSearchRepo, deps.cache)
+	return remove.NewUsecase(deps.compRepo, deps.memRepo, deps.outbox, deps.txManager, deps.cache)
 }
 
 type deletedEventMatcher struct {
@@ -85,8 +83,6 @@ func TestUsecase_Execute_Success_HRAdmin(t *testing.T) {
 	deps.outbox.EXPECT().WriteCompanyDeleted(gomock.Any(), deletedEventMatcher{
 		expected: company.DeletedEvent{CompanyID: compID},
 	})
-
-	deps.vacSearchRepo.EXPECT().RemoveByCompanyID(gomock.Any(), compID).Return(nil)
 
 	deps.cache.EXPECT().Del(gomock.Any(), compID)
 

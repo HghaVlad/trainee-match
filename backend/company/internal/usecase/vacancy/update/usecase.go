@@ -12,11 +12,11 @@ import (
 )
 
 type Usecase struct {
-	repo       VacancyRepo
-	compRepo   compRepo
-	outbox     outboxWriter
-	cache      CacheRepo
-	txManager  common.TxManager
+	repo      VacancyRepo
+	compRepo  compRepo
+	outbox    outboxWriter
+	cache     CacheRepo
+	txManager common.TxManager
 }
 
 func NewUsecase(
@@ -27,11 +27,11 @@ func NewUsecase(
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
-		repo:       repo,
-		compRepo:   compRepo,
-		outbox:     outbox,
-		cache:      cacheRepo,
-		txManager:  txManager,
+		repo:      repo,
+		compRepo:  compRepo,
+		outbox:    outbox,
+		cache:     cacheRepo,
+		txManager: txManager,
 	}
 }
 

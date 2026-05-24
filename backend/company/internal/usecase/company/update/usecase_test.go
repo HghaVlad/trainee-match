@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -25,24 +25,22 @@ func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Contex
 }
 
 type testDeps struct {
-	compRepo      *mocks.MockCompanyRepo
-	memRepo       *mocks.MockCompMemberRepo
-	outbox        *mocks.MockoutboxWriter
-	compCache     *mocks.MockCacheRepo
-	vacSearchRepo *mocks.MockvacSearchRepo
-	txManager     *fakeTxManager
+	compRepo  *mocks.MockCompanyRepo
+	memRepo   *mocks.MockCompMemberRepo
+	outbox    *mocks.MockoutboxWriter
+	compCache *mocks.MockCacheRepo
+	txManager *fakeTxManager
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 
 	return &testDeps{
-		compRepo:      mocks.NewMockCompanyRepo(ctrl),
-		memRepo:       mocks.NewMockCompMemberRepo(ctrl),
-		outbox:        mocks.NewMockoutboxWriter(ctrl),
-		compCache:     mocks.NewMockCacheRepo(ctrl),
-		vacSearchRepo: mocks.NewMockvacSearchRepo(ctrl),
-		txManager:     new(fakeTxManager),
+		compRepo:  mocks.NewMockCompanyRepo(ctrl),
+		memRepo:   mocks.NewMockCompMemberRepo(ctrl),
+		outbox:    mocks.NewMockoutboxWriter(ctrl),
+		compCache: mocks.NewMockCacheRepo(ctrl),
+		txManager: new(fakeTxManager),
 	}
 }
 
@@ -52,7 +50,6 @@ func NewUC(deps *testDeps) *update.Usecase {
 		deps.memRepo,
 		deps.outbox,
 		deps.txManager,
-		deps.vacSearchRepo,
 		deps.compCache,
 	)
 }
@@ -93,9 +90,6 @@ func TestUsecase_Execute_CreatesEvent(t *testing.T) {
 		Return(oldName, nil)
 
 	deps.outbox.EXPECT().WriteCompanyUpdated(gomock.Any(), eventMatcher{expectedEv})
-
-	deps.vacSearchRepo.EXPECT().
-		UpdateCompanyName(gomock.Any(), compID, newName).Return(nil)
 
 	deps.compCache.EXPECT().Del(gomock.Any(), compID)
 

@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
+
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -14,10 +15,10 @@ import (
 
 // Usecase creates vacancy in draft status
 type Usecase struct {
-	vacancyRepo VacancyRepo
-	compRepo    CompanyRepo
+	vacancyRepo  VacancyRepo
+	compRepo     CompanyRepo
 	outboxWriter outboxWriter
-	txManager   common.TxManager
+	txManager    common.TxManager
 }
 
 func NewUsecase(
@@ -27,10 +28,10 @@ func NewUsecase(
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
-		vacancyRepo: vacancyRepo,
-		compRepo:    compRepo,
-		outboxWriter:  outboxWriter,
-		txManager:   txManager,
+		vacancyRepo:  vacancyRepo,
+		compRepo:     compRepo,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
 	}
 }
 
@@ -59,6 +60,9 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 
 		return u.createEvent(ctx, vac, comp)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &Response{ID: vac.ID}, nil
 }

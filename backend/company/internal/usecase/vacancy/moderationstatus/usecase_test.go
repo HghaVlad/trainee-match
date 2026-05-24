@@ -5,15 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/moderationstatus/mocks"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type fakeTxManager struct{}
@@ -29,7 +28,6 @@ type testDeps struct {
 	vacRepo   *mocks.MockvacancyRepo
 	compRepo  *mocks.MockcompanyRepo
 	outbox    *mocks.MockoutboxWriter
-	search    *mocks.MocksearchRepo
 	vacCache  *mocks.MockcacheRepo
 	pubCache  *mocks.MockcacheRepo
 	compCache *mocks.MockcacheRepo
@@ -43,7 +41,6 @@ func setup(t *testing.T) *testDeps {
 		vacRepo:   mocks.NewMockvacancyRepo(ctrl),
 		compRepo:  mocks.NewMockcompanyRepo(ctrl),
 		outbox:    mocks.NewMockoutboxWriter(ctrl),
-		search:    mocks.NewMocksearchRepo(ctrl),
 		vacCache:  mocks.NewMockcacheRepo(ctrl),
 		pubCache:  mocks.NewMockcacheRepo(ctrl),
 		compCache: mocks.NewMockcacheRepo(ctrl),
@@ -57,7 +54,6 @@ func newUC(deps *testDeps) *moderationstatus.Usecase {
 		deps.compRepo,
 		deps.outbox,
 		deps.txManager,
-		deps.search,
 		deps.vacCache,
 		deps.pubCache,
 		deps.compCache,
@@ -83,13 +79,6 @@ func TestUsecase_Execute_Success_StatusChanged_Hidden(t *testing.T) {
 	req := &moderationstatus.Request{
 		ID:     vacID,
 		Status: vacancy.ModerationStatusHidden,
-	}
-
-	searchView := &views.VacancySearch{
-		ID:               vacID,
-		CompanyID:        compID,
-		ModerationStatus: vacancy.ModerationStatusHidden,
-		Status:           vacancy.StatusPublished,
 	}
 
 	deps.vacRepo.EXPECT().
@@ -125,14 +114,6 @@ func TestUsecase_Execute_Success_StatusChanged_Hidden(t *testing.T) {
 	deps.pubCache.EXPECT().
 		Del(gomock.Any(), vacID)
 
-	deps.vacRepo.EXPECT().
-		GetSearchView(gomock.Any(), vacID).
-		Return(searchView, nil)
-
-	deps.search.EXPECT().
-		Index(gomock.Any(), *searchView).
-		Return(nil)
-
 	deps.compCache.EXPECT().
 		Del(gomock.Any(), compID)
 
@@ -152,13 +133,6 @@ func TestUsecase_Execute_Success_StatusChanged_OK(t *testing.T) {
 	req := &moderationstatus.Request{
 		ID:     vacID,
 		Status: vacancy.ModerationStatusOK,
-	}
-
-	searchView := &views.VacancySearch{
-		ID:               vacID,
-		CompanyID:        compID,
-		ModerationStatus: vacancy.ModerationStatusOK,
-		Status:           vacancy.StatusPublished,
 	}
 
 	deps.vacRepo.EXPECT().
@@ -187,14 +161,6 @@ func TestUsecase_Execute_Success_StatusChanged_OK(t *testing.T) {
 
 	deps.pubCache.EXPECT().
 		Del(gomock.Any(), vacID)
-
-	deps.vacRepo.EXPECT().
-		GetSearchView(gomock.Any(), vacID).
-		Return(searchView, nil)
-
-	deps.search.EXPECT().
-		Index(gomock.Any(), *searchView).
-		Return(nil)
 
 	deps.compCache.EXPECT().
 		Del(gomock.Any(), compID)
@@ -248,13 +214,6 @@ func TestUsecase_Execute_Success_ArchivedVacancy_NoCompanyUpdate(t *testing.T) {
 		Status: vacancy.ModerationStatusHidden,
 	}
 
-	searchView := &views.VacancySearch{
-		ID:               vacID,
-		CompanyID:        compID,
-		ModerationStatus: vacancy.ModerationStatusHidden,
-		Status:           vacancy.StatusArchived,
-	}
-
 	deps.vacRepo.EXPECT().
 		UpdateModerationStatus(
 			gomock.Any(),
@@ -277,14 +236,6 @@ func TestUsecase_Execute_Success_ArchivedVacancy_NoCompanyUpdate(t *testing.T) {
 
 	deps.pubCache.EXPECT().
 		Del(gomock.Any(), vacID)
-
-	deps.vacRepo.EXPECT().
-		GetSearchView(gomock.Any(), vacID).
-		Return(searchView, nil)
-
-	deps.search.EXPECT().
-		Index(gomock.Any(), *searchView).
-		Return(nil)
 
 	err := uc.Execute(context.Background(), req, adminIdentity())
 	require.NoError(t, err)
