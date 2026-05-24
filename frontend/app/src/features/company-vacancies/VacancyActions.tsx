@@ -62,7 +62,7 @@ export function VacancyActions({
   const canPublish = isDraft || isArchived
 
   function applyOptimisticStatus(nextStatus: VacancyStatus) {
-    const listPrefix = `/companies/${companyId}/vacancies`
+    const listPrefix = `/companies/${companyId}/vacancies/search`
     qc.setQueriesData<DtoVacancyByCompListResponse>(
       {
         predicate: (query) => {
@@ -87,7 +87,7 @@ export function VacancyActions({
   }
 
   async function invalidate() {
-    const listPrefix = `/companies/${companyId}/vacancies`
+    const listPrefix = `/companies/${companyId}/vacancies/search`
     await Promise.all([
       qc.invalidateQueries({
         predicate: (query) => {
@@ -110,7 +110,6 @@ export function VacancyActions({
     try {
       await publishMut.mutateAsync({ companyId, vacancyId })
       applyOptimisticStatus(DtoVacancyFullResponseStatus.published)
-      await invalidate()
       toast({ title: 'Вакансия опубликована' })
       setConfirmPublish(false)
     } catch (e) {
@@ -126,7 +125,6 @@ export function VacancyActions({
     try {
       await archiveMut.mutateAsync({ companyId, vacancyId })
       applyOptimisticStatus(DtoVacancyFullResponseStatus.archived)
-      await invalidate()
       toast({ title: 'Вакансия в архиве' })
       setConfirmArchive(false)
     } catch (e) {
@@ -141,7 +139,7 @@ export function VacancyActions({
   async function onDelete() {
     try {
       await deleteMut.mutateAsync({ companyId, vacancyId })
-      const listPrefix = `/companies/${companyId}/vacancies`
+      const listPrefix = `/companies/${companyId}/vacancies/search`
       await qc.invalidateQueries({
         predicate: (query) => {
           const first = query.queryKey[0]

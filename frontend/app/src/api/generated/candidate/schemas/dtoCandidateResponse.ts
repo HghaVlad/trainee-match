@@ -9,6 +9,7 @@
 export interface DtoCandidateResponse {
   birthday?: string;
   city?: string;
+  full_name?: string;
   id?: string;
   phone?: string;
   telegram?: string;

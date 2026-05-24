@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/shared/ui/button'
+import { Input } from '@/shared/ui/input'
 import {
   Card,
   CardContent,
@@ -21,7 +22,9 @@ import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { DataTable } from '@/shared/ui/DataTable'
 import { CursorPagination } from '@/shared/ui/CursorPagination'
-import { useGetCompaniesCompanyIdVacancies } from '@/api/generated/company/vacancy/vacancy'
+import {
+  useGetCompaniesCompanyIdVacanciesSearch,
+} from '@/api/generated/company/vacancy/vacancy'
 import {
   DtoVacancyFullResponseStatus,
   type DtoVacancyByCompListItemResponse,
@@ -32,6 +35,7 @@ import {
   VacancyActions,
   VacancyStatusBadge,
 } from '@/features/company-vacancies'
+import { SearchIcon, XIcon } from 'lucide-react'
 
 const PAGE_SIZE = 20
 
@@ -49,6 +53,15 @@ function formatDate(value: string | undefined): string {
   return d.toLocaleDateString('ru-RU')
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
+
 export default function CompanyVacanciesPage() {
   const { companyId } = useParams<{ companyId: string }>()
   if (!companyId) return <Navigate to="/company" replace />
@@ -62,20 +75,26 @@ function VacanciesList({ companyId }: { companyId: string }) {
 
   const [cursor, setCursor] = useState<string | undefined>(undefined)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [searchInput, setSearchInput] = useState('')
+  const searchQuery = useDebounce(searchInput, 300)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const params = { cursor, limit: PAGE_SIZE }
-  const query = useGetCompaniesCompanyIdVacancies(companyId, params)
+  // Reset cursor when filters change
+  useEffect(() => {
+    setCursor(undefined)
+  }, [searchQuery, statusFilter])
 
-  const allItems = useMemo(
+  const params = {
+    cursor,
+    limit: PAGE_SIZE,
+    query: searchQuery || undefined,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+  }
+  const query = useGetCompaniesCompanyIdVacanciesSearch(companyId, params)
+
+  const items = useMemo(
     () => query.data?.vacancies ?? [],
     [query.data?.vacancies],
-  )
-  const items = useMemo(
-    () =>
-      statusFilter === 'all'
-        ? allItems
-        : allItems.filter((v) => getStatus(v) === statusFilter),
-    [allItems, statusFilter],
   )
 
   const columns: ColumnDef<DtoVacancyByCompListItemResponse>[] = useMemo(
@@ -142,6 +161,29 @@ function VacanciesList({ companyId }: { companyId: string }) {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={inputRef}
+                type="search"
+                placeholder="Поиск вакансий…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-56 pl-8 pr-8"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('')
+                    inputRef.current?.focus()
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilter)}
@@ -170,9 +212,9 @@ function VacanciesList({ companyId }: { companyId: string }) {
             <EmptyState
               title="Вакансий нет"
               description={
-                allItems.length === 0
-                  ? 'Создайте первую вакансию, чтобы начать поиск кандидатов.'
-                  : 'По выбранному фильтру ничего не найдено.'
+                searchQuery || statusFilter !== 'all'
+                  ? 'По заданным параметрам ничего не найдено.'
+                  : 'Создайте первую вакансию, чтобы начать поиск кандидатов.'
               }
             />
           ) : (

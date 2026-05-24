@@ -9,6 +9,7 @@
 export interface DtoShortResumeResponse {
   candidate_id?: string;
   id?: string;
+  moderation_status?: string;
   name?: string;
   status?: string;
 }

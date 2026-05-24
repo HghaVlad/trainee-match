@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useGetVacancies } from '@/api/generated/company/vacancy/vacancy'
-import type { GetVacanciesParams } from '@/api/generated/company/schemas'
+import { useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { useGetVacanciesSearch } from '@/api/generated/company/vacancy/vacancy'
+import { usePatchAdminVacanciesIdModeration } from '@/api/generated/company/admin-vacancy/admin-vacancy'
+import type { GetVacanciesSearchParams } from '@/api/generated/company/schemas'
+import type { DtoVacancyListItemResponse } from '@/api/generated/company/schemas'
+import { SearchIcon, XIcon } from 'lucide-react'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -17,6 +21,9 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
+import { useSession } from '@/shared/session/useSession'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -26,6 +33,7 @@ function isValidUuid(v: string): boolean {
 }
 
 interface FilterState {
+  searchQuery: string
   order: string
   salaryMin: string
   salaryMax: string
@@ -36,12 +44,14 @@ interface FilterState {
   isPaid: boolean
   internshipToOffer: boolean
   flexibleSchedule: boolean
+  employmentType: string[]
   workFormat: string[]
   cities: string[]
   companyIds: string[]
 }
 
 const EMPTY: FilterState = {
+  searchQuery: '',
   order: 'published_at_desc',
   salaryMin: '',
   salaryMax: '',
@@ -52,6 +62,7 @@ const EMPTY: FilterState = {
   isPaid: false,
   internshipToOffer: false,
   flexibleSchedule: false,
+  employmentType: [],
   workFormat: [],
   cities: [],
   companyIds: [],
@@ -59,15 +70,21 @@ const EMPTY: FilterState = {
 
 const SALARY_STEP = 1000
 const HOURS_MIN = 1
-const HOURS_MAX = 168
+const HOURS_MAX = 80
 const DURATION_MIN = 1
-const DURATION_MAX = 730
+const DURATION_MAX = 1800
 
 const WORK_FORMAT_LABEL: Record<string, string> = {
   remote: 'Удалёнка',
   office: 'Офис',
   onsite: 'Офис',
   hybrid: 'Гибрид',
+}
+
+const EMPLOYMENT_TYPE_LABEL: Record<string, string> = {
+  internship: 'Стажировка',
+  full_time: 'Полная занятость',
+  part_time: 'Частичная занятость',
 }
 
 function dash(value: unknown, suffix?: string): string {
@@ -85,6 +102,14 @@ function salaryRange(from?: number, to?: number): string {
   return `до ${(to as number).toLocaleString('ru-RU')} ₽`
 }
 
+function toDigits(s: string, max?: number): string {
+  const d = s.replace(/\D/g, '').replace(/^0+/, '')
+  if (d === '') return ''
+  const n = Number(d)
+  if (max !== undefined && n > max) return String(max)
+  return d
+}
+
 function clampNumeric(
   raw: string,
   { min, max, step }: { min?: number; max?: number; step?: number },
@@ -98,9 +123,10 @@ function clampNumeric(
   return String(n)
 }
 
-function toParams(f: FilterState, cursor: string | undefined): GetVacanciesParams {
-  const p: GetVacanciesParams = { limit: 20 }
+function toParams(f: FilterState, cursor: string | undefined): GetVacanciesSearchParams {
+  const p: GetVacanciesSearchParams = { limit: 20 }
   if (cursor) p.cursor = cursor
+  if (f.searchQuery) p.query = f.searchQuery
   if (f.order) p.order = f.order
   if (f.salaryMin) p.salary_min = Number(f.salaryMin)
   if (f.salaryMax) p.salary_max = Number(f.salaryMax)
@@ -150,6 +176,27 @@ export default function VacanciesPage() {
     cities: searchParams.getAll('city'),
   }))
   const [cursor, setCursor] = useState<string | undefined>(undefined)
+  const { user } = useSession()
+  const { toast } = useToast()
+  const qc = useQueryClient()
+  const archive = usePatchAdminVacanciesIdModeration()
+  const isPlatformAdmin = user?.role === 'admin'
+
+  async function onArchive(vacancyId: string, vacancyTitle?: string) {
+    const removed = allVacancies.find((v) => v.id === vacancyId)
+    setAllVacancies((prev) => prev.filter((v) => v.id !== vacancyId))
+    try {
+      await archive.mutateAsync({ id: vacancyId, data: { status: 'hidden' } })
+      toast({
+        title: `Скрыто: ${vacancyTitle ?? vacancyId}`,
+        description: `ID: ${vacancyId}`,
+      })
+    } catch (e) {
+      if (removed) setAllVacancies((prev) => [removed, ...prev])
+      const msg = e instanceof AppError ? e.message : 'Не удалось скрыть вакансию'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    }
+  }
 
   function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
     setCursor(undefined)
@@ -185,12 +232,52 @@ export default function VacanciesPage() {
     }))
   }
 
+  function toggleEmploymentType(value: string) {
+    setCursor(undefined)
+    setFilters((prev) => ({
+      ...prev,
+      employmentType: prev.employmentType.includes(value)
+        ? prev.employmentType.filter((v) => v !== value)
+        : [...prev.employmentType, value],
+    }))
+  }
+
   const errors = filterErrors(filters)
   const debouncedFilters = useDebouncedValue(filters, 400)
-  const { data, isLoading, error, refetch, isFetching } = useGetVacancies(
+
+  const { data, isLoading, error, refetch, isFetching } = useGetVacanciesSearch(
     toParams(debouncedFilters, cursor),
-    { query: { enabled: filterErrors(debouncedFilters).length === 0 } },
+    {
+      query: {
+        enabled: filterErrors(debouncedFilters).length === 0,
+        placeholderData: keepPreviousData,
+      },
+    },
   )
+
+  const [allVacancies, setAllVacancies] = useState<DtoVacancyListItemResponse[]>([])
+
+  useEffect(() => {
+    const items = data?.vacancies
+    if (!items) return
+
+    if (cursor) {
+      setAllVacancies((prev) => {
+        const existingIds = new Set(prev.map((v) => v.id))
+        const newItems = items.filter((v) => !existingIds.has(v.id))
+        return newItems.length > 0 ? [...prev, ...newItems] : prev
+      })
+    } else {
+      setAllVacancies(items)
+    }
+  }, [data, cursor])
+
+  const filteredVacancies = useMemo(() => {
+    if (filters.employmentType.length === 0) return allVacancies
+    return allVacancies.filter((v) =>
+      v.employmentType ? filters.employmentType.includes(v.employmentType) : false,
+    )
+  }, [allVacancies, filters.employmentType])
 
   function reset() {
     setFilters(EMPTY)
@@ -206,6 +293,30 @@ export default function VacanciesPage() {
         <h2 className="text-sm font-semibold text-muted-foreground">Фильтры</h2>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="sm:col-span-3">
+            <Label htmlFor="f-search">Поиск по ключевым словам</Label>
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="f-search"
+                type="search"
+                placeholder="Название вакансии, компания…"
+                value={filters.searchQuery}
+                onChange={(e) => update('searchQuery', e.target.value)}
+                className="pl-8 pr-8"
+              />
+              {filters.searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => update('searchQuery', '')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Очистить поиск"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
           <div>
             <Label htmlFor="f-order">Сортировка</Label>
             <Select value={filters.order} onValueChange={(v) => update('order', v)}>
@@ -253,7 +364,7 @@ export default function VacanciesPage() {
               step={SALARY_STEP}
               inputMode="numeric"
               value={filters.salaryMin}
-              onChange={(e) => update('salaryMin', e.target.value)}
+              onChange={(e) => update('salaryMin', toDigits(e.target.value))}
               onBlur={(e) =>
                 update(
                   'salaryMin',
@@ -271,7 +382,7 @@ export default function VacanciesPage() {
               step={SALARY_STEP}
               inputMode="numeric"
               value={filters.salaryMax}
-              onChange={(e) => update('salaryMax', e.target.value)}
+              onChange={(e) => update('salaryMax', toDigits(e.target.value))}
               onBlur={(e) =>
                 update(
                   'salaryMax',
@@ -290,7 +401,7 @@ export default function VacanciesPage() {
               step={1}
               inputMode="numeric"
               value={filters.hoursMin}
-              onChange={(e) => update('hoursMin', e.target.value)}
+              onChange={(e) => update('hoursMin', toDigits(e.target.value, HOURS_MAX))}
               onBlur={(e) =>
                 update(
                   'hoursMin',
@@ -313,7 +424,7 @@ export default function VacanciesPage() {
               step={1}
               inputMode="numeric"
               value={filters.hoursMax}
-              onChange={(e) => update('hoursMax', e.target.value)}
+              onChange={(e) => update('hoursMax', toDigits(e.target.value, HOURS_MAX))}
               onBlur={(e) =>
                 update(
                   'hoursMax',
@@ -336,13 +447,13 @@ export default function VacanciesPage() {
               step={1}
               inputMode="numeric"
               value={filters.durationMin}
-              onChange={(e) => update('durationMin', e.target.value)}
-              onBlur={(e) =>
-                update(
-                  'durationMin',
-                  clampNumeric(e.target.value, {
-                    min: DURATION_MIN,
-                    max: DURATION_MAX,
+onChange={(e) => update('durationMin', toDigits(e.target.value, DURATION_MAX))}
+               onBlur={(e) =>
+                 update(
+                   'durationMin',
+                   clampNumeric(e.target.value, {
+                     min: DURATION_MIN,
+                     max: DURATION_MAX,
                     step: 1,
                   }),
                 )
@@ -359,13 +470,13 @@ export default function VacanciesPage() {
               step={1}
               inputMode="numeric"
               value={filters.durationMax}
-              onChange={(e) => update('durationMax', e.target.value)}
-              onBlur={(e) =>
-                update(
-                  'durationMax',
-                  clampNumeric(e.target.value, {
-                    min: DURATION_MIN,
-                    max: DURATION_MAX,
+onChange={(e) => update('durationMax', toDigits(e.target.value, DURATION_MAX))}
+               onBlur={(e) =>
+                 update(
+                   'durationMax',
+                   clampNumeric(e.target.value, {
+                     min: DURATION_MIN,
+                     max: DURATION_MAX,
                     step: 1,
                   }),
                 )
@@ -379,7 +490,7 @@ export default function VacanciesPage() {
           <div className="flex flex-wrap gap-3">
             {[
               { v: 'remote', l: 'Удалёнка' },
-              { v: 'office', l: 'Офис' },
+              { v: 'onsite', l: 'Офис' },
               { v: 'hybrid', l: 'Гибрид' },
             ].map(({ v, l }) => (
               <label key={v} className="flex items-center gap-1 text-sm">
@@ -387,6 +498,22 @@ export default function VacanciesPage() {
                   type="checkbox"
                   checked={filters.workFormat.includes(v)}
                   onChange={() => toggleWorkFormat(v)}
+                />
+                {l}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label className="block mb-1">Тип занятости</Label>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(EMPLOYMENT_TYPE_LABEL).map(([v, l]) => (
+              <label key={v} className="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={filters.employmentType.includes(v)}
+                  onChange={() => toggleEmploymentType(v)}
                 />
                 {l}
               </label>
@@ -438,7 +565,7 @@ export default function VacanciesPage() {
 
       {isLoading && <LoadingState />}
       {error && <ErrorState onRetry={() => refetch()} />}
-      {!isLoading && !error && (data?.vacancies?.length ?? 0) === 0 && (
+      {!isLoading && !error && filteredVacancies.length === 0 && (
         <EmptyState title="Вакансии не найдены" />
       )}
       {isFetching && !isLoading && (
@@ -446,7 +573,7 @@ export default function VacanciesPage() {
       )}
 
       <ul className="space-y-2">
-        {(data?.vacancies ?? []).map((v) => {
+        {filteredVacancies.map((v) => {
           const target = v.id ? `/vacancies/${v.id}` : undefined
           return (
             <li
@@ -454,19 +581,33 @@ export default function VacanciesPage() {
               className="rounded-lg border bg-card p-4 space-y-2"
             >
               <div className="flex items-start justify-between gap-4">
-                {target ? (
-                  <Link
-                    to={target}
-                    className="text-lg font-medium text-primary underline"
-                  >
-                    {v.title ?? '—'}
-                  </Link>
-                ) : (
-                  <span className="text-lg font-medium">{v.title ?? '—'}</span>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {salaryRange(v.salaryFrom, v.salaryTo)}
-                </span>
+                <div className="flex-1">
+                  {target ? (
+                    <Link
+                      to={target}
+                      className="text-lg font-medium text-primary underline"
+                    >
+                      {v.title ?? '—'}
+                    </Link>
+                  ) : (
+                    <span className="text-lg font-medium">{v.title ?? '—'}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {salaryRange(v.salaryFrom, v.salaryTo)}
+                  </span>
+                  {isPlatformAdmin && v.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onArchive(v.id as string, v.title)}
+                      disabled={archive.isPending}
+                    >
+                      {archive.isPending ? '...' : 'Скрыть'}
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-muted-foreground">
                 {dash(v.companyName)} • {dash(v.city)}
@@ -483,7 +624,7 @@ export default function VacanciesPage() {
                   </Badge>
                 )}
                 {v.employmentType && (
-                  <Badge variant="outline">{v.employmentType}</Badge>
+                  <Badge variant="outline">{EMPLOYMENT_TYPE_LABEL[v.employmentType] ?? v.employmentType}</Badge>
                 )}
                 {v.publishedAt && (
                   <span className="text-xs text-muted-foreground">

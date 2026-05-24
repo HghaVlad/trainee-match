@@ -5,6 +5,7 @@
  * company microservice
  * OpenAPI spec version: 1.0
  */
+import type { DtoVacancyByCompListItemResponseModerationStatus } from './dtoVacancyByCompListItemResponseModerationStatus';
 import type { DtoVacancyByCompListItemResponseStatus } from './dtoVacancyByCompListItemResponseStatus';
 
 export interface DtoVacancyByCompListItemResponse {
@@ -13,6 +14,7 @@ export interface DtoVacancyByCompListItemResponse {
   employmentType?: string;
   id?: string;
   isPaid?: boolean;
+  moderationStatus?: DtoVacancyByCompListItemResponseModerationStatus;
   salaryFrom?: number;
   salaryTo?: number;
   status?: DtoVacancyByCompListItemResponseStatus;

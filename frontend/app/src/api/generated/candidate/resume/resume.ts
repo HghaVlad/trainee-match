@@ -29,7 +29,8 @@ import type {
   DtoErrorResponse,
   DtoResumeResponse,
   DtoShortResumeResponse,
-  DtoUpdateResumeRequest
+  DtoUpdateResumeRequest,
+  GetResumeParams
 } from '../schemas';
 
 import { mutatorFn } from '../../../../shared/api/http/client';
@@ -41,13 +42,14 @@ import { mutatorFn } from '../../../../shared/api/http/client';
  * @summary List all resumes for the authenticated candidate
  */
 export const getResume = (
-
+    params?: GetResumeParams,
  signal?: AbortSignal
 ) => {
 
 
       return mutatorFn<DtoShortResumeResponse[]>(
-      {url: `/resume`, method: 'GET', signal
+      {url: `/resume`, method: 'GET',
+        params, signal
     },
       );
     }
@@ -55,23 +57,23 @@ export const getResume = (
 
 
 
-export const getGetResumeQueryKey = () => {
+export const getGetResumeQueryKey = (params?: GetResumeParams,) => {
     return [
-    `/resume`
+    `/resume`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetResumeQueryOptions = <TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
+export const getGetResumeQueryOptions = <TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>(params?: GetResumeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetResumeQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetResumeQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResume>>> = ({ signal }) => getResume(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResume>>> = ({ signal }) => getResume(params, signal);
 
 
 
@@ -85,7 +87,7 @@ export type GetResumeQueryError = DtoErrorResponse
 
 
 export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>> & Pick<
+ params: undefined |  GetResumeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getResume>>,
           TError,
@@ -95,7 +97,7 @@ export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TErr
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>> & Pick<
+ params?: GetResumeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getResume>>,
           TError,
@@ -105,7 +107,7 @@ export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TErr
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
+ params?: GetResumeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -113,11 +115,11 @@ export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TErr
  */
 
 export function useGetResume<TData = Awaited<ReturnType<typeof getResume>>, TError = DtoErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
+ params?: GetResumeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getResume>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetResumeQueryOptions(options)
+  const queryOptions = getGetResumeQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -191,6 +193,67 @@ export const usePostResume = <TError = DtoErrorResponse,
         TContext
       > => {
       return useMutation(getPostResumeMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Delete a resume
+ */
+export const deleteResumeId = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return mutatorFn<string>(
+      {url: `/resume/${id}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+export const getDeleteResumeIdMutationOptions = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteResumeId'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteResumeId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteResumeId(id,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteResumeIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteResumeId>>>
+
+    export type DeleteResumeIdMutationError = DtoErrorResponse
+
+    /**
+ * @summary Delete a resume
+ */
+export const useDeleteResumeId = <TError = DtoErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteResumeId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteResumeIdMutationOptions(options), queryClient);
     }
     /**
  * @summary Get resume by ID
@@ -285,67 +348,6 @@ export function useGetResumeId<TData = Awaited<ReturnType<typeof getResumeId>>, 
 
 
 /**
- * @summary Delete a resume
- */
-export const deleteResumeId = (
-    id: string,
- signal?: AbortSignal
-) => {
-
-
-      return mutatorFn<string>(
-      {url: `/resume/${id}`, method: 'DELETE', signal
-    },
-      );
-    }
-
-
-
-export const getDeleteResumeIdMutationOptions = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext> => {
-
-const mutationKey = ['deleteResumeId'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteResumeId>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
-
-          return  deleteResumeId(id,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type DeleteResumeIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteResumeId>>>
-
-    export type DeleteResumeIdMutationError = DtoErrorResponse
-
-    /**
- * @summary Delete a resume
- */
-export const useDeleteResumeId = <TError = DtoErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteResumeId>>, TError,{id: string}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof deleteResumeId>>,
-        TError,
-        {id: string},
-        TContext
-      > => {
-      return useMutation(getDeleteResumeIdMutationOptions(options), queryClient);
-    }
-    /**
  * @summary Update a resume
  */
 export const patchResumeId = (

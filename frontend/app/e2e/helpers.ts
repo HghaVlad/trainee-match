@@ -1,6 +1,6 @@
 import { expect, type Page, type APIRequestContext, request } from '@playwright/test'
 
-const AUTH_URL = process.env['E2E_AUTH_URL'] ?? 'http://localhost:8000'
+const BACKEND_URL = process.env['E2E_BACKEND_URL'] ?? 'https://api.traineematch.space'
 
 export type Role = 'Candidate' | 'Company'
 
@@ -33,7 +33,7 @@ export function makeUser(role: Role): TestUser {
 
 export async function registerViaApi(user: TestUser, api?: APIRequestContext): Promise<void> {
   const ctx = api ?? (await request.newContext())
-  const res = await ctx.post(`${AUTH_URL}/api/v1/auth/register`, {
+  const res = await ctx.post(`${BACKEND_URL}/api/auth/auth/register`, {
     data: {
       username: user.username,
       password: user.password,

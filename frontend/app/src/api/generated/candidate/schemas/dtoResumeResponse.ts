@@ -11,6 +11,7 @@ export interface DtoResumeResponse {
   candidate_id?: string;
   data?: DtoResumeData;
   id?: string;
+  moderation_status?: string;
   name?: string;
   status?: string;
 }

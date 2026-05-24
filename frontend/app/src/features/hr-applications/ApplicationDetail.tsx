@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import * as React from 'react'
 import { Link } from 'react-router'
 import {
   useGetHrApplication,
   useGetHrApplicationHistory,
 } from '@/api/generated/application/hr-applications/hr-applications'
-import { type HrAllowedAction } from '@/api/generated/application/schemas'
+import type { HrAllowedAction } from '@/api/generated/application/schemas'
+import type { ResumeData } from '@/api/generated/application/schemas/resumeData'
+import { useGetSkillList } from '@/api/generated/candidate/skill/skill'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { Button } from '@/shared/ui/button'
@@ -25,25 +27,26 @@ interface Props {
   applicationId: string
 }
 
-interface ResumeView {
-  title?: string
-  content?: string
-  skills: string[]
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('ru-RU')
 }
 
-function readResume(data: { [k: string]: unknown }): ResumeView {
-  const title = typeof data.title === 'string' ? data.title : undefined
-  const content =
-    typeof data.content === 'string'
-      ? data.content
-      : typeof data.description === 'string'
-        ? data.description
-        : undefined
-  const rawSkills = data.skills
-  const skills: string[] = Array.isArray(rawSkills)
-    ? rawSkills.filter((s): s is string => typeof s === 'string')
-    : []
-  return { title, content, skills }
+function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null
+  return (
+    <p>
+      <span className="text-muted-foreground">{label}: </span>
+      {value}
+    </p>
+  )
+}
+
+const WORK_FORMAT_LABEL: Record<string, string> = {
+  remote: 'Удалёнка',
+  onsite: 'Офис',
+  hybrid: 'Гибрид',
 }
 
 function formatDateTime(iso: string): string {
@@ -55,9 +58,17 @@ function formatDateTime(iso: string): string {
 export function ApplicationDetail({ companyId, applicationId }: Props) {
   const detailQ = useGetHrApplication(applicationId)
   const historyQ = useGetHrApplicationHistory(applicationId)
-  const [pendingAction, setPendingAction] = useState<HrAllowedAction | null>(
-    null,
-  )
+  const [pendingAction, setPendingAction] = React.useState<HrAllowedAction | null>(null)
+  const { data: skillCatalog } = useGetSkillList()
+  const skillNameMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    if (skillCatalog) {
+      for (const s of skillCatalog) {
+        if (s.id && s.name) map.set(s.id, s.name)
+      }
+    }
+    return map
+  }, [skillCatalog])
 
   if (detailQ.isLoading) return <LoadingState />
   if (detailQ.error || !detailQ.data) {
@@ -66,7 +77,7 @@ export function ApplicationDetail({ companyId, applicationId }: Props) {
 
   const app = detailQ.data.data
   const history = historyQ.data?.data ?? app.statusHistory ?? []
-  const resume = readResume(app.snapshot.resumeData)
+  const resume: ResumeData = app.snapshot.resumeData
   const allowedActions = app.allowedActions ?? []
   const hasActions = allowedActions.length > 0
 
@@ -126,24 +137,98 @@ export function ApplicationDetail({ companyId, applicationId }: Props) {
           <CardTitle>Резюме</CardTitle>
           <CardDescription>Снимок на момент отклика</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          {resume.title && <p className="text-base font-medium">{resume.title}</p>}
-          {resume.content && (
-            <p className="whitespace-pre-wrap">{resume.content}</p>
-          )}
-          {resume.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {resume.skills.map((s) => (
-                <span
-                  key={s}
-                  className="rounded-full border px-2 py-0.5 text-xs"
-                >
-                  {s}
-                </span>
-              ))}
+        <CardContent className="space-y-4 text-sm">
+          {/* Personal info */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+            <InfoRow label="Имя" value={`${resume.lastName} ${resume.firstName} ${resume.middleName}`} />
+            <InfoRow label="Email" value={resume.email} />
+            <InfoRow label="Телефон" value={resume.phone} />
+            <InfoRow label="Telegram" value={app.snapshot.telegram} />
+            <InfoRow label="Город" value={resume.city} />
+            <InfoRow label="Дата рождения" value={formatDate(resume.dateOfBirth)} />
+            <InfoRow label="Гражданство" value={resume.citizenship} />
+            <InfoRow label="Формат работы" value={WORK_FORMAT_LABEL[resume.desiredFormat] ?? resume.desiredFormat} />
+            <InfoRow label="Уровень английского" value={resume.englishLevel} />
+          </div>
+
+          {/* Education */}
+          {resume.education.length > 0 && (
+            <div>
+              <h4 className="mb-1.5 font-medium">Образование</h4>
+              <div className="space-y-2">
+                {resume.education.map((edu, i) => (
+                  <div key={i} className="rounded-md border p-2.5">
+                    <p className="font-medium">{edu.university}</p>
+                    <p className="text-muted-foreground">{edu.faculty}, {edu.specialization}</p>
+                    <p className="text-muted-foreground">
+                      {edu.startYear}–{edu.endYear} &middot; {edu.level} &middot; {edu.format}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          {!resume.title && !resume.content && resume.skills.length === 0 && (
+
+          {/* Work experience */}
+          {resume.workExperiences.length > 0 && (
+            <div>
+              <h4 className="mb-1.5 font-medium">Опыт работы</h4>
+              <div className="space-y-2">
+                {resume.workExperiences.map((we, i) => (
+                  <div key={i} className="rounded-md border p-2.5">
+                    <p className="font-medium">{we.position}</p>
+                    <p className="text-muted-foreground">{we.company} &middot; {we.period}</p>
+                    {we.responsibilities && (
+                      <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{we.responsibilities}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skills (resolved from skill catalog) */}
+          {resume.skillsList.length > 0 && (
+            <div>
+              <h4 className="mb-1.5 font-medium">Навыки</h4>
+              <div className="flex flex-wrap gap-2">
+                {resume.skillsList.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full border px-2 py-0.5 text-xs"
+                  >
+                    {skillNameMap.get(s) ?? s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Additional info */}
+          {resume.additionalInfo && (
+            <div>
+              <h4 className="mb-1 font-medium">Дополнительная информация</h4>
+              <p className="whitespace-pre-wrap text-muted-foreground">{resume.additionalInfo}</p>
+            </div>
+          )}
+
+          {/* Portfolio link */}
+          {resume.portfolioLink && (
+            <p>
+              <span className="text-muted-foreground">Портфолио: </span>
+              <a
+                href={resume.portfolioLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline"
+              >
+                {resume.portfolioLink}
+              </a>
+            </p>
+          )}
+
+          {/* Empty state */}
+          {!resume.lastName && resume.education.length === 0 && resume.workExperiences.length === 0 && (
             <p className="text-muted-foreground">Нет данных резюме.</p>
           )}
         </CardContent>

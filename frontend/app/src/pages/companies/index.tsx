@@ -1,18 +1,28 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useQueries } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   getGetCompaniesQueryOptions,
 } from '@/api/generated/company/company/company'
+import { usePatchAdminCompaniesIdModeration } from '@/api/generated/company/admin-company/admin-company'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Button } from '@/shared/ui/button'
+import { useSession } from '@/shared/session/useSession'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 
 const PAGE_SIZE = 20
 
 export default function CompaniesPage() {
   const [cursors, setCursors] = useState<Array<string | undefined>>([undefined])
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
+  const { user } = useSession()
+  const { toast } = useToast()
+  const qc = useQueryClient()
+  const archive = usePatchAdminCompaniesIdModeration()
 
   const queries = useQueries({
     queries: cursors.map((cursor) =>
@@ -28,15 +38,34 @@ export default function CompaniesPage() {
     const out: Array<{ id?: string; name?: string; openVacanciesCount?: number }> = []
     for (const q of queries) {
       for (const c of q.data?.companies ?? []) {
-        if (!c.id || seen.has(c.id)) continue
+        if (!c.id || seen.has(c.id) || hiddenIds.has(c.id)) continue
         seen.add(c.id)
         out.push(c)
       }
     }
     return out
-  }, [queries])
+  }, [queries, hiddenIds])
   const lastQuery = queries[queries.length - 1]
   const nextCursor = lastQuery?.data?.nextCursor ?? undefined
+
+  async function onArchive(companyId: string, companyName?: string) {
+    setHiddenIds((prev) => new Set(prev).add(companyId))
+    try {
+      await archive.mutateAsync({ id: companyId, data: { status: 'hidden' } })
+      toast({
+        title: `Скрыто: ${companyName ?? companyId}`,
+        description: `ID: ${companyId}`,
+      })
+    } catch (e) {
+      setHiddenIds((prev) => {
+        const next = new Set(prev)
+        next.delete(companyId)
+        return next
+      })
+      const msg = e instanceof AppError ? e.message : 'Не удалось скрыть компанию'
+      toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+    }
+  }
 
   if (isLoading && items.length === 0) return <LoadingState />
   if (error && items.length === 0) {
@@ -46,21 +75,37 @@ export default function CompaniesPage() {
     return <EmptyState title="Компании не найдены" />
   }
 
+  const isPlatformAdmin = user?.role === 'admin'
+
   return (
     <div className="mx-auto max-w-3xl p-6 space-y-4">
       <h1 className="text-2xl font-bold">Компании</h1>
       <ul className="space-y-2">
         {items.map((c) => (
           <li key={c.id} className="rounded-lg border bg-card p-4">
-            <Link
-              to={`/companies/${c.id ?? ''}`}
-              className="text-lg font-medium text-primary underline"
-            >
-              {c.name ?? '—'}
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              Открытых вакансий: {c.openVacanciesCount ?? 0}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <Link
+                  to={`/companies/${c.id ?? ''}`}
+                  className="text-lg font-medium text-primary underline"
+                >
+                  {c.name ?? '—'}
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  Открытых вакансий: {c.openVacanciesCount ?? 0}
+                </p>
+              </div>
+              {isPlatformAdmin && c.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onArchive(c.id as string, c.name)}
+                  disabled={archive.isPending}
+                >
+                  {archive.isPending ? '...' : 'Скрыть'}
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

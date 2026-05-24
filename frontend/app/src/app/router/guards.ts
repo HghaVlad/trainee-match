@@ -14,13 +14,20 @@ export function requireAuth({ request }: LoaderFunctionArgs) {
   return null
 }
 
-export function requireRole(role: 'Candidate' | 'Company') {
+export function requireRole(role: 'Candidate' | 'Company' | 'admin') {
   return function roleLoader({ request }: LoaderFunctionArgs) {
     const { status, user } = useSessionStore.getState()
     if (status !== 'authed') return loginRedirect(request)
     if (user?.role !== role) return redirect('/403')
     return null
   }
+}
+
+export function requirePlatformAdmin({ request }: LoaderFunctionArgs) {
+  const { status, user } = useSessionStore.getState()
+  if (status !== 'authed') return loginRedirect(request)
+  if (user?.role !== 'admin') return redirect('/403')
+  return null
 }
 
 export async function requireCompanyMember({ request, params }: LoaderFunctionArgs) {
@@ -85,6 +92,7 @@ export async function resolveActiveCompany({ request }: LoaderFunctionArgs) {
 export function redirectIfAuth() {
   const { status, user, companies, activeCompanyId } = useSessionStore.getState()
   if (status !== 'authed' || !user) return null
+  if (user.role === 'admin') return redirect('/admin/skills')
   if (user.role === 'Candidate') return redirect('/me/profile')
   if (companies.length === 0) return redirect('/company/new')
   const target =

@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { makeUser, registerAndLogin, expectAnonHeader } from './helpers'
 
+const BACKEND_URL = process.env['E2E_BACKEND_URL'] ?? 'https://api.traineematch.space'
+
 test.describe('public pages', () => {
   test('BUG #6: /vacancies renders without naked error', async ({ page }) => {
     await page.goto('/vacancies')
@@ -27,7 +29,7 @@ test.describe('company flow', () => {
     await page.evaluate(() => localStorage.clear())
 
     const { request: req } = page.context()
-    await req.post('http://localhost:8000/api/v1/auth/register', {
+    await req.post(`${BACKEND_URL}/api/auth/auth/register`, {
       data: {
         username: u.username,
         password: u.password,
@@ -120,5 +122,57 @@ test.describe('logout regression', () => {
     await page.getByRole('banner').getByRole('button', { name: /Выйти|Logout/ }).click()
     await expectAnonHeader(page)
     await expect.poll(() => new URL(page.url()).pathname).not.toMatch(/^\/company/)
+  })
+})
+
+test.describe('company switcher', () => {
+  test('BUG #24: deleted company is removed from switcher and not selected', async ({ page }) => {
+    const u = makeUser('Company')
+    await registerAndLogin(page, u)
+
+    await page.goto('/company/new')
+    await page.getByLabel('Название').fill(`E2E Deletable Co ${Date.now()}`)
+    await page.getByRole('button', { name: 'Создать' }).click()
+    await page.waitForURL(/\/company\/[^/]+\/dashboard/, { timeout: 15_000 })
+
+    const companyUrl = new URL(page.url())
+    const companyId = companyUrl.pathname.split('/')[2]
+
+    const switcherSelect = page.getByLabel('Активная компания')
+    const currentValue = await switcherSelect.inputValue()
+
+    await page.goto(`/company/${companyId}`)
+    const deleteBtn = page.getByRole('button', { name: /Удалить компанию|Удалить/i }).first()
+    if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await deleteBtn.click()
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 })
+      await page.getByRole('dialog').getByRole('button', { name: /Удалить/i }).click()
+      await page.waitForURL(/\/(login|$)/, { timeout: 15000 }).catch(() => {})
+
+      if (new URL(page.url()).pathname.includes('/login')) {
+        const { request: req } = page.context()
+    await req.post(`${BACKEND_URL}/api/auth/auth/register`, {
+          data: {
+            username: u.username,
+            password: u.password,
+            email: u.email,
+            first_name: u.firstName,
+            last_name: u.lastName,
+            role: u.role,
+          },
+        })
+        await page.getByLabel('Имя пользователя').fill(u.username)
+        await page.getByLabel('Пароль').fill(u.password)
+        await page.getByRole('button', { name: 'Войти' }).click()
+        await page.waitForURL(/\/company/, { timeout: 15000 }).catch(() => {})
+      }
+
+      if (switcherSelect) {
+        const val = await switcherSelect.inputValue()
+        expect(val, 'deleted company should not be selected').not.toBe(companyId)
+        const options = await switcherSelect.locator('option').allTextContents()
+        expect(options.some((o) => o.includes(companyId ?? '')), 'deleted company should not appear in switcher').toBe(false)
+      }
+    }
   })
 })

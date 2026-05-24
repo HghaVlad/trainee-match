@@ -238,6 +238,7 @@ services:
 
     volumes:
       - kafka_1_data:/var/lib/kafka/data
+    restart: unless-stopped
 
   kafka-2:
     image: apache/kafka:4.2.0
@@ -264,6 +265,7 @@ services:
 
     volumes:
       - kafka_2_data:/var/lib/kafka/data
+    restart: unless-stopped
 
   kafka-3:
     image: apache/kafka:4.2.0
@@ -290,7 +292,8 @@ services:
 
     volumes:
       - kafka_3_data:/var/lib/kafka/data
-
+    restart: unless-stopped
+    
   kafka-init:
     image: apache/kafka:4.2.0
     entrypoint: [ "/bin/bash", "/scripts/kafka-init.sh" ]

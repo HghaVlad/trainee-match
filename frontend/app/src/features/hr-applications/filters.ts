@@ -28,4 +28,5 @@ export const ALL_STATUSES: ApplicationStatus[] = [
 export const SORT_LABEL: Record<HrSortQueryParameter, string> = {
   createdAtDesc: 'Сначала новые',
   updatedAtDesc: 'Недавно обновлённые',
+  candidateFullNameAsc: 'По имени соискателя',
 }

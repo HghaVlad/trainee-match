@@ -161,9 +161,9 @@ const candidateTelegrams = ['@alisa_i', '@bob_s', '@charlie_k', '@diana_p', '@ev
 
 function makeHrApplication(candidateIndex: number, appStatus: string, vacId: string, vacTitle: string) {
   const id = uuid(200 + candidateIndex)
-  const name = candidateNames[candidateIndex % 5]
-  const email = candidateEmails[candidateIndex % 5]
-  const telegram = candidateTelegrams[candidateIndex % 5]
+  const name = candidateNames[candidateIndex % 5]!
+  const email = candidateEmails[candidateIndex % 5]!
+  const telegram = candidateTelegrams[candidateIndex % 5]!
   return {
     id,
     status: appStatus,
@@ -217,8 +217,14 @@ function makeHrApplication(candidateIndex: number, appStatus: string, vacId: str
   }
 }
 
-const hrApplications = mockCompanyVacancies.flatMap((vac, vi) =>
-  Array.from({ length: 2 + vi }, (_, ci) => makeHrApplication(vi * 3 + ci, ['submitted', 'interview', 'seen', 'rejected', 'offer'][(vi + ci) % 5], vac.id!, vac.title!)),
+const vacStatuses = ['submitted', 'interview', 'seen', 'rejected', 'offer'] as const
+
+const hrApplications = mockCompanyVacancies.flatMap((vac: { id: string; title: string }, vi) =>
+  Array.from({ length: 2 + vi }, (_, ci) => {
+    const statusIndex = (vi + ci) % vacStatuses.length
+    const status = vacStatuses[statusIndex] ?? 'submitted'
+    return makeHrApplication(vi * 3 + ci, status, vac.id, vac.title)
+  }),
 )
 
 export const handlers = [

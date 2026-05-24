@@ -3,7 +3,7 @@ import { useListMyApplications } from '@/api/generated/application/candidate-app
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { STATUS_LABEL } from '@/features/applications'
+import { ApplicationStatusBadge } from '@/shared/ui/ApplicationStatusBadge'
 import { AppError } from '@/shared/api/http/client'
 
 function formatDate(iso: string): string {
@@ -53,9 +53,7 @@ export default function MyApplicationsPage() {
                     Отправлено: {formatDate(it.createdAt)}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs">
-                  {STATUS_LABEL[it.status] ?? it.status}
-                </span>
+                <ApplicationStatusBadge status={it.status} />
               </div>
             </li>
           ))}

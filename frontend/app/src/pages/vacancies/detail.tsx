@@ -1,12 +1,18 @@
 import { useParams, Link } from 'react-router'
 import { useGetVacanciesVacancyId } from '@/api/generated/company/vacancy/vacancy'
+import { usePatchAdminVacanciesIdModeration } from '@/api/generated/company/admin-vacancy/admin-vacancy'
 import { LoadingState } from '@/shared/ui/LoadingState'
 import { ErrorState } from '@/shared/ui/ErrorState'
+import { Button } from '@/shared/ui/button'
 import { ApplyVacancyButton } from '@/features/applications'
+import { useSession } from '@/shared/session/useSession'
+import { useToast } from '@/shared/hooks/use-toast'
+import { AppError } from '@/shared/api/http/client'
 
 const WORK_FORMAT_LABEL: Record<string, string> = {
   remote: 'Удалёнка',
   office: 'Офис',
+  onsite: 'Офис',
   hybrid: 'Гибрид',
 }
 
@@ -45,10 +51,16 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 export default function VacancyDetailPage() {
   const { vacancyId = '' } = useParams<{ vacancyId: string }>()
   const { data, isLoading, error, refetch } = useGetVacanciesVacancyId(vacancyId, {
-    query: { enabled: Boolean(vacancyId) },
+    query: { enabled: Boolean(vacancyId), retry: false },
   })
+  const notFound = error instanceof AppError && error.status === 404
+  const { user } = useSession()
+  const { toast } = useToast()
+  const archive = usePatchAdminVacanciesIdModeration()
+  const isPlatformAdmin = user?.role === 'admin'
 
   if (isLoading) return <LoadingState />
+  if (notFound) return <ErrorState title="Вакансия не найдена" message="Возможно, она была скрыта или удалена." onRetry={() => refetch()} />
   if (error || !data) return <ErrorState onRetry={() => refetch()} />
 
   return (
@@ -81,7 +93,30 @@ export default function VacancyDetailPage() {
             <p className="text-sm text-muted-foreground">{data.companyName ?? '—'}</p>
           )}
         </div>
-        {vacancyId && <ApplyVacancyButton vacancyId={vacancyId} />}
+        <div className="flex items-center gap-2">
+          {vacancyId && <ApplyVacancyButton vacancyId={vacancyId} />}
+          {isPlatformAdmin && vacancyId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await archive.mutateAsync({ id: vacancyId, data: { status: 'hidden' } })
+                  toast({
+                    title: `Скрыто: ${data.title ?? vacancyId}`,
+                    description: `ID: ${vacancyId}`,
+                  })
+                } catch (e) {
+                  const msg = e instanceof AppError ? e.message : 'Не удалось скрыть вакансию'
+                  toast({ title: 'Ошибка', description: msg, variant: 'destructive' })
+                }
+              }}
+              disabled={archive.isPending}
+            >
+              {archive.isPending ? '...' : 'Скрыть'}
+            </Button>
+          )}
+        </div>
       </div>
 
       <dl className="rounded-lg border bg-card p-4">

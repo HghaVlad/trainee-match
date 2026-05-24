@@ -11,10 +11,7 @@ services:
     ports:
       - "${FRONTEND_PORT:-8080}:80"
     environment:
-      AUTH_URL: ${AUTH_URL:-http://host.docker.internal:8000}
-      CANDIDATE_URL: ${CANDIDATE_URL:-http://host.docker.internal:8081}
-      COMPANY_URL: ${COMPANY_URL:-http://host.docker.internal:8088}
-      APPLICATION_URL: ${APPLICATION_URL:-http://host.docker.internal:8086}
+      BACKEND_URL: ${BACKEND_URL:-https://api.traineematch.space}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

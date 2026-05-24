@@ -28,10 +28,7 @@ import {
   getListCompanyApplicationsQueryKey,
   getListVacancyApplicationsQueryKey,
 } from '@/api/generated/application/hr-applications/hr-applications'
-import {
-  type HrAllowedAction,
-  type ChangeApplicationStatusRequestStatus,
-} from '@/api/generated/application/schemas'
+import type { HrAllowedAction } from '@/api/generated/application/schemas'
 import { AppError } from '@/shared/api/http/client'
 import {
   ACTION_DIALOG_TITLE,
@@ -78,7 +75,8 @@ export function ChangeStatusDialog({
 
   async function onSubmit(values: FormData) {
     if (!action) return
-    const status: ChangeApplicationStatusRequestStatus = ACTION_TO_STATUS[action]
+    const status = ACTION_TO_STATUS[action]
+    if (!status) return
     const comment = values.comment?.trim()
     try {
       await mutation.mutateAsync({
