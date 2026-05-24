@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/hamba/avro/v2"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
@@ -35,12 +35,20 @@ func (d *Decoder) GetVacancyPublishedEvent(ctx context.Context, payload []byte) 
 	return decodeEvent[vacancy.PublishedEvent](ctx, d, payload)
 }
 
+func (d *Decoder) GetVacancyDraftCreatedEvent(ctx context.Context, payload []byte) (*vacancy.DraftCreatedEvent, error) {
+	return decodeEvent[vacancy.DraftCreatedEvent](ctx, d, payload)
+}
+
 func (d *Decoder) GetVacancyUpdatedEvent(ctx context.Context, payload []byte) (*vacancy.UpdatedEvent, error) {
 	return decodeEvent[vacancy.UpdatedEvent](ctx, d, payload)
 }
 
 func (d *Decoder) GetVacancyArchivedEvent(ctx context.Context, payload []byte) (*vacancy.ArchivedEvent, error) {
 	return decodeEvent[vacancy.ArchivedEvent](ctx, d, payload)
+}
+
+func (d *Decoder) GetVacancyModUpdEvent(ctx context.Context, payload []byte) (*vacancy.ModerationUpdatedEvent, error) {
+	return decodeEvent[vacancy.ModerationUpdatedEvent](ctx, d, payload)
 }
 
 func (d *Decoder) GetCompanyUpdatedEvent(ctx context.Context, payload []byte) (*company.UpdatedEvent, error) {

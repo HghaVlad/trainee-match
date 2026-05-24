@@ -118,6 +118,8 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 			status, err = h.handleVacModUpdEvent(ctx, event.Payload)
 		case "CompanyModerationUpdated":
 			status, err = h.handleCompModUpdEvent(ctx, event.Payload)
+		case "VacancyDraftCreated":
+			status = ResultStatusSuccess
 		default:
 			h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
 			return

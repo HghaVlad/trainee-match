@@ -18,8 +18,10 @@ type DLQSender interface {
 type Decoder interface {
 	GetUserCreatedEvent(ctx context.Context, payload []byte) (*userhr.CreatedEvent, error)
 	GetVacancyPublishedEvent(ctx context.Context, payload []byte) (*vacancy.PublishedEvent, error)
+	GetVacancyDraftCreatedEvent(ctx context.Context, payload []byte) (*vacancy.DraftCreatedEvent, error)
 	GetVacancyUpdatedEvent(ctx context.Context, payload []byte) (*vacancy.UpdatedEvent, error)
 	GetVacancyArchivedEvent(ctx context.Context, payload []byte) (*vacancy.ArchivedEvent, error)
+	GetVacancyModUpdEvent(ctx context.Context, payload []byte) (*vacancy.ModerationUpdatedEvent, error)
 	GetCompanyUpdatedEvent(ctx context.Context, payload []byte) (*company.UpdatedEvent, error)
 	GetCompanyDeletedEvent(ctx context.Context, payload []byte) (*company.DeletedEvent, error)
 }

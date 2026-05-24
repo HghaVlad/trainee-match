@@ -8,7 +8,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 //go:generate mockgen -source=ports.go -destination=mocks/port_mocks.go -package=mocks
@@ -24,6 +23,6 @@ type CompanyRepo interface {
 	GetByMember(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*company.Company, error)
 }
 
-type SearchRepo interface {
-	Index(ctx context.Context, vac views.VacancySearch) error
+type outboxWriter interface {
+	WriteVacancyDraftCreated(ctx context.Context, ev vacancy.DraftCreatedEvent) error
 }

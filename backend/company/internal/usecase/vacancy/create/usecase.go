@@ -4,30 +4,33 @@ import (
 	"context"
 	"time"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/google/uuid"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 // Usecase creates vacancy in draft status
 type Usecase struct {
 	vacancyRepo VacancyRepo
 	compRepo    CompanyRepo
-	searchRepo  SearchRepo
+	outboxWriter outboxWriter
+	txManager   common.TxManager
 }
 
 func NewUsecase(
 	vacancyRepo VacancyRepo,
 	compRepo CompanyRepo,
-	searchRepo SearchRepo,
+	outboxWriter outboxWriter,
+	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
 		vacancyRepo: vacancyRepo,
 		compRepo:    compRepo,
-		searchRepo:  searchRepo,
+		outboxWriter:  outboxWriter,
+		txManager:   txManager,
 	}
 }
 
@@ -48,22 +51,29 @@ func (u *Usecase) Execute(ctx context.Context, request *Request, ident *identity
 		return nil, err
 	}
 
-	err = u.vacancyRepo.Create(ctx, vac)
-	if err != nil {
-		return nil, err
-	}
+	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
+		err = u.vacancyRepo.Create(ctx, vac)
+		if err != nil {
+			return err
+		}
 
-	err = u.indexToSearch(ctx, vac, comp)
-	if err != nil {
-		return nil, err
-	}
+		return u.createEvent(ctx, vac, comp)
+	})
 
 	return &Response{ID: vac.ID}, nil
 }
 
-func (u *Usecase) indexToSearch(ctx context.Context, vac *vacancy.Vacancy, comp *company.Company) error {
-	searchView := views.SearchViewFromVacancy(*vac, comp.Name)
-	return u.searchRepo.Index(ctx, *searchView)
+func (u *Usecase) createEvent(ctx context.Context, vac *vacancy.Vacancy, comp *company.Company) error {
+	ev := vacancy.DraftCreatedEvent{
+		EventID:     uuid.New(),
+		VacancyID:   vac.ID,
+		Title:       vac.Title,
+		CompanyID:   vac.CompanyID,
+		CompanyName: comp.Name,
+		OccurredAt:  time.Now().UTC(),
+	}
+
+	return u.outboxWriter.WriteVacancyDraftCreated(ctx, ev)
 }
 
 // user of identity is the creator of the vacancy

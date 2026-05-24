@@ -147,7 +147,7 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
 	vacListByComp := listcompsearch.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacListCompSearch := listcompsearch.NewUsecase(searchVacRepo, compRepo, memRepo, vacByCompListCache)
-	vacCreate := createvac.NewUsecase(vacRepo, compRepo, searchVacRepo)
+	vacCreate := createvac.NewUsecase(vacRepo, compRepo, outboxWriter, txManager)
 	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
 	vacPublish := publish.NewUsecase(
 		vacRepo,

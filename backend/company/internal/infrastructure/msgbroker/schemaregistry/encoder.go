@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	vacancyDraftCreatedSubject      = "vacancy-draft-created-value"
 	vacancyPublishedSubject         = "vacancy-published-value"
 	vacancyArchivedSubject          = "vacancy-archived-value"
 	vacancyUpdatedSubject           = "vacancy-updated-value"
@@ -53,6 +54,10 @@ func NewEncoder(localReg *LocalRegistry) (*Encoder, error) {
 
 func (en *Encoder) VacancyPublishedToBytes(ev vacancy.PublishedEvent) ([]byte, error) {
 	return en.eventToBytes(ev, vacancyPublishedSubject)
+}
+
+func (en *Encoder) VacancyDraftCreatedToBytes(ev vacancy.DraftCreatedEvent) ([]byte, error) {
+	return en.eventToBytes(ev, vacancyDraftCreatedSubject)
 }
 
 func (en *Encoder) VacancyArchivedToBytes(ev vacancy.ArchivedEvent) ([]byte, error) {

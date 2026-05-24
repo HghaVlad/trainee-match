@@ -90,10 +90,14 @@ func (h *Handler) handleByEventType(ctx context.Context, payload []byte, evType 
 		return h.handleUserCreated(ctx, payload)
 	case string(outbox.EventTypeVacancyPublished):
 		return h.handleVacancyPublished(ctx, payload)
+	case string(outbox.EventTypeVacancyDraftCreated):
+		return h.handleVacancyDraftCreated(ctx, payload)
 	case string(outbox.EventTypeVacancyArchived):
 		return h.handleVacancyArchived(ctx, payload)
 	case string(outbox.EventTypeVacancyUpdated):
 		return h.handleVacancyUpdated(ctx, payload)
+	case string(outbox.EventTypeVacancyModerationUpdated):
+		return h.handleVacancyModUpd(ctx, payload)
 	case string(outbox.EventTypeCompanyUpdated):
 		return h.handleCompanyUpdated(ctx, payload)
 	case string(outbox.EventTypeCompanyDeleted):
@@ -150,6 +154,20 @@ func (h *Handler) handleVacancyPublished(ctx context.Context, payload []byte) (R
 	return ResultSuccess, nil
 }
 
+func (h *Handler) handleVacancyDraftCreated(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyDraftCreatedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
 func (h *Handler) handleVacancyArchived(ctx context.Context, payload []byte) (ResultStatus, error) {
 	event, err := h.decoder.GetVacancyArchivedEvent(ctx, payload)
 	if err != nil {
@@ -166,6 +184,20 @@ func (h *Handler) handleVacancyArchived(ctx context.Context, payload []byte) (Re
 
 func (h *Handler) handleVacancyUpdated(ctx context.Context, payload []byte) (ResultStatus, error) {
 	event, err := h.decoder.GetVacancyUpdatedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyModUpd(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyModUpdEvent(ctx, payload)
 	if err != nil {
 		return classifyErr(err), err
 	}

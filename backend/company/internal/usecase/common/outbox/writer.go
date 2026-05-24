@@ -18,6 +18,7 @@ type EventType string
 
 const (
 	EventTypeVacancyPublished         EventType = "VacancyPublished"
+	EventTypeVacancyDraftCreated      EventType = "VacancyDraftCreated"
 	EventTypeVacancyArchived          EventType = "VacancyArchived"
 	EventTypeVacancyUpdated           EventType = "VacancyUpdated"
 	EventTypeVacancyModerationUpdated EventType = "VacancyModerationUpdated"
@@ -66,6 +67,30 @@ func (w *Writer) WriteVacancyPublished(ctx context.Context, ev vacancy.Published
 	err = w.repo.Create(ctx, msg)
 	if err != nil {
 		return fmt.Errorf("write vacancy published outbox: %w ", err)
+	}
+	return nil
+}
+
+func (w *Writer) WriteVacancyDraftCreated(ctx context.Context, ev vacancy.DraftCreatedEvent) error {
+	payload, err := w.encoder.VacancyDraftCreatedToBytes(ev)
+	if err != nil {
+		return fmt.Errorf("write vacancy draft created outbox: %w ", err)
+	}
+
+	key := ev.VacancyID[:]
+	msg := w.createDefaultMsg(
+		ev.VacancyID,
+		payload,
+		key,
+		w.cfg.VacancyTopic,
+		EventTypeVacancyDraftCreated,
+		ev.EventID,
+		ev.OccurredAt,
+	)
+
+	err = w.repo.Create(ctx, msg)
+	if err != nil {
+		return fmt.Errorf("write vacancy  draft created outbox: %w ", err)
 	}
 	return nil
 }
