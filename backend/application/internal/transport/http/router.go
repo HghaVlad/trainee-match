@@ -31,17 +31,17 @@ func NewRouter(
 		router,
 	)
 
-	router.Route("/api/v1/application", func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			// Temporary handler for testing
-			r.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
-				_, err := w.Write([]byte("Hello World"))
-				if err != nil {
-					return
-				}
-			})
-		})
-	})
+	//router.Route("/api/v1/application", func(r chi.Router) {
+	//	r.Group(func(r chi.Router) {
+	//		// Temporary handler for testing
+	//		r.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
+	//			_, err := w.Write([]byte("Hello World"))
+	//			if err != nil {
+	//				return
+	//			}
+	//		})
+	//	})
+	//})
 
 	return router
 }
