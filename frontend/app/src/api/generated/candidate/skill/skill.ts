@@ -26,7 +26,7 @@ import type {
   GetSkillListParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { candidateMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -40,7 +40,7 @@ export const getSkillId = (
 ) => {
 
 
-      return mutatorFn<DtoSkillResponse>(
+      return candidateMutatorFn<DtoSkillResponse>(
       {url: `/skill/${id}`, method: 'GET', signal
     },
       );
@@ -132,7 +132,7 @@ export const getSkillList = (
 ) => {
 
 
-      return mutatorFn<DtoSkillResponse[]>(
+      return candidateMutatorFn<DtoSkillResponse[]>(
       {url: `/skill/list`, method: 'GET',
         params, signal
     },

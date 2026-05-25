@@ -4,12 +4,6 @@ const sharedOutput = {
   mode: 'tags-split' as const,
   client: 'react-query' as const,
   httpClient: 'axios' as const,
-  override: {
-    mutator: {
-      path: './src/shared/api/http/client.ts',
-      name: 'mutatorFn',
-    },
-  },
 }
 
 export default defineConfig({
@@ -19,6 +13,12 @@ export default defineConfig({
       ...sharedOutput,
       target: './src/api/generated/auth',
       schemas: './src/api/generated/auth/schemas',
+      override: {
+        mutator: {
+          path: './src/shared/api/http/client.ts',
+          name: 'authMutatorFn',
+        },
+      },
     },
   },
   candidate: {
@@ -27,6 +27,12 @@ export default defineConfig({
       ...sharedOutput,
       target: './src/api/generated/candidate',
       schemas: './src/api/generated/candidate/schemas',
+      override: {
+        mutator: {
+          path: './src/shared/api/http/client.ts',
+          name: 'candidateMutatorFn',
+        },
+      },
     },
   },
   company: {
@@ -35,6 +41,12 @@ export default defineConfig({
       ...sharedOutput,
       target: './src/api/generated/company',
       schemas: './src/api/generated/company/schemas',
+      override: {
+        mutator: {
+          path: './src/shared/api/http/client.ts',
+          name: 'companyMutatorFn',
+        },
+      },
     },
   },
   application: {
@@ -43,6 +55,12 @@ export default defineConfig({
       ...sharedOutput,
       target: './src/api/generated/application',
       schemas: './src/api/generated/application/schemas',
+      override: {
+        mutator: {
+          path: './src/shared/api/http/client.ts',
+          name: 'applicationMutatorFn',
+        },
+      },
     },
   },
 })

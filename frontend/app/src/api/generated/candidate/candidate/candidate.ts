@@ -31,7 +31,7 @@ import type {
   DtoErrorResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { candidateMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -45,7 +45,7 @@ export const patchCandidate = (
 ) => {
 
 
-      return mutatorFn<DtoCandidateResponse>(
+      return candidateMutatorFn<DtoCandidateResponse>(
       {url: `/candidate/`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoCandidateUpdateRequest, signal
@@ -109,7 +109,7 @@ export const postCandidate = (
 ) => {
 
 
-      return mutatorFn<DtoCandidateResponse>(
+      return candidateMutatorFn<DtoCandidateResponse>(
       {url: `/candidate/`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoCandidateCreateRequest, signal
@@ -172,7 +172,7 @@ export const getCandidateMe = (
 ) => {
 
 
-      return mutatorFn<DtoCandidateResponse>(
+      return candidateMutatorFn<DtoCandidateResponse>(
       {url: `/candidate/me`, method: 'GET', signal
     },
       );

@@ -44,7 +44,7 @@ import type {
   UnauthorizedErrorResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { applicationMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -59,7 +59,7 @@ export const listCompanyApplications = (
 ) => {
 
 
-      return mutatorFn<HrApplicationListResponse>(
+      return applicationMutatorFn<HrApplicationListResponse>(
       {url: `/hr/companies/${companyId}/applications`, method: 'GET',
         params, signal
     },
@@ -159,7 +159,7 @@ export const listVacancyApplications = (
 ) => {
 
 
-      return mutatorFn<HrApplicationListResponse>(
+      return applicationMutatorFn<HrApplicationListResponse>(
       {url: `/hr/vacancies/${vacancyId}/applications`, method: 'GET',
         params, signal
     },
@@ -258,7 +258,7 @@ export const getHrApplication = (
 ) => {
 
 
-      return mutatorFn<HrApplicationDetailsResponse>(
+      return applicationMutatorFn<HrApplicationDetailsResponse>(
       {url: `/hr/applications/${applicationId}`, method: 'GET', signal
     },
       );
@@ -350,7 +350,7 @@ export const getHrApplicationHistory = (
 ) => {
 
 
-      return mutatorFn<HrApplicationHistoryResponse>(
+      return applicationMutatorFn<HrApplicationHistoryResponse>(
       {url: `/hr/applications/${applicationId}/history`, method: 'GET', signal
     },
       );
@@ -452,7 +452,7 @@ export const changeApplicationStatus = (
 ) => {
 
 
-      return mutatorFn<HrApplicationDetailsResponse>(
+      return applicationMutatorFn<HrApplicationDetailsResponse>(
       {url: `/hr/applications/${applicationId}/status`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: changeApplicationStatusRequest, signal

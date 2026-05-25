@@ -10,6 +10,16 @@ const envSchema = z.object({
     .enum(['development', 'staging', 'production'])
     .optional()
     .default('development'),
+
+  // Microservice routing constants
+  VITE_BASE_URL: z
+    .string()
+    .optional()
+    .default('https://api.traineematch.space'),
+  VITE_AUTH_URL: z.string().optional().default(''),
+  VITE_APPLICATION_URL: z.string().optional().default(''),
+  VITE_CANDIDATE_URL: z.string().optional().default(''),
+  VITE_COMPANY_URL: z.string().optional().default(''),
 })
 
 export type Env = z.infer<typeof envSchema>

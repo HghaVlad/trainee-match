@@ -1,6 +1,7 @@
 import axios, {
   type AxiosError,
   type AxiosRequestConfig,
+  type AxiosInstance,
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { env } from '@/shared/config/env'
@@ -33,7 +34,7 @@ export class SessionExpiredError extends AppError {
   }
 }
 
-// ─── Single-flight refresh state ──────────────────────────────────────────────
+// ─── Single-flight refresh state (shared across all clients) ─────────────────
 
 let refreshPromise: Promise<void> | null = null
 const queuedRequests: Array<{
@@ -57,7 +58,6 @@ function processQueue(error: unknown): void {
 function normalizeAxiosError(err: AxiosError): AppError {
   const status = err.response?.status ?? 0
   const data = err.response?.data as Record<string, unknown> | undefined
-  // Auth/Company shape: { error: string }  — Candidate shape: { message: string }
   const message =
     (typeof data?.['error'] === 'string' ? data['error'] : undefined) ??
     (typeof data?.['message'] === 'string' ? data['message'] : undefined) ??
@@ -65,7 +65,15 @@ function normalizeAxiosError(err: AxiosError): AppError {
   return new AppError('HTTP_ERROR', message, status)
 }
 
-// ─── Axios instance ───────────────────────────────────────────────────────────
+// ─── Common base URL fallback ─────────────────────────────────────────────────
+
+const commonBaseURL = env.VITE_API_URL || '/api/v1'
+
+function serviceBaseURL(overrideUrl: string | undefined): string {
+  return overrideUrl && overrideUrl.length > 0 ? overrideUrl : commonBaseURL
+}
+
+// ─── Params serializer ────────────────────────────────────────────────────────
 
 function serializeParams(params: Record<string, unknown>): string {
   const usp = new URLSearchParams()
@@ -83,69 +91,111 @@ function serializeParams(params: Record<string, unknown>): string {
   return usp.toString()
 }
 
-export const httpClient = axios.create({
-  baseURL: env.VITE_API_URL || '/api/v1',
+// ─── Auth client (internal, for refresh calls) ────────────────────────────────
+
+const authRefreshBaseURL = serviceBaseURL(env.VITE_AUTH_URL)
+export const authRefreshClient = axios.create({
+  baseURL: authRefreshBaseURL,
   withCredentials: true,
   paramsSerializer: serializeParams,
 })
 
-// Request interceptor: correlation id + Accept header
-httpClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  config.headers.set('Accept', 'application/json')
-  config.headers.set('X-Request-Id', crypto.randomUUID())
-  return config
-})
-
-// Response interceptor: 401 single-flight refresh + error normalization
-httpClient.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean
-    }
-
-    // Non-401 errors or already-retried requests → normalize and reject
-    if (error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(normalizeAxiosError(error))
-    }
-
-    // If the failing request IS the refresh endpoint → session is dead, do not retry
-    if (originalRequest.url?.includes('/auth/refresh')) {
-      window.dispatchEvent(new CustomEvent('session:expired'))
-      return Promise.reject(new SessionExpiredError())
-    }
-
-    originalRequest._retry = true
-
-    // If a refresh is already in-flight, queue this request behind it
-    if (refreshPromise !== null) {
-      return new Promise<void>((resolve, reject) => {
-        queuedRequests.push({ resolve, reject })
-      }).then(() => httpClient(originalRequest))
-    }
-
-    // Start a single refresh call
-    refreshPromise = httpClient
-      .post('/auth/refresh')
-      .then(() => {
-        processQueue(null)
-      })
-      .catch((err: unknown) => {
-        processQueue(err)
-        window.dispatchEvent(new CustomEvent('session:expired'))
-        return Promise.reject(new SessionExpiredError())
-      })
-      .finally(() => {
-        refreshPromise = null
-      })
-
-    return refreshPromise.then(() => httpClient(originalRequest))
+authRefreshClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    config.headers.set('Accept', 'application/json')
+    config.headers.set('X-Request-Id', crypto.randomUUID())
+    return config
   },
 )
 
-// ─── orval mutator export ─────────────────────────────────────────────────────
+// ─── Client factory ───────────────────────────────────────────────────────────
+
+function createApiClient(baseURL: string): AxiosInstance {
+  const client = axios.create({
+    baseURL,
+    withCredentials: true,
+    paramsSerializer: serializeParams,
+  })
+
+  client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    config.headers.set('Accept', 'application/json')
+    config.headers.set('X-Request-Id', crypto.randomUUID())
+    return config
+  })
+
+  client.interceptors.response.use(
+    (response) => response,
+    async (error: AxiosError) => {
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean
+      }
+
+      if (error.response?.status !== 401 || originalRequest._retry) {
+        return Promise.reject(normalizeAxiosError(error))
+      }
+
+      if (originalRequest.url?.includes('/auth/refresh')) {
+        window.dispatchEvent(new CustomEvent('session:expired'))
+        return Promise.reject(new SessionExpiredError())
+      }
+
+      originalRequest._retry = true
+
+      if (refreshPromise !== null) {
+        return new Promise<void>((resolve, reject) => {
+          queuedRequests.push({ resolve, reject })
+        }).then(() => client(originalRequest))
+      }
+
+      refreshPromise = authRefreshClient
+        .post('/auth/refresh')
+        .then(() => {
+          processQueue(null)
+        })
+        .catch((err: unknown) => {
+          processQueue(err)
+          window.dispatchEvent(new CustomEvent('session:expired'))
+          return Promise.reject(new SessionExpiredError())
+        })
+        .finally(() => {
+          refreshPromise = null
+        })
+
+      return refreshPromise.then(() => client(originalRequest))
+    },
+  )
+
+  return client
+}
+
+// ─── Service-specific clients ─────────────────────────────────────────────────
+
+export const httpClient = createApiClient(commonBaseURL)
+export const authClient = createApiClient(serviceBaseURL(env.VITE_AUTH_URL))
+export const candidateClient = createApiClient(
+  serviceBaseURL(env.VITE_CANDIDATE_URL),
+)
+export const companyClient = createApiClient(serviceBaseURL(env.VITE_COMPANY_URL))
+export const applicationClient = createApiClient(
+  serviceBaseURL(env.VITE_APPLICATION_URL),
+)
+
+// ─── orval mutator exports ────────────────────────────────────────────────────
 
 export const mutatorFn = <T>(config: AxiosRequestConfig): Promise<T> =>
   httpClient.request<T>(config).then((r) => r.data)
+
+export const authMutatorFn = <T>(config: AxiosRequestConfig): Promise<T> =>
+  authClient.request<T>(config).then((r) => r.data)
+
+export const candidateMutatorFn = <T>(config: AxiosRequestConfig): Promise<T> =>
+  candidateClient.request<T>(config).then((r) => r.data)
+
+export const companyMutatorFn = <T>(config: AxiosRequestConfig): Promise<T> =>
+  companyClient.request<T>(config).then((r) => r.data)
+
+export const applicationMutatorFn = <T>(
+  config: AxiosRequestConfig,
+): Promise<T> => applicationClient.request<T>(config).then((r) => r.data)
 
 export default mutatorFn

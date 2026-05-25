@@ -19,7 +19,7 @@ import type {
   DtoMessageResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { authMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -33,7 +33,7 @@ export const postAdminNew = (
 ) => {
 
 
-      return mutatorFn<DtoMessageResponse>(
+      return authMutatorFn<DtoMessageResponse>(
       {url: `/admin/new`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoAddAdminRoleRequest, signal

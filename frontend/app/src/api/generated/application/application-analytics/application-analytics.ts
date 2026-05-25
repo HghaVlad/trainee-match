@@ -41,7 +41,7 @@ import type {
   VacancyAnalyticsSummaryResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { applicationMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -56,7 +56,7 @@ export const getCompanyAnalyticsSummary = (
 ) => {
 
 
-      return mutatorFn<CompanyAnalyticsSummaryResponse>(
+      return applicationMutatorFn<CompanyAnalyticsSummaryResponse>(
       {url: `/hr/companies/${companyId}/analytics/summary`, method: 'GET',
         params, signal
     },
@@ -156,7 +156,7 @@ export const getVacancyAnalyticsSummary = (
 ) => {
 
 
-      return mutatorFn<VacancyAnalyticsSummaryResponse>(
+      return applicationMutatorFn<VacancyAnalyticsSummaryResponse>(
       {url: `/hr/vacancies/${vacancyId}/analytics/summary`, method: 'GET',
         params, signal
     },
@@ -257,7 +257,7 @@ export const getCompanyDynamics = (
 ) => {
 
 
-      return mutatorFn<ApplicationDynamicsResponse>(
+      return applicationMutatorFn<ApplicationDynamicsResponse>(
       {url: `/hr/companies/${companyId}/analytics/dynamics`, method: 'GET',
         params, signal
     },
@@ -358,7 +358,7 @@ export const getVacancyDynamics = (
 ) => {
 
 
-      return mutatorFn<ApplicationDynamicsResponse>(
+      return applicationMutatorFn<ApplicationDynamicsResponse>(
       {url: `/hr/vacancies/${vacancyId}/analytics/dynamics`, method: 'GET',
         params, signal
     },
