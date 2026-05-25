@@ -8,10 +8,17 @@ services:
         VITE_USE_MSW: ${VITE_USE_MSW:-false}
         SYNC_SWAGGER: ${SYNC_SWAGGER:-false}
     image: trainee-match-frontend:local
-    ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      # ports:
+    # - "${FRONTEND_PORT:-8080}:80"
     environment:
       BACKEND_URL: ${BACKEND_URL:-https://api.traineematch.space}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+
+    networks:
+      - backend_default
+
+networks:
+  backend_default:
+    external: true
