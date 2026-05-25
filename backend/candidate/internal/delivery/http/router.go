@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/auth"
 	"github.com/HghaVlad/trainee-match/backend/candidate/internal/delivery/http/handlers"
@@ -35,6 +36,37 @@ func NewRouterDeps(
 
 func NewRouter(deps *RouterDeps) http.Handler {
 	router := chi.NewRouter()
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{
+			"https://traineematch.space",
+			"https://www.traineematch.space",
+		},
+
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-CSRF-Token",
+		},
+
+		ExposedHeaders: []string{
+			"Link",
+		},
+
+		AllowCredentials: true,
+
+		MaxAge: 300,
+	}))
 
 	router.Route("/api/v1/candidate", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
