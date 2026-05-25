@@ -39,7 +39,7 @@ import type {
   GetVacanciesSearchParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { companyMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -55,7 +55,7 @@ export const getCompaniesCompanyIdVacancies = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyByCompListResponse>(
+      return companyMutatorFn<DtoVacancyByCompListResponse>(
       {url: `/companies/${companyId}/vacancies`, method: 'GET',
         params, signal
     },
@@ -156,7 +156,7 @@ export const postCompaniesCompanyIdVacancies = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyCreatedResponse>(
+      return companyMutatorFn<DtoVacancyCreatedResponse>(
       {url: `/companies/${companyId}/vacancies`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoVacancyCreateRequest, signal
@@ -221,7 +221,7 @@ export const deleteCompaniesCompanyIdVacanciesVacancyId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'DELETE', signal
     },
       );
@@ -284,7 +284,7 @@ export const getCompaniesCompanyIdVacanciesVacancyId = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyFullResponse>(
+      return companyMutatorFn<DtoVacancyFullResponse>(
       {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'GET', signal
     },
       );
@@ -385,7 +385,7 @@ export const patchCompaniesCompanyIdVacanciesVacancyId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${companyId}/vacancies/${vacancyId}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoVacancyUpdateRequest, signal
@@ -450,7 +450,7 @@ export const postCompaniesCompanyIdVacanciesVacancyIdArchive = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${companyId}/vacancies/${vacancyId}/archive`, method: 'POST', signal
     },
       );
@@ -513,7 +513,7 @@ export const postCompaniesCompanyIdVacanciesVacancyIdPublish = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${companyId}/vacancies/${vacancyId}/publish`, method: 'POST', signal
     },
       );
@@ -576,7 +576,7 @@ export const getCompaniesCompanyIdVacanciesSearch = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyByCompListResponse>(
+      return companyMutatorFn<DtoVacancyByCompListResponse>(
       {url: `/companies/${companyId}/vacancies/search`, method: 'GET',
         params, signal
     },
@@ -676,7 +676,7 @@ export const getVacancies = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyListResponse>(
+      return companyMutatorFn<DtoVacancyListResponse>(
       {url: `/vacancies`, method: 'GET',
         params, signal
     },
@@ -770,7 +770,7 @@ export const getVacanciesVacancyId = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyPublicResponse>(
+      return companyMutatorFn<DtoVacancyPublicResponse>(
       {url: `/vacancies/${vacancyId}`, method: 'GET', signal
     },
       );
@@ -863,7 +863,7 @@ export const getVacanciesSearch = (
 ) => {
 
 
-      return mutatorFn<DtoVacancyListResponse>(
+      return companyMutatorFn<DtoVacancyListResponse>(
       {url: `/vacancies/search`, method: 'GET',
         params, signal
     },

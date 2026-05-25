@@ -36,7 +36,7 @@ import type {
   GetCompaniesParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { companyMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -51,7 +51,7 @@ export const getCompanies = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyListResponse>(
+      return companyMutatorFn<DtoCompanyListResponse>(
       {url: `/companies`, method: 'GET',
         params, signal
     },
@@ -145,7 +145,7 @@ export const postCompanies = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyCreatedResponse>(
+      return companyMutatorFn<DtoCompanyCreatedResponse>(
       {url: `/companies`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoCompanyCreateRequest, signal
@@ -209,7 +209,7 @@ export const deleteCompaniesId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}`, method: 'DELETE', signal
     },
       );
@@ -271,7 +271,7 @@ export const getCompaniesId = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyResponse>(
+      return companyMutatorFn<DtoCompanyResponse>(
       {url: `/companies/${id}`, method: 'GET', signal
     },
       );
@@ -365,7 +365,7 @@ export const patchCompaniesId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoCompanyUpdateRequest, signal
@@ -429,7 +429,7 @@ export const getCompaniesIdMe = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyMemResponse>(
+      return companyMutatorFn<DtoCompanyMemResponse>(
       {url: `/companies/${id}/me`, method: 'GET', signal
     },
       );
@@ -522,7 +522,7 @@ export const getCompaniesMe = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyListResponse>(
+      return companyMutatorFn<DtoCompanyListResponse>(
       {url: `/companies/me`, method: 'GET',
         params, signal
     },

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/HghaVlad/trainee-match/backend/company/api/docs"
@@ -27,11 +28,40 @@ type RouterDeps struct {
 func NewRouter(deps *RouterDeps) http.Handler {
 	router := chi.NewRouter()
 
-	router.Use(
-		middleware.RequestID,
-		middleware.RealIP,
-		compmiddleware.LoggerMiddleware(deps.Logger),
-	)
+	router.Use(middleware.RequestID, middleware.RealIP)
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{
+			"https://traineematch.space",
+			"https://www.traineematch.space",
+		},
+
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-CSRF-Token",
+		},
+
+		ExposedHeaders: []string{
+			"Link",
+		},
+
+		AllowCredentials: true,
+
+		MaxAge: 300,
+	}))
+
+	router.Use(compmiddleware.LoggerMiddleware(deps.Logger))
 
 	router.With(compmiddleware.TimeoutMiddleware(10*time.Second)).
 		Route("/api/v1/companies", func(r chi.Router) {

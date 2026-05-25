@@ -28,6 +28,11 @@ FROM deps AS builder
 
 ARG VITE_API_URL=""
 ARG VITE_USE_MSW="false"
+ARG VITE_BASE_URL="https://api.traineematch.space"
+ARG VITE_AUTH_URL=""
+ARG VITE_APPLICATION_URL=""
+ARG VITE_CANDIDATE_URL=""
+ARG VITE_COMPANY_URL=""
 
 COPY app/ ./
 COPY --from=codegen /app/src/api/generated ./src/api/generated

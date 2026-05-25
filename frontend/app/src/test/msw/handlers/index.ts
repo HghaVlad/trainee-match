@@ -243,7 +243,7 @@ export const handlers = [
     return HttpResponse.json({ message: 'OK' })
   }),
   http.post('/auth/refresh', () => HttpResponse.json({ message: 'OK' })),
-  http.post('/auth/me', () => {
+  http.get('/auth/me', () => {
     if (!currentUser) return new HttpResponse(null, { status: 401 })
     return HttpResponse.json(currentUser)
   }),

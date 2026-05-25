@@ -35,7 +35,7 @@ import type {
   GetAdminCandidatesParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { candidateMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -49,7 +49,7 @@ export const getAdminCandidates = (
 ) => {
 
 
-      return mutatorFn<DtoCandidateResponse[]>(
+      return candidateMutatorFn<DtoCandidateResponse[]>(
       {url: `/admin/candidates`, method: 'GET',
         params, signal
     },
@@ -142,7 +142,7 @@ export const getAdminCandidatesId = (
 ) => {
 
 
-      return mutatorFn<DtoCandidateResponse>(
+      return candidateMutatorFn<DtoCandidateResponse>(
       {url: `/admin/candidates/${id}`, method: 'GET', signal
     },
       );
@@ -235,7 +235,7 @@ export const getAdminCandidatesIdResumes = (
 ) => {
 
 
-      return mutatorFn<DtoShortResumeResponse[]>(
+      return candidateMutatorFn<DtoShortResumeResponse[]>(
       {url: `/admin/candidates/${id}/resumes`, method: 'GET',
         params, signal
     },
@@ -334,7 +334,7 @@ export const getAdminResumesId = (
 ) => {
 
 
-      return mutatorFn<DtoResumeResponse>(
+      return candidateMutatorFn<DtoResumeResponse>(
       {url: `/admin/resumes/${id}`, method: 'GET', signal
     },
       );
@@ -426,7 +426,7 @@ export const postAdminResumesIdArchive = (
 ) => {
 
 
-      return mutatorFn<string>(
+      return candidateMutatorFn<string>(
       {url: `/admin/resumes/${id}/archive`, method: 'POST', signal
     },
       );
@@ -487,7 +487,7 @@ export const postAdminSkills = (
 ) => {
 
 
-      return mutatorFn<DtoSkillResponse>(
+      return candidateMutatorFn<DtoSkillResponse>(
       {url: `/admin/skills`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoSkillRequest, signal
@@ -550,7 +550,7 @@ export const deleteAdminSkillsId = (
 ) => {
 
 
-      return mutatorFn<string>(
+      return candidateMutatorFn<string>(
       {url: `/admin/skills/${id}`, method: 'DELETE', signal
     },
       );

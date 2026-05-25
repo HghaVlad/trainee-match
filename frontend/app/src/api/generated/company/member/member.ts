@@ -32,7 +32,7 @@ import type {
   GetCompaniesIdMembersParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { companyMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -48,7 +48,7 @@ export const getCompaniesIdMembers = (
 ) => {
 
 
-      return mutatorFn<DtoCompanyMemberListResponse>(
+      return companyMutatorFn<DtoCompanyMemberListResponse>(
       {url: `/companies/${id}/members`, method: 'GET',
         params, signal
     },
@@ -149,7 +149,7 @@ export const postCompaniesIdMembers = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}/members`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoCompanyAddHrRequest, signal
@@ -214,7 +214,7 @@ export const deleteCompaniesIdMembersUserId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}/members/${userId}`, method: 'DELETE', signal
     },
       );
@@ -278,7 +278,7 @@ export const patchCompaniesIdMembersUserId = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}/members/${userId}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoCompanyUpdateMemberRequest, signal
@@ -342,7 +342,7 @@ export const getCompaniesIdMembersMe = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/companies/${id}/members/me`, method: 'GET', signal
     },
       );

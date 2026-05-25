@@ -7,6 +7,7 @@ require (
 	github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2 v2.0.2
 	github.com/avito-tech/go-transaction-manager/trm/v2 v2.0.2
 	github.com/go-chi/chi/v5 v5.2.4
+	github.com/go-chi/cors v1.2.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
 	github.com/hamba/avro/v2 v2.31.0

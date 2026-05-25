@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 
 	"github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/handlers"
 	appmiddleware "github.com/HghaVlad/trainee-match/backend/application/internal/transport/http/middleware"
@@ -19,9 +20,40 @@ func NewRouter(
 ) http.Handler {
 	router := chi.NewRouter()
 
+	router.Use(middleware.RequestID, middleware.RealIP)
+
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{
+			"https://traineematch.space",
+			"https://www.traineematch.space",
+		},
+
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"PATCH",
+			"DELETE",
+			"OPTIONS",
+		},
+
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-CSRF-Token",
+		},
+
+		ExposedHeaders: []string{
+			"Link",
+		},
+
+		AllowCredentials: true,
+
+		MaxAge: 300,
+	}))
+
 	router.Use(
-		middleware.RequestID,
-		middleware.RealIP,
 		appmiddleware.LoggerMiddleware(logger),
 		authMiddleware.Handler,
 	)
@@ -30,18 +62,6 @@ func NewRouter(
 		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{appmiddleware.LoggingMiddleware}),
 		router,
 	)
-
-	router.Route("/api/v1/application", func(r chi.Router) {
-		r.Group(func(r chi.Router) {
-			// Temporary handler for testing
-			r.Get("/test", func(w http.ResponseWriter, _ *http.Request) {
-				_, err := w.Write([]byte("Hello World"))
-				if err != nil {
-					return
-				}
-			})
-		})
-	})
 
 	return router
 }

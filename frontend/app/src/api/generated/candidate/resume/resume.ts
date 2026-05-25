@@ -33,7 +33,7 @@ import type {
   GetResumeParams
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { candidateMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -47,7 +47,7 @@ export const getResume = (
 ) => {
 
 
-      return mutatorFn<DtoShortResumeResponse[]>(
+      return candidateMutatorFn<DtoShortResumeResponse[]>(
       {url: `/resume`, method: 'GET',
         params, signal
     },
@@ -140,7 +140,7 @@ export const postResume = (
 ) => {
 
 
-      return mutatorFn<DtoResumeResponse>(
+      return candidateMutatorFn<DtoResumeResponse>(
       {url: `/resume/`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoCreateResumeRequest, signal
@@ -203,7 +203,7 @@ export const deleteResumeId = (
 ) => {
 
 
-      return mutatorFn<string>(
+      return candidateMutatorFn<string>(
       {url: `/resume/${id}`, method: 'DELETE', signal
     },
       );
@@ -264,7 +264,7 @@ export const getResumeId = (
 ) => {
 
 
-      return mutatorFn<DtoResumeResponse>(
+      return candidateMutatorFn<DtoResumeResponse>(
       {url: `/resume/${id}`, method: 'GET', signal
     },
       );
@@ -357,7 +357,7 @@ export const patchResumeId = (
 ) => {
 
 
-      return mutatorFn<DtoResumeResponse>(
+      return candidateMutatorFn<DtoResumeResponse>(
       {url: `/resume/${id}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoUpdateResumeRequest, signal

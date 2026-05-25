@@ -44,7 +44,7 @@ import type {
   WithdrawApplicationRequest
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { applicationMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -58,7 +58,7 @@ export const createApplication = (
 ) => {
 
 
-      return mutatorFn<CandidateApplicationDetailsResponse>(
+      return applicationMutatorFn<CandidateApplicationDetailsResponse>(
       {url: `/applications`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createApplicationRequest, signal
@@ -121,7 +121,7 @@ export const listMyApplications = (
 ) => {
 
 
-      return mutatorFn<CandidateApplicationListResponse>(
+      return applicationMutatorFn<CandidateApplicationListResponse>(
       {url: `/applications`, method: 'GET',
         params, signal
     },
@@ -214,7 +214,7 @@ export const getMyApplication = (
 ) => {
 
 
-      return mutatorFn<CandidateApplicationDetailsResponse>(
+      return applicationMutatorFn<CandidateApplicationDetailsResponse>(
       {url: `/applications/${applicationId}`, method: 'GET', signal
     },
       );
@@ -306,7 +306,7 @@ export const getMyApplicationHistory = (
 ) => {
 
 
-      return mutatorFn<CandidateApplicationHistoryResponse>(
+      return applicationMutatorFn<CandidateApplicationHistoryResponse>(
       {url: `/applications/${applicationId}/history`, method: 'GET', signal
     },
       );
@@ -404,7 +404,7 @@ export const withdrawApplication = (
 ) => {
 
 
-      return mutatorFn<CandidateApplicationDetailsResponse>(
+      return applicationMutatorFn<CandidateApplicationDetailsResponse>(
       {url: `/applications/${applicationId}/withdraw`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: withdrawApplicationRequest, signal

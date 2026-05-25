@@ -30,7 +30,7 @@ import type {
   DtoUserResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { authMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -44,7 +44,7 @@ export const postAuthLogin = (
 ) => {
 
 
-      return mutatorFn<DtoMessageResponse>(
+      return authMutatorFn<DtoMessageResponse>(
       {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoLoginRequest, signal
@@ -107,7 +107,7 @@ export const postAuthLogout = (
 ) => {
 
 
-      return mutatorFn<DtoMessageResponse>(
+      return authMutatorFn<DtoMessageResponse>(
       {url: `/auth/logout`, method: 'POST', signal
     },
       );
@@ -168,7 +168,7 @@ export const getAuthMe = (
 ) => {
 
 
-      return mutatorFn<DtoUserResponse>(
+      return authMutatorFn<DtoUserResponse>(
       {url: `/auth/me`, method: 'GET', signal
     },
       );
@@ -260,7 +260,7 @@ export const postAuthRefresh = (
 ) => {
 
 
-      return mutatorFn<DtoMessageResponse>(
+      return authMutatorFn<DtoMessageResponse>(
       {url: `/auth/refresh`, method: 'POST', signal
     },
       );
@@ -321,7 +321,7 @@ export const postAuthRegister = (
 ) => {
 
 
-      return mutatorFn<DtoUserResponse>(
+      return authMutatorFn<DtoUserResponse>(
       {url: `/auth/register`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: dtoRegisterUserRequest, signal

@@ -20,7 +20,7 @@ import type {
   UseQueryResult
 } from '@tanstack/react-query';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { candidateMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -35,7 +35,7 @@ export const getSwagger = (
 ) => {
 
 
-      return mutatorFn<string>(
+      return candidateMutatorFn<string>(
       {url: `/swagger/`, method: 'GET', signal
     },
       );

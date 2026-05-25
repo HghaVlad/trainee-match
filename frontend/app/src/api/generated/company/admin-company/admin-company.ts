@@ -20,7 +20,7 @@ import type {
   DtoErrorResponse
 } from '../schemas';
 
-import { mutatorFn } from '../../../../shared/api/http/client';
+import { companyMutatorFn } from '../../../../shared/api/http/client';
 
 
 
@@ -36,7 +36,7 @@ export const patchAdminCompaniesIdModeration = (
 ) => {
 
 
-      return mutatorFn<void>(
+      return companyMutatorFn<void>(
       {url: `/admin/companies/${id}/moderation`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: dtoCompanyModerationUpdateRequest, signal

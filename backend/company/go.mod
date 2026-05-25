@@ -6,6 +6,7 @@ require (
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/elastic/go-elasticsearch/v9 v9.4.1
 	github.com/go-chi/chi/v5 v5.2.5
+	github.com/go-chi/cors v1.2.2
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible

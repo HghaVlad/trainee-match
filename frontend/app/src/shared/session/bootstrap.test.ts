@@ -17,7 +17,7 @@ describe('bootstrap', () => {
 
   it('sets authed when /auth/me returns 200', async () => {
     server.use(
-      http.post('*/auth/me', () =>
+      http.get('*/auth/me', () =>
         HttpResponse.json({
           id: '1',
           username: 'testuser',
@@ -39,7 +39,7 @@ describe('bootstrap', () => {
 
   it('sets anon when /auth/me returns 401', async () => {
     server.use(
-      http.post('*/auth/me', () => HttpResponse.json({}, { status: 401 })),
+      http.get('*/auth/me', () => HttpResponse.json({}, { status: 401 })),
       http.post('*/auth/refresh', () => HttpResponse.json({}, { status: 401 })),
     )
 
