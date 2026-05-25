@@ -9,33 +9,29 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type Usecase struct {
-	repo       VacancyRepo
-	compRepo   compRepo
-	outbox     outboxWriter
-	searchRepo searchRepo
-	cache      CacheRepo
-	txManager  common.TxManager
+	repo      VacancyRepo
+	compRepo  compRepo
+	outbox    outboxWriter
+	cache     CacheRepo
+	txManager common.TxManager
 }
 
 func NewUsecase(
 	repo VacancyRepo,
 	compRepo compRepo,
 	outbox outboxWriter,
-	searchRepo searchRepo,
 	cacheRepo CacheRepo,
 	txManager common.TxManager,
 ) *Usecase {
 	return &Usecase{
-		repo:       repo,
-		compRepo:   compRepo,
-		outbox:     outbox,
-		searchRepo: searchRepo,
-		cache:      cacheRepo,
-		txManager:  txManager,
+		repo:      repo,
+		compRepo:  compRepo,
+		outbox:    outbox,
+		cache:     cacheRepo,
+		txManager: txManager,
 	}
 }
 
@@ -59,15 +55,11 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 		return err
 	}
 
-	var vacncy *vacancy.Vacancy
-
 	err = u.txManager.WithinTx(ctx, func(ctx context.Context) error {
-		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, req.CompanyID)
+		vac, err := u.repo.GetByIDForUpdate(ctx, req.VacancyID, comp.ID)
 		if err != nil {
 			return err
 		}
-
-		eventShouldBeCreated := checkIfEventShouldBeCreated(vac, req)
 
 		applyPatch(vac, req)
 
@@ -80,19 +72,9 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, ident *identity.Ide
 			return err
 		}
 
-		vacncy = vac
-		if eventShouldBeCreated {
-			return u.createdVacancyUpdatedEvent(ctx, vac)
-		}
-
-		return nil
+		return u.createdVacancyUpdatedEvent(ctx, vac)
 	})
 	if err != nil {
-		return err
-	}
-
-	searchView := views.SearchViewFromVacancy(*vacncy, comp.Name)
-	if err := u.searchRepo.Index(ctx, *searchView); err != nil {
 		return err
 	}
 
@@ -109,10 +91,6 @@ func (u *Usecase) createdVacancyUpdatedEvent(ctx context.Context, vac *vacancy.V
 	}
 
 	return u.outbox.WriteVacancyUpdated(ctx, ev)
-}
-
-func checkIfEventShouldBeCreated(vac *vacancy.Vacancy, req *Request) bool {
-	return vac.Status != vacancy.StatusDraft && req.Title != nil && vac.Title != *req.Title
 }
 
 // Applies not-nil only

@@ -14,12 +14,11 @@ import (
 )
 
 type Usecase struct {
-	compRepo      CompanyRepo
-	memberRepo    CompMemberRepo
-	outboxWriter  outboxWriter
-	txManager     common.TxManager
-	vacSearchRepo vacSearchRepo
-	cache         CacheRepo
+	compRepo     CompanyRepo
+	memberRepo   CompMemberRepo
+	outboxWriter outboxWriter
+	txManager    common.TxManager
+	cache        CacheRepo
 }
 
 func NewUsecase(
@@ -27,16 +26,14 @@ func NewUsecase(
 	memberRepo CompMemberRepo,
 	outboxWriter outboxWriter,
 	txManager common.TxManager,
-	vacSearchRepo vacSearchRepo,
 	cache CacheRepo,
 ) *Usecase {
 	return &Usecase{
-		compRepo:      repo,
-		memberRepo:    memberRepo,
-		cache:         cache,
-		outboxWriter:  outboxWriter,
-		txManager:     txManager,
-		vacSearchRepo: vacSearchRepo,
+		compRepo:     repo,
+		memberRepo:   memberRepo,
+		cache:        cache,
+		outboxWriter: outboxWriter,
+		txManager:    txManager,
 	}
 }
 
@@ -45,14 +42,13 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	compID := req.ID
 
-	if err := u.authorize(ctx, req.ID, identity); err != nil {
+	if err := u.authorize(ctx, compID, identity); err != nil {
 		return err
 	}
-
-	nameUpd := false
 
 	err := u.txManager.WithinTx(ctx, func(ctx context.Context) error {
 		oldName, err := u.compRepo.UpdateAndGetOldName(ctx, req)
@@ -60,28 +56,13 @@ func (u *Usecase) Execute(ctx context.Context, req *Request, identity *identity.
 			return err
 		}
 
-		if req.Name != nil && *req.Name != oldName {
-			err = u.createCompanyUpdatedEvent(ctx, req.ID, *req.Name)
-			if err != nil {
-				return err
-			}
-			nameUpd = true
-		}
-
-		u.cache.Del(ctx, req.ID)
-		return nil
+		return u.createCompanyUpdatedEvent(ctx, compID, oldName, req)
 	})
 	if err != nil {
 		return err
 	}
 
-	if nameUpd {
-		err = u.vacSearchRepo.UpdateCompanyName(ctx, req.ID, *req.Name)
-		if err != nil {
-			return err
-		}
-	}
-
+	u.cache.Del(ctx, compID)
 	return nil
 }
 
@@ -106,11 +87,15 @@ func (u *Usecase) authorize(ctx context.Context, companyID uuid.UUID, ident *ide
 	return nil
 }
 
-func (u *Usecase) createCompanyUpdatedEvent(ctx context.Context, compID uuid.UUID, newName string) error {
+func (u *Usecase) createCompanyUpdatedEvent(ctx context.Context, compID uuid.UUID, oldName string, req *Request) error {
+	if req.Name == nil || *req.Name == oldName {
+		return nil
+	}
+
 	ev := company.UpdatedEvent{
 		EventID:     uuid.New(),
 		CompanyID:   compID,
-		CompanyName: newName,
+		CompanyName: *req.Name,
 		OccurredAt:  time.Now().UTC(),
 	}
 

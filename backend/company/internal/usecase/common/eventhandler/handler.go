@@ -12,6 +12,7 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/infrastructure/msgbroker/schemaregistry"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/outbox"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/projection/userhr"
 )
 
@@ -24,6 +25,7 @@ type Handler struct {
 	dlqSender DLQSender
 
 	userHrCreator UserHrCreator
+	searchIndexer SearchIndexer
 
 	logger *slog.Logger
 }
@@ -33,12 +35,14 @@ func NewHandler(
 	decoder Decoder,
 	dlqSender DLQSender,
 	userHrCreator UserHrCreator,
+	searchIndexer SearchIndexer,
 	logger *slog.Logger,
 ) *Handler {
 	return &Handler{
 		cfg:           cfg,
 		decoder:       decoder,
 		dlqSender:     dlqSender,
+		searchIndexer: searchIndexer,
 		userHrCreator: userHrCreator,
 		logger:        logger,
 	}
@@ -84,6 +88,20 @@ func (h *Handler) handleByEventType(ctx context.Context, payload []byte, evType 
 	switch evType {
 	case UserCreatedEventType:
 		return h.handleUserCreated(ctx, payload)
+	case string(outbox.EventTypeVacancyPublished):
+		return h.handleVacancyPublished(ctx, payload)
+	case string(outbox.EventTypeVacancyDraftCreated):
+		return h.handleVacancyDraftCreated(ctx, payload)
+	case string(outbox.EventTypeVacancyArchived):
+		return h.handleVacancyArchived(ctx, payload)
+	case string(outbox.EventTypeVacancyUpdated):
+		return h.handleVacancyUpdated(ctx, payload)
+	case string(outbox.EventTypeVacancyModerationUpdated):
+		return h.handleVacancyModUpd(ctx, payload)
+	case string(outbox.EventTypeCompanyUpdated):
+		return h.handleCompanyUpdated(ctx, payload)
+	case string(outbox.EventTypeCompanyDeleted):
+		return h.handleCompanyRemoved(ctx, payload)
 	default:
 		return ResultDLQ, ErrUnknownEventType
 	}
@@ -114,6 +132,106 @@ func (h *Handler) handleUserCreated(ctx context.Context, payload []byte) (Result
 		default:
 			return ResultRetry, err
 		}
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyPublished(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyPublishedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	h.logger.InfoContext(ctx, "got vacancy pub event", "id", event.VacancyID)
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyDraftCreated(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyDraftCreatedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyArchived(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyArchivedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyUpdated(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyUpdatedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleVacancyModUpd(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetVacancyModUpdEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.Index(ctx, event.VacancyID)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleCompanyUpdated(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetCompanyUpdatedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.UpdateCompanyName(ctx, event.CompanyID, event.CompanyName)
+	if err != nil {
+		return ResultRetry, err
+	}
+
+	return ResultSuccess, nil
+}
+
+func (h *Handler) handleCompanyRemoved(ctx context.Context, payload []byte) (ResultStatus, error) {
+	event, err := h.decoder.GetCompanyDeletedEvent(ctx, payload)
+	if err != nil {
+		return classifyErr(err), err
+	}
+
+	err = h.searchIndexer.RemoveByCompany(ctx, event.CompanyID)
+	if err != nil {
+		return ResultRetry, err
 	}
 
 	return ResultSuccess, nil

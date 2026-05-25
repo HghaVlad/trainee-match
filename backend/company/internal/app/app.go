@@ -13,6 +13,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/indexsearch"
+
 	"github.com/HghaVlad/trainee-match/backend/company/internal/config"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
@@ -129,8 +131,8 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	compListUc := listcomp.NewUsecase(compRepo, compListCache)
 	compListMy := listcompmy.NewUsecase(compListUc)
 	compCreateUc := createcomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager)
-	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
-	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, searchVacRepo, compCache)
+	compUpdateUc := updatecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
+	compDeleteUc := removecomp.NewUsecase(compRepo, memRepo, outboxWriter, txManager, compCache)
 
 	compMeUc := membme.NewUsecase(memRepo)
 	compAddMemUc := addmember.NewUsecase(memRepo, hrProjRepo, outboxWriter, txManager)
@@ -145,25 +147,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	searchVac := listvac.NewUsecase(searchVacRepo, vacListCache)
 	vacListByComp := listcompsearch.NewUsecase(vacRepo, compRepo, memRepo, vacByCompListCache)
 	vacListCompSearch := listcompsearch.NewUsecase(searchVacRepo, compRepo, memRepo, vacByCompListCache)
-	vacCreate := createvac.NewUsecase(vacRepo, compRepo, searchVacRepo)
-	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, searchVacRepo, vacCache, txManager)
-	vacPublish := publish.NewUsecase(
-		vacRepo,
-		compRepo,
-		memRepo,
-		outboxWriter,
-		txManager,
-		searchVacRepo,
-		vacCache,
-		compCache,
-	)
+	vacCreate := createvac.NewUsecase(vacRepo, compRepo, outboxWriter, txManager)
+	vacUpdate := updatevac.NewUsecase(vacRepo, compRepo, outboxWriter, vacCache, txManager)
+	vacPublish := publish.NewUsecase(vacRepo, compRepo, memRepo, outboxWriter, txManager, vacCache, compCache)
 	vacArchive := archive.NewUsecase(
 		vacRepo,
 		compRepo,
 		memRepo,
 		outboxWriter,
 		txManager,
-		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -173,7 +165,6 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 		compRepo,
 		outboxWriter,
 		txManager,
-		searchVacRepo,
 		vacCache,
 		publicVacCache,
 		compCache,
@@ -181,7 +172,15 @@ func Build(ctx context.Context, cfg *config.Config, lgr *slog.Logger) (*App, err
 	vacDelete := removevac.NewUsecase(vacRepo, compRepo, memRepo, txManager, vacCache, publicVacCache, compCache)
 
 	userHrCreate := userhr.NewCreatedUsecase(hrProjRepo)
-	eventHandler := eventhandler.NewHandler(cfg.KafkaHandling, schemaDecoder, dlqSender, userHrCreate, lgr)
+	searchIndexer := indexsearch.NewUsecase(vacRepo, searchVacRepo)
+	eventHandler := eventhandler.NewHandler(
+		cfg.KafkaHandling,
+		schemaDecoder,
+		dlqSender,
+		userHrCreate,
+		searchIndexer,
+		lgr,
+	)
 
 	kConsumer, err := kafka.NewConsumer(cfg.Kafka, eventHandler, lgr)
 	if err != nil {

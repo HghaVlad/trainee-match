@@ -8,6 +8,7 @@ import (
 
 type Encoder interface {
 	VacancyPublishedToBytes(ev vacancy.PublishedEvent) ([]byte, error)
+	VacancyDraftCreatedToBytes(ev vacancy.DraftCreatedEvent) ([]byte, error)
 	VacancyArchivedToBytes(ev vacancy.ArchivedEvent) ([]byte, error)
 	VacancyUpdatedToBytes(ev vacancy.UpdatedEvent) ([]byte, error)
 	VacancyModerationUpdatedToBytes(ev vacancy.ModerationUpdatedEvent) ([]byte, error)

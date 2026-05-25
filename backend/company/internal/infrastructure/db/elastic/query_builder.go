@@ -91,6 +91,7 @@ func getPubVacMust(req listsearch.Requirements) []any {
 func getPubVacFilter(req listsearch.Requirements) []any {
 	var filter []any
 	filter = addVacStatus(filter, vacancy.StatusPublished)
+	filter = addModerationVacStatus(filter, vacancy.ModerationStatusOK)
 	filter = addVacPubRequirements(filter, req)
 	return filter
 }
@@ -280,6 +281,16 @@ func addDurationIntersection(filter []any, rng *listsearch.RangeInt) []any {
 			},
 		})
 	}
+
+	return filter
+}
+
+func addModerationVacStatus(filter []any, status vacancy.ModerationStatus) []any {
+	filter = append(filter, map[string]any{
+		"term": map[string]any{
+			"moderation_status": string(status),
+		},
+	})
 
 	return filter
 }

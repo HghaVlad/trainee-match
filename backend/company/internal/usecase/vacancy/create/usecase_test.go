@@ -5,33 +5,39 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/create/mocks"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
+type fakeTxManager struct {
+	called bool
+}
+
+func (f *fakeTxManager) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	f.called = true
+	return fn(ctx)
+}
+
 type testDeps struct {
-	vacRepo    *mocks.MockVacancyRepo
-	memberRepo *mocks.MockCompMemberRepo
-	compRepo   *mocks.MockCompanyRepo
-	searchRepo *mocks.MockSearchRepo
+	vacRepo      *mocks.MockVacancyRepo
+	compRepo     *mocks.MockCompanyRepo
+	outboxWriter *mocks.MockoutboxWriter
 }
 
 func setup(t *testing.T) *testDeps {
 	ctrl := gomock.NewController(t)
 
 	return &testDeps{
-		vacRepo:    mocks.NewMockVacancyRepo(ctrl),
-		memberRepo: mocks.NewMockCompMemberRepo(ctrl),
-		compRepo:   mocks.NewMockCompanyRepo(ctrl),
-		searchRepo: mocks.NewMockSearchRepo(ctrl),
+		vacRepo:      mocks.NewMockVacancyRepo(ctrl),
+		compRepo:     mocks.NewMockCompanyRepo(ctrl),
+		outboxWriter: mocks.NewMockoutboxWriter(ctrl),
 	}
 }
 
@@ -39,7 +45,8 @@ func newUC(deps *testDeps) *create.Usecase {
 	return create.NewUsecase(
 		deps.vacRepo,
 		deps.compRepo,
-		deps.searchRepo,
+		deps.outboxWriter,
+		new(fakeTxManager),
 	)
 }
 
@@ -91,17 +98,12 @@ func TestUsecase_Execute_Success(t *testing.T) {
 			return nil
 		})
 
-	deps.searchRepo.EXPECT().
-		Index(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(_ context.Context, search views.VacancySearch) error {
-			require.Equal(t, companyID, search.CompanyID)
-			require.Equal(t, "Acme", search.CompanyName)
-
-			require.Equal(t, req.Title, search.Title)
-			require.Equal(t, req.Description, search.Description)
-
-			require.Equal(t, vacancy.StatusDraft, search.Status)
-
+	deps.outboxWriter.EXPECT().
+		WriteVacancyDraftCreated(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, ev vacancy.DraftCreatedEvent) error {
+			require.Equal(t, companyID, ev.CompanyID)
+			require.Equal(t, req.Title, ev.Title)
+			require.Equal(t, "Acme", ev.CompanyName)
 			return nil
 		})
 
@@ -201,7 +203,7 @@ func TestUsecase_Execute_CreateVacancyError(t *testing.T) {
 	require.Nil(t, resp)
 }
 
-func TestUsecase_Execute_IndexSearchError(t *testing.T) {
+func TestUsecase_Execute_CreateEventError(t *testing.T) {
 	t.Parallel()
 
 	deps := setup(t)
@@ -226,7 +228,7 @@ func TestUsecase_Execute_IndexSearchError(t *testing.T) {
 		Name: "Acme",
 	}
 
-	expectedErr := errors.New("index error")
+	expectedErr := errors.New("create event error")
 
 	deps.compRepo.EXPECT().
 		GetByMember(gomock.Any(), companyID, userID).
@@ -236,9 +238,8 @@ func TestUsecase_Execute_IndexSearchError(t *testing.T) {
 		Create(gomock.Any(), gomock.Any()).
 		Return(nil)
 
-	deps.searchRepo.EXPECT().
-		Index(gomock.Any(), gomock.Any()).
-		Return(expectedErr)
+	deps.outboxWriter.EXPECT().
+		WriteVacancyDraftCreated(gomock.Any(), gomock.Any()).Return(expectedErr)
 
 	resp, err := uc.Execute(context.Background(), req, ident)
 

@@ -16,6 +16,8 @@ type Kafka struct {
 	ProducerLinger time.Duration `env:"KAFKA_PRODUCER_LINGER"                  envDefault:"10ms"    validate:"gt=0"`
 
 	ConsumerGroup string `env:"KAFKA_CONSUMER_GROUP" validate:"required"`
+	VacancyTopic  string `env:"KAFKA_VACANCY_TOPIC"  validate:"required"`
+	CompanyTopic  string `env:"KAFKA_COMPANY_TOPIC"  validate:"required"`
 	UserTopic     string `env:"KAFKA_USER_TOPIC"     validate:"required"`
 	DLQTopic      string `env:"KAFKA_DLQ_TOPIC"      validate:"required"`
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/vacancy"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 //go:generate mockgen -source=repo.go -destination=mocks/repo_mocks.go -package=mocks
@@ -22,8 +21,4 @@ type compRepo interface {
 
 type CacheRepo interface {
 	Del(ctx context.Context, id uuid.UUID)
-}
-
-type searchRepo interface {
-	Index(ctx context.Context, vac views.VacancySearch) error
 }

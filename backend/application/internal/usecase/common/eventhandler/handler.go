@@ -91,40 +91,13 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 			time.Sleep(h.cfg.RetryDelay * time.Duration(i)) // delay for retrying process
 		}
 		var status ResultStatus
-		switch string(eventType) {
-		case "ResumeUpserted":
-			status, err = h.handleResumeUpsertedEvent(ctx, event.Payload)
-		case "ResumeDeleted":
-			status, err = h.handleResumeDeletedEvent(ctx, event.Payload)
-		case "ResumeArchived":
-			status, err = h.handleResumeArchivedEvent(ctx, event.Payload)
-		case "CandidateUpserted":
-			status, err = h.handleCandidateUpsertedEvent(ctx, event.Payload)
-		case "CompanyUpdated":
-			status, err = h.handleCompanyUpdatedEvent(ctx, event.Payload)
-		case "CompanyDeleted":
-			status, err = h.handleCompanyDeletedEvent(ctx, event.Payload)
-		case "CompanyMemberAdded":
-			status, err = h.handleCompanyMemberAddedEvent(ctx, event.Payload)
-		case "CompanyMemberRemoved":
-			status, err = h.handleCompanyMemberRemovedEvent(ctx, event.Payload)
-		case "VacancyPublished":
-			status, err = h.handleVacancyPublishedEvent(ctx, event.Payload)
-		case "VacancyArchived":
-			status, err = h.handleVacancyArchivedEvent(ctx, event.Payload)
-		case "VacancyUpdated":
-			status, err = h.handleVacancyUpdatedEvent(ctx, event.Payload)
-		case "VacancyModerationUpdated":
-			status, err = h.handleVacModUpdEvent(ctx, event.Payload)
-		case "CompanyModerationUpdated":
-			status, err = h.handleCompModUpdEvent(ctx, event.Payload)
-		default:
-			h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
-			return
-		}
+		status, err = h.handleByEventType(ctx, event, string(eventType))
+
 		if status == ResultStatusSuccess {
 			return
-		} else if status == ResultStatusDLQ {
+		}
+
+		if status == ResultStatusDLQ {
 			break
 		}
 	}
@@ -141,6 +114,42 @@ func (h *Handler) HandleEvent(ctx context.Context, event Event) {
 	sendingErr := h.sendToDLQ(ctx, event, eventID, string(eventType), err)
 	if sendingErr != nil {
 		h.logger.ErrorContext(ctx, "failed to send to DLQ", "err", sendingErr)
+	}
+}
+
+func (h *Handler) handleByEventType(ctx context.Context, event Event, eventType string) (ResultStatus, error) {
+	switch eventType {
+	case "ResumeUpserted":
+		return h.handleResumeUpsertedEvent(ctx, event.Payload)
+	case "ResumeDeleted":
+		return h.handleResumeDeletedEvent(ctx, event.Payload)
+	case "ResumeArchived":
+		return h.handleResumeArchivedEvent(ctx, event.Payload)
+	case "CandidateUpserted":
+		return h.handleCandidateUpsertedEvent(ctx, event.Payload)
+	case "CompanyUpdated":
+		return h.handleCompanyUpdatedEvent(ctx, event.Payload)
+	case "CompanyDeleted":
+		return h.handleCompanyDeletedEvent(ctx, event.Payload)
+	case "CompanyMemberAdded":
+		return h.handleCompanyMemberAddedEvent(ctx, event.Payload)
+	case "CompanyMemberRemoved":
+		return h.handleCompanyMemberRemovedEvent(ctx, event.Payload)
+	case "VacancyPublished":
+		return h.handleVacancyPublishedEvent(ctx, event.Payload)
+	case "VacancyArchived":
+		return h.handleVacancyArchivedEvent(ctx, event.Payload)
+	case "VacancyUpdated":
+		return h.handleVacancyUpdatedEvent(ctx, event.Payload)
+	case "VacancyModerationUpdated":
+		return h.handleVacModUpdEvent(ctx, event.Payload)
+	case "CompanyModerationUpdated":
+		return h.handleCompModUpdEvent(ctx, event.Payload)
+	case "VacancyDraftCreated":
+		return ResultStatusSuccess, nil // is skipped
+	default:
+		h.logger.WarnContext(ctx, "unknown event type", "eventType", eventType)
+		return ResultStatusDLQ, ErrUnknownEventType
 	}
 }
 

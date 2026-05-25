@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/company"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/domain/member"
@@ -14,7 +14,6 @@ import (
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/common/identity"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive"
 	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/archive/mocks"
-	"github.com/HghaVlad/trainee-match/backend/company/internal/usecase/vacancy/views"
 )
 
 type fakeTxManager struct {
@@ -51,7 +50,6 @@ type testDeps struct {
 	pubVacCache  *mocks.MockCacheRepo
 	compCache    *mocks.MockCacheRepo
 	txManager    *fakeTxManager
-	searchRepo   *mocks.MockSearchRepo
 }
 
 func setup(t *testing.T) *testDeps {
@@ -66,7 +64,6 @@ func setup(t *testing.T) *testDeps {
 		compCache:    mocks.NewMockCacheRepo(ctrl),
 		pubVacCache:  mocks.NewMockCacheRepo(ctrl),
 		txManager:    new(fakeTxManager),
-		searchRepo:   mocks.NewMockSearchRepo(ctrl),
 	}
 }
 
@@ -77,7 +74,6 @@ func NewUC(deps *testDeps) *archive.Usecase {
 		deps.memRepo,
 		deps.outboxWriter,
 		deps.txManager,
-		deps.searchRepo,
 		deps.vacCache,
 		deps.pubVacCache,
 		deps.compCache,
@@ -92,14 +88,6 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 	compID := uuid.New()
 	vacID := uuid.New()
 
-	searchView := views.VacancySearch{
-		ID:          vacID,
-		CompanyID:   compID,
-		CompanyName: "comp",
-		Title:       "Vac",
-		Status:      vacancy.StatusArchived,
-	}
-
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
@@ -110,10 +98,6 @@ func TestUsecase_Execute_ArchivesPublishedVacancy(t *testing.T) {
 
 	deps.outboxWriter.EXPECT().
 		WriteVacancyArchived(gomock.Any(), archivedEventMatcher{vacID}).Return(nil)
-
-	deps.vacRepo.EXPECT().GetSearchView(gomock.Any(), vacID).Return(&searchView, nil)
-
-	deps.searchRepo.EXPECT().Index(gomock.Any(), searchView).Return(nil)
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vacID).Return()
 	deps.pubVacCache.EXPECT().Del(gomock.Any(), vacID).Return()
@@ -135,23 +119,14 @@ func TestUsecase_Execute_ArchivesDraftWithoutCounterUpdate(t *testing.T) {
 	compID := uuid.New()
 	vacID := uuid.New()
 
-	searchView := views.VacancySearch{
-		ID:          vacID,
-		CompanyID:   compID,
-		CompanyName: "comp",
-		Title:       "Vac",
-		Status:      vacancy.StatusArchived,
-	}
-
 	deps.memRepo.EXPECT().Get(gomock.Any(), ident.UserID, compID).
 		Return(&member.CompanyMember{UserID: ident.UserID}, nil)
 
 	deps.vacRepo.EXPECT().ArchiveAndGetOldStatus(gomock.Any(), vacID, compID).
 		Return(vacancy.StatusDraft, nil)
 
-	deps.vacRepo.EXPECT().GetSearchView(gomock.Any(), vacID).Return(&searchView, nil)
-
-	deps.searchRepo.EXPECT().Index(gomock.Any(), searchView).Return(nil)
+	deps.outboxWriter.EXPECT().
+		WriteVacancyArchived(gomock.Any(), archivedEventMatcher{vacID}).Return(nil)
 
 	deps.vacCache.EXPECT().Del(gomock.Any(), vacID).Return()
 	deps.pubVacCache.EXPECT().Del(gomock.Any(), vacID).Return()
