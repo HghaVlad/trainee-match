@@ -7,14 +7,16 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_USE_MSW: ${VITE_USE_MSW:-false}
         SYNC_SWAGGER: ${SYNC_SWAGGER:-false}
+        # Microservice routing — по умолчанию шлёт напрямую на api.traineematch.space
+        # Переопределяются через .env или shell env vars
         VITE_BASE_URL: ${VITE_BASE_URL:-https://api.traineematch.space}
-        VITE_AUTH_URL: ${VITE_AUTH_URL:-}
-        VITE_APPLICATION_URL: ${VITE_APPLICATION_URL:-}
-        VITE_CANDIDATE_URL: ${VITE_CANDIDATE_URL:-}
-        VITE_COMPANY_URL: ${VITE_COMPANY_URL:-}
+        VITE_AUTH_URL: ${VITE_AUTH_URL:-https://api.traineematch.space/api/auth}
+        VITE_APPLICATION_URL: ${VITE_APPLICATION_URL:-https://api.traineematch.space/api/application}
+        VITE_CANDIDATE_URL: ${VITE_CANDIDATE_URL:-https://api.traineematch.space/api/candidate}
+        VITE_COMPANY_URL: ${VITE_COMPANY_URL:-https://api.traineematch.space/api/company}
     image: trainee-match-frontend:local
-      # ports:
-    # - "${FRONTEND_PORT:-8080}:80"
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
     environment:
       BACKEND_URL: ${BACKEND_URL:-https://api.traineematch.space}
     extra_hosts:
