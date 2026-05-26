@@ -11,7 +11,7 @@
 2) Запустите зависимости и сервисы из папки `backend`:
 
 ```bash
-cd "E:\Code works\GoLang\trainee-match\backend"
+cd "trainee-match\backend"
 docker-compose up -d
 ```
 
@@ -105,7 +105,7 @@ HR заявки:
 ## Запуск вручную
 
 ```bash
-cd "E:\Code works\GoLang\trainee-match\backend\application"
+cd "trainee-match\backend\application"
 go run .\cmd\main.go
 ```
 
