@@ -12,14 +12,14 @@
 2) Запустите зависимости и сервисы из папки `backend`:
 
 ```bash
-cd "E:\Code works\GoLang\trainee-match\backend"
+cd "trainee-match\backend"
 docker-compose up -d
 ```
 
 Если `auth` не поднялся в compose, запустите вручную:
 
 ```bash
-cd "E:\Code works\GoLang\trainee-match\backend\auth"
+cd "trainee-match\backend\auth"
 go run .\cmd\main.go
 ```
 
