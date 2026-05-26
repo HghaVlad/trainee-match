@@ -71,8 +71,13 @@
  - resume.events
  - candidate.events
 
-// TODO: фронт; постгрес можно, рассказать что сырой и транзакции
-// Еще можно про Redis cache aside, асинхронная индексация в эластик 
+### Фронтенд
+
+- Реализован на React + TypeScript + Vite
+- Архитектура построена по Feature-Sliced Design: строгие восходящие зависимости между слоями (`app → pages → widgets → features → entities → shared`), контроль через ESLint boundaries
+- API-клиент автогенерируется из Swagger-спецификаций бэкенда
+- Аутентификация: cookie-based (HttpOnly), refresh-интерцептор с single-flight очередью
+- Подробнее — [`/frontend/README.md`](/frontend/README.md)
 
 ## Тестирование
 
@@ -86,5 +91,6 @@
 - Использовался let's encrypt для поддержки https
 - Конфигурация приложения задается через переменные окружения контейнеров
 - Frontend доступен на https://traineematch.space
+- Frontend собирается в production-статику (Vite build) и раздаётся через nginx в Docker-контейнере
 
 ---
