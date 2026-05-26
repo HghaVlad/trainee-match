@@ -52,7 +52,7 @@ interface FilterState {
 
 const EMPTY: FilterState = {
   searchQuery: '',
-  order: 'published_at_desc',
+  order: 'relevance',
   salaryMin: '',
   salaryMax: '',
   hoursMin: '',
@@ -324,6 +324,7 @@ export default function VacanciesPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="relevance">По релевантности</SelectItem>
                 <SelectItem value="published_at_desc">Сначала новые</SelectItem>
                 <SelectItem value="salary_desc">Зарплата по убыванию</SelectItem>
                 <SelectItem value="salary_asc">Зарплата по возрастанию</SelectItem>
