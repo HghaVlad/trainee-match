@@ -73,7 +73,7 @@ interface FilterState {
 }
 
 const EMPTY_FILTERS: FilterState = {
-  order: 'published_at_desc',
+  order: 'relevance',
   salaryMin: '',
   salaryMax: '',
   hoursMin: '',
@@ -379,6 +379,7 @@ export default function CompanyDetailPage() {
                 onChange={(e) => update('order', e.target.value)}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
               >
+                <option value="relevance">По релевантности</option>
                 <option value="published_at_desc">Сначала новые</option>
                 <option value="salary_desc">Зарплата по убыванию</option>
                 <option value="salary_asc">Зарплата по возрастанию</option>
