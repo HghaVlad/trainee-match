@@ -40,7 +40,7 @@ func (uc *UseCase) GetById(ctx context.Context, resumeId, UserId uuid.UUID) (*Re
 		return nil, err
 	}
 
-	if candidate.ID != resume.CandidateId {
+	if candidate.ID != resume.CandidateId || resume.ModerationStatus == domain.ModerationStatusHidden {
 		return nil, domain.ErrResumeNotFound
 	}
 
@@ -78,7 +78,9 @@ func (uc *UseCase) GetByCandidateId(ctx context.Context, UserId uuid.UUID, page,
 		if err != nil {
 			return nil, err
 		}
-
+		if resume.ModerationStatus == domain.ModerationStatusHidden {
+			continue
+		}
 		item := &ShortResponse{
 			ID:               resume.ID,
 			CandidateId:      resume.CandidateId,
