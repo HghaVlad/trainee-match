@@ -11,7 +11,7 @@
 - auth service - сервис аутентификации
 - candidate service - сервис профилей и резюме кандидатов
 - company service - сервис компаний, вакансий, hr-специалистов
-- application service - сервис заявок, аналитики по откликам 
+- application service - сервис заявок, аналитики по откликам
 - api gateway - апи шлюз для клиентов
 
 ### Event Driven Architecture
@@ -19,7 +19,8 @@
 - Система разработана по событийно-ориентированной архитектуре
 - Взаимодействие сервисов реализовано через брокер сообщений Apache Kafka
 - Между сервисами отсутствуют синхронные вызовы
-- Данный подход упрощает масштабирование отдельных компонент, повышает отказоустойчивость системы, обеспечивает слабую связанность между сервисами
+- Данный подход упрощает масштабирование отдельных компонент, повышает отказоустойчивость системы, обеспечивает слабую
+  связанность между сервисами
 
 ---
 
@@ -42,7 +43,7 @@
 - PostgreSQL - источник истины, у каждого сервиса своя бд, сервисы друг к другу в бд не ходят
 - Apache Kafka - брокер сообщений, используется для межсервисного взаимодейтвия и как очередь
 - Redis - кеширование запросов
-- ElasticSearch - полнотекстовый поиск вакансий по названию, описанию, названию компании 
+- ElasticSearch - полнотекстовый поиск вакансий по названию, описанию, названию компании
 - Keycloak - единая идентификация пользователей
 - Nginx - api-gateway, балансировка запросов
 - Confluent Schema Registry - хранение, эволюция авро-схем сообщений для кафки
@@ -64,17 +65,19 @@
 - Сообщения сериализуются в бинарный avro формат
 
 Топики:
- - vacancy.events
- - company.events
- - companymember.events
- - user.events
- - resume.events
- - candidate.events
+
+- vacancy.events
+- company.events
+- companymember.events
+- user.events
+- resume.events
+- candidate.events
 
 ### Фронтенд
 
 - Реализован на React + TypeScript + Vite
-- Архитектура построена по Feature-Sliced Design: строгие восходящие зависимости между слоями (`app → pages → widgets → features → entities → shared`), контроль через ESLint boundaries
+- Архитектура построена по Feature-Sliced Design: строгие восходящие зависимости между слоями (
+  `app → pages → widgets → features → entities → shared`), контроль через ESLint boundaries
 - API-клиент автогенерируется из Swagger-спецификаций бэкенда
 - Аутентификация: cookie-based (HttpOnly), refresh-интерцептор с single-flight очередью
 - Подробнее — [`/frontend/README.md`](/frontend/README.md)
@@ -92,5 +95,22 @@
 - Конфигурация приложения задается через переменные окружения контейнеров
 - Frontend доступен на https://traineematch.space
 - Frontend собирается в production-статику (Vite build) и раздаётся через nginx в Docker-контейнере
+
+
+## Запуск
+
+- Создайте .env файлы в папке каждого
+  микросервиса ([api-gateway](backend/api-gateway), [auth](backend/auth), [application](backend/application), 
+[candidate](backend/candidate), [company](backend/company), [frontend](frontend)) на основе существующих там `env.example` файлов
+- Запустить бекенд часть через docker compose 
+```bash
+cd "trainee-match\backend"
+docker-compose up -d
+```
+- Запустить фронтенд часть через docker compose
+```bash
+cd "trainee-match\frontend"
+docker-compose up -d
+```
 
 ---
