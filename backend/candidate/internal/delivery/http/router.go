@@ -113,5 +113,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 
 	router.Get("/swagger/*", handlers.SwaggerHandler)
 
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	})
+
 	return router
 }

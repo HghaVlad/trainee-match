@@ -60,5 +60,9 @@ func NewRouter(deps *RouterDeps) http.Handler {
 		r.Post("/new", deps.AdminHandler.NewAdmin)
 	})
 
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	})
+
 	return router
 }

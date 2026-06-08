@@ -53,15 +53,21 @@ func NewRouter(
 		MaxAge: 300,
 	}))
 
-	router.Use(
-		appmiddleware.LoggerMiddleware(logger),
-		authMiddleware.Handler,
-	)
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	})
 
-	oapi.HandlerFromMux(
-		oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{appmiddleware.LoggingMiddleware}),
-		router,
-	)
+	router.Group(func(r chi.Router) {
+		r.Use(
+			appmiddleware.LoggerMiddleware(logger),
+			authMiddleware.Handler,
+		)
+
+		oapi.HandlerFromMux(
+			oapi.NewStrictHandler(handler, []oapi.StrictMiddlewareFunc{appmiddleware.LoggingMiddleware}),
+			r,
+		)
+	})
 
 	return router
 }

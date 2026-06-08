@@ -174,6 +174,10 @@ func NewRouter(deps *RouterDeps) http.Handler {
 				Patch("/vacancies/{id}/moderation", deps.VacancyHandler.UpdateModeration)
 		})
 
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	})
+
 	addHello(router)
 
 	addSwagger(router)
