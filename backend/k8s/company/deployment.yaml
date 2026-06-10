@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: company-service
+  labels:
+    app: company-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: company-service
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  template:
+    metadata:
+      name: company-service
+      labels:
+        app: company-service
+    spec:
+      containers:
+        - name: company-service
+          image: mos1ck/trainee-company-service:1.0.2
+          ports:
+            - containerPort: 8080
+
+          envFrom:
+            - configMapRef:
+                name: company-service-config
+            - secretRef:
+                name: company-service-secret
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "32Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
