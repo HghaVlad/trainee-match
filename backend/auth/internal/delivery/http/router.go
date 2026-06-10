@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/go-chi/cors"
+	chimiddle "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/handlers"
+	"github.com/HghaVlad/trainee-match/backend/auth/internal/delivery/http/middleware"
 )
 
 type RouterDeps struct {
@@ -17,36 +18,8 @@ type RouterDeps struct {
 func NewRouter(deps *RouterDeps) http.Handler {
 	router := chi.NewRouter()
 
-	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{
-			"https://traineematch.space",
-			"https://www.traineematch.space",
-		},
-
-		AllowedMethods: []string{
-			"GET",
-			"POST",
-			"PUT",
-			"PATCH",
-			"DELETE",
-			"OPTIONS",
-		},
-
-		AllowedHeaders: []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-			"X-CSRF-Token",
-		},
-
-		ExposedHeaders: []string{
-			"Link",
-		},
-
-		AllowCredentials: true,
-
-		MaxAge: 300,
-	}))
+	router.Use(chimiddle.Logger)
+	router.Use(middleware.Cors())
 
 	router.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", deps.AuthHandler.Register)
