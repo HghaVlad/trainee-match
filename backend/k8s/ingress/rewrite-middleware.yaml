@@ -1,0 +1,41 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: company-rewrite
+spec:
+  replacePathRegex:
+    regex: ^/api/company/(.*)
+    replacement: /api/v1/$1
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: auth-rewrite
+spec:
+  replacePathRegex:
+    regex: ^/api/auth/(.*)
+    replacement: /api/v1/$1
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: candidate-rewrite
+spec:
+  replacePathRegex:
+    regex: ^/api/candidate/(.*)
+    replacement: /api/v1/$1
+
+---
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: application-rewrite
+spec:
+  replacePathRegex:
+    regex: ^/api/application/(.*)
+    replacement: /api/v1/$1
