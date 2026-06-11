@@ -89,27 +89,31 @@
 
 ## Деплой
 
-- В репозитории приведен пример развертывания через docker compose
-- На данный момент все система развернута и работает на виртуальной машине
-- Использовался let's encrypt для поддержки https
-- Конфигурация приложения задается через переменные окружения контейнеров
-- Frontend собирается в production-статику (Vite build) и раздаётся через nginx в Docker-контейнере
+- Сервисы разворачиваются в kubernetes-кластере 
+- Каждый сервис имеет отдельный Deployment и Service
+- Внешний доступ обеспечивается через Ingress Controller
+- HTTPS настроен с использованием Let's Encrypt
+- Конфигурация сервисов передается через ConfigMap и Secret ресурсы Kubernetes
+- Frontend собирается в production-статику (Vite build) и раздается через nginx-контейнер
+- Инфраструктура (PostgreSQL, Kafka и др.) разворачиваются отдельно от Kubernetes. В репозитории приведены примеры для локального развертывания инфрасткруктуры через docker compose
 
+### Запуск
 
-## Запуск
+Манифесты находятся в backend/k8s/, frontend/k8s/. Создайте соответсвующие ресурсы ConfigMap и Secret на основе .env.example каждого сервиса. Также укажите необходимые в ингресс секреты tls сертификаты доменов.  
 
-- Создайте .env файлы в папке каждого
-  микросервиса ([api-gateway](backend/api-gateway), [auth](backend/auth), [application](backend/application), 
-[candidate](backend/candidate), [company](backend/company), [frontend](frontend)) на основе существующих там `env.example` файлов
-- Запустить бекенд часть через docker compose 
-```bash
-cd "trainee-match\backend"
-docker-compose up -d
+Применение манифестов:
+
 ```
-- Запустить фронтенд часть через docker compose
-```bash
-cd "trainee-match\frontend"
-docker-compose up -d
+kubectl apply -f backend/k8s/
+kubectl apply -f frontend/k8s/
+```
+
+Проверка состояния:
+
+```
+kubectl get pods
+kubectl get services
+kubectl get ingress
 ```
 
 ---

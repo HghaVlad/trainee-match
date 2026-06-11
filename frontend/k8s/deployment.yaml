@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+
+  template:
+    metadata:
+      name: frontend
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: mos1ck/trainee-frontend:1.0.0
+          ports:
+            - containerPort: 80
+          env:
+            - name: BACKEND_URL
+              value: "https://api.traineematch.space"
