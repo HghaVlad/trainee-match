@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: candidate-service
+  labels:
+    app: candidate-service
+
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: candidate-service
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  template:
+    metadata:
+      name: candidate-service
+      labels:
+        app: candidate-service
+
+    spec:
+      containers:
+        - name: candidate-service
+          image: mos1ck/trainee-candidate-service:1.0.2
+
+          ports:
+            - containerPort: 8080
+
+          envFrom:
+            - configMapRef:
+                name: candidate-service-config
+
+            - secretRef:
+                name: candidate-service-secret
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "32Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080

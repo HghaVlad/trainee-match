@@ -1,0 +1,43 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traineematch-api
+spec:
+  entryPoints:
+    - websecure
+
+  routes:
+    - match: Host(`api.traineematch.space`) && PathPrefix(`/api/company`)
+      kind: Rule
+      middlewares:
+        - name: company-rewrite
+      services:
+        - name: company-service
+          port: 80
+
+    - match: Host(`api.traineematch.space`) && PathPrefix(`/api/auth`)
+      kind: Rule
+      middlewares:
+        - name: auth-rewrite
+      services:
+        - name: auth-service
+          port: 80
+
+    - match: Host(`api.traineematch.space`) && PathPrefix(`/api/candidate`)
+      kind: Rule
+      middlewares:
+        - name: candidate-rewrite
+      services:
+        - name: candidate-service
+          port: 80
+
+    - match: Host(`api.traineematch.space`) && PathPrefix(`/api/application`)
+      kind: Rule
+      middlewares:
+        - name: application-rewrite
+      services:
+        - name: application-service
+          port: 80
+
+  tls:
+    secretName: traineematch-tls

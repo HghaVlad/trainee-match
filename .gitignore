@@ -39,3 +39,7 @@ go.work.sum
 .sisyphus/
 opencode.json
 *opencode*
+
+# k8s sensetive
+configmap.yaml
+secret.yaml
